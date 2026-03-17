@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { syncDailyToMonthly } from "./useMonthlySchedules";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
 
@@ -16,14 +17,12 @@ export function useDailySchedule(date: string) {
       if (error) throw error;
       if (!schedule) return null;
 
-      // Fetch team assignments
       const { data: assignments, error: assErr } = await supabase
         .from("daily_team_assignments")
         .select("*, teams(*, team_members(*, employees(*))), obras(*), vehicles(*)")
         .eq("daily_schedule_id", schedule.id);
       if (assErr) throw assErr;
 
-      // Fetch individual attendance entries
       const { data: entries, error: entError } = await supabase
         .from("daily_schedule_entries")
         .select("*, employees(*)")
@@ -60,16 +59,65 @@ export function useAddTeamAssignment() {
       obra_id?: string;
       vehicle_id?: string;
       notes?: string;
+      date?: string; // for monthly sync
     }) => {
+      const { date, ...insertPayload } = assignment;
       const { data, error } = await supabase
         .from("daily_team_assignments")
-        .insert(assignment)
+        .insert(insertPayload)
         .select()
         .single();
       if (error) throw error;
+
+      // Sync to monthly if date provided
+      if (date && assignment.obra_id) {
+        await syncDailyToMonthly(date, assignment.team_id, {
+          obra_id: assignment.obra_id,
+          vehicle_id: assignment.vehicle_id || null,
+        });
+      }
+
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["daily-schedule"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["daily-schedule"] });
+      qc.invalidateQueries({ queryKey: ["monthly-schedules"] });
+    },
+  });
+}
+
+export function useUpdateTeamAssignment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      updates,
+      date,
+      teamId,
+    }: {
+      id: string;
+      updates: { obra_id?: string; vehicle_id?: string; notes?: string };
+      date?: string;
+      teamId?: string;
+    }) => {
+      const { error } = await supabase
+        .from("daily_team_assignments")
+        .update(updates)
+        .eq("id", id);
+      if (error) throw error;
+
+      // Sync to monthly
+      if (date && teamId) {
+        await syncDailyToMonthly(date, teamId, {
+          obra_id: updates.obra_id,
+          vehicle_id: updates.vehicle_id || null,
+        });
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["daily-schedule"] });
+      qc.invalidateQueries({ queryKey: ["monthly-schedules"] });
+    },
   });
 }
 
@@ -80,7 +128,10 @@ export function useRemoveTeamAssignment() {
       const { error } = await supabase.from("daily_team_assignments").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["daily-schedule"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["daily-schedule"] });
+      qc.invalidateQueries({ queryKey: ["monthly-schedules"] });
+    },
   });
 }
 
@@ -172,9 +223,8 @@ export function usePreFillFromMonthly() {
   return useMutation({
     mutationFn: async ({ scheduleId, date }: { scheduleId: string; date: string }) => {
       const d = new Date(date + "T12:00:00");
-      const dayOfWeek = d.getDay(); // 0=Sun, 6=Sat
+      const dayOfWeek = d.getDay();
 
-      // Get monthly allocations that cover this date
       const { data: monthly, error: mErr } = await supabase
         .from("monthly_schedules")
         .select("*, teams(*, team_members(*, employees(*)))")
@@ -185,7 +235,6 @@ export function usePreFillFromMonthly() {
       if (!monthly?.length) return;
 
       for (const ms of monthly) {
-        // Skip weekends for "mensal" type schedules
         if ((ms.schedule_type || "mensal") === "mensal" && (dayOfWeek === 0 || dayOfWeek === 6)) {
           continue;
         }
@@ -200,7 +249,6 @@ export function usePreFillFromMonthly() {
           });
         if (error && !error.message.includes("duplicate")) throw error;
 
-        // Create individual entries for each team member
         const members = (ms as any).teams?.team_members || [];
         for (const member of members) {
           const { error: entErr } = await supabase
