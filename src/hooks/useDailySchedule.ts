@@ -172,27 +172,31 @@ export function usePreFillFromMonthly() {
   return useMutation({
     mutationFn: async ({ scheduleId, date }: { scheduleId: string; date: string }) => {
       const d = new Date(date + "T12:00:00");
-      const month = d.getMonth() + 1;
-      const year = d.getFullYear();
+      const dayOfWeek = d.getDay(); // 0=Sun, 6=Sat
 
-      // Get monthly allocations
+      // Get monthly allocations that cover this date
       const { data: monthly, error: mErr } = await supabase
         .from("monthly_schedules")
         .select("*, teams(*, team_members(*, employees(*)))")
-        .eq("month", month)
-        .eq("year", year);
+        .lte("start_date", date)
+        .gte("end_date", date);
       if (mErr) throw mErr;
 
       if (!monthly?.length) return;
 
-      // Create team assignments from monthly schedule
       for (const ms of monthly) {
+        // Skip weekends for "mensal" type schedules
+        if ((ms.schedule_type || "mensal") === "mensal" && (dayOfWeek === 0 || dayOfWeek === 6)) {
+          continue;
+        }
+
         const { error } = await supabase
           .from("daily_team_assignments")
           .insert({
             daily_schedule_id: scheduleId,
             team_id: ms.team_id,
             obra_id: ms.obra_id,
+            vehicle_id: ms.vehicle_id,
           });
         if (error && !error.message.includes("duplicate")) throw error;
 
@@ -206,6 +210,7 @@ export function usePreFillFromMonthly() {
               employee_id: member.employee_id,
               team_id: ms.team_id,
               obra_id: ms.obra_id,
+              vehicle_id: ms.vehicle_id,
             });
           if (entErr && !entErr.message.includes("duplicate")) {
             // Ignore duplicates

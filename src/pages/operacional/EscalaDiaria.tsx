@@ -313,7 +313,11 @@ export default function EscalaDiaria() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-1 block">Equipe</label>
-              <Select value={assignForm.team_id} onValueChange={(v) => setAssignForm({ ...assignForm, team_id: v })}>
+              <Select value={assignForm.team_id} onValueChange={(v) => {
+                const team = availableTeams.find((t: any) => t.id === v);
+                const defaultVehicle = team?.default_vehicle_id || "";
+                setAssignForm({ ...assignForm, team_id: v, vehicle_id: defaultVehicle });
+              }}>
                 <SelectTrigger><SelectValue placeholder="Selecionar equipe..." /></SelectTrigger>
                 <SelectContent>
                   {availableTeams.map((t: any) => (

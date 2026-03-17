@@ -471,6 +471,7 @@ export type Database = {
           model: string
           plate: string
           status: Database["public"]["Enums"]["vehicle_status"]
+          tracker_url: string | null
           updated_at: string
           year: number | null
         }
@@ -483,6 +484,7 @@ export type Database = {
           model: string
           plate: string
           status?: Database["public"]["Enums"]["vehicle_status"]
+          tracker_url?: string | null
           updated_at?: string
           year?: number | null
         }
@@ -495,6 +497,7 @@ export type Database = {
           model?: string
           plate?: string
           status?: Database["public"]["Enums"]["vehicle_status"]
+          tracker_url?: string | null
           updated_at?: string
           year?: number | null
         }
