@@ -36,11 +36,13 @@ function useObras() {
 
 export default function DashboardOperacional() {
   const today = format(new Date(), "yyyy-MM-dd");
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
   const { data: employees } = useEmployeesWithAbsences(today);
   const { data: teams } = useTeams();
   const { data: vehicles } = useVehicles();
   const { data: obras } = useObras();
-
+  const { data: unallocatedProjects } = useUnallocatedProjects(currentMonth, currentYear);
   const stats = useMemo(() => {
     const emps = employees || [];
     const disponivel = emps.filter((e) => e.availability === "disponivel").length;
