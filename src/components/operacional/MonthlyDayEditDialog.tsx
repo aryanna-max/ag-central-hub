@@ -43,6 +43,7 @@ export default function MonthlyDayEditDialog({
   month,
   year,
   onSave,
+  onDelete,
   isPending,
 }: Props) {
   const [teamId, setTeamId] = useState("");
