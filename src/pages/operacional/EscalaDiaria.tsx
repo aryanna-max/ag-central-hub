@@ -342,8 +342,6 @@ export default function EscalaDiaria() {
 
 // Small hook for obras
 function useObrasList() {
-  const { useQuery } = require("@tanstack/react-query");
-  const { supabase } = require("@/integrations/supabase/client");
   return useQuery({
     queryKey: ["obras"],
     queryFn: async () => {
