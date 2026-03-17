@@ -416,6 +416,7 @@ export type Database = {
       teams: {
         Row: {
           created_at: string
+          default_vehicle_id: string | null
           description: string | null
           id: string
           is_active: boolean
@@ -425,6 +426,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_vehicle_id?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
@@ -434,6 +436,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_vehicle_id?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
@@ -442,6 +445,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "teams_default_vehicle_id_fkey"
+            columns: ["default_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "teams_leader_id_fkey"
             columns: ["leader_id"]

@@ -1,0 +1,1 @@
+ALTER TABLE public.teams ADD COLUMN default_vehicle_id uuid REFERENCES public.vehicles(id) ON DELETE SET NULL;
