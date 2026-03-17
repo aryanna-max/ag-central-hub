@@ -475,6 +475,14 @@ export default function EscalaMensal() {
         month={month}
         year={year}
         onSave={handleEditSave}
+        onDelete={(id) => {
+          deleteSchedule.mutate(id, {
+            onSuccess: () => {
+              setEditOpen(false);
+              toast.success("Alocação excluída!");
+            },
+          });
+        }}
         isPending={updateSchedule.isPending}
       />
 
