@@ -1,38 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { MapPin, Filter } from "lucide-react";
-
-// Fix Leaflet default marker icons
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-});
-
-const TEAM_COLORS = [
-  "#0e7490", "#059669", "#7c9a1e", "#dc2626", "#6366f1",
-  "#d97706", "#0284c7", "#be185d", "#4f46e5", "#15803d",
-  "#a855f7", "#ea580c", "#0891b2", "#e11d48",
-];
-
-function createColoredIcon(color: string) {
-  return L.divIcon({
-    className: "custom-marker",
-    html: `<div style="background:${color};width:28px;height:28px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-    </div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 28],
-    popupAnchor: [0, -28],
-  });
-}
 
 interface Assignment {
   id: string;
@@ -49,12 +19,21 @@ interface TeamLocationMapProps {
   date: string;
 }
 
+const TEAM_COLORS = [
+  "#0e7490", "#059669", "#7c9a1e", "#dc2626", "#6366f1",
+  "#d97706", "#0284c7", "#be185d", "#4f46e5", "#15803d",
+  "#a855f7", "#ea580c", "#0891b2", "#e11d48",
+];
+
 export default function TeamLocationMap({ assignments, date }: TeamLocationMapProps) {
   const [filterClient, setFilterClient] = useState("all");
   const [filterTeam, setFilterTeam] = useState("all");
   const [searchText, setSearchText] = useState("");
+  const mapRef = useRef<HTMLDivElement>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const leafletMapRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
 
-  // Extract unique clients and teams
   const clients = useMemo(() => {
     const set = new Set<string>();
     assignments.forEach((a) => {
@@ -67,14 +46,10 @@ export default function TeamLocationMap({ assignments, date }: TeamLocationMapPr
     return assignments.map((a) => ({ id: a.team_id, name: a.teams?.name || "Equipe" }));
   }, [assignments]);
 
-  // Markers with locations from obras
   const markers = useMemo(() => {
     return assignments
       .filter((a) => {
         if (!a.obras) return false;
-        // Use obra coordinates or fallback to approximate (Recife area)
-        const lat = a.obras.latitude || -8.05 + Math.random() * 0.1;
-        const lng = a.obras.longitude || -34.87 + Math.random() * 0.1;
         if (filterClient !== "all" && a.obras.client !== filterClient) return false;
         if (filterTeam !== "all" && a.team_id !== filterTeam) return false;
         if (searchText) {
@@ -111,9 +86,92 @@ export default function TeamLocationMap({ assignments, date }: TeamLocationMapPr
       });
   }, [assignments, filterClient, filterTeam, searchText]);
 
-  const center = markers.length > 0
-    ? { lat: markers.reduce((s, m) => s + m.lat, 0) / markers.length, lng: markers.reduce((s, m) => s + m.lng, 0) / markers.length }
-    : { lat: -8.05, lng: -34.87 };
+  // Load Leaflet dynamically to avoid React version conflicts
+  useEffect(() => {
+    if (!mapRef.current || mapLoaded) return;
+
+    const loadMap = async () => {
+      const L = await import("leaflet");
+      await import("leaflet/dist/leaflet.css");
+
+      // Fix default icons
+      delete (L.Icon.Default.prototype as any)._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+        iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+        shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+      });
+
+      const center: [number, number] = markers.length > 0
+        ? [markers.reduce((s, m) => s + m.lat, 0) / markers.length, markers.reduce((s, m) => s + m.lng, 0) / markers.length]
+        : [-8.05, -34.87];
+
+      const map = L.map(mapRef.current!, { scrollWheelZoom: true }).setView(center, markers.length > 0 ? 10 : 6);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+      }).addTo(map);
+
+      leafletMapRef.current = map;
+      setMapLoaded(true);
+    };
+
+    loadMap();
+
+    return () => {
+      if (leafletMapRef.current) {
+        leafletMapRef.current.remove();
+        leafletMapRef.current = null;
+        setMapLoaded(false);
+      }
+    };
+  }, []);
+
+  // Update markers when data changes
+  useEffect(() => {
+    if (!leafletMapRef.current) return;
+
+    const loadLeaflet = async () => {
+      const L = await import("leaflet");
+
+      // Clear existing markers
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
+
+      markers.forEach((m) => {
+        const icon = L.divIcon({
+          className: "custom-marker",
+          html: `<div style="background:${m.color};width:28px;height:28px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          </div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 28],
+          popupAnchor: [0, -28],
+        });
+
+        const marker = L.marker([m.lat, m.lng], { icon }).addTo(leafletMapRef.current);
+        marker.bindPopup(`
+          <div style="min-width:200px">
+            <p style="font-weight:bold;font-size:14px;margin:0">${m.teamName}</p>
+            <hr style="margin:4px 0"/>
+            <p style="font-size:12px;margin:2px 0"><strong>Topógrafo:</strong> ${m.topografo}</p>
+            <p style="font-size:12px;margin:2px 0"><strong>Auxiliares:</strong> ${m.auxiliares.join(", ") || "—"}</p>
+            <p style="font-size:12px;margin:6px 0 2px"><strong>Projeto:</strong> ${m.obraName}</p>
+            <p style="font-size:12px;margin:2px 0"><strong>Cliente:</strong> ${m.client}</p>
+            <p style="font-size:12px;margin:2px 0"><strong>Local:</strong> ${m.location}</p>
+            <p style="font-size:12px;margin:2px 0"><strong>Veículo:</strong> ${m.vehicle}</p>
+          </div>
+        `);
+        markersRef.current.push(marker);
+      });
+
+      if (markers.length > 0) {
+        const bounds = L.latLngBounds(markers.map((m) => [m.lat, m.lng] as [number, number]));
+        leafletMapRef.current.fitBounds(bounds, { padding: [30, 30] });
+      }
+    };
+
+    loadLeaflet();
+  }, [markers, mapLoaded]);
 
   return (
     <Card>
@@ -149,35 +207,7 @@ export default function TeamLocationMap({ assignments, date }: TeamLocationMapPr
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="h-[400px] rounded-b-lg overflow-hidden">
-          <MapContainer
-            center={[center.lat, center.lng]}
-            zoom={markers.length > 0 ? 10 : 6}
-            style={{ height: "100%", width: "100%" }}
-            scrollWheelZoom={true}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {markers.map((m) => (
-              <Marker key={m.id} position={[m.lat, m.lng]} icon={createColoredIcon(m.color)}>
-                <Popup>
-                  <div className="min-w-[200px]">
-                    <p className="font-bold text-sm">{m.teamName}</p>
-                    <hr className="my-1" />
-                    <p className="text-xs"><strong>Topógrafo:</strong> {m.topografo}</p>
-                    <p className="text-xs"><strong>Auxiliares:</strong> {m.auxiliares.join(", ") || "—"}</p>
-                    <p className="text-xs mt-1"><strong>Projeto:</strong> {m.obraName}</p>
-                    <p className="text-xs"><strong>Cliente:</strong> {m.client}</p>
-                    <p className="text-xs"><strong>Local:</strong> {m.location}</p>
-                    <p className="text-xs"><strong>Veículo:</strong> {m.vehicle}</p>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
-        </div>
+        <div ref={mapRef} className="h-[400px] rounded-b-lg overflow-hidden" />
         {markers.length === 0 && (
           <div className="text-center py-4 text-sm text-muted-foreground">
             Nenhuma equipe escalada com localização para esta data.
