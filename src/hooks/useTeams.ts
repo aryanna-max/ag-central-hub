@@ -11,12 +11,26 @@ export function useTeams() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teams")
-        .select("*, team_members(*, employees(*))")
+        .select("*, team_members(*, employees(*)), vehicles:default_vehicle_id(id, model, plate, status)")
         .eq("is_active", true)
         .order("name");
       if (error) throw error;
       return data;
     },
+  });
+}
+
+export function useUpdateTeamVehicle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ teamId, vehicleId }: { teamId: string; vehicleId: string | null }) => {
+      const { error } = await supabase
+        .from("teams")
+        .update({ default_vehicle_id: vehicleId } as any)
+        .eq("id", teamId);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["teams"] }),
   });
 }
 

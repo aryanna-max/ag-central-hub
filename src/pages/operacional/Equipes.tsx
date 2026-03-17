@@ -1,23 +1,26 @@
 import { useState } from "react";
-import { Users, Plus, Trash2, UserPlus, X, Crown } from "lucide-react";
+import { Users, Plus, Trash2, UserPlus, X, Crown, Car } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useTeams, useCreateTeam, useDeleteTeam, useAddTeamMember, useRemoveTeamMember } from "@/hooks/useTeams";
+import { useTeams, useCreateTeam, useDeleteTeam, useAddTeamMember, useRemoveTeamMember, useUpdateTeamVehicle } from "@/hooks/useTeams";
 import { useEmployeesWithAbsences } from "@/hooks/useEmployees";
+import { useVehicles } from "@/hooks/useVehicles";
 import EmployeeAvailabilityBadge from "@/components/operacional/EmployeeAvailabilityBadge";
 import { toast } from "sonner";
 
 export default function Equipes() {
   const { data: teams, isLoading } = useTeams();
   const { data: employees } = useEmployeesWithAbsences();
+  const { data: vehicles } = useVehicles();
   const createTeam = useCreateTeam();
   const deleteTeam = useDeleteTeam();
   const addMember = useAddTeamMember();
   const removeMember = useRemoveTeamMember();
+  const updateVehicle = useUpdateTeamVehicle();
 
   const [showNewTeam, setShowNewTeam] = useState(false);
   const [newTeamName, setNewTeamName] = useState("");
@@ -58,6 +61,16 @@ export default function Equipes() {
     }
   };
 
+  const handleVehicleChange = (teamId: string, vehicleId: string) => {
+    updateVehicle.mutate(
+      { teamId, vehicleId: vehicleId === "none" ? null : vehicleId },
+      {
+        onSuccess: () => toast.success("Veículo atualizado!"),
+        onError: () => toast.error("Erro ao atualizar veículo"),
+      }
+    );
+  };
+
   const currentTeamMemberIds = addMemberTeamId
     ? (teams?.find((t: any) => t.id === addMemberTeamId) as any)?.team_members?.map((m: any) => m.employee_id) || []
     : [];
@@ -82,7 +95,7 @@ export default function Equipes() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">Equipes</h1>
-            <p className="text-sm text-muted-foreground">Equipes de campo: 1 topógrafo + até 2 auxiliares</p>
+            <p className="text-sm text-muted-foreground">Equipes de campo: 1 topógrafo + até 2 auxiliares + veículo</p>
           </div>
         </div>
         <Button onClick={() => setShowNewTeam(true)} className="gap-2">
@@ -103,6 +116,7 @@ export default function Equipes() {
           {teams.map((team: any) => {
             const topografo = getTopografo(team);
             const auxiliares = getAuxiliares(team);
+            const currentVehicle = team.vehicles;
             return (
               <Card key={team.id}>
                 <CardHeader className="pb-3">
@@ -180,6 +194,35 @@ export default function Equipes() {
                           </div>
                         ))}
                       </div>
+                    )}
+                  </div>
+
+                  {/* Veículo Padrão */}
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+                      <Car className="w-3 h-3" /> VEÍCULO PADRÃO
+                    </p>
+                    <Select
+                      value={team.default_vehicle_id || "none"}
+                      onValueChange={(v) => handleVehicleChange(team.id, v)}
+                    >
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue placeholder="Selecionar veículo..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Sem veículo</SelectItem>
+                        {(vehicles || []).map((v) => (
+                          <SelectItem key={v.id} value={v.id}>
+                            {v.model} — {v.plate}
+                            {v.status !== "disponivel" && ` (${v.status})`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {currentVehicle && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Atual: {currentVehicle.model} — {currentVehicle.plate}
+                      </p>
                     )}
                   </div>
                 </CardContent>
