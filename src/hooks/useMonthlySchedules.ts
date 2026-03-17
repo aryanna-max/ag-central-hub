@@ -10,7 +10,7 @@ export function useMonthlySchedules(month: number, year: number) {
 
       const { data, error } = await supabase
         .from("monthly_schedules")
-        .select("*, teams(*, team_members(*, employees(*))), obras(*)")
+        .select("*, teams(*, team_members(*, employees(*))), obras(*), vehicles(*)")
         .lte("start_date", endOfMonth)
         .gte("end_date", startOfMonth);
       if (error) throw error;
@@ -29,6 +29,8 @@ export function useCreateMonthlySchedule() {
       end_date: string;
       month: number;
       year: number;
+      vehicle_id?: string;
+      schedule_type?: string;
     }) => {
       const { error } = await supabase.from("monthly_schedules").insert(payload);
       if (error) throw error;
@@ -46,7 +48,7 @@ export function useUpdateMonthlySchedule() {
       syncToDaily,
     }: {
       id: string;
-      updates: { team_id?: string; obra_id?: string };
+      updates: { team_id?: string; obra_id?: string; vehicle_id?: string };
       syncToDaily?: boolean;
     }) => {
       const { error } = await supabase
@@ -64,7 +66,6 @@ export function useUpdateMonthlySchedule() {
           .single();
         if (!schedule) return;
 
-        // Find daily assignments matching old team for this date range that are not closed
         const { data: dailySchedules } = await supabase
           .from("daily_schedules")
           .select("id, schedule_date, is_closed")
@@ -74,17 +75,15 @@ export function useUpdateMonthlySchedule() {
 
         if (dailySchedules?.length) {
           for (const ds of dailySchedules) {
-            if (updates.team_id) {
+            const updatePayload: any = {};
+            if (updates.team_id) updatePayload.team_id = updates.team_id;
+            if (updates.obra_id) updatePayload.obra_id = updates.obra_id;
+            if (updates.vehicle_id) updatePayload.vehicle_id = updates.vehicle_id;
+
+            if (Object.keys(updatePayload).length > 0) {
               await supabase
                 .from("daily_team_assignments")
-                .update({ team_id: updates.team_id })
-                .eq("daily_schedule_id", ds.id)
-                .eq("team_id", schedule.team_id);
-            }
-            if (updates.obra_id) {
-              await supabase
-                .from("daily_team_assignments")
-                .update({ obra_id: updates.obra_id })
+                .update(updatePayload)
                 .eq("daily_schedule_id", ds.id)
                 .eq("team_id", schedule.team_id);
             }

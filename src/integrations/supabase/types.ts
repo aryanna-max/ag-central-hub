@@ -285,8 +285,10 @@ export type Database = {
           month: number
           notes: string | null
           obra_id: string
+          schedule_type: string
           start_date: string
           team_id: string
+          vehicle_id: string | null
           year: number
         }
         Insert: {
@@ -296,8 +298,10 @@ export type Database = {
           month: number
           notes?: string | null
           obra_id: string
+          schedule_type?: string
           start_date: string
           team_id: string
+          vehicle_id?: string | null
           year: number
         }
         Update: {
@@ -307,8 +311,10 @@ export type Database = {
           month?: number
           notes?: string | null
           obra_id?: string
+          schedule_type?: string
           start_date?: string
           team_id?: string
+          vehicle_id?: string | null
           year?: number
         }
         Relationships: [
@@ -324,6 +330,13 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_schedules_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
