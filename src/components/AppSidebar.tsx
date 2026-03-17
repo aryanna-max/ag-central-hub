@@ -52,6 +52,7 @@ const navigation: SidebarItem[] = [
     path: "/operacional",
     icon: Truck,
     children: [
+      { label: "Dashboard", path: "/operacional/dashboard", icon: LayoutDashboard },
       { label: "Equipes", path: "/operacional/equipes", icon: Users },
       { label: "Escala Diária", path: "/operacional/escala-diaria", icon: CalendarDays },
       { label: "Escala Mensal", path: "/operacional/escala", icon: CalendarDays },

@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import DailyScheduleReport from "@/components/operacional/DailyScheduleReport";
 import AbsencesSection from "@/components/operacional/AbsencesSection";
+import TeamLocationMap from "@/components/operacional/TeamLocationMap";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
 
@@ -293,6 +294,11 @@ export default function EscalaDiaria() {
                 </Table>
               </CardContent>
             </Card>
+          )}
+
+          {/* Map */}
+          {assignments.length > 0 && (
+            <TeamLocationMap assignments={assignments} date={selectedDate} />
           )}
 
           {/* Absences section */}
