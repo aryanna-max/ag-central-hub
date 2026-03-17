@@ -280,28 +280,34 @@ export type Database = {
       monthly_schedules: {
         Row: {
           created_at: string
+          end_date: string
           id: string
           month: number
           notes: string | null
           obra_id: string
+          start_date: string
           team_id: string
           year: number
         }
         Insert: {
           created_at?: string
+          end_date: string
           id?: string
           month: number
           notes?: string | null
           obra_id: string
+          start_date: string
           team_id: string
           year: number
         }
         Update: {
           created_at?: string
+          end_date?: string
           id?: string
           month?: number
           notes?: string | null
           obra_id?: string
+          start_date?: string
           team_id?: string
           year?: number
         }

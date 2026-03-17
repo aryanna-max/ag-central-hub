@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useEmployeesWithAbsences } from "@/hooks/useEmployees";
 import { useTeams } from "@/hooks/useTeams";
 import { useVehicles } from "@/hooks/useVehicles";
+import { useUnallocatedProjects } from "@/hooks/useMonthlySchedules";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
@@ -13,6 +14,11 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
+
+const months = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
 
 const PIE_COLORS = [
   "hsl(174, 100%, 29%)",
@@ -35,11 +41,13 @@ function useObras() {
 
 export default function DashboardOperacional() {
   const today = format(new Date(), "yyyy-MM-dd");
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
   const { data: employees } = useEmployeesWithAbsences(today);
   const { data: teams } = useTeams();
   const { data: vehicles } = useVehicles();
   const { data: obras } = useObras();
-
+  const { data: unallocatedProjects } = useUnallocatedProjects(currentMonth, currentYear);
   const stats = useMemo(() => {
     const emps = employees || [];
     const disponivel = emps.filter((e) => e.availability === "disponivel").length;
@@ -213,6 +221,31 @@ export default function DashboardOperacional() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Unallocated Projects Warning */}
+      {(unallocatedProjects || []).length > 0 && (
+        <Card className="border-destructive/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-destructive" />
+              Projetos Sem Equipe Alocada ({months[currentMonth - 1]})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {unallocatedProjects!.map((obra) => (
+                <div key={obra.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                  <div>
+                    <p className="text-sm font-medium">{obra.name}</p>
+                    <p className="text-xs text-muted-foreground">{obra.client || "—"} • {obra.location || "—"}</p>
+                  </div>
+                  <Badge variant="destructive" className="text-xs">Sem Equipe</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
