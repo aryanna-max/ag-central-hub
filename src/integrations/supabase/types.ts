@@ -22,6 +22,7 @@ export type Database = {
           check_out_time: string | null
           created_at: string
           daily_schedule_id: string
+          daily_team_assignment_id: string | null
           employee_id: string
           id: string
           notes: string | null
@@ -36,6 +37,7 @@ export type Database = {
           check_out_time?: string | null
           created_at?: string
           daily_schedule_id: string
+          daily_team_assignment_id?: string | null
           employee_id: string
           id?: string
           notes?: string | null
@@ -50,6 +52,7 @@ export type Database = {
           check_out_time?: string | null
           created_at?: string
           daily_schedule_id?: string
+          daily_team_assignment_id?: string | null
           employee_id?: string
           id?: string
           notes?: string | null
@@ -63,6 +66,13 @@ export type Database = {
             columns: ["daily_schedule_id"]
             isOneToOne: false
             referencedRelation: "daily_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_schedule_entries_daily_team_assignment_id_fkey"
+            columns: ["daily_team_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "daily_team_assignments"
             referencedColumns: ["id"]
           },
           {
@@ -124,6 +134,68 @@ export type Database = {
           schedule_date?: string
         }
         Relationships: []
+      }
+      daily_team_assignments: {
+        Row: {
+          created_at: string
+          daily_schedule_id: string
+          id: string
+          location_override: string | null
+          notes: string | null
+          obra_id: string | null
+          team_id: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          daily_schedule_id: string
+          id?: string
+          location_override?: string | null
+          notes?: string | null
+          obra_id?: string | null
+          team_id: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          daily_schedule_id?: string
+          id?: string
+          location_override?: string | null
+          notes?: string | null
+          obra_id?: string | null
+          team_id?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_team_assignments_daily_schedule_id_fkey"
+            columns: ["daily_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "daily_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_team_assignments_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_team_assignments_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_team_assignments_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       employee_absences: {
         Row: {
@@ -256,7 +328,9 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          latitude: number | null
           location: string | null
+          longitude: number | null
           name: string
         }
         Insert: {
@@ -264,7 +338,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           name: string
         }
         Update: {
@@ -272,7 +348,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           name?: string
         }
         Relationships: []
@@ -282,18 +360,21 @@ export type Database = {
           employee_id: string
           id: string
           joined_at: string
+          role: string
           team_id: string
         }
         Insert: {
           employee_id: string
           id?: string
           joined_at?: string
+          role?: string
           team_id: string
         }
         Update: {
           employee_id?: string
           id?: string
           joined_at?: string
+          role?: string
           team_id?: string
         }
         Relationships: [
