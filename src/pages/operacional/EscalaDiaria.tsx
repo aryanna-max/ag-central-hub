@@ -296,6 +296,11 @@ export default function EscalaDiaria() {
             </Card>
           )}
 
+          {/* Map */}
+          {assignments.length > 0 && (
+            <TeamLocationMap assignments={assignments} date={selectedDate} />
+          )}
+
           {/* Absences section */}
           <AbsencesSection employees={absentEmployees} />
         </>
