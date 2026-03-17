@@ -31,6 +31,7 @@ interface Props {
   month: number;
   year: number;
   onSave: (scheduleId: string, updates: { team_id?: string; obra_id?: string; vehicle_id?: string }, scope: "period" | "day", dayDate?: string, memberOverrides?: { additions: string[]; removals: string[] }) => void;
+  onDelete?: (scheduleId: string) => void;
   isPending: boolean;
 }
 
