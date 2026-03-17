@@ -3,7 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search, Filter } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Search, Filter, Car, ChevronRight, Maximize2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface TeamMember {
   id: string;
@@ -19,6 +21,7 @@ interface Schedule {
   obra_id: string;
   teams: { id: string; name: string; team_members?: TeamMember[] } | null;
   obras: { id: string; name: string; client: string | null } | null;
+  vehicles?: { id: string; model: string; plate: string } | null;
 }
 
 interface Props {
@@ -46,6 +49,7 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [filterValue, setFilterValue] = useState("");
   const [searchText, setSearchText] = useState("");
+  const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
   const { days, startPad } = useMemo(() => {
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -159,6 +163,8 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
     }
   };
 
+  const expandedSchedules = expandedDay ? getSchedulesForDay(expandedDay) : [];
+
   return (
     <TooltipProvider delayDuration={200}>
       {/* Filters */}
@@ -243,17 +249,28 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
                   weekend ? "bg-muted/30" : "bg-background"
                 } ${isToday ? "ring-2 ring-primary ring-inset" : ""}`}
               >
-                <span
-                  className={`text-xs font-medium inline-block mb-0.5 ${
-                    isToday
-                      ? "bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {day}
-                </span>
+                <div className="flex items-center justify-between mb-0.5">
+                  <span
+                    className={`text-xs font-medium inline-block ${
+                      isToday
+                        ? "bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {day}
+                  </span>
+                  {daySchedules.length > 0 && (
+                    <button
+                      onClick={() => setExpandedDay(day)}
+                      className="text-muted-foreground hover:text-primary transition-colors p-0.5"
+                      title="Expandir dia"
+                    >
+                      <Maximize2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
                 <div className="space-y-1">
-                  {daySchedules.slice(0, 2).map((s) => {
+                  {daySchedules.slice(0, 3).map((s) => {
                     const topo = getTopografo(s);
                     const auxs = getAuxiliares(s);
                     return (
@@ -293,18 +310,24 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
                               {auxs.map((a) => a.employees?.name).join(", ")}
                             </div>
                           )}
-                          <p className="text-muted-foreground mt-1">
-                            {s.start_date} → {s.end_date}
-                          </p>
+                          {(s as any).vehicles && (
+                            <p className="mt-1 flex items-center gap-1">
+                              <Car className="w-3 h-3" />
+                              {(s as any).vehicles.model} — {(s as any).vehicles.plate}
+                            </p>
+                          )}
                           <p className="text-primary mt-1 font-medium">Clique para editar</p>
                         </TooltipContent>
                       </Tooltip>
                     );
                   })}
-                  {daySchedules.length > 2 && (
-                    <span className="text-[10px] text-muted-foreground pl-1">
-                      +{daySchedules.length - 2} mais
-                    </span>
+                  {daySchedules.length > 3 && (
+                    <button
+                      onClick={() => setExpandedDay(day)}
+                      className="text-[10px] text-primary font-medium pl-1 hover:underline"
+                    >
+                      +{daySchedules.length - 3} mais →
+                    </button>
                   )}
                 </div>
               </div>
@@ -312,6 +335,94 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
           })}
         </div>
       </div>
+
+      {/* Expanded Day Dialog */}
+      <Dialog open={expandedDay !== null} onOpenChange={(open) => !open && setExpandedDay(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              Dia {expandedDay && String(expandedDay).padStart(2, "0")}/{String(month).padStart(2, "0")}/{year} — {expandedSchedules.length} alocações
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {expandedSchedules.map((s, idx) => {
+              const topo = getTopografo(s);
+              const auxs = getAuxiliares(s);
+              return (
+                <div
+                  key={s.id}
+                  className={`p-3 rounded-lg border cursor-pointer hover:shadow-md transition-shadow ${
+                    teamColorMap.get(s.teams?.id || "") || TEAM_COLORS[0]
+                  }`}
+                  onClick={() => {
+                    setExpandedDay(null);
+                    if (expandedDay) onDayClick?.(expandedDay, s);
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="text-xs font-mono">
+                          #{idx + 1}
+                        </Badge>
+                        <span className="font-bold uppercase text-sm truncate">
+                          {s.obras?.name || "—"}
+                        </span>
+                      </div>
+                      {s.obras?.client && (
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Cliente: {s.obras.client}
+                        </p>
+                      )}
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground">TOPÓGRAFO</p>
+                          <p className="font-bold">{topo?.employees?.name || "—"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground">EQUIPE</p>
+                          <p>{s.teams?.name || "—"}</p>
+                        </div>
+                      </div>
+                      {auxs.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-xs font-semibold text-muted-foreground">AUXILIARES</p>
+                          <div className="flex flex-wrap gap-1 mt-0.5">
+                            {auxs.map((a) => (
+                              <Badge key={a.id} variant="secondary" className="text-xs">
+                                {a.employees?.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right shrink-0">
+                      {(s as any).vehicles && (
+                        <div className="flex items-center gap-1 text-xs">
+                          <Car className="w-3 h-3" />
+                          <div>
+                            <p className="font-medium">{(s as any).vehicles.model}</p>
+                            <p className="text-muted-foreground">{(s as any).vehicles.plate}</p>
+                          </div>
+                        </div>
+                      )}
+                      <Button variant="ghost" size="sm" className="mt-2 gap-1 text-xs text-primary">
+                        Editar <ChevronRight className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {expandedSchedules.length === 0 && (
+              <p className="text-center text-muted-foreground py-6">
+                Nenhuma alocação para este dia.
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Legend */}
       {filteredSchedules.length > 0 && (

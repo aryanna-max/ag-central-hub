@@ -74,6 +74,7 @@ export default function EscalaDiaria() {
         team_id: assignForm.team_id,
         obra_id: assignForm.obra_id || undefined,
         vehicle_id: assignForm.vehicle_id || undefined,
+        date: selectedDate,
       });
       setShowAddTeam(false);
       setAssignForm({ team_id: "", obra_id: "", vehicle_id: "" });
