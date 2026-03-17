@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { CalendarDays, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -12,8 +11,14 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useTeams } from "@/hooks/useTeams";
-import { useMonthlySchedules, useCreateMonthlySchedule, useDeleteMonthlySchedule } from "@/hooks/useMonthlySchedules";
+import {
+  useMonthlySchedules,
+  useCreateMonthlySchedule,
+  useDeleteMonthlySchedule,
+  useUpdateMonthlySchedule,
+} from "@/hooks/useMonthlySchedules";
 import MonthlyCalendarGrid from "@/components/operacional/MonthlyCalendarGrid";
+import MonthlyDayEditDialog from "@/components/operacional/MonthlyDayEditDialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -30,6 +35,11 @@ export default function EscalaMensal() {
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState({ team_id: "", obra_id: "", start_date: undefined as Date | undefined, end_date: undefined as Date | undefined });
 
+  // Edit dialog state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editSchedule, setEditSchedule] = useState<any>(null);
+  const [editDay, setEditDay] = useState(1);
+
   const { data: teams } = useTeams();
   const { data: obras } = useQuery({
     queryKey: ["obras"],
@@ -43,6 +53,7 @@ export default function EscalaMensal() {
   const { data: schedules, isLoading } = useMonthlySchedules(month, year);
   const createSchedule = useCreateMonthlySchedule();
   const deleteSchedule = useDeleteMonthlySchedule();
+  const updateSchedule = useUpdateMonthlySchedule();
 
   const handleCreate = () => {
     if (!form.team_id || !form.obra_id || !form.start_date || !form.end_date) return;
@@ -66,6 +77,25 @@ export default function EscalaMensal() {
     );
   };
 
+  const handleDayClick = (day: number, schedule: any) => {
+    setEditDay(day);
+    setEditSchedule(schedule);
+    setEditOpen(true);
+  };
+
+  const handleEditSave = (scheduleId: string, updates: { team_id?: string; obra_id?: string }) => {
+    updateSchedule.mutate(
+      { id: scheduleId, updates, syncToDaily: true },
+      {
+        onSuccess: () => {
+          setEditOpen(false);
+          toast.success("Alocação atualizada e sincronizada com escalas diárias!");
+        },
+        onError: () => toast.error("Erro ao atualizar."),
+      }
+    );
+  };
+
   const prevMonth = () => {
     if (month === 1) { setMonth(12); setYear(year - 1); }
     else setMonth(month - 1);
@@ -74,6 +104,12 @@ export default function EscalaMensal() {
     if (month === 12) { setMonth(1); setYear(year + 1); }
     else setMonth(month + 1);
   };
+
+  // Helper to extract team member info
+  const getTopografo = (s: any) =>
+    (s.teams?.team_members || []).find((m: any) => m.role === "topografo");
+  const getAuxiliares = (s: any) =>
+    (s.teams?.team_members || []).filter((m: any) => m.role !== "topografo");
 
   return (
     <div className="p-6 space-y-6">
@@ -113,7 +149,12 @@ export default function EscalaMensal() {
           {isLoading ? (
             <p className="text-muted-foreground py-8 text-center">Carregando...</p>
           ) : (
-            <MonthlyCalendarGrid month={month} year={year} schedules={(schedules || []) as any} />
+            <MonthlyCalendarGrid
+              month={month}
+              year={year}
+              schedules={(schedules || []) as any}
+              onDayClick={handleDayClick}
+            />
           )}
         </CardContent>
       </Card>
@@ -133,6 +174,8 @@ export default function EscalaMensal() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Equipe</TableHead>
+                  <TableHead>Topógrafo</TableHead>
+                  <TableHead>Auxiliares</TableHead>
                   <TableHead>Obra/Projeto</TableHead>
                   <TableHead>Cliente</TableHead>
                   <TableHead>Período</TableHead>
@@ -140,30 +183,42 @@ export default function EscalaMensal() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {schedules.map((s: any) => (
-                  <TableRow key={s.id}>
-                    <TableCell className="font-medium">
-                      <Badge variant="outline">{s.teams?.name}</Badge>
-                    </TableCell>
-                    <TableCell>{s.obras?.name}</TableCell>
-                    <TableCell>{s.obras?.client || "—"}</TableCell>
-                    <TableCell className="text-sm">
-                      {s.start_date && s.end_date
-                        ? `${format(new Date(s.start_date + "T12:00:00"), "dd/MM")} — ${format(new Date(s.end_date + "T12:00:00"), "dd/MM/yyyy")}`
-                        : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={() => deleteSchedule.mutate(s.id, { onSuccess: () => toast.success("Removido!") })}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {schedules.map((s: any) => {
+                  const topo = getTopografo(s);
+                  const auxs = getAuxiliares(s);
+                  return (
+                    <TableRow key={s.id}>
+                      <TableCell>
+                        <Badge variant="outline">{s.teams?.name}</Badge>
+                      </TableCell>
+                      <TableCell className="font-bold text-sm">
+                        {topo?.employees?.name || "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {auxs.length > 0
+                          ? auxs.map((a: any) => a.employees?.name).join(", ")
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="font-medium">{s.obras?.name}</TableCell>
+                      <TableCell>{s.obras?.client || "—"}</TableCell>
+                      <TableCell className="text-sm">
+                        {s.start_date && s.end_date
+                          ? `${format(new Date(s.start_date + "T12:00:00"), "dd/MM")} — ${format(new Date(s.end_date + "T12:00:00"), "dd/MM/yyyy")}`
+                          : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive"
+                          onClick={() => deleteSchedule.mutate(s.id, { onSuccess: () => toast.success("Removido!") })}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
@@ -254,6 +309,18 @@ export default function EscalaMensal() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Day Edit Dialog */}
+      <MonthlyDayEditDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        schedule={editSchedule}
+        day={editDay}
+        month={month}
+        year={year}
+        onSave={handleEditSave}
+        isPending={updateSchedule.isPending}
+      />
     </div>
   );
 }
