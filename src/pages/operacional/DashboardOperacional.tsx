@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useEmployeesWithAbsences } from "@/hooks/useEmployees";
 import { useTeams } from "@/hooks/useTeams";
 import { useVehicles } from "@/hooks/useVehicles";
+import { useUnallocatedProjects } from "@/hooks/useMonthlySchedules";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
