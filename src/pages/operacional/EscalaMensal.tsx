@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarDays, Plus, Trash2, ChevronLeft, ChevronRight, Car } from "lucide-react";
+import { CalendarDays, Plus, Trash2, ChevronLeft, ChevronRight, Car, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import {
 } from "@/hooks/useMonthlySchedules";
 import MonthlyCalendarGrid from "@/components/operacional/MonthlyCalendarGrid";
 import MonthlyDayEditDialog from "@/components/operacional/MonthlyDayEditDialog";
+import MonthlyScheduleReport from "@/components/operacional/MonthlyScheduleReport";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
