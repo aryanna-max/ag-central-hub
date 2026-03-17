@@ -312,11 +312,27 @@ export default function MonthlyDayEditDialog({
           </TabsContent>
         </Tabs>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={!hasChanges || isPending}>
-            {isPending ? "Salvando..." : scope === "day" ? "Salvar (só este dia)" : "Salvar e Sincronizar"}
-          </Button>
+        <DialogFooter className="flex justify-between sm:justify-between">
+          {onDelete && (
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (confirm("Tem certeza que deseja excluir esta alocação? Esta ação não pode ser desfeita.")) {
+                  onDelete(schedule.id);
+                }
+              }}
+              disabled={isPending}
+              className="gap-1 mr-auto"
+            >
+              <Trash2 className="w-4 h-4" /> Excluir Alocação
+            </Button>
+          )}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={!hasChanges || isPending}>
+              {isPending ? "Salvando..." : scope === "day" ? "Salvar (só este dia)" : "Salvar e Sincronizar"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
