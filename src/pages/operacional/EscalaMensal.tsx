@@ -243,7 +243,10 @@ export default function EscalaMensal() {
           <Button variant="outline" size="icon" onClick={nextMonth}>
             <ChevronRight className="w-4 h-4" />
           </Button>
-          <Button onClick={() => setShowNew(true)} className="gap-2 ml-2">
+          <Button variant="outline" onClick={() => setShowReport(true)} className="gap-2 ml-2">
+            <Printer className="w-4 h-4" /> Relatório Mensal
+          </Button>
+          <Button onClick={() => setShowNew(true)} className="gap-2">
             <Plus className="w-4 h-4" /> Nova Alocação
           </Button>
         </div>
