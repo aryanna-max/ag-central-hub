@@ -35,6 +35,7 @@ export default function EscalaMensal() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
   const [showNew, setShowNew] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const [form, setForm] = useState({
     team_id: "",
     obra_id: "",
