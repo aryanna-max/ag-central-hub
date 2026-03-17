@@ -50,10 +50,10 @@ export function useDeleteTeam() {
 export function useAddTeamMember() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ team_id, employee_id }: { team_id: string; employee_id: string }) => {
+    mutationFn: async ({ team_id, employee_id, role }: { team_id: string; employee_id: string; role?: string }) => {
       const { data, error } = await supabase
         .from("team_members")
-        .insert({ team_id, employee_id })
+        .insert({ team_id, employee_id, role: role || "auxiliar" } as any)
         .select()
         .single();
       if (error) throw error;

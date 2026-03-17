@@ -16,13 +16,21 @@ export function useDailySchedule(date: string) {
       if (error) throw error;
       if (!schedule) return null;
 
+      // Fetch team assignments
+      const { data: assignments, error: assErr } = await supabase
+        .from("daily_team_assignments")
+        .select("*, teams(*, team_members(*, employees(*))), obras(*), vehicles(*)")
+        .eq("daily_schedule_id", schedule.id);
+      if (assErr) throw assErr;
+
+      // Fetch individual attendance entries
       const { data: entries, error: entError } = await supabase
         .from("daily_schedule_entries")
-        .select("*, employees(*), teams(*), obras(*), vehicles(*)")
+        .select("*, employees(*)")
         .eq("daily_schedule_id", schedule.id);
       if (entError) throw entError;
 
-      return { ...schedule, entries: entries || [] };
+      return { ...schedule, assignments: assignments || [], entries: entries || [] };
     },
   });
 }
@@ -43,6 +51,39 @@ export function useCreateDailySchedule() {
   });
 }
 
+export function useAddTeamAssignment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (assignment: {
+      daily_schedule_id: string;
+      team_id: string;
+      obra_id?: string;
+      vehicle_id?: string;
+      notes?: string;
+    }) => {
+      const { data, error } = await supabase
+        .from("daily_team_assignments")
+        .insert(assignment)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["daily-schedule"] }),
+  });
+}
+
+export function useRemoveTeamAssignment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("daily_team_assignments").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["daily-schedule"] }),
+  });
+}
+
 export function useAddDailyEntry() {
   const qc = useQueryClient();
   return useMutation({
@@ -52,6 +93,7 @@ export function useAddDailyEntry() {
       team_id?: string;
       obra_id?: string;
       vehicle_id?: string;
+      daily_team_assignment_id?: string;
     }) => {
       const { data, error } = await supabase
         .from("daily_schedule_entries")
@@ -119,6 +161,57 @@ export function useRemoveDailyEntry() {
         .delete()
         .eq("id", entryId);
       if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["daily-schedule"] }),
+  });
+}
+
+/** Pre-fill daily schedule from monthly schedule */
+export function usePreFillFromMonthly() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ scheduleId, date }: { scheduleId: string; date: string }) => {
+      const d = new Date(date + "T12:00:00");
+      const month = d.getMonth() + 1;
+      const year = d.getFullYear();
+
+      // Get monthly allocations
+      const { data: monthly, error: mErr } = await supabase
+        .from("monthly_schedules")
+        .select("*, teams(*, team_members(*, employees(*)))")
+        .eq("month", month)
+        .eq("year", year);
+      if (mErr) throw mErr;
+
+      if (!monthly?.length) return;
+
+      // Create team assignments from monthly schedule
+      for (const ms of monthly) {
+        const { error } = await supabase
+          .from("daily_team_assignments")
+          .insert({
+            daily_schedule_id: scheduleId,
+            team_id: ms.team_id,
+            obra_id: ms.obra_id,
+          });
+        if (error && !error.message.includes("duplicate")) throw error;
+
+        // Create individual entries for each team member
+        const members = (ms as any).teams?.team_members || [];
+        for (const member of members) {
+          const { error: entErr } = await supabase
+            .from("daily_schedule_entries")
+            .insert({
+              daily_schedule_id: scheduleId,
+              employee_id: member.employee_id,
+              team_id: ms.team_id,
+              obra_id: ms.obra_id,
+            });
+          if (entErr && !entErr.message.includes("duplicate")) {
+            // Ignore duplicates
+          }
+        }
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["daily-schedule"] }),
   });

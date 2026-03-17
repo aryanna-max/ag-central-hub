@@ -1,57 +1,54 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CalendarDays, Plus, CheckCircle, XCircle, Clock, Lock } from "lucide-react";
+import { CalendarDays, Plus, Lock, Printer, Trash2, UserPlus } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import {
   useDailySchedule,
   useCreateDailySchedule,
-  useAddDailyEntry,
+  useAddTeamAssignment,
+  useRemoveTeamAssignment,
   useUpdateAttendance,
   useCloseDailySchedule,
-  useRemoveDailyEntry,
+  usePreFillFromMonthly,
 } from "@/hooks/useDailySchedule";
-import { useEmployeesWithAbsences } from "@/hooks/useEmployees";
 import { useTeams } from "@/hooks/useTeams";
 import { useVehicles } from "@/hooks/useVehicles";
-import EmployeeAvailabilityBadge from "@/components/operacional/EmployeeAvailabilityBadge";
+import { useEmployeesWithAbsences } from "@/hooks/useEmployees";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
+import DailyScheduleReport from "@/components/operacional/DailyScheduleReport";
+import AbsencesSection from "@/components/operacional/AbsencesSection";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
-
-const attendanceConfig: Record<AttendanceStatus, { label: string; icon: typeof CheckCircle; color: string }> = {
-  presente: { label: "Presente", icon: CheckCircle, color: "text-green-600" },
-  falta: { label: "Falta", icon: XCircle, color: "text-red-600" },
-  justificado: { label: "Justificado", icon: Clock, color: "text-amber-600" },
-  atrasado: { label: "Atrasado", icon: Clock, color: "text-orange-500" },
-};
 
 export default function EscalaDiaria() {
   const tomorrow = format(addDays(new Date(), 1), "yyyy-MM-dd");
   const today = format(new Date(), "yyyy-MM-dd");
   const [selectedDate, setSelectedDate] = useState(tomorrow);
-  const [showAddEntry, setShowAddEntry] = useState(false);
-  const [entryForm, setEntryForm] = useState({ employee_id: "", team_id: "", obra_id: "", vehicle_id: "" });
+  const [showAddTeam, setShowAddTeam] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [assignForm, setAssignForm] = useState({ team_id: "", obra_id: "", vehicle_id: "" });
 
   const { data: schedule, isLoading } = useDailySchedule(selectedDate);
-  const { data: employees } = useEmployeesWithAbsences(selectedDate);
   const { data: teams } = useTeams();
   const { data: vehicles } = useVehicles();
+  const { data: employees } = useEmployeesWithAbsences(selectedDate);
+  const { data: obrasData } = useObrasList();
   const createSchedule = useCreateDailySchedule();
-  const addEntry = useAddDailyEntry();
+  const addAssignment = useAddTeamAssignment();
+  const removeAssignment = useRemoveTeamAssignment();
   const updateAttendance = useUpdateAttendance();
   const closeSchedule = useCloseDailySchedule();
-  const removeEntry = useRemoveDailyEntry();
-
-  const { data: obrasData } = useObrasList();
+  const preFill = usePreFillFromMonthly();
 
   const isClosed = schedule?.is_closed;
   const isToday = selectedDate === today;
@@ -59,28 +56,29 @@ export default function EscalaDiaria() {
 
   const handleCreateSchedule = async () => {
     try {
-      await createSchedule.mutateAsync(selectedDate);
-      toast.success("Escala criada!");
+      const created = await createSchedule.mutateAsync(selectedDate);
+      // Auto pre-fill from monthly
+      await preFill.mutateAsync({ scheduleId: created.id, date: selectedDate });
+      toast.success("Escala criada e pré-preenchida a partir da escala mensal!");
     } catch {
       toast.error("Erro ao criar escala");
     }
   };
 
-  const handleAddEntry = async () => {
-    if (!entryForm.employee_id || !schedule) return;
+  const handleAddAssignment = async () => {
+    if (!assignForm.team_id || !schedule) return;
     try {
-      await addEntry.mutateAsync({
+      await addAssignment.mutateAsync({
         daily_schedule_id: schedule.id,
-        employee_id: entryForm.employee_id,
-        team_id: entryForm.team_id || undefined,
-        obra_id: entryForm.obra_id || undefined,
-        vehicle_id: entryForm.vehicle_id || undefined,
+        team_id: assignForm.team_id,
+        obra_id: assignForm.obra_id || undefined,
+        vehicle_id: assignForm.vehicle_id || undefined,
       });
-      setShowAddEntry(false);
-      setEntryForm({ employee_id: "", team_id: "", obra_id: "", vehicle_id: "" });
-      toast.success("Funcionário adicionado à escala!");
+      setShowAddTeam(false);
+      setAssignForm({ team_id: "", obra_id: "", vehicle_id: "" });
+      toast.success("Equipe adicionada à escala!");
     } catch {
-      toast.error("Erro ao adicionar (funcionário já escalado?)");
+      toast.error("Erro ao adicionar equipe");
     }
   };
 
@@ -102,15 +100,25 @@ export default function EscalaDiaria() {
     if (!schedule || !confirm("Fechar esta escala? Após o fechamento, não poderá mais ser editada.")) return;
     try {
       await closeSchedule.mutateAsync(schedule.id);
-      toast.success("Escala fechada! Relatórios de faltas e diárias gerados.");
+      toast.success("Escala fechada! Relatórios gerados.");
     } catch {
       toast.error("Erro ao fechar escala");
     }
   };
 
-  // Available employees (not already in this schedule)
-  const scheduledIds = schedule?.entries?.map((e: any) => e.employee_id) || [];
-  const availableEmployees = (employees || []).filter((e) => !scheduledIds.includes(e.id));
+  // Build team-centric view from assignments
+  const assignments = schedule?.assignments || [];
+
+  // Absences for the footer section
+  const absentEmployees = (employees || []).filter(
+    (e) => e.availability === "ferias" || e.availability === "licenca" || e.availability === "afastado"
+  );
+
+  // Teams not yet assigned
+  const assignedTeamIds = assignments.map((a: any) => a.team_id);
+  const availableTeams = (teams || []).filter((t: any) => !assignedTeamIds.includes(t.id));
+
+  const dateFormatted = format(new Date(selectedDate + "T12:00:00"), "dd/MM/yyyy (EEEE)", { locale: ptBR });
 
   return (
     <div className="p-6 space-y-6">
@@ -122,227 +130,237 @@ export default function EscalaDiaria() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">Escala Diária</h1>
-            <p className="text-sm text-muted-foreground">
-              Planejamento diário das equipes de campo
-            </p>
+            <p className="text-sm text-muted-foreground">Acompanhamento diário das equipes de campo</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-44"
-          />
-          {selectedDate === tomorrow && (
-            <Badge className="bg-secondary text-secondary-foreground">Amanhã</Badge>
-          )}
+          <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-44" />
+          {selectedDate === tomorrow && <Badge className="bg-secondary text-secondary-foreground">Amanhã</Badge>}
           {isToday && <Badge className="bg-accent text-accent-foreground">Hoje</Badge>}
         </div>
       </div>
 
-      {/* Schedule content */}
+      {/* Content */}
       {isLoading ? (
         <p className="text-muted-foreground">Carregando...</p>
       ) : !schedule ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground mb-4">
-              Nenhuma escala criada para {format(new Date(selectedDate + "T12:00:00"), "dd/MM/yyyy (EEEE)", { locale: ptBR })}
-            </p>
+            <p className="text-muted-foreground mb-4">Nenhuma escala para {dateFormatted}</p>
             <Button onClick={handleCreateSchedule} className="gap-2">
-              <Plus className="w-4 h-4" /> Criar Escala para este dia
+              <Plus className="w-4 h-4" /> Criar Escala
             </Button>
           </CardContent>
         </Card>
       ) : (
         <>
-          {/* Stats bar */}
-          <div className="flex items-center gap-4 flex-wrap">
+          {/* Action bar */}
+          <div className="flex items-center gap-3 flex-wrap">
             <Badge variant="outline" className="text-sm py-1 px-3">
-              {schedule.entries?.length || 0} funcionários escalados
+              {assignments.length} equipes escaladas
             </Badge>
             {isClosed && (
-              <Badge className="bg-red-600 text-white gap-1">
+              <Badge className="bg-destructive text-destructive-foreground gap-1">
                 <Lock className="w-3 h-3" /> Escala Fechada
               </Badge>
             )}
-            {!isClosed && (
-              <div className="flex gap-2 ml-auto">
-                <Button onClick={() => setShowAddEntry(true)} variant="outline" className="gap-2">
-                  <Plus className="w-4 h-4" /> Adicionar Funcionário
-                </Button>
-                {isToday && schedule.entries?.length > 0 && (
-                  <Button onClick={handleClose} variant="destructive" className="gap-2">
-                    <Lock className="w-4 h-4" /> Fechar Escala do Dia
+            <div className="flex gap-2 ml-auto">
+              <Button variant="outline" className="gap-2" onClick={() => setShowReport(true)}>
+                <Printer className="w-4 h-4" /> Relatório
+              </Button>
+              {!isClosed && (
+                <>
+                  <Button onClick={() => setShowAddTeam(true)} variant="outline" className="gap-2">
+                    <Plus className="w-4 h-4" /> Adicionar Equipe
                   </Button>
-                )}
-              </div>
-            )}
+                  {isToday && assignments.length > 0 && (
+                    <Button onClick={handleClose} variant="destructive" className="gap-2">
+                      <Lock className="w-4 h-4" /> Fechar Escala
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
-          {/* Entries */}
-          {!schedule.entries?.length ? (
+          {/* Team-centric table (matches reference image) */}
+          {assignments.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">
-                Nenhum funcionário escalado ainda.
+                Nenhuma equipe escalada. Adicione equipes ou crie a escala mensal primeiro.
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-3">
-              {schedule.entries.map((entry: any) => {
-                const att = attendanceConfig[entry.attendance as AttendanceStatus] || attendanceConfig.presente;
-                const AttIcon = att.icon;
-                return (
-                  <Card key={entry.id}>
-                    <CardContent className="py-4 px-5">
-                      <div className="flex items-center justify-between flex-wrap gap-3">
-                        <div className="flex items-center gap-4">
-                          <div>
-                            <p className="font-medium">{entry.employees?.name}</p>
-                            <p className="text-xs text-muted-foreground">{entry.employees?.role}</p>
-                          </div>
-                          {entry.teams && (
-                            <Badge variant="outline">{entry.teams.name}</Badge>
-                          )}
-                          {entry.obras && (
-                            <Badge variant="secondary">{entry.obras.name}</Badge>
-                          )}
-                          {entry.vehicles && (
-                            <Badge variant="outline" className="gap-1">
-                              🚗 {entry.vehicles.plate}
-                            </Badge>
-                          )}
-                        </div>
+            <Card>
+              <CardContent className="p-0">
+                <div className="bg-primary text-primary-foreground px-4 py-2 flex items-center justify-between rounded-t-lg">
+                  <span className="font-bold text-sm">ACOMPANHAMENTO DIÁRIO DAS EQUIPES</span>
+                  <span className="text-sm font-medium">DATA: {format(new Date(selectedDate + "T12:00:00"), "dd/MM/yyyy")}</span>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/60">
+                      <TableHead className="w-10">#</TableHead>
+                      <TableHead>TOPÓGRAFO</TableHead>
+                      <TableHead>AUXILIARES</TableHead>
+                      <TableHead>LOCAL</TableHead>
+                      <TableHead>VEÍCULO</TableHead>
+                      {isToday && !isClosed && <TableHead>PRESENÇA</TableHead>}
+                      {!isClosed && <TableHead className="w-10"></TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {assignments.map((a: any, idx: number) => {
+                      const teamMembers = a.teams?.team_members || [];
+                      const topografo = teamMembers.find((m: any) => m.role === "topografo");
+                      const auxiliares = teamMembers.filter((m: any) => m.role !== "topografo");
 
-                        <div className="flex items-center gap-2">
-                          {/* Attendance status */}
-                          <div className={`flex items-center gap-1 text-sm ${att.color}`}>
-                            <AttIcon className="w-4 h-4" />
-                            <span>{att.label}</span>
-                          </div>
+                      // Find attendance entries for this team
+                      const teamEntries = (schedule.entries || []).filter(
+                        (e: any) => e.team_id === a.team_id
+                      );
 
-                          {/* Actions (only when not closed and today) */}
-                          {!isClosed && isToday && (
-                            <Select
-                              value={entry.attendance || "presente"}
-                              onValueChange={(v) => handleAttendance(entry.id, v as AttendanceStatus)}
-                            >
-                              <SelectTrigger className="w-32 h-8 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="presente">✅ Presente</SelectItem>
-                                <SelectItem value="falta">❌ Falta</SelectItem>
-                                <SelectItem value="justificado">⚠️ Justificado</SelectItem>
-                                <SelectItem value="atrasado">🕐 Atrasado</SelectItem>
-                              </SelectContent>
-                            </Select>
+                      return (
+                        <TableRow key={a.id} className="border-b">
+                          <TableCell className="font-bold text-center">{idx + 1}</TableCell>
+                          <TableCell>
+                            <span className="font-bold text-sm uppercase">
+                              {topografo?.employees?.name || "—"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-0.5">
+                              {auxiliares.length === 0 ? (
+                                <span className="text-muted-foreground text-sm">—</span>
+                              ) : (
+                                auxiliares.map((aux: any) => (
+                                  <p key={aux.id} className="text-sm">{aux.employees?.name}</p>
+                                ))
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="text-sm font-medium">{a.obras?.client || "—"}</p>
+                              <p className="text-xs text-muted-foreground">{a.obras?.location || a.obras?.name || ""}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="text-sm font-medium">{a.vehicles?.model || "—"}</p>
+                              <p className="text-xs text-muted-foreground">{a.vehicles?.plate || ""}</p>
+                            </div>
+                          </TableCell>
+                          {isToday && !isClosed && (
+                            <TableCell>
+                              <div className="space-y-1">
+                                {teamEntries.map((entry: any) => (
+                                  <div key={entry.id} className="flex items-center gap-1">
+                                    <span className="text-xs w-20 truncate">{entry.employees?.name?.split(" ")[0]}</span>
+                                    <Select
+                                      value={entry.attendance || "presente"}
+                                      onValueChange={(v) => handleAttendance(entry.id, v as AttendanceStatus)}
+                                    >
+                                      <SelectTrigger className="h-6 text-xs w-28"><SelectValue /></SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="presente">✅ Presente</SelectItem>
+                                        <SelectItem value="falta">❌ Falta</SelectItem>
+                                        <SelectItem value="justificado">⚠️ Justificado</SelectItem>
+                                        <SelectItem value="atrasado">🕐 Atrasado</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                ))}
+                              </div>
+                            </TableCell>
                           )}
-
-                          {!isClosed && isFuture && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive"
-                              onClick={() => removeEntry.mutate(entry.id)}
-                            >
-                              Remover
-                            </Button>
+                          {!isClosed && (
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive h-7 w-7"
+                                onClick={() => removeAssignment.mutate(a.id)}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </TableCell>
                           )}
-                        </div>
-                      </div>
-                      {entry.check_in_time && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Check-in: {format(new Date(entry.check_in_time), "HH:mm")}
-                          {entry.check_out_time && ` | Check-out: ${format(new Date(entry.check_out_time), "HH:mm")}`}
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           )}
+
+          {/* Absences section */}
+          <AbsencesSection employees={absentEmployees} />
         </>
       )}
 
-      {/* Add Entry Dialog */}
-      <Dialog open={showAddEntry} onOpenChange={setShowAddEntry}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Adicionar à Escala</DialogTitle>
-          </DialogHeader>
+      {/* Add Team Assignment Dialog */}
+      <Dialog open={showAddTeam} onOpenChange={setShowAddTeam}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Adicionar Equipe à Escala</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-1 block">Funcionário *</label>
-              <div className="max-h-48 overflow-y-auto border rounded-md">
-                {availableEmployees.map((emp) => (
-                  <button
-                    key={emp.id}
-                    onClick={() => setEntryForm({ ...entryForm, employee_id: emp.id })}
-                    className={`flex items-center justify-between w-full p-2.5 text-left hover:bg-muted/50 transition-colors border-b last:border-0 ${
-                      entryForm.employee_id === emp.id ? "bg-primary/10" : ""
-                    }`}
-                  >
-                    <div>
-                      <p className="text-sm font-medium">{emp.name}</p>
-                      <p className="text-xs text-muted-foreground">{emp.role}</p>
-                    </div>
-                    <EmployeeAvailabilityBadge availability={emp.availability} />
-                  </button>
-                ))}
-              </div>
+              <label className="text-sm font-medium mb-1 block">Equipe</label>
+              <Select value={assignForm.team_id} onValueChange={(v) => setAssignForm({ ...assignForm, team_id: v })}>
+                <SelectTrigger><SelectValue placeholder="Selecionar equipe..." /></SelectTrigger>
+                <SelectContent>
+                  {availableTeams.map((t: any) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm font-medium mb-1 block">Equipe</label>
-                <Select value={entryForm.team_id} onValueChange={(v) => setEntryForm({ ...entryForm, team_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
-                  <SelectContent>
-                    {(teams || []).map((t: any) => (
-                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Veículo</label>
-                <Select value={entryForm.vehicle_id} onValueChange={(v) => setEntryForm({ ...entryForm, vehicle_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
-                  <SelectContent>
-                    {(vehicles || []).filter((v) => v.status === "disponivel").map((v) => (
-                      <SelectItem key={v.id} value={v.id}>{v.plate} - {v.model}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
             <div>
-              <label className="text-sm font-medium mb-1 block">Obra</label>
-              <Select value={entryForm.obra_id} onValueChange={(v) => setEntryForm({ ...entryForm, obra_id: v })}>
+              <label className="text-sm font-medium mb-1 block">Obra/Projeto</label>
+              <Select value={assignForm.obra_id} onValueChange={(v) => setAssignForm({ ...assignForm, obra_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Selecionar obra..." /></SelectTrigger>
                 <SelectContent>
                   {(obrasData || []).map((o: any) => (
-                    <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                    <SelectItem key={o.id} value={o.id}>{o.name} {o.client ? `(${o.client})` : ""}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Veículo</label>
+              <Select value={assignForm.vehicle_id} onValueChange={(v) => setAssignForm({ ...assignForm, vehicle_id: v })}>
+                <SelectTrigger><SelectValue placeholder="Selecionar veículo..." /></SelectTrigger>
+                <SelectContent>
+                  {(vehicles || []).filter((v) => v.status === "disponivel").map((v) => (
+                    <SelectItem key={v.id} value={v.id}>{v.model} — {v.plate}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setShowAddEntry(false)}>Cancelar</Button>
-            <Button onClick={handleAddEntry} disabled={!entryForm.employee_id}>Adicionar</Button>
-          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddTeam(false)}>Cancelar</Button>
+            <Button onClick={handleAddAssignment} disabled={!assignForm.team_id}>Adicionar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Print Report Dialog */}
+      <Dialog open={showReport} onOpenChange={setShowReport}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Relatório de Escala Diária</DialogTitle></DialogHeader>
+          <DailyScheduleReport
+            date={selectedDate}
+            assignments={assignments}
+            absentEmployees={absentEmployees}
+          />
         </DialogContent>
       </Dialog>
     </div>
   );
 }
 
-// Small hook for obras
 function useObrasList() {
   return useQuery({
     queryKey: ["obras"],
