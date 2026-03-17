@@ -10,7 +10,7 @@ export function useMonthlySchedules(month: number, year: number) {
 
       const { data, error } = await supabase
         .from("monthly_schedules")
-        .select("*, teams(*), obras(*)")
+        .select("*, teams(*, team_members(*, employees(*))), obras(*)")
         .lte("start_date", endOfMonth)
         .gte("end_date", startOfMonth);
       if (error) throw error;
@@ -34,6 +34,68 @@ export function useCreateMonthlySchedule() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["monthly-schedules"] }),
+  });
+}
+
+export function useUpdateMonthlySchedule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      updates,
+      syncToDaily,
+    }: {
+      id: string;
+      updates: { team_id?: string; obra_id?: string };
+      syncToDaily?: boolean;
+    }) => {
+      const { error } = await supabase
+        .from("monthly_schedules")
+        .update(updates)
+        .eq("id", id);
+      if (error) throw error;
+
+      // Sync to open daily schedules if requested
+      if (syncToDaily) {
+        const { data: schedule } = await supabase
+          .from("monthly_schedules")
+          .select("*")
+          .eq("id", id)
+          .single();
+        if (!schedule) return;
+
+        // Find daily assignments matching old team for this date range that are not closed
+        const { data: dailySchedules } = await supabase
+          .from("daily_schedules")
+          .select("id, schedule_date, is_closed")
+          .gte("schedule_date", schedule.start_date)
+          .lte("schedule_date", schedule.end_date)
+          .eq("is_closed", false);
+
+        if (dailySchedules?.length) {
+          for (const ds of dailySchedules) {
+            if (updates.team_id) {
+              await supabase
+                .from("daily_team_assignments")
+                .update({ team_id: updates.team_id })
+                .eq("daily_schedule_id", ds.id)
+                .eq("team_id", schedule.team_id);
+            }
+            if (updates.obra_id) {
+              await supabase
+                .from("daily_team_assignments")
+                .update({ obra_id: updates.obra_id })
+                .eq("daily_schedule_id", ds.id)
+                .eq("team_id", schedule.team_id);
+            }
+          }
+        }
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["monthly-schedules"] });
+      qc.invalidateQueries({ queryKey: ["daily-schedule"] });
+    },
   });
 }
 

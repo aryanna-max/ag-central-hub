@@ -1,12 +1,23 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Search, Filter } from "lucide-react";
+
+interface TeamMember {
+  id: string;
+  role: string;
+  employees: { id: string; name: string } | null;
+}
 
 interface Schedule {
   id: string;
   start_date: string;
   end_date: string;
-  teams: { id: string; name: string } | null;
+  team_id: string;
+  obra_id: string;
+  teams: { id: string; name: string; team_members?: TeamMember[] } | null;
   obras: { id: string; name: string; client: string | null } | null;
 }
 
@@ -14,19 +25,28 @@ interface Props {
   month: number;
   year: number;
   schedules: Schedule[];
+  onDayClick?: (day: number, schedule: Schedule) => void;
 }
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 const TEAM_COLORS = [
   "bg-primary/15 text-primary border-primary/30",
-  "bg-secondary/15 text-secondary border-secondary/30",
+  "bg-secondary/15 text-secondary-foreground border-secondary/30",
   "bg-accent/15 text-accent-foreground border-accent/30",
   "bg-destructive/15 text-destructive border-destructive/30",
   "bg-muted text-muted-foreground border-muted-foreground/30",
+  "bg-primary/10 text-primary border-primary/20",
+  "bg-secondary/10 text-secondary-foreground border-secondary/20",
 ];
 
-export default function MonthlyCalendarGrid({ month, year, schedules }: Props) {
+type FilterType = "all" | "equipe" | "topografo" | "auxiliar" | "obra" | "veiculo";
+
+export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick }: Props) {
+  const [filterType, setFilterType] = useState<FilterType>("all");
+  const [filterValue, setFilterValue] = useState("");
+  const [searchText, setSearchText] = useState("");
+
   const { days, startPad } = useMemo(() => {
     const daysInMonth = new Date(year, month, 0).getDate();
     const firstDayWeekday = new Date(year, month - 1, 1).getDay();
@@ -45,9 +65,72 @@ export default function MonthlyCalendarGrid({ month, year, schedules }: Props) {
     return map;
   }, [schedules]);
 
+  // Build filter options
+  const filterOptions = useMemo(() => {
+    const teams = new Map<string, string>();
+    const topografos = new Map<string, string>();
+    const auxiliares = new Map<string, string>();
+    const obras = new Map<string, string>();
+
+    schedules.forEach((s) => {
+      if (s.teams) {
+        teams.set(s.teams.id, s.teams.name);
+        (s.teams.team_members || []).forEach((m) => {
+          if (m.role === "topografo" && m.employees) {
+            topografos.set(m.employees.id, m.employees.name);
+          } else if (m.employees) {
+            auxiliares.set(m.employees.id, m.employees.name);
+          }
+        });
+      }
+      if (s.obras) obras.set(s.obras.id, s.obras.name);
+    });
+
+    return { teams, topografos, auxiliares, obras };
+  }, [schedules]);
+
+  // Filter schedules
+  const filteredSchedules = useMemo(() => {
+    let result = schedules;
+    const q = searchText.toLowerCase();
+
+    if (q) {
+      result = result.filter((s) => {
+        const teamName = s.teams?.name?.toLowerCase() || "";
+        const obraName = s.obras?.name?.toLowerCase() || "";
+        const client = s.obras?.client?.toLowerCase() || "";
+        const members = (s.teams?.team_members || []).map((m) => m.employees?.name?.toLowerCase() || "").join(" ");
+        return teamName.includes(q) || obraName.includes(q) || client.includes(q) || members.includes(q);
+      });
+    }
+
+    if (filterType !== "all" && filterValue) {
+      result = result.filter((s) => {
+        switch (filterType) {
+          case "equipe":
+            return s.teams?.id === filterValue;
+          case "topografo":
+            return (s.teams?.team_members || []).some(
+              (m) => m.role === "topografo" && m.employees?.id === filterValue
+            );
+          case "auxiliar":
+            return (s.teams?.team_members || []).some(
+              (m) => m.role !== "topografo" && m.employees?.id === filterValue
+            );
+          case "obra":
+            return s.obras?.id === filterValue;
+          default:
+            return true;
+        }
+      });
+    }
+
+    return result;
+  }, [schedules, filterType, filterValue, searchText]);
+
   function getSchedulesForDay(day: number) {
     const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    return schedules.filter((s) => s.start_date <= dateStr && s.end_date >= dateStr);
+    return filteredSchedules.filter((s) => s.start_date <= dateStr && s.end_date >= dateStr);
   }
 
   const isWeekend = (day: number) => {
@@ -55,8 +138,79 @@ export default function MonthlyCalendarGrid({ month, year, schedules }: Props) {
     return d === 0 || d === 6;
   };
 
+  const getTopografo = (s: Schedule) =>
+    (s.teams?.team_members || []).find((m) => m.role === "topografo");
+
+  const getAuxiliares = (s: Schedule) =>
+    (s.teams?.team_members || []).filter((m) => m.role !== "topografo");
+
+  const getOptionsForFilter = () => {
+    switch (filterType) {
+      case "equipe":
+        return [...filterOptions.teams.entries()].map(([id, name]) => ({ id, name }));
+      case "topografo":
+        return [...filterOptions.topografos.entries()].map(([id, name]) => ({ id, name }));
+      case "auxiliar":
+        return [...filterOptions.auxiliares.entries()].map(([id, name]) => ({ id, name }));
+      case "obra":
+        return [...filterOptions.obras.entries()].map(([id, name]) => ({ id, name }));
+      default:
+        return [];
+    }
+  };
+
   return (
     <TooltipProvider delayDuration={200}>
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <Select
+            value={filterType}
+            onValueChange={(v) => {
+              setFilterType(v as FilterType);
+              setFilterValue("");
+            }}
+          >
+            <SelectTrigger className="w-[140px] h-8 text-xs">
+              <SelectValue placeholder="Filtrar por..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="equipe">Equipe</SelectItem>
+              <SelectItem value="topografo">Topógrafo</SelectItem>
+              <SelectItem value="auxiliar">Auxiliar</SelectItem>
+              <SelectItem value="obra">Obra/Projeto</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {filterType !== "all" && (
+          <Select value={filterValue} onValueChange={setFilterValue}>
+            <SelectTrigger className="w-[200px] h-8 text-xs">
+              <SelectValue placeholder="Selecionar..." />
+            </SelectTrigger>
+            <SelectContent>
+              {getOptionsForFilter().map((opt) => (
+                <SelectItem key={opt.id} value={opt.id}>
+                  {opt.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        <div className="relative ml-auto">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Buscar..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="h-8 text-xs pl-7 w-48"
+          />
+        </div>
+      </div>
+
       <div className="border border-border rounded-lg overflow-hidden">
         {/* Header */}
         <div className="grid grid-cols-7 bg-muted/50">
@@ -69,9 +223,8 @@ export default function MonthlyCalendarGrid({ month, year, schedules }: Props) {
 
         {/* Days grid */}
         <div className="grid grid-cols-7">
-          {/* Padding cells */}
           {Array.from({ length: startPad }).map((_, i) => (
-            <div key={`pad-${i}`} className="min-h-[80px] border-b border-r border-border bg-muted/20" />
+            <div key={`pad-${i}`} className="min-h-[100px] border-b border-r border-border bg-muted/20" />
           ))}
 
           {days.map((day) => {
@@ -86,7 +239,7 @@ export default function MonthlyCalendarGrid({ month, year, schedules }: Props) {
             return (
               <div
                 key={day}
-                className={`min-h-[80px] border-b border-r border-border p-1 transition-colors ${
+                className={`min-h-[100px] border-b border-r border-border p-1 transition-colors ${
                   weekend ? "bg-muted/30" : "bg-background"
                 } ${isToday ? "ring-2 ring-primary ring-inset" : ""}`}
               >
@@ -99,32 +252,58 @@ export default function MonthlyCalendarGrid({ month, year, schedules }: Props) {
                 >
                   {day}
                 </span>
-                <div className="space-y-0.5">
-                  {daySchedules.slice(0, 3).map((s) => (
-                    <Tooltip key={s.id}>
-                      <TooltipTrigger asChild>
-                        <div
-                          className={`text-[10px] leading-tight px-1 py-0.5 rounded border truncate cursor-default ${
-                            teamColorMap.get(s.teams?.id || "") || TEAM_COLORS[0]
-                          }`}
-                        >
-                          {s.teams?.name || "—"}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="text-xs">
-                        <p className="font-semibold">{s.teams?.name}</p>
-                        <p className="text-muted-foreground">
-                          {s.obras?.name} {s.obras?.client ? `(${s.obras.client})` : ""}
-                        </p>
-                        <p className="text-muted-foreground">
-                          {s.start_date} → {s.end_date}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  ))}
-                  {daySchedules.length > 3 && (
+                <div className="space-y-1">
+                  {daySchedules.slice(0, 2).map((s) => {
+                    const topo = getTopografo(s);
+                    const auxs = getAuxiliares(s);
+                    return (
+                      <Tooltip key={s.id}>
+                        <TooltipTrigger asChild>
+                          <div
+                            className={`text-[10px] leading-tight px-1 py-0.5 rounded border cursor-pointer hover:opacity-80 transition-opacity ${
+                              teamColorMap.get(s.teams?.id || "") || TEAM_COLORS[0]
+                            }`}
+                            onClick={() => onDayClick?.(day, s)}
+                          >
+                            <p className="font-bold uppercase truncate">
+                              {s.obras?.name || "—"}
+                            </p>
+                            <p className="truncate">
+                              <span className="font-semibold">{topo?.employees?.name?.split(" ")[0] || "—"}</span>
+                              {auxs.length > 0 && (
+                                <span className="text-muted-foreground">
+                                  {" "}+ {auxs.length} aux
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs max-w-[220px]">
+                          <p className="font-bold uppercase">{s.obras?.name}</p>
+                          {s.obras?.client && (
+                            <p className="text-muted-foreground">Cliente: {s.obras.client}</p>
+                          )}
+                          <p className="mt-1">
+                            <span className="font-semibold">Topógrafo:</span>{" "}
+                            {topo?.employees?.name || "—"}
+                          </p>
+                          {auxs.length > 0 && (
+                            <div>
+                              <span className="font-semibold">Auxiliares:</span>{" "}
+                              {auxs.map((a) => a.employees?.name).join(", ")}
+                            </div>
+                          )}
+                          <p className="text-muted-foreground mt-1">
+                            {s.start_date} → {s.end_date}
+                          </p>
+                          <p className="text-primary mt-1 font-medium">Clique para editar</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                  {daySchedules.length > 2 && (
                     <span className="text-[10px] text-muted-foreground pl-1">
-                      +{daySchedules.length - 3} mais
+                      +{daySchedules.length - 2} mais
                     </span>
                   )}
                 </div>
@@ -135,18 +314,28 @@ export default function MonthlyCalendarGrid({ month, year, schedules }: Props) {
       </div>
 
       {/* Legend */}
-      {schedules.length > 0 && (
+      {filteredSchedules.length > 0 && (
         <div className="flex flex-wrap gap-3 mt-3">
-          {[...new Map(schedules.map((s) => [s.teams?.id, s])).values()].map((s) => (
-            <div key={s.teams?.id} className="flex items-center gap-1.5 text-xs">
-              <div
-                className={`w-3 h-3 rounded border ${teamColorMap.get(s.teams?.id || "") || TEAM_COLORS[0]}`}
-              />
-              <span className="text-muted-foreground">
-                {s.teams?.name} → {s.obras?.name}
-              </span>
-            </div>
-          ))}
+          {[...new Map(filteredSchedules.map((s) => [s.teams?.id, s])).values()].map((s) => {
+            const topo = getTopografo(s);
+            const auxs = getAuxiliares(s);
+            return (
+              <div key={s.teams?.id} className="flex items-center gap-1.5 text-xs">
+                <div
+                  className={`w-3 h-3 rounded border ${teamColorMap.get(s.teams?.id || "") || TEAM_COLORS[0]}`}
+                />
+                <span>
+                  <span className="font-bold">{topo?.employees?.name || "—"}</span>
+                  {auxs.length > 0 && (
+                    <span className="text-muted-foreground">
+                      {" "}({auxs.map((a) => a.employees?.name?.split(" ")[0]).join(", ")})
+                    </span>
+                  )}
+                  <span className="text-muted-foreground"> → {s.obras?.name}</span>
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </TooltipProvider>
