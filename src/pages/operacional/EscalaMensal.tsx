@@ -260,7 +260,11 @@ export default function EscalaMensal() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-1 block">Equipe</label>
-              <Select value={form.team_id} onValueChange={(v) => setForm({ ...form, team_id: v })}>
+              <Select value={form.team_id} onValueChange={(v) => {
+                const team = (teams || []).find((t: any) => t.id === v);
+                const defaultVehicle = team?.default_vehicle_id || "";
+                setForm({ ...form, team_id: v, vehicle_id: defaultVehicle });
+              }}>
                 <SelectTrigger><SelectValue placeholder="Selecionar equipe..." /></SelectTrigger>
                 <SelectContent>
                   {(teams || []).map((t: any) => (
