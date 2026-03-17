@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarDays, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, Plus, Trash2, ChevronLeft, ChevronRight, Car } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useTeams } from "@/hooks/useTeams";
+import { useVehicles } from "@/hooks/useVehicles";
 import {
   useMonthlySchedules,
   useCreateMonthlySchedule,
@@ -33,14 +34,21 @@ export default function EscalaMensal() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
   const [showNew, setShowNew] = useState(false);
-  const [form, setForm] = useState({ team_id: "", obra_id: "", start_date: undefined as Date | undefined, end_date: undefined as Date | undefined });
+  const [form, setForm] = useState({
+    team_id: "",
+    obra_id: "",
+    vehicle_id: "",
+    schedule_type: "mensal" as "mensal" | "diaria",
+    start_date: undefined as Date | undefined,
+    end_date: undefined as Date | undefined,
+  });
 
-  // Edit dialog state
   const [editOpen, setEditOpen] = useState(false);
   const [editSchedule, setEditSchedule] = useState<any>(null);
   const [editDay, setEditDay] = useState(1);
 
   const { data: teams } = useTeams();
+  const { data: vehicles } = useVehicles();
   const { data: obras } = useQuery({
     queryKey: ["obras"],
     queryFn: async () => {
@@ -61,6 +69,8 @@ export default function EscalaMensal() {
       {
         team_id: form.team_id,
         obra_id: form.obra_id,
+        vehicle_id: form.vehicle_id && form.vehicle_id !== "none" ? form.vehicle_id : undefined,
+        schedule_type: form.schedule_type,
         start_date: format(form.start_date, "yyyy-MM-dd"),
         end_date: format(form.end_date, "yyyy-MM-dd"),
         month,
@@ -69,7 +79,7 @@ export default function EscalaMensal() {
       {
         onSuccess: () => {
           setShowNew(false);
-          setForm({ team_id: "", obra_id: "", start_date: undefined, end_date: undefined });
+          setForm({ team_id: "", obra_id: "", vehicle_id: "", schedule_type: "mensal", start_date: undefined, end_date: undefined });
           toast.success("Alocação criada!");
         },
         onError: () => toast.error("Erro ao criar alocação."),
@@ -83,13 +93,15 @@ export default function EscalaMensal() {
     setEditOpen(true);
   };
 
-  const handleEditSave = (scheduleId: string, updates: { team_id?: string; obra_id?: string }) => {
+  const handleEditSave = (scheduleId: string, updates: { team_id?: string; obra_id?: string; vehicle_id?: string }) => {
+    // Handle "none" vehicle
+    if (updates.vehicle_id === "none") updates.vehicle_id = undefined;
     updateSchedule.mutate(
       { id: scheduleId, updates, syncToDaily: true },
       {
         onSuccess: () => {
           setEditOpen(false);
-          toast.success("Alocação atualizada e sincronizada com escalas diárias!");
+          toast.success("Alocação atualizada e sincronizada!");
         },
         onError: () => toast.error("Erro ao atualizar."),
       }
@@ -105,11 +117,12 @@ export default function EscalaMensal() {
     else setMonth(month + 1);
   };
 
-  // Helper to extract team member info
   const getTopografo = (s: any) =>
     (s.teams?.team_members || []).find((m: any) => m.role === "topografo");
   const getAuxiliares = (s: any) =>
     (s.teams?.team_members || []).filter((m: any) => m.role !== "topografo");
+
+  const scheduleTypeLabel = (t: string) => t === "mensal" ? "Mensal (seg-sex)" : "Diária (todos)";
 
   return (
     <div className="p-6 space-y-6">
@@ -177,7 +190,8 @@ export default function EscalaMensal() {
                   <TableHead>Topógrafo</TableHead>
                   <TableHead>Auxiliares</TableHead>
                   <TableHead>Obra/Projeto</TableHead>
-                  <TableHead>Cliente</TableHead>
+                  <TableHead>Veículo</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead>Período</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -200,7 +214,19 @@ export default function EscalaMensal() {
                           : "—"}
                       </TableCell>
                       <TableCell className="font-medium">{s.obras?.name}</TableCell>
-                      <TableCell>{s.obras?.client || "—"}</TableCell>
+                      <TableCell className="text-sm">
+                        {s.vehicles ? (
+                          <span className="flex items-center gap-1">
+                            <Car className="w-3 h-3" />
+                            {s.vehicles.model} — {s.vehicles.plate}
+                          </span>
+                        ) : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="text-xs">
+                          {scheduleTypeLabel(s.schedule_type || "mensal")}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-sm">
                         {s.start_date && s.end_date
                           ? `${format(new Date(s.start_date + "T12:00:00"), "dd/MM")} — ${format(new Date(s.end_date + "T12:00:00"), "dd/MM/yyyy")}`
@@ -253,6 +279,33 @@ export default function EscalaMensal() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block flex items-center gap-1">
+                <Car className="w-4 h-4" /> Veículo
+              </label>
+              <Select value={form.vehicle_id} onValueChange={(v) => setForm({ ...form, vehicle_id: v })}>
+                <SelectTrigger><SelectValue placeholder="Selecionar veículo..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem veículo</SelectItem>
+                  {(vehicles || []).map((v: any) => (
+                    <SelectItem key={v.id} value={v.id}>{v.model} — {v.plate}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Tipo de Escala</label>
+              <Select value={form.schedule_type} onValueChange={(v) => setForm({ ...form, schedule_type: v as any })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mensal">Mensal (exclui sáb/dom)</SelectItem>
+                  <SelectItem value="diaria">Diária (todos os dias)</SelectItem>
+                </SelectContent>
+              </Select>
+              {form.schedule_type === "mensal" && (
+                <p className="text-xs text-muted-foreground mt-1">Sábados e domingos podem ser editados individualmente depois.</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

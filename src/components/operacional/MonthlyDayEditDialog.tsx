@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Car } from "lucide-react";
 import { useTeams } from "@/hooks/useTeams";
+import { useVehicles } from "@/hooks/useVehicles";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,15 +15,17 @@ interface Props {
     id: string;
     team_id: string;
     obra_id: string;
+    vehicle_id?: string | null;
     start_date: string;
     end_date: string;
     teams: { id: string; name: string; team_members?: any[] } | null;
     obras: { id: string; name: string; client: string | null } | null;
+    vehicles?: { id: string; model: string; plate: string } | null;
   } | null;
   day: number;
   month: number;
   year: number;
-  onSave: (scheduleId: string, updates: { team_id?: string; obra_id?: string }) => void;
+  onSave: (scheduleId: string, updates: { team_id?: string; obra_id?: string; vehicle_id?: string }) => void;
   isPending: boolean;
 }
 
@@ -39,8 +41,10 @@ export default function MonthlyDayEditDialog({
 }: Props) {
   const [teamId, setTeamId] = useState("");
   const [obraId, setObraId] = useState("");
+  const [vehicleId, setVehicleId] = useState("");
 
   const { data: teams } = useTeams();
+  const { data: vehicles } = useVehicles();
   const { data: obras } = useQuery({
     queryKey: ["obras"],
     queryFn: async () => {
@@ -54,6 +58,7 @@ export default function MonthlyDayEditDialog({
     if (schedule) {
       setTeamId(schedule.team_id);
       setObraId(schedule.obra_id);
+      setVehicleId(schedule.vehicle_id || "");
     }
   }, [schedule]);
 
@@ -64,17 +69,17 @@ export default function MonthlyDayEditDialog({
   const topografo = (selectedTeam as any)?.team_members?.find((m: any) => m.role === "topografo");
   const auxiliares = (selectedTeam as any)?.team_members?.filter((m: any) => m.role !== "topografo") || [];
 
-  // Check if the day is in the past and daily schedule is closed
   const todayStr = new Date().toISOString().slice(0, 10);
   const targetDate = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   const isPast = targetDate < todayStr;
 
-  const hasChanges = teamId !== schedule.team_id || obraId !== schedule.obra_id;
+  const hasChanges = teamId !== schedule.team_id || obraId !== schedule.obra_id || vehicleId !== (schedule.vehicle_id || "");
 
   const handleSave = () => {
-    const updates: { team_id?: string; obra_id?: string } = {};
+    const updates: { team_id?: string; obra_id?: string; vehicle_id?: string } = {};
     if (teamId !== schedule.team_id) updates.team_id = teamId;
     if (obraId !== schedule.obra_id) updates.obra_id = obraId;
+    if (vehicleId !== (schedule.vehicle_id || "")) updates.vehicle_id = vehicleId;
     onSave(schedule.id, updates);
   };
 
@@ -95,7 +100,6 @@ export default function MonthlyDayEditDialog({
         )}
 
         <div className="space-y-4">
-          {/* Current allocation info */}
           <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
             <p>
               Período: <span className="font-medium text-foreground">{schedule.start_date} → {schedule.end_date}</span>
@@ -103,6 +107,7 @@ export default function MonthlyDayEditDialog({
             <p className="mt-0.5">A alteração afeta todo o período nos dias ainda não fechados.</p>
           </div>
 
+          {/* Equipe */}
           <div>
             <label className="text-sm font-medium mb-1 block">Equipe</label>
             <Select value={teamId} onValueChange={setTeamId}>
@@ -115,7 +120,7 @@ export default function MonthlyDayEditDialog({
             </Select>
           </div>
 
-          {/* Team preview */}
+          {/* Team composition preview */}
           {selectedTeam && (
             <div className="border border-border rounded-md p-2 space-y-1">
               <p className="text-xs text-muted-foreground">Composição da equipe:</p>
@@ -132,6 +137,7 @@ export default function MonthlyDayEditDialog({
             </div>
           )}
 
+          {/* Obra/Projeto */}
           <div>
             <label className="text-sm font-medium mb-1 block">Obra/Projeto</label>
             <Select value={obraId} onValueChange={setObraId}>
@@ -140,6 +146,24 @@ export default function MonthlyDayEditDialog({
                 {(obras || []).map((o: any) => (
                   <SelectItem key={o.id} value={o.id}>
                     {o.name} {o.client ? `(${o.client})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Veículo */}
+          <div>
+            <label className="text-sm font-medium mb-1 block flex items-center gap-1">
+              <Car className="w-4 h-4" /> Veículo
+            </label>
+            <Select value={vehicleId} onValueChange={setVehicleId}>
+              <SelectTrigger><SelectValue placeholder="Selecionar veículo..." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem veículo</SelectItem>
+                {(vehicles || []).map((v: any) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.model} — {v.plate}
                   </SelectItem>
                 ))}
               </SelectContent>
