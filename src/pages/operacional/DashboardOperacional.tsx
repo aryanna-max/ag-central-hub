@@ -216,6 +216,31 @@ export default function DashboardOperacional() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Unallocated Projects Warning */}
+      {(unallocatedProjects || []).length > 0 && (
+        <Card className="border-destructive/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-destructive" />
+              Projetos Sem Equipe Alocada ({months[currentMonth - 1]})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {unallocatedProjects!.map((obra) => (
+                <div key={obra.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                  <div>
+                    <p className="text-sm font-medium">{obra.name}</p>
+                    <p className="text-xs text-muted-foreground">{obra.client || "—"} • {obra.location || "—"}</p>
+                  </div>
+                  <Badge variant="destructive" className="text-xs">Sem Equipe</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
