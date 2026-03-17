@@ -3,8 +3,16 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import AppLayout from "./components/AppLayout";
+import Dashboard from "./pages/Dashboard";
+import Comercial from "./pages/Comercial";
+import Propostas from "./pages/Propostas";
+import Projetos from "./pages/Projetos";
+import Operacional from "./pages/Operacional";
+import SalaTecnica from "./pages/SalaTecnica";
+import Financeiro from "./pages/Financeiro";
+import RH from "./pages/RH";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -15,8 +23,16 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/comercial/*" element={<Comercial />} />
+            <Route path="/propostas" element={<Propostas />} />
+            <Route path="/projetos" element={<Projetos />} />
+            <Route path="/operacional/*" element={<Operacional />} />
+            <Route path="/sala-tecnica/*" element={<SalaTecnica />} />
+            <Route path="/financeiro/*" element={<Financeiro />} />
+            <Route path="/rh/*" element={<RH />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
