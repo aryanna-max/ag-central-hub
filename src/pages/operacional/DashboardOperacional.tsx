@@ -15,6 +15,11 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 
+const months = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+
 const PIE_COLORS = [
   "hsl(174, 100%, 29%)",
   "hsl(199, 65%, 30%)",
