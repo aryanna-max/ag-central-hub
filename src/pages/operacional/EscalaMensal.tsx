@@ -477,6 +477,18 @@ export default function EscalaMensal() {
         onSave={handleEditSave}
         isPending={updateSchedule.isPending}
       />
+
+      {/* Monthly Report Dialog */}
+      <Dialog open={showReport} onOpenChange={setShowReport}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Relatório Mensal</DialogTitle></DialogHeader>
+          <MonthlyScheduleReport
+            month={month}
+            year={year}
+            schedules={(schedules || []) as any}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
