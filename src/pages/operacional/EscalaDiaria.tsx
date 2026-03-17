@@ -301,6 +301,68 @@ export default function EscalaDiaria() {
             <TeamLocationMap assignments={assignments} date={selectedDate} />
           )}
 
+          {/* Available employees (sobrando) */}
+          {(() => {
+            const assignedIds = new Set(
+              (schedule.entries || []).map((e: any) => e.employee_id)
+            );
+            const availableEmployees = (employees || []).filter(
+              (e) =>
+                e.availability === "disponivel" &&
+                !assignedIds.has(e.id) &&
+                (e.role?.toLowerCase().includes("topógrafo") ||
+                 e.role?.toLowerCase().includes("topografo") ||
+                 e.role?.toLowerCase().includes("auxiliar") ||
+                 e.role?.toLowerCase().includes("ajudante"))
+            );
+            const availTopografos = availableEmployees.filter((e) =>
+              e.role?.toLowerCase().includes("topógrafo") || e.role?.toLowerCase().includes("topografo")
+            );
+            const availAuxiliares = availableEmployees.filter(
+              (e) =>
+                e.role?.toLowerCase().includes("auxiliar") || e.role?.toLowerCase().includes("ajudante")
+            );
+
+            if (!availableEmployees.length) return null;
+
+            return (
+              <Card>
+                <CardContent className="p-4">
+                  <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+                    <UserPlus className="w-4 h-4 text-primary" />
+                    Funcionários Disponíveis (Sem Alocação)
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {availTopografos.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground mb-1">TOPÓGRAFOS</p>
+                        <div className="flex flex-wrap gap-1">
+                          {availTopografos.map((e) => (
+                            <Badge key={e.id} variant="outline" className="text-xs bg-primary/5">
+                              {e.name.split(" ").slice(0, 2).join(" ")}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {availAuxiliares.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground mb-1">AUXILIARES</p>
+                        <div className="flex flex-wrap gap-1">
+                          {availAuxiliares.map((e) => (
+                            <Badge key={e.id} variant="outline" className="text-xs bg-secondary/30">
+                              {e.name.split(" ").slice(0, 2).join(" ")}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
           {/* Absences section */}
           <AbsencesSection employees={absentEmployees} />
         </>
