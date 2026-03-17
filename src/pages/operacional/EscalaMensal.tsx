@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarDays, Plus, Trash2, ChevronLeft, ChevronRight, Car } from "lucide-react";
+import { CalendarDays, Plus, Trash2, ChevronLeft, ChevronRight, Car, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import {
 } from "@/hooks/useMonthlySchedules";
 import MonthlyCalendarGrid from "@/components/operacional/MonthlyCalendarGrid";
 import MonthlyDayEditDialog from "@/components/operacional/MonthlyDayEditDialog";
+import MonthlyScheduleReport from "@/components/operacional/MonthlyScheduleReport";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -34,6 +35,7 @@ export default function EscalaMensal() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
   const [showNew, setShowNew] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const [form, setForm] = useState({
     team_id: "",
     obra_id: "",
@@ -93,19 +95,113 @@ export default function EscalaMensal() {
     setEditOpen(true);
   };
 
-  const handleEditSave = (scheduleId: string, updates: { team_id?: string; obra_id?: string; vehicle_id?: string }) => {
+  const handleEditSave = async (
+    scheduleId: string,
+    updates: { team_id?: string; obra_id?: string; vehicle_id?: string },
+    scope: "period" | "day",
+    dayDate?: string,
+    memberOverrides?: { additions: string[]; removals: string[] }
+  ) => {
     // Handle "none" vehicle
     if (updates.vehicle_id === "none") updates.vehicle_id = undefined;
-    updateSchedule.mutate(
-      { id: scheduleId, updates, syncToDaily: true },
-      {
-        onSuccess: () => {
-          setEditOpen(false);
-          toast.success("Alocação atualizada e sincronizada!");
-        },
-        onError: () => toast.error("Erro ao atualizar."),
+
+    if (scope === "day" && dayDate) {
+      // For day-only changes, update/create the daily schedule for that specific day
+      try {
+        // Check if daily schedule exists for this day
+        const { data: existing } = await supabase
+          .from("daily_schedules")
+          .select("id")
+          .eq("schedule_date", dayDate)
+          .maybeSingle();
+
+        let dailyId = existing?.id;
+        if (!dailyId) {
+          const { data: created, error } = await supabase
+            .from("daily_schedules")
+            .insert({ schedule_date: dayDate })
+            .select()
+            .single();
+          if (error) throw error;
+          dailyId = created.id;
+        }
+
+        // Find or create the team assignment for this day
+        const schedule = editSchedule;
+        const teamIdToUse = updates.team_id || schedule.team_id;
+        const obraIdToUse = updates.obra_id || schedule.obra_id;
+        const vehicleIdToUse = updates.vehicle_id || schedule.vehicle_id;
+
+        const { data: existingAssignment } = await supabase
+          .from("daily_team_assignments")
+          .select("id")
+          .eq("daily_schedule_id", dailyId)
+          .eq("team_id", schedule.team_id)
+          .maybeSingle();
+
+        if (existingAssignment) {
+          await supabase
+            .from("daily_team_assignments")
+            .update({
+              team_id: teamIdToUse,
+              obra_id: obraIdToUse,
+              vehicle_id: vehicleIdToUse,
+            })
+            .eq("id", existingAssignment.id);
+        } else {
+          await supabase
+            .from("daily_team_assignments")
+            .insert({
+              daily_schedule_id: dailyId,
+              team_id: teamIdToUse,
+              obra_id: obraIdToUse,
+              vehicle_id: vehicleIdToUse,
+            });
+        }
+
+        // Handle member overrides for this day
+        if (memberOverrides) {
+          // Remove entries for removed members
+          for (const empId of memberOverrides.removals) {
+            await supabase
+              .from("daily_schedule_entries")
+              .delete()
+              .eq("daily_schedule_id", dailyId)
+              .eq("employee_id", empId)
+              .eq("team_id", schedule.team_id);
+          }
+          // Add entries for added members
+          for (const empId of memberOverrides.additions) {
+            await supabase
+              .from("daily_schedule_entries")
+              .insert({
+                daily_schedule_id: dailyId,
+                employee_id: empId,
+                team_id: teamIdToUse,
+                obra_id: obraIdToUse,
+                vehicle_id: vehicleIdToUse,
+              });
+          }
+        }
+
+        setEditOpen(false);
+        toast.success("Dia atualizado com sucesso!");
+      } catch {
+        toast.error("Erro ao atualizar dia.");
       }
-    );
+    } else {
+      // Period scope - update monthly schedule and sync to daily
+      updateSchedule.mutate(
+        { id: scheduleId, updates, syncToDaily: true },
+        {
+          onSuccess: () => {
+            setEditOpen(false);
+            toast.success("Alocação atualizada e sincronizada!");
+          },
+          onError: () => toast.error("Erro ao atualizar."),
+        }
+      );
+    }
   };
 
   const prevMonth = () => {
@@ -147,7 +243,10 @@ export default function EscalaMensal() {
           <Button variant="outline" size="icon" onClick={nextMonth}>
             <ChevronRight className="w-4 h-4" />
           </Button>
-          <Button onClick={() => setShowNew(true)} className="gap-2 ml-2">
+          <Button variant="outline" onClick={() => setShowReport(true)} className="gap-2 ml-2">
+            <Printer className="w-4 h-4" /> Relatório Mensal
+          </Button>
+          <Button onClick={() => setShowNew(true)} className="gap-2">
             <Plus className="w-4 h-4" /> Nova Alocação
           </Button>
         </div>
@@ -378,6 +477,18 @@ export default function EscalaMensal() {
         onSave={handleEditSave}
         isPending={updateSchedule.isPending}
       />
+
+      {/* Monthly Report Dialog */}
+      <Dialog open={showReport} onOpenChange={setShowReport}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Relatório Mensal</DialogTitle></DialogHeader>
+          <MonthlyScheduleReport
+            month={month}
+            year={year}
+            schedules={(schedules || []) as any}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
