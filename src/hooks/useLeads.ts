@@ -45,6 +45,7 @@ export interface LeadInsert {
   responsible?: string | null;
   notes?: string | null;
   tags?: string[];
+  cnpj?: string | null;
   obra_id?: string | null;
   servico?: string | null;
   endereco?: string | null;

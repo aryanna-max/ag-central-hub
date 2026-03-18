@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateLead, useUpdateLead, type Lead, type LeadInsert, type LeadSource, type LeadStatus } from "@/hooks/useLeads";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 const SOURCE_LABELS: Record<LeadSource, string> = {
   whatsapp: "WhatsApp",
@@ -53,6 +54,19 @@ const SERVICOS = [
   "Projeto de Loteamento",
 ];
 
+function formatCnpj(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+  if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+}
+
+function extractCnpjDigits(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -76,7 +90,12 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
     servico: "",
     endereco: "",
     valor: null,
+    cnpj: "",
   });
+
+  const [cnpjDisplay, setCnpjDisplay] = useState("");
+  const [cnpjLoading, setCnpjLoading] = useState(false);
+  const [cnpjError, setCnpjError] = useState("");
 
   useEffect(() => {
     if (lead) {
@@ -92,11 +111,45 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
         servico: lead.servico || "",
         endereco: lead.endereco || "",
         valor: lead.valor,
+        cnpj: lead.cnpj || "",
       });
+      setCnpjDisplay(lead.cnpj ? formatCnpj(lead.cnpj) : "");
     } else {
-      setForm({ name: "", email: "", phone: "", company: "", source: "outros", status: "novo", responsible: "", notes: "", servico: "", endereco: "", valor: null });
+      setForm({ name: "", email: "", phone: "", company: "", source: "outros", status: "novo", responsible: "", notes: "", servico: "", endereco: "", valor: null, cnpj: "" });
+      setCnpjDisplay("");
     }
+    setCnpjError("");
   }, [lead, open]);
+
+  const fetchCnpj = useCallback(async (digits: string) => {
+    setCnpjLoading(true);
+    setCnpjError("");
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
+      if (!res.ok) throw new Error("not found");
+      const data = await res.json();
+      setForm((prev) => ({
+        ...prev,
+        company: data.razao_social || prev.company,
+        endereco: data.municipio && data.uf ? `${data.municipio} - ${data.uf}` : prev.endereco,
+      }));
+    } catch {
+      setCnpjError("CNPJ não encontrado");
+    } finally {
+      setCnpjLoading(false);
+    }
+  }, []);
+
+  const handleCnpjChange = (value: string) => {
+    const formatted = formatCnpj(value);
+    setCnpjDisplay(formatted);
+    const digits = extractCnpjDigits(value);
+    setForm((prev) => ({ ...prev, cnpj: digits }));
+    setCnpjError("");
+    if (digits.length === 14) {
+      fetchCnpj(digits);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,6 +192,21 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
             <div>
               <Label>E-mail</Label>
               <Input type="email" value={form.email || ""} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@exemplo.com" />
+            </div>
+            <div className="col-span-2">
+              <Label>CNPJ</Label>
+              <div className="relative">
+                <Input
+                  value={cnpjDisplay}
+                  onChange={(e) => handleCnpjChange(e.target.value)}
+                  placeholder="XX.XXX.XXX/XXXX-XX"
+                  maxLength={18}
+                />
+                {cnpjLoading && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
+              {cnpjError && <p className="text-xs text-destructive mt-1">{cnpjError}</p>}
             </div>
             <div>
               <Label>Cliente / Empresa</Label>
