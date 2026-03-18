@@ -44,6 +44,9 @@ export interface LeadInsert {
   notes?: string | null;
   tags?: string[];
   obra_id?: string | null;
+  servico?: string | null;
+  endereco?: string | null;
+  valor?: number | null;
 }
 
 export function useLeads() {
