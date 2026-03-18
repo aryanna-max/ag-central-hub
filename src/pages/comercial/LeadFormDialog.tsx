@@ -141,7 +141,7 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
               <Input type="email" value={form.email || ""} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@exemplo.com" />
             </div>
             <div>
-              <Label>Empresa</Label>
+              <Label>Cliente / Empresa</Label>
               <Input value={form.company || ""} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Nome da empresa" />
             </div>
             <div>
