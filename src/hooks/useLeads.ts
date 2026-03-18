@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type LeadSource = "whatsapp" | "telefone" | "email" | "site" | "indicacao" | "outros";
+export type LeadSource = "whatsapp" | "telefone" | "email" | "site" | "indicacao" | "rede_social" | "outros";
 export type LeadStatus = "novo" | "em_contato" | "qualificado" | "convertido" | "descartado";
 export type LeadInteractionType = "nota" | "ligacao" | "email" | "whatsapp" | "reuniao" | "visita";
 
@@ -17,6 +17,9 @@ export interface Lead {
   notes: string | null;
   tags: string[];
   obra_id: string | null;
+  servico: string | null;
+  endereco: string | null;
+  valor: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -41,6 +44,9 @@ export interface LeadInsert {
   notes?: string | null;
   tags?: string[];
   obra_id?: string | null;
+  servico?: string | null;
+  endereco?: string | null;
+  valor?: number | null;
 }
 
 export function useLeads() {

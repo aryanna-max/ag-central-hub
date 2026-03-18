@@ -317,46 +317,55 @@ export type Database = {
           company: string | null
           created_at: string
           email: string | null
+          endereco: string | null
           id: string
           name: string
           notes: string | null
           obra_id: string | null
           phone: string | null
           responsible: string | null
+          servico: string | null
           source: Database["public"]["Enums"]["lead_source"]
           status: Database["public"]["Enums"]["lead_status"]
           tags: string[] | null
           updated_at: string
+          valor: number | null
         }
         Insert: {
           company?: string | null
           created_at?: string
           email?: string | null
+          endereco?: string | null
           id?: string
           name: string
           notes?: string | null
           obra_id?: string | null
           phone?: string | null
           responsible?: string | null
+          servico?: string | null
           source?: Database["public"]["Enums"]["lead_source"]
           status?: Database["public"]["Enums"]["lead_status"]
           tags?: string[] | null
           updated_at?: string
+          valor?: number | null
         }
         Update: {
           company?: string | null
           created_at?: string
           email?: string | null
+          endereco?: string | null
           id?: string
           name?: string
           notes?: string | null
           obra_id?: string | null
           phone?: string | null
           responsible?: string | null
+          servico?: string | null
           source?: Database["public"]["Enums"]["lead_source"]
           status?: Database["public"]["Enums"]["lead_status"]
           tags?: string[] | null
           updated_at?: string
+          valor?: number | null
         }
         Relationships: [
           {
@@ -630,6 +639,7 @@ export type Database = {
         | "email"
         | "site"
         | "indicacao"
+        | "rede_social"
         | "outros"
       lead_status:
         | "novo"
@@ -796,6 +806,7 @@ export const Constants = {
         "email",
         "site",
         "indicacao",
+        "rede_social",
         "outros",
       ],
       lead_status: [
