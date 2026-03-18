@@ -17,6 +17,9 @@ export interface Lead {
   notes: string | null;
   tags: string[];
   obra_id: string | null;
+  servico: string | null;
+  endereco: string | null;
+  valor: number | null;
   created_at: string;
   updated_at: string;
 }
