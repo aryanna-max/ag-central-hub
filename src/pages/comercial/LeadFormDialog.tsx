@@ -14,6 +14,7 @@ const SOURCE_LABELS: Record<LeadSource, string> = {
   email: "E-mail",
   site: "Site",
   indicacao: "Indicação",
+  rede_social: "Rede Social",
   outros: "Outros",
 };
 
@@ -24,6 +25,32 @@ const STATUS_LABELS: Record<LeadStatus, string> = {
   convertido: "Convertido",
   descartado: "Descartado",
 };
+
+const RESPONSAVEIS = ["Aryanna", "Sérgio", "Ciro"];
+
+const SERVICOS = [
+  "Levantamento Planimétrico",
+  "Levantamento Altimétrico",
+  "Levantamento Planialtimétrico",
+  "Levantamento Cadastral Urbano",
+  "Levantamento Cadastral Rural",
+  "Levantamento para Projeto de Engenharia",
+  "Levantamento Batimétrico",
+  "Levantamento com Drone/VANT",
+  "Escaneamento Laser 3D",
+  "Georreferenciamento INCRA",
+  "Desmembramento de Área",
+  "Remembramento de Área",
+  "Usucapião",
+  "Retificação em Cartório",
+  "Locação de Obra",
+  "Controle de Terraplenagem",
+  "As-built",
+  "Acompanhamento de Obras",
+  "Topografia Industrial",
+  "Supervisão Técnica",
+  "Projeto de Loteamento",
+];
 
 interface Props {
   open: boolean;
@@ -45,6 +72,9 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
     status: "novo",
     responsible: "",
     notes: "",
+    servico: "",
+    endereco: "",
+    valor: null,
   });
 
   useEffect(() => {
@@ -58,9 +88,12 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
         status: lead.status,
         responsible: lead.responsible || "",
         notes: lead.notes || "",
+        servico: lead.servico || "",
+        endereco: lead.endereco || "",
+        valor: lead.valor,
       });
     } else {
-      setForm({ name: "", email: "", phone: "", company: "", source: "outros", status: "novo", responsible: "", notes: "" });
+      setForm({ name: "", email: "", phone: "", company: "", source: "outros", status: "novo", responsible: "", notes: "", servico: "", endereco: "", valor: null });
     }
   }, [lead, open]);
 
@@ -88,7 +121,7 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar Lead" : "Novo Lead"}</DialogTitle>
         </DialogHeader>
@@ -112,7 +145,14 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
             </div>
             <div>
               <Label>Responsável</Label>
-              <Input value={form.responsible || ""} onChange={(e) => setForm({ ...form, responsible: e.target.value })} placeholder="Quem atende" />
+              <Select value={form.responsible || ""} onValueChange={(v) => setForm({ ...form, responsible: v })}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {RESPONSAVEIS.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Origem</Label>
@@ -135,6 +175,32 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="col-span-2">
+              <Label>Serviço</Label>
+              <Select value={form.servico || ""} onValueChange={(v) => setForm({ ...form, servico: v })}>
+                <SelectTrigger><SelectValue placeholder="Selecione o serviço" /></SelectTrigger>
+                <SelectContent>
+                  {SERVICOS.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2">
+              <Label>Endereço</Label>
+              <Input value={form.endereco || ""} onChange={(e) => setForm({ ...form, endereco: e.target.value })} placeholder="Endereço do serviço" />
+            </div>
+            <div>
+              <Label>Valor (R$)</Label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.valor ?? ""}
+                onChange={(e) => setForm({ ...form, valor: e.target.value ? Number(e.target.value) : null })}
+                placeholder="0,00"
+              />
             </div>
             <div className="col-span-2">
               <Label>Observações</Label>
