@@ -277,6 +277,97 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_interactions: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          interaction_type: Database["public"]["Enums"]["lead_interaction_type"]
+          lead_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          interaction_type?: Database["public"]["Enums"]["lead_interaction_type"]
+          lead_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          interaction_type?: Database["public"]["Enums"]["lead_interaction_type"]
+          lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_interactions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          company: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          obra_id: string | null
+          phone: string | null
+          responsible: string | null
+          source: Database["public"]["Enums"]["lead_source"]
+          status: Database["public"]["Enums"]["lead_status"]
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          obra_id?: string | null
+          phone?: string | null
+          responsible?: string | null
+          source?: Database["public"]["Enums"]["lead_source"]
+          status?: Database["public"]["Enums"]["lead_status"]
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          obra_id?: string | null
+          phone?: string | null
+          responsible?: string | null
+          source?: Database["public"]["Enums"]["lead_source"]
+          status?: Database["public"]["Enums"]["lead_status"]
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monthly_schedules: {
         Row: {
           created_at: string
@@ -526,6 +617,26 @@ export type Database = {
         | "licenca"
         | "afastado"
         | "desligado"
+      lead_interaction_type:
+        | "nota"
+        | "ligacao"
+        | "email"
+        | "whatsapp"
+        | "reuniao"
+        | "visita"
+      lead_source:
+        | "whatsapp"
+        | "telefone"
+        | "email"
+        | "site"
+        | "indicacao"
+        | "outros"
+      lead_status:
+        | "novo"
+        | "em_contato"
+        | "qualificado"
+        | "convertido"
+        | "descartado"
       vehicle_status: "disponivel" | "em_uso" | "manutencao" | "indisponivel"
     }
     CompositeTypes: {
@@ -670,6 +781,29 @@ export const Constants = {
         "licenca",
         "afastado",
         "desligado",
+      ],
+      lead_interaction_type: [
+        "nota",
+        "ligacao",
+        "email",
+        "whatsapp",
+        "reuniao",
+        "visita",
+      ],
+      lead_source: [
+        "whatsapp",
+        "telefone",
+        "email",
+        "site",
+        "indicacao",
+        "outros",
+      ],
+      lead_status: [
+        "novo",
+        "em_contato",
+        "qualificado",
+        "convertido",
+        "descartado",
       ],
       vehicle_status: ["disponivel", "em_uso", "manutencao", "indisponivel"],
     },
