@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type LeadSource = "whatsapp" | "telefone" | "email" | "site" | "indicacao" | "rede_social" | "outros";
+export type LeadSource = "whatsapp" | "telefone" | "email" | "site" | "indicacao" | "rede_social" | "licitacao" | "outros";
 export type LeadStatus = "novo" | "em_contato" | "qualificado" | "convertido" | "descartado";
 export type LeadInteractionType = "nota" | "ligacao" | "email" | "whatsapp" | "reuniao" | "visita";
 
