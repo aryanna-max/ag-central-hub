@@ -16,7 +16,6 @@ export interface Lead {
   responsible: string | null;
   notes: string | null;
   tags: string[];
-  obra_id: string | null;
   cnpj: string | null;
   obra_id: string | null;
   servico: string | null;
