@@ -314,6 +314,7 @@ export type Database = {
       }
       leads: {
         Row: {
+          cnpj: string | null
           company: string | null
           created_at: string
           email: string | null
@@ -332,6 +333,7 @@ export type Database = {
           valor: number | null
         }
         Insert: {
+          cnpj?: string | null
           company?: string | null
           created_at?: string
           email?: string | null
@@ -350,6 +352,7 @@ export type Database = {
           valor?: number | null
         }
         Update: {
+          cnpj?: string | null
           company?: string | null
           created_at?: string
           email?: string | null
