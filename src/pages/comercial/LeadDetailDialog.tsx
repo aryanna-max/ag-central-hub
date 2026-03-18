@@ -1,0 +1,186 @@
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Phone, Mail, Building2, User, MessageSquare, PhoneCall, Video, MapPin, Send } from "lucide-react";
+import { useLeadInteractions, useAddLeadInteraction, type Lead, type LeadInteractionType } from "@/hooks/useLeads";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
+
+const STATUS_COLORS: Record<string, string> = {
+  novo: "bg-blue-100 text-blue-800",
+  em_contato: "bg-yellow-100 text-yellow-800",
+  qualificado: "bg-emerald-100 text-emerald-800",
+  convertido: "bg-green-100 text-green-800",
+  descartado: "bg-red-100 text-red-800",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  novo: "Novo",
+  em_contato: "Em Contato",
+  qualificado: "Qualificado",
+  convertido: "Convertido",
+  descartado: "Descartado",
+};
+
+const SOURCE_LABELS: Record<string, string> = {
+  whatsapp: "WhatsApp",
+  telefone: "Telefone",
+  email: "E-mail",
+  site: "Site",
+  indicacao: "Indicação",
+  outros: "Outros",
+};
+
+const INTERACTION_LABELS: Record<LeadInteractionType, { label: string; icon: React.ElementType }> = {
+  nota: { label: "Nota", icon: MessageSquare },
+  ligacao: { label: "Ligação", icon: PhoneCall },
+  email: { label: "E-mail", icon: Mail },
+  whatsapp: { label: "WhatsApp", icon: MessageSquare },
+  reuniao: { label: "Reunião", icon: Video },
+  visita: { label: "Visita", icon: MapPin },
+};
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  lead: Lead | null;
+}
+
+export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
+  const { data: interactions = [] } = useLeadInteractions(lead?.id);
+  const addInteraction = useAddLeadInteraction();
+  const [newContent, setNewContent] = useState("");
+  const [newType, setNewType] = useState<LeadInteractionType>("nota");
+
+  if (!lead) return null;
+
+  const handleAddInteraction = async () => {
+    if (!newContent.trim()) return;
+    try {
+      await addInteraction.mutateAsync({
+        lead_id: lead.id,
+        interaction_type: newType,
+        content: newContent.trim(),
+        created_by: null,
+      });
+      setNewContent("");
+      toast.success("Interação registrada");
+    } catch {
+      toast.error("Erro ao registrar interação");
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-3">
+            <span>{lead.name}</span>
+            <Badge className={STATUS_COLORS[lead.status]}>{STATUS_LABELS[lead.status]}</Badge>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          {lead.phone && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Phone className="w-4 h-4" /> {lead.phone}
+            </div>
+          )}
+          {lead.email && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Mail className="w-4 h-4" /> {lead.email}
+            </div>
+          )}
+          {lead.company && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Building2 className="w-4 h-4" /> {lead.company}
+            </div>
+          )}
+          {lead.responsible && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <User className="w-4 h-4" /> {lead.responsible}
+            </div>
+          )}
+          <div className="text-muted-foreground">
+            Origem: <span className="font-medium text-foreground">{SOURCE_LABELS[lead.source]}</span>
+          </div>
+          <div className="text-muted-foreground">
+            Criado em: <span className="font-medium text-foreground">{format(new Date(lead.created_at), "dd/MM/yyyy", { locale: ptBR })}</span>
+          </div>
+        </div>
+
+        {lead.notes && (
+          <p className="text-sm bg-muted/50 rounded-md p-3">{lead.notes}</p>
+        )}
+
+        <Separator />
+
+        {/* Add interaction */}
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Nova Interação</p>
+          <div className="flex gap-2">
+            <Select value={newType} onValueChange={(v) => setNewType(v as LeadInteractionType)}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(INTERACTION_LABELS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Textarea
+              value={newContent}
+              onChange={(e) => setNewContent(e.target.value)}
+              placeholder="Descreva a interação..."
+              rows={2}
+              className="flex-1"
+            />
+            <Button size="icon" onClick={handleAddInteraction} disabled={addInteraction.isPending || !newContent.trim()}>
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Interaction history */}
+        <p className="text-sm font-medium">Histórico ({interactions.length})</p>
+        <ScrollArea className="flex-1 max-h-48">
+          {interactions.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma interação registrada.</p>
+          ) : (
+            <div className="space-y-3">
+              {interactions.map((i) => {
+                const meta = INTERACTION_LABELS[i.interaction_type];
+                const Icon = meta.icon;
+                return (
+                  <div key={i.id} className="flex gap-3 text-sm">
+                    <div className="mt-0.5 p-1.5 rounded-md bg-muted">
+                      <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{meta.label}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(i.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </span>
+                      </div>
+                      <p className="text-muted-foreground">{i.content}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+}
