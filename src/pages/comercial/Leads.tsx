@@ -89,6 +89,25 @@ export default function Leads() {
     setDeleteId(null);
   };
 
+  const handleStatusChange = async (lead: Lead, newStatus: LeadStatus) => {
+    if (newStatus === lead.status) return;
+    try {
+      await updateLead.mutateAsync({ id: lead.id, status: newStatus });
+      if (newStatus === "convertido") {
+        await convertLead(lead);
+        toast.success("Lead convertido — projeto e alertas criados");
+      } else {
+        toast.success(`Status alterado para ${STATUS_LABELS[newStatus]}`);
+      }
+    } catch {
+      toast.error("Erro ao alterar status");
+    }
+  };
+
+  const getLinkedProject = (lead: Lead) => {
+    return projects.find((p) => p.lead_id === lead.id);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
