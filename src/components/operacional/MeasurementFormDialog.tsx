@@ -33,14 +33,14 @@ function useObras() {
   });
 }
 
-export default function MeasurementFormDialog({ open, onOpenChange }: Props) {
+export default function MeasurementFormDialog({ open, onOpenChange, defaultObraId }: Props) {
   const createMeasurement = useCreateMeasurement();
   const { data: teams } = useTeams();
   const { data: obras } = useObras();
 
   const [form, setForm] = useState({
     codigo_bm: "",
-    obra_id: "",
+    obra_id: defaultObraId || "",
     team_id: "",
     period_start: "",
     period_end: "",
@@ -50,6 +50,13 @@ export default function MeasurementFormDialog({ open, onOpenChange }: Props) {
     valor_diaria_fds: "",
     retencao_pct: "5",
     notes: "",
+  });
+
+  // Sync defaultObraId when dialog opens
+  useState(() => {
+    if (defaultObraId && !form.obra_id) {
+      setForm((p) => ({ ...p, obra_id: defaultObraId }));
+    }
   });
 
   const set = (key: string, value: string) => setForm((p) => ({ ...p, [key]: value }));
