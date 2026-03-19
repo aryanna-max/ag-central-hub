@@ -56,14 +56,6 @@ export default function ProjetosDashboard() {
     },
   });
 
-  const { data: obras = [] } = useQuery({
-    queryKey: ["obras-for-dashboard"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("obras").select("id, name, client");
-      if (error) throw error;
-      return data;
-    },
-  });
 
   const activeProjects = useMemo(
     () => projects.filter((p) => !["concluido", "pausado"].includes(p.status)),
@@ -76,34 +68,40 @@ export default function ProjetosDashboard() {
   );
 
   const measurementsByObra = useMemo(() => {
-    const map: Record<string, { totalBruto: number; totalNF: number; pendentes: number }> = {};
+    const map: Record<string, { totalBruto: number; totalNF: number; totalNFAReceber: number; pendentes: number }> = {};
     measurements.forEach((m) => {
       const key = m.obra_id || "sem_obra";
-      if (!map[key]) map[key] = { totalBruto: 0, totalNF: 0, pendentes: 0 };
+      if (!map[key]) map[key] = { totalBruto: 0, totalNF: 0, totalNFAReceber: 0, pendentes: 0 };
       map[key].totalBruto += m.valor_bruto || 0;
       map[key].totalNF += m.valor_nf || 0;
+      if (["aguardando_nf", "nf_emitida"].includes(m.status)) {
+        map[key].totalNFAReceber += m.valor_nf || 0;
+      }
       if (["rascunho", "aguardando_nf"].includes(m.status)) map[key].pendentes += 1;
     });
     return map;
   }, [measurements]);
 
-  const obraNameMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    obras.forEach((o) => (map[o.name?.toLowerCase() || ""] = o.id));
-    return map;
-  }, [obras]);
-
   const getProjectMeasurements = (p: Project) => {
-    const obraId = obraNameMap[p.name?.toLowerCase() || ""];
-    return obraId ? measurementsByObra[obraId] : undefined;
+    if (!p.obra_id) return undefined;
+    return measurementsByObra[p.obra_id];
   };
 
   const totalMedido = useMemo(
-    () => Object.values(measurementsByObra).reduce((s, v) => s + v.totalNF, 0),
-    [measurementsByObra]
+    () => activeProjects.reduce((s, p) => {
+      const m = p.obra_id ? measurementsByObra[p.obra_id] : undefined;
+      return s + (m?.totalNF || 0);
+    }, 0),
+    [activeProjects, measurementsByObra]
   );
 
-  const aReceber = receitaContratada - totalMedido;
+  const aReceber = useMemo(
+    () => activeProjects.reduce((s, p) => {
+      const m = p.obra_id ? measurementsByObra[p.obra_id] : undefined;
+      return s + (m?.totalNFAReceber || 0);
+    }, 0),
+    [activeProjects, measurementsByObra]
+  );
 
   const medicoesPendentes = useMemo(
     () => Object.values(measurementsByObra).reduce((s, v) => s + v.pendentes, 0),
@@ -147,7 +145,7 @@ export default function ProjetosDashboard() {
   const kpis = [
     { label: "Projetos Ativos", value: activeProjects.length, icon: FolderKanban, color: "text-primary" },
     { label: "Receita Contratada", value: formatCurrency(receitaContratada), icon: DollarSign, color: "text-emerald-600" },
-    { label: "A Receber", value: formatCurrency(Math.max(aReceber, 0)), icon: Clock, color: "text-amber-600" },
+    { label: "A Receber", value: formatCurrency(aReceber), icon: Clock, color: "text-amber-600" },
     { label: "Medições Pendentes", value: medicoesPendentes, icon: FileText, color: "text-blue-600" },
   ];
 
@@ -192,7 +190,9 @@ export default function ProjetosDashboard() {
               {projects.map((p) => {
                 const m = getProjectMeasurements(p);
                 const medido = m?.totalNF || 0;
+                const aReceberRow = m?.totalNFAReceber || 0;
                 const contrato = p.contract_value || 0;
+                const hasObra = !!p.obra_id;
                 return (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.name}</TableCell>
@@ -204,10 +204,8 @@ export default function ProjetosDashboard() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">{contrato ? formatCurrency(contrato) : "—"}</TableCell>
-                    <TableCell className="text-right">{medido ? formatCurrency(medido) : "—"}</TableCell>
-                    <TableCell className="text-right">
-                      {contrato ? formatCurrency(Math.max(contrato - medido, 0)) : "—"}
-                    </TableCell>
+                    <TableCell className="text-right">{hasObra ? (medido ? formatCurrency(medido) : "—") : "—"}</TableCell>
+                    <TableCell className="text-right">{hasObra ? (aReceberRow ? formatCurrency(aReceberRow) : "—") : "—"}</TableCell>
                   </TableRow>
                 );
               })}

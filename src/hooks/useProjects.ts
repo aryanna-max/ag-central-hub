@@ -13,6 +13,7 @@ export interface Project {
   responsible: string | null;
   responsible_id: string | null;
   lead_id: string | null;
+  obra_id: string | null;
   status: ProjectStatus;
   notes: string | null;
   start_date: string | null;
