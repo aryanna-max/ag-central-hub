@@ -24,6 +24,7 @@ import {
   UserPlus,
   FileCheck,
   HeartPulse,
+  Banknote,
 } from "lucide-react";
 
 interface SidebarItem {
@@ -57,6 +58,7 @@ const navigation: SidebarItem[] = [
       { label: "Escala Diária", path: "/operacional/escala-diaria", icon: CalendarDays },
       { label: "Escala Mensal", path: "/operacional/escala", icon: CalendarDays },
       { label: "Medições", path: "/operacional/medicoes", icon: FileText },
+      { label: "Despesas de Campo", path: "/operacional/despesas-campo", icon: Banknote },
       { label: "Veículos", path: "/operacional/veiculos", icon: Car },
     ],
   },
