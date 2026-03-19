@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Phone, Mail, Building2, User, MessageSquare, PhoneCall, Video, MapPin, Send, FileText, DollarSign } from "lucide-react";
-import { useLeadInteractions, useAddLeadInteraction, type Lead, type LeadInteractionType } from "@/hooks/useLeads";
+import { useLeadInteractions, useAddLeadInteraction, useUpdateLead, type Lead, type LeadInteractionType, type LeadStatus } from "@/hooks/useLeads";
+import { useLeadConversion } from "@/hooks/useLeadConversion";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
