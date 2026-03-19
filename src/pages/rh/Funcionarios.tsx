@@ -1,0 +1,287 @@
+import { useState } from "react";
+import { useEmployees, useCreateEmployee, useDeleteEmployee } from "@/hooks/useEmployees";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Search, Plus, Trash2, Users } from "lucide-react";
+import { toast } from "sonner";
+import { format } from "date-fns";
+
+const statusConfig: Record<string, { label: string; className: string }> = {
+  disponivel: { label: "Disponível", className: "bg-green-600 text-white" },
+  ferias: { label: "Férias", className: "bg-amber-500 text-white" },
+  licenca: { label: "Licença", className: "bg-orange-500 text-white" },
+  afastado: { label: "Afastado", className: "bg-red-600 text-white" },
+  desligado: { label: "Desligado", className: "bg-muted text-muted-foreground" },
+};
+
+const PAGE_SIZE = 15;
+
+export default function Funcionarios() {
+  const { data: employees = [], isLoading } = useEmployees();
+  const createEmployee = useCreateEmployee();
+  const deleteEmployee = useDeleteEmployee();
+
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [page, setPage] = useState(1);
+  const [showNew, setShowNew] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newRole, setNewRole] = useState("");
+  const [newCpf, setNewCpf] = useState("");
+  const [newAdmission, setNewAdmission] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+
+  const filtered = employees.filter((e) => {
+    const matchesSearch =
+      e.name.toLowerCase().includes(search.toLowerCase()) ||
+      (e.role || "").toLowerCase().includes(search.toLowerCase()) ||
+      (e.cpf || "").includes(search);
+    const matchesStatus = statusFilter === "todos" || e.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const handleCreate = async () => {
+    if (!newName.trim()) {
+      toast.error("Nome é obrigatório");
+      return;
+    }
+    try {
+      await createEmployee.mutateAsync({
+        name: newName.trim(),
+        role: newRole.trim() || "Ajudante",
+        cpf: newCpf.trim() || null,
+        admission_date: newAdmission || null,
+        phone: newPhone.trim() || null,
+        email: newEmail.trim() || null,
+      });
+      toast.success("Funcionário cadastrado!");
+      setShowNew(false);
+      setNewName("");
+      setNewRole("");
+      setNewCpf("");
+      setNewAdmission("");
+      setNewPhone("");
+      setNewEmail("");
+    } catch {
+      toast.error("Erro ao cadastrar funcionário");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteEmployee.mutateAsync(id);
+      toast.success("Funcionário excluído");
+    } catch {
+      toast.error("Erro ao excluir funcionário");
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Users className="w-6 h-6" /> Funcionários
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            {filtered.length} funcionário{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <Button onClick={() => setShowNew(true)}>
+          <Plus className="w-4 h-4 mr-1" /> Novo Funcionário
+        </Button>
+      </div>
+
+      {/* Filtros */}
+      <Card>
+        <CardContent className="pt-4 pb-4 flex flex-wrap gap-3 items-center">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome, cargo ou CPF..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              className="pl-9"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="disponivel">Disponível</SelectItem>
+              <SelectItem value="ferias">Férias</SelectItem>
+              <SelectItem value="licenca">Licença</SelectItem>
+              <SelectItem value="afastado">Afastado</SelectItem>
+              <SelectItem value="desligado">Desligado</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
+      {/* Tabela */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Lista de Funcionários</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <p className="text-muted-foreground text-center py-8">Carregando...</p>
+          ) : paginated.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">Nenhum funcionário encontrado.</p>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Cargo</TableHead>
+                    <TableHead>CPF</TableHead>
+                    <TableHead>Admissão</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[60px]" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginated.map((emp) => {
+                    const st = statusConfig[emp.status] || statusConfig.disponivel;
+                    return (
+                      <TableRow key={emp.id}>
+                        <TableCell className="font-medium">{emp.name}</TableCell>
+                        <TableCell>{emp.role}</TableCell>
+                        <TableCell className="font-mono text-xs">{emp.cpf || "—"}</TableCell>
+                        <TableCell>
+                          {emp.admission_date
+                            ? format(new Date(emp.admission_date + "T00:00:00"), "dd/MM/yyyy")
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={st.className}>{st.label}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir funcionário?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja excluir <strong>{emp.name}</strong>? Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(emp.id)}>
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+
+              {totalPages > 1 && (
+                <div className="mt-4">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() => setPage((p) => Math.max(1, p - 1))}
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                        .map((p, idx, arr) => (
+                          <PaginationItem key={p}>
+                            {idx > 0 && arr[idx - 1] !== p - 1 && (
+                              <span className="px-2 text-muted-foreground">…</span>
+                            )}
+                            <PaginationLink
+                              isActive={p === currentPage}
+                              onClick={() => setPage(p)}
+                              className="cursor-pointer"
+                            >
+                              {p}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Dialog Novo Funcionário */}
+      <Dialog open={showNew} onOpenChange={setShowNew}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Novo Funcionário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Nome *</Label>
+              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nome completo" />
+            </div>
+            <div>
+              <Label>Cargo</Label>
+              <Input value={newRole} onChange={(e) => setNewRole(e.target.value)} placeholder="Ex: Topógrafo I" />
+            </div>
+            <div>
+              <Label>CPF</Label>
+              <Input value={newCpf} onChange={(e) => setNewCpf(e.target.value)} placeholder="000.000.000-00" />
+            </div>
+            <div>
+              <Label>Data de Admissão</Label>
+              <Input type="date" value={newAdmission} onChange={(e) => setNewAdmission(e.target.value)} />
+            </div>
+            <div>
+              <Label>Telefone</Label>
+              <Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="(00) 00000-0000" />
+            </div>
+            <div>
+              <Label>Email</Label>
+              <Input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="email@exemplo.com" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNew(false)}>Cancelar</Button>
+            <Button onClick={handleCreate} disabled={createEmployee.isPending}>
+              {createEmployee.isPending ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
