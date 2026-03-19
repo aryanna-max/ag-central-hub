@@ -11,6 +11,7 @@ export interface Opportunity {
   client_id: string | null;
   value: number | null;
   stage: OpportunityStage;
+  service: string | null;
   responsible: string | null;
   expected_close_date: string | null;
   notes: string | null;
@@ -25,6 +26,7 @@ export interface OpportunityInsert {
   client_id?: string | null;
   value?: number | null;
   stage?: OpportunityStage;
+  service?: string | null;
   responsible?: string | null;
   expected_close_date?: string | null;
   notes?: string | null;
@@ -35,17 +37,17 @@ export const STAGE_LABELS: Record<OpportunityStage, string> = {
   qualificacao: "Qualificação",
   proposta_enviada: "Proposta Enviada",
   negociacao: "Negociação",
-  fechado_ganho: "Fechado (Ganho)",
-  fechado_perdido: "Fechado (Perdido)",
+  fechado_ganho: "Ganho",
+  fechado_perdido: "Perdido",
 };
 
 export const STAGE_COLORS: Record<OpportunityStage, string> = {
-  prospeccao: "bg-blue-100 text-blue-800",
-  qualificacao: "bg-amber-100 text-amber-800",
-  proposta_enviada: "bg-purple-100 text-purple-800",
-  negociacao: "bg-orange-100 text-orange-800",
-  fechado_ganho: "bg-green-100 text-green-800",
-  fechado_perdido: "bg-red-100 text-red-800",
+  prospeccao: "bg-blue-100 text-blue-800 border-blue-300",
+  qualificacao: "bg-amber-100 text-amber-800 border-amber-300",
+  proposta_enviada: "bg-purple-100 text-purple-800 border-purple-300",
+  negociacao: "bg-orange-100 text-orange-800 border-orange-300",
+  fechado_ganho: "bg-green-100 text-green-800 border-green-300",
+  fechado_perdido: "bg-red-100 text-red-800 border-red-300",
 };
 
 export const PIPELINE_STAGES: OpportunityStage[] = [
@@ -55,6 +57,37 @@ export const PIPELINE_STAGES: OpportunityStage[] = [
   "negociacao",
   "fechado_ganho",
   "fechado_perdido",
+];
+
+export const ACTIVE_STAGES: OpportunityStage[] = [
+  "prospeccao",
+  "qualificacao",
+  "proposta_enviada",
+  "negociacao",
+];
+
+export const SERVICOS = [
+  "Levantamento Planimétrico",
+  "Levantamento Altimétrico",
+  "Levantamento Planialtimétrico",
+  "Levantamento Cadastral Urbano",
+  "Levantamento Cadastral Rural",
+  "Levantamento para Projeto de Engenharia",
+  "Levantamento Batimétrico",
+  "Levantamento com Drone/VANT",
+  "Escaneamento Laser 3D",
+  "Georreferenciamento INCRA",
+  "Desmembramento de Área",
+  "Remembramento de Área",
+  "Usucapião",
+  "Retificação em Cartório",
+  "Locação de Obra",
+  "Controle de Terraplenagem",
+  "As-built",
+  "Acompanhamento de Obras",
+  "Topografia Industrial",
+  "Supervisão Técnica",
+  "Projeto de Loteamento",
 ];
 
 export function useOpportunities() {

@@ -1,27 +1,30 @@
 import { useState, useMemo } from "react";
-import { Plus, DollarSign, TrendingUp, Target, XCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Plus, DollarSign, TrendingUp, Target, XCircle, MoreHorizontal, Pencil, Trash2, ArrowRight, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   useOpportunities,
   useUpdateOpportunity,
   useDeleteOpportunity,
   STAGE_LABELS,
   STAGE_COLORS,
+  ACTIVE_STAGES,
   PIPELINE_STAGES,
   type Opportunity,
   type OpportunityStage,
 } from "@/hooks/useOpportunities";
+import { useClients } from "@/hooks/useClients";
 import OpportunityFormDialog from "./OpportunityFormDialog";
 import { toast } from "sonner";
+import { differenceInDays, parseISO } from "date-fns";
 
 export default function Oportunidades() {
   const { data: opportunities = [], isLoading } = useOpportunities();
+  const { data: clients = [] } = useClients();
   const updateOpp = useUpdateOpportunity();
   const deleteOpp = useDeleteOpportunity();
 
@@ -29,20 +32,27 @@ export default function Oportunidades() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingOpp, setEditingOpp] = useState<Opportunity | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"pipeline" | "lista">("pipeline");
+
+  const getClientName = (opp: Opportunity) => {
+    if (opp.client_id) {
+      const c = clients.find((c) => c.id === opp.client_id);
+      return c?.name || opp.client || "—";
+    }
+    return opp.client || "—";
+  };
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return opportunities.filter(
       (o) =>
         o.name.toLowerCase().includes(q) ||
-        o.client?.toLowerCase().includes(q) ||
+        getClientName(o).toLowerCase().includes(q) ||
         o.responsible?.toLowerCase().includes(q)
     );
-  }, [opportunities, search]);
+  }, [opportunities, search, clients]);
 
   const stats = useMemo(() => {
-    const active = opportunities.filter((o) => !o.stage.startsWith("fechado"));
+    const active = opportunities.filter((o) => ACTIVE_STAGES.includes(o.stage));
     const won = opportunities.filter((o) => o.stage === "fechado_ganho");
     const lost = opportunities.filter((o) => o.stage === "fechado_perdido");
     const totalValue = active.reduce((s, o) => s + (o.value || 0), 0);
@@ -72,13 +82,69 @@ export default function Oportunidades() {
 
   const fmt = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
 
+  const getDaysUntilClose = (opp: Opportunity): string | null => {
+    if (!opp.expected_close_date) return null;
+    const days = differenceInDays(parseISO(opp.expected_close_date), new Date());
+    if (days < 0) return `${Math.abs(days)}d atrás`;
+    if (days === 0) return "Hoje";
+    return `${days}d`;
+  };
+
+  const renderCard = (opp: Opportunity) => (
+    <Card key={opp.id} className="hover:shadow-md transition-shadow">
+      <CardContent className="p-3 space-y-1.5">
+        <div className="flex items-start justify-between">
+          <p className="text-sm font-medium leading-tight flex-1">{opp.name}</p>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
+                <MoreHorizontal className="w-3.5 h-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { setEditingOpp(opp); setFormOpen(true); }}>
+                <Pencil className="w-3.5 h-3.5 mr-2" /> Editar
+              </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <ArrowRight className="w-3.5 h-3.5 mr-2" /> Mover para
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {PIPELINE_STAGES.filter((s) => s !== opp.stage).map((s) => (
+                    <DropdownMenuItem key={s} onClick={() => handleStageChange(opp, s)}>
+                      <Badge className={`${STAGE_COLORS[s]} text-[10px] mr-2 border`}>{STAGE_LABELS[s]}</Badge>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(opp.id)}>
+                <Trash2 className="w-3.5 h-3.5 mr-2" /> Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <p className="text-xs text-muted-foreground">{getClientName(opp)}</p>
+        {opp.value != null && <p className="text-xs font-semibold">{fmt(opp.value)}</p>}
+        <div className="flex items-center justify-between">
+          {opp.responsible && <p className="text-[11px] text-muted-foreground">{opp.responsible}</p>}
+          {getDaysUntilClose(opp) && (
+            <span className="text-[11px] text-muted-foreground flex items-center gap-0.5">
+              <Clock className="w-3 h-3" />{getDaysUntilClose(opp)}
+            </span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Oportunidades</h1>
-          <p className="text-muted-foreground">Pipeline de vendas com acompanhamento de negociações</p>
+          <p className="text-muted-foreground">Pipeline de vendas — negociações em andamento</p>
         </div>
         <Button onClick={() => { setEditingOpp(null); setFormOpen(true); }}>
           <Plus className="w-4 h-4 mr-2" /> Nova Oportunidade
@@ -105,117 +171,61 @@ export default function Oportunidades() {
         </CardContent></Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-3">
-        <Input placeholder="Buscar oportunidades..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
-        <Select value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
-          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="pipeline">Pipeline</SelectItem>
-            <SelectItem value="lista">Lista</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Search */}
+      <Input placeholder="Buscar oportunidades..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
 
       {isLoading ? (
         <p className="text-muted-foreground text-center py-10">Carregando...</p>
-      ) : viewMode === "pipeline" ? (
-        /* Pipeline (Kanban) view */
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {PIPELINE_STAGES.map((stage) => {
+      ) : (
+        /* Pipeline Kanban */
+        <div className="grid grid-cols-6 gap-3">
+          {/* Active stages */}
+          {ACTIVE_STAGES.map((stage) => {
             const items = filtered.filter((o) => o.stage === stage);
             return (
               <div key={stage} className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Badge className={`${STAGE_COLORS[stage]} text-xs`}>{STAGE_LABELS[stage]}</Badge>
-                  <span className="text-xs text-muted-foreground">{items.length}</span>
+                  <Badge className={`${STAGE_COLORS[stage]} text-xs border`}>{STAGE_LABELS[stage]}</Badge>
+                  <span className="text-xs text-muted-foreground font-medium">{items.length}</span>
                 </div>
-                <div className="space-y-2 min-h-[100px]">
-                  {items.map((opp) => (
-                    <Card key={opp.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                      <CardContent className="p-3 space-y-1">
-                        <div className="flex items-start justify-between">
-                          <p className="text-sm font-medium leading-tight">{opp.name}</p>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
-                                <MoreHorizontal className="w-3.5 h-3.5" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => { setEditingOpp(opp); setFormOpen(true); }}>
-                                <Pencil className="w-3.5 h-3.5 mr-2" /> Editar
-                              </DropdownMenuItem>
-                              {PIPELINE_STAGES.filter((s) => s !== opp.stage).map((s) => (
-                                <DropdownMenuItem key={s} onClick={() => handleStageChange(opp, s)}>
-                                  Mover → {STAGE_LABELS[s]}
-                                </DropdownMenuItem>
-                              ))}
-                              <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(opp.id)}>
-                                <Trash2 className="w-3.5 h-3.5 mr-2" /> Excluir
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                        {opp.client && <p className="text-xs text-muted-foreground">{opp.client}</p>}
-                        {opp.value != null && <p className="text-xs font-semibold">{fmt(opp.value)}</p>}
-                        {opp.responsible && <p className="text-xs text-muted-foreground">{opp.responsible}</p>}
-                      </CardContent>
-                    </Card>
-                  ))}
+                <div className="space-y-2 min-h-[120px]">
+                  {items.map(renderCard)}
                 </div>
               </div>
             );
           })}
+
+          {/* Fechado - split into Ganho/Perdido */}
+          <div className="col-span-2 space-y-2">
+            <div className="text-sm font-semibold text-center">Fechado</div>
+            <div className="grid grid-cols-2 gap-2">
+              {/* Ganho */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Badge className="bg-green-100 text-green-800 border border-green-300 text-xs">Ganho</Badge>
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {filtered.filter((o) => o.stage === "fechado_ganho").length}
+                  </span>
+                </div>
+                <div className="space-y-2 min-h-[120px]">
+                  {filtered.filter((o) => o.stage === "fechado_ganho").map(renderCard)}
+                </div>
+              </div>
+              {/* Perdido */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Badge className="bg-red-100 text-red-800 border border-red-300 text-xs">Perdido</Badge>
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {filtered.filter((o) => o.stage === "fechado_perdido").length}
+                  </span>
+                </div>
+                <div className="space-y-2 min-h-[120px]">
+                  {filtered.filter((o) => o.stage === "fechado_perdido").map(renderCard)}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      ) : (
-        /* List view */
-        <Card>
-          <CardContent className="p-0">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left">
-                  <th className="p-3 font-medium">Nome</th>
-                  <th className="p-3 font-medium">Cliente</th>
-                  <th className="p-3 font-medium">Valor</th>
-                  <th className="p-3 font-medium">Etapa</th>
-                  <th className="p-3 font-medium">Responsável</th>
-                  <th className="p-3 font-medium w-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 ? (
-                  <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Nenhuma oportunidade encontrada.</td></tr>
-                ) : filtered.map((opp) => (
-                  <tr key={opp.id} className="border-b hover:bg-muted/50">
-                    <td className="p-3 font-medium">{opp.name}</td>
-                    <td className="p-3 text-muted-foreground">{opp.client || "—"}</td>
-                    <td className="p-3">{opp.value != null ? fmt(opp.value) : "—"}</td>
-                    <td className="p-3"><Badge className={`${STAGE_COLORS[opp.stage]} text-xs`}>{STAGE_LABELS[opp.stage]}</Badge></td>
-                    <td className="p-3 text-muted-foreground">{opp.responsible || "—"}</td>
-                    <td className="p-3">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => { setEditingOpp(opp); setFormOpen(true); }}>
-                            <Pencil className="w-3.5 h-3.5 mr-2" /> Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(opp.id)}>
-                            <Trash2 className="w-3.5 h-3.5 mr-2" /> Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
       )}
 
       <OpportunityFormDialog open={formOpen} onOpenChange={setFormOpen} opportunity={editingOpp} />
