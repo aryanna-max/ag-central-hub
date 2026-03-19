@@ -145,6 +145,13 @@ function ProjectMeasurementsTab({
           )}
         </tfoot>
       </Table>
+      )}
+
+      <MeasurementFormDialog
+        open={showNewMeasurement}
+        onOpenChange={setShowNewMeasurement}
+        defaultObraId={matchedObraId || undefined}
+      />
     </div>
   );
 }
