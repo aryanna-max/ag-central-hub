@@ -805,6 +805,41 @@ export type Database = {
           },
         ]
       }
+      schedule_reopen_history: {
+        Row: {
+          action: string
+          created_at: string
+          daily_schedule_id: string
+          id: string
+          performed_by: string | null
+          reason: string | null
+        }
+        Insert: {
+          action?: string
+          created_at?: string
+          daily_schedule_id: string
+          id?: string
+          performed_by?: string | null
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          daily_schedule_id?: string
+          id?: string
+          performed_by?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_reopen_history_daily_schedule_id_fkey"
+            columns: ["daily_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "daily_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           employee_id: string
