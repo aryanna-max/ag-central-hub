@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultObraId?: string;
 }
 
 function useObras() {
@@ -32,14 +33,14 @@ function useObras() {
   });
 }
 
-export default function MeasurementFormDialog({ open, onOpenChange }: Props) {
+export default function MeasurementFormDialog({ open, onOpenChange, defaultObraId }: Props) {
   const createMeasurement = useCreateMeasurement();
   const { data: teams } = useTeams();
   const { data: obras } = useObras();
 
   const [form, setForm] = useState({
     codigo_bm: "",
-    obra_id: "",
+    obra_id: defaultObraId || "",
     team_id: "",
     period_start: "",
     period_end: "",
@@ -50,6 +51,12 @@ export default function MeasurementFormDialog({ open, onOpenChange }: Props) {
     retencao_pct: "5",
     notes: "",
   });
+
+  useEffect(() => {
+    if (open && defaultObraId) {
+      setForm((p) => ({ ...p, obra_id: defaultObraId }));
+    }
+  }, [open, defaultObraId]);
 
   const set = (key: string, value: string) => setForm((p) => ({ ...p, [key]: value }));
 

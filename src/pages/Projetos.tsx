@@ -8,10 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
-import { FolderKanban, GripVertical, FileText } from "lucide-react";
+import { FolderKanban, GripVertical, FileText, Plus } from "lucide-react";
 import { useProjects, useUpdateProject, type Project, type ProjectStatus } from "@/hooks/useProjects";
 import { useProjectMeasurements } from "@/hooks/useMeasurements";
+import MeasurementFormDialog from "@/components/operacional/MeasurementFormDialog";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const COLUMNS: { key: ProjectStatus; label: string; color: string }[] = [
   { key: "planejamento", label: "Planejamento", color: "bg-blue-500" },
@@ -49,6 +52,22 @@ function ProjectMeasurementsTab({
   contractValue: number | null;
 }) {
   const { data: filtered = [], isLoading } = useProjectMeasurements(projectName, clientName);
+  const [showNewMeasurement, setShowNewMeasurement] = useState(false);
+
+  // Find matching obra_id by project name
+  const { data: matchedObraId } = useQuery({
+    queryKey: ["obra-match", projectName],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("obras")
+        .select("id")
+        .ilike("name", `%${projectName}%`)
+        .eq("is_active", true)
+        .limit(1);
+      return data?.[0]?.id || null;
+    },
+    enabled: !!projectName,
+  });
 
   const totals = useMemo(() => {
     const totalBruto = filtered.reduce((s, m) => s + (m.valor_bruto || 0), 0);
@@ -62,19 +81,22 @@ function ProjectMeasurementsTab({
     return <p className="py-6 text-center text-muted-foreground text-sm">Carregando...</p>;
   }
 
-  if (!filtered.length) {
-    return (
-      <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
-        <FileText className="w-8 h-8" />
-        <p className="text-sm">Nenhuma medição vinculada a este projeto.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-3 mt-2">
-      <p className="text-xs text-muted-foreground">{filtered.length} medição(ões) encontrada(s)</p>
-      <Table>
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">{filtered.length} medição(ões)</p>
+        <Button size="sm" className="gap-1.5" onClick={() => setShowNewMeasurement(true)}>
+          <Plus className="w-3.5 h-3.5" /> Nova Medição
+        </Button>
+      </div>
+
+      {!filtered.length ? (
+        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
+          <FileText className="w-8 h-8" />
+          <p className="text-sm">Nenhuma medição vinculada a este projeto.</p>
+        </div>
+      ) : (
+        <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Código BM</TableHead>
@@ -123,6 +145,13 @@ function ProjectMeasurementsTab({
           )}
         </tfoot>
       </Table>
+      )}
+
+      <MeasurementFormDialog
+        open={showNewMeasurement}
+        onOpenChange={setShowNewMeasurement}
+        defaultObraId={matchedObraId || undefined}
+      />
     </div>
   );
 }
