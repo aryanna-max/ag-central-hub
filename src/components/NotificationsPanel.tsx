@@ -24,6 +24,12 @@ export default function NotificationsPanel() {
     if (!alert.read) {
       markRead.mutate(alert.id);
     }
+    setOpen(false);
+  };
+
+  const handleMarkAllRead = () => {
+    markAllRead.mutate();
+    setOpen(false);
   };
 
   return (
