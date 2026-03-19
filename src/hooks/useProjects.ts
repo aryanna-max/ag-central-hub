@@ -30,6 +30,8 @@ export interface ProjectInsert {
   lead_id?: string | null;
   status?: ProjectStatus;
   notes?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
 }
 
 export function useProjects() {
