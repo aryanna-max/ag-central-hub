@@ -606,6 +606,131 @@ export type Database = {
         }
         Relationships: []
       }
+      field_expense_items: {
+        Row: {
+          created_at: string
+          description: string
+          employee_id: string
+          expense_type: string
+          id: string
+          intermediary_reason: string | null
+          nature: string
+          paid_at: string | null
+          payment_status: string
+          project_id: string | null
+          project_name: string | null
+          receiver_id: string | null
+          receiver_name: string | null
+          sheet_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          employee_id: string
+          expense_type: string
+          id?: string
+          intermediary_reason?: string | null
+          nature?: string
+          paid_at?: string | null
+          payment_status?: string
+          project_id?: string | null
+          project_name?: string | null
+          receiver_id?: string | null
+          receiver_name?: string | null
+          sheet_id: string
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          employee_id?: string
+          expense_type?: string
+          id?: string
+          intermediary_reason?: string | null
+          nature?: string
+          paid_at?: string | null
+          payment_status?: string
+          project_id?: string | null
+          project_name?: string | null
+          receiver_id?: string | null
+          receiver_name?: string | null
+          sheet_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_expense_items_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_expense_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_expense_items_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_expense_items_sheet_id_fkey"
+            columns: ["sheet_id"]
+            isOneToOne: false
+            referencedRelation: "field_expense_sheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      field_expense_sheets: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          id: string
+          period_end: string
+          period_start: string
+          return_comment: string | null
+          status: string
+          total_value: number | null
+          updated_at: string
+          week_ref: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          period_end: string
+          period_start: string
+          return_comment?: string | null
+          status?: string
+          total_value?: number | null
+          updated_at?: string
+          week_ref: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          return_comment?: string | null
+          status?: string
+          total_value?: number | null
+          updated_at?: string
+          week_ref?: string
+        }
+        Relationships: []
+      }
       field_payment_items: {
         Row: {
           actual_receiver_id: string | null
