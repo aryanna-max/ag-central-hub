@@ -349,7 +349,6 @@ export default function Projetos() {
                 <ProjectMeasurementsTab
                   projectName={selectedProject.name}
                   clientName={selectedProject.client}
-                  measurements={allMeasurements}
                 />
               </TabsContent>
             </Tabs>
