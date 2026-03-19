@@ -10,7 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { FolderKanban, GripVertical, FileText } from "lucide-react";
 import { useProjects, useUpdateProject, type Project, type ProjectStatus } from "@/hooks/useProjects";
-import { useMeasurements, type Measurement } from "@/hooks/useMeasurements";
+import { useProjectMeasurements } from "@/hooks/useMeasurements";
 import { toast } from "sonner";
 
 const COLUMNS: { key: ProjectStatus; label: string; color: string }[] = [
@@ -42,20 +42,15 @@ const MEASUREMENT_STATUS: Record<string, { label: string; className: string }> =
 function ProjectMeasurementsTab({
   projectName,
   clientName,
-  measurements,
 }: {
   projectName: string;
   clientName: string | null;
-  measurements: Measurement[];
 }) {
-  const filtered = useMemo(() => {
-    const nameLC = projectName.toLowerCase();
-    const clientLC = clientName?.toLowerCase() || "";
-    return measurements.filter((m) => {
-      const obraLC = (m.obra_name || "").toLowerCase();
-      return (obraLC && (obraLC.includes(nameLC) || nameLC.includes(obraLC) || (clientLC && obraLC.includes(clientLC))));
-    });
-  }, [projectName, clientName, measurements]);
+  const { data: filtered = [], isLoading } = useProjectMeasurements(projectName, clientName);
+
+  if (isLoading) {
+    return <p className="py-6 text-center text-muted-foreground text-sm">Carregando...</p>;
+  }
 
   if (!filtered.length) {
     return (
@@ -105,7 +100,6 @@ function formatCurrency(value: number | null) {
 
 export default function Projetos() {
   const { data: projects = [], isLoading } = useProjects();
-  const { data: allMeasurements = [] } = useMeasurements();
   const updateProject = useUpdateProject();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [editForm, setEditForm] = useState<Partial<Project>>({});
@@ -355,7 +349,6 @@ export default function Projetos() {
                 <ProjectMeasurementsTab
                   projectName={selectedProject.name}
                   clientName={selectedProject.client}
-                  measurements={allMeasurements}
                 />
               </TabsContent>
             </Tabs>
