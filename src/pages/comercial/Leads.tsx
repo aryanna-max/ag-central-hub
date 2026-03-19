@@ -209,12 +209,32 @@ export default function Leads() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setDetailLead(lead)}>
-                            <Eye className="w-4 h-4 mr-2" /> Ver detalhes
-                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => { setEditingLead(lead); setFormOpen(true); }}>
                             <Pencil className="w-4 h-4 mr-2" /> Editar
                           </DropdownMenuItem>
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                              <ArrowRightLeft className="w-4 h-4 mr-2" /> Alterar Status
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent>
+                              {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                                <DropdownMenuItem
+                                  key={k}
+                                  disabled={k === lead.status}
+                                  onClick={() => handleStatusChange(lead, k as LeadStatus)}
+                                >
+                                  <Badge className={`${STATUS_COLORS[k as LeadStatus]} text-xs mr-2`}>{v}</Badge>
+                                  {k === lead.status && <span className="text-xs text-muted-foreground ml-auto">(atual)</span>}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuSubContent>
+                          </DropdownMenuSub>
+                          {getLinkedProject(lead) && (
+                            <DropdownMenuItem onClick={() => navigate("/projetos")}>
+                              <FolderKanban className="w-4 h-4 mr-2" /> Ver Projeto
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(lead.id)}>
                             <Trash2 className="w-4 h-4 mr-2" /> Excluir
                           </DropdownMenuItem>
