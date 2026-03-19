@@ -47,16 +47,6 @@ export default function NotificationsPanel() {
       <PopoverContent align="end" className="w-96 p-0">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <span className="text-sm font-semibold text-foreground">Notificações</span>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs h-7"
-              onClick={() => markAllRead.mutate()}
-            >
-              <CheckCheck className="w-3.5 h-3.5 mr-1" /> Marcar todas como lidas
-            </Button>
-          )}
         </div>
         <ScrollArea className="max-h-80">
           {alerts.length === 0 ? (
