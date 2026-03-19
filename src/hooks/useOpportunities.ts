@@ -51,7 +51,7 @@ export const STAGE_COLORS: Record<OpportunityStage, string> = {
 export const PIPELINE_STAGES: OpportunityStage[] = [
   "prospeccao",
   "qualificacao",
-  "proposta",
+  "proposta_enviada",
   "negociacao",
   "fechado_ganho",
   "fechado_perdido",
