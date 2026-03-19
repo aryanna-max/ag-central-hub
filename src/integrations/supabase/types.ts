@@ -1204,6 +1204,36 @@ export type Database = {
           },
         ]
       }
+      schedule_audit: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          performed_by: string
+          previous_status: string | null
+          reason: string | null
+          schedule_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          performed_by: string
+          previous_status?: string | null
+          reason?: string | null
+          schedule_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          performed_by?: string
+          previous_status?: string | null
+          reason?: string | null
+          schedule_id?: string | null
+        }
+        Relationships: []
+      }
       schedule_reopen_history: {
         Row: {
           action: string
