@@ -47,6 +47,7 @@ export default function Projetos() {
       entrega: [],
       faturamento: [],
       concluido: [],
+      pausado: [],
     };
     projects.forEach((p) => {
       if (map[p.status]) map[p.status].push(p);
