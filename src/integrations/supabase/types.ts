@@ -117,6 +117,44 @@ export type Database = {
           },
         ]
       }
+      benefit_rules: {
+        Row: {
+          benefit_type: string
+          created_at: string
+          daily_value: number | null
+          effective_date: string | null
+          employee_id: string
+          id: string
+          notes: string | null
+        }
+        Insert: {
+          benefit_type: string
+          created_at?: string
+          daily_value?: number | null
+          effective_date?: string | null
+          employee_id: string
+          id?: string
+          notes?: string | null
+        }
+        Update: {
+          benefit_type?: string
+          created_at?: string
+          daily_value?: number | null
+          effective_date?: string | null
+          employee_id?: string
+          id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_rules_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_contacts: {
         Row: {
           client_id: string
@@ -515,6 +553,109 @@ export type Database = {
           role?: string
           status?: Database["public"]["Enums"]["employee_status"]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      field_payment_items: {
+        Row: {
+          created_at: string
+          daily_value: number | null
+          days_worked: number | null
+          employee_id: string
+          field_payment_id: string
+          id: string
+          notes: string | null
+          others_value: number | null
+          project_id: string | null
+          project_name: string | null
+          total_value: number | null
+          transport_value: number | null
+        }
+        Insert: {
+          created_at?: string
+          daily_value?: number | null
+          days_worked?: number | null
+          employee_id: string
+          field_payment_id: string
+          id?: string
+          notes?: string | null
+          others_value?: number | null
+          project_id?: string | null
+          project_name?: string | null
+          total_value?: number | null
+          transport_value?: number | null
+        }
+        Update: {
+          created_at?: string
+          daily_value?: number | null
+          days_worked?: number | null
+          employee_id?: string
+          field_payment_id?: string
+          id?: string
+          notes?: string | null
+          others_value?: number | null
+          project_id?: string | null
+          project_name?: string | null
+          total_value?: number | null
+          transport_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_payment_items_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_payment_items_field_payment_id_fkey"
+            columns: ["field_payment_id"]
+            isOneToOne: false
+            referencedRelation: "field_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_payment_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      field_payments: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          id: string
+          status: Database["public"]["Enums"]["field_payment_status"] | null
+          total_value: number | null
+          updated_at: string
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["field_payment_status"] | null
+          total_value?: number | null
+          updated_at?: string
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["field_payment_status"] | null
+          total_value?: number | null
+          updated_at?: string
+          week_end?: string
+          week_start?: string
         }
         Relationships: []
       }
@@ -1173,6 +1314,12 @@ export type Database = {
         | "licenca"
         | "afastado"
         | "desligado"
+      field_payment_status:
+        | "rascunho"
+        | "em_revisao"
+        | "aprovada"
+        | "paga"
+        | "cancelada"
       lead_interaction_type:
         | "nota"
         | "ligacao"
@@ -1355,6 +1502,13 @@ export const Constants = {
         "licenca",
         "afastado",
         "desligado",
+      ],
+      field_payment_status: [
+        "rascunho",
+        "em_revisao",
+        "aprovada",
+        "paga",
+        "cancelada",
       ],
       lead_interaction_type: [
         "nota",
