@@ -36,6 +36,7 @@ export default function OpportunityFormDialog({ open, onOpenChange, opportunity 
         name: opportunity.name,
         lead_id: opportunity.lead_id,
         client: opportunity.client,
+        client_id: opportunity.client_id,
         value: opportunity.value,
         stage: opportunity.stage,
         responsible: opportunity.responsible,
