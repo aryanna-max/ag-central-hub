@@ -22,6 +22,7 @@ export default function OpportunityFormDialog({ open, onOpenChange, opportunity 
   const createOpp = useCreateOpportunity();
   const updateOpp = useUpdateOpportunity();
   const { data: leads = [] } = useLeads();
+  const { data: clients = [] } = useClients();
   const isEdit = !!opportunity;
 
   const [form, setForm] = useState<OpportunityInsert>({
