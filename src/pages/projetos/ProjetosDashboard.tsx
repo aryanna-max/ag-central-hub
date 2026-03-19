@@ -76,26 +76,23 @@ export default function ProjetosDashboard() {
   );
 
   const measurementsByObra = useMemo(() => {
-    const map: Record<string, { totalBruto: number; totalNF: number; pendentes: number }> = {};
+    const map: Record<string, { totalBruto: number; totalNF: number; totalNFAReceber: number; pendentes: number }> = {};
     measurements.forEach((m) => {
       const key = m.obra_id || "sem_obra";
-      if (!map[key]) map[key] = { totalBruto: 0, totalNF: 0, pendentes: 0 };
+      if (!map[key]) map[key] = { totalBruto: 0, totalNF: 0, totalNFAReceber: 0, pendentes: 0 };
       map[key].totalBruto += m.valor_bruto || 0;
       map[key].totalNF += m.valor_nf || 0;
+      if (["aguardando_nf", "nf_emitida"].includes(m.status)) {
+        map[key].totalNFAReceber += m.valor_nf || 0;
+      }
       if (["rascunho", "aguardando_nf"].includes(m.status)) map[key].pendentes += 1;
     });
     return map;
   }, [measurements]);
 
-  const obraNameMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    obras.forEach((o) => (map[o.name?.toLowerCase() || ""] = o.id));
-    return map;
-  }, [obras]);
-
   const getProjectMeasurements = (p: Project) => {
-    const obraId = obraNameMap[p.name?.toLowerCase() || ""];
-    return obraId ? measurementsByObra[obraId] : undefined;
+    if (!p.obra_id) return undefined;
+    return measurementsByObra[p.obra_id];
   };
 
   const totalMedido = useMemo(
