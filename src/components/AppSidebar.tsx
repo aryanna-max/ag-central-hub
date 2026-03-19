@@ -56,6 +56,7 @@ const navigation: SidebarItem[] = [
       { label: "Equipes", path: "/operacional/equipes", icon: Users },
       { label: "Escala Diária", path: "/operacional/escala-diaria", icon: CalendarDays },
       { label: "Escala Mensal", path: "/operacional/escala", icon: CalendarDays },
+      { label: "Medições", path: "/operacional/medicoes", icon: FileText },
       { label: "Veículos", path: "/operacional/veiculos", icon: Car },
     ],
   },
