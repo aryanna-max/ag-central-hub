@@ -145,7 +145,7 @@ export default function ProjetosDashboard() {
   const kpis = [
     { label: "Projetos Ativos", value: activeProjects.length, icon: FolderKanban, color: "text-primary" },
     { label: "Receita Contratada", value: formatCurrency(receitaContratada), icon: DollarSign, color: "text-emerald-600" },
-    { label: "A Receber", value: formatCurrency(Math.max(aReceber, 0)), icon: Clock, color: "text-amber-600" },
+    { label: "A Receber", value: formatCurrency(aReceber), icon: Clock, color: "text-amber-600" },
     { label: "Medições Pendentes", value: medicoesPendentes, icon: FileText, color: "text-blue-600" },
   ];
 
