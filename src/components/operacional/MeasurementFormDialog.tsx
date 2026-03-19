@@ -50,6 +50,8 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
     valor_diaria_fds: "",
     retencao_pct: "5",
     notes: "",
+    empresa_faturadora: "ag_topografia",
+    tipo_documento: "nota_fiscal",
   });
 
   useEffect(() => {
@@ -73,7 +75,7 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
   }, [form.dias_semana, form.valor_diaria_semana, form.dias_fds, form.valor_diaria_fds, form.retencao_pct]);
 
   const resetForm = () =>
-    setForm({ codigo_bm: "", obra_id: "", team_id: "", period_start: "", period_end: "", dias_semana: "", valor_diaria_semana: "", dias_fds: "", valor_diaria_fds: "", retencao_pct: "5", notes: "" });
+    setForm({ codigo_bm: "", obra_id: "", team_id: "", period_start: "", period_end: "", dias_semana: "", valor_diaria_semana: "", dias_fds: "", valor_diaria_fds: "", retencao_pct: "5", notes: "", empresa_faturadora: "ag_topografia", tipo_documento: "nota_fiscal" });
 
   const handleSave = async (notify: boolean) => {
     if (!form.codigo_bm || !form.period_start || !form.period_end) {
@@ -91,9 +93,11 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
         valor_diaria_semana: Number(form.valor_diaria_semana) || 0,
         dias_fds: Number(form.dias_fds) || 0,
         valor_diaria_fds: Number(form.valor_diaria_fds) || 0,
-        retencao_pct: Number(form.retencao_pct) || 5,
+        retencao_pct: form.tipo_documento === "recibo" ? 0 : (Number(form.retencao_pct) || 5),
         status: notify ? "aguardando_nf" : "rascunho",
         notes: form.notes || null,
+        empresa_faturadora: form.empresa_faturadora,
+        tipo_documento: form.tipo_documento,
       });
 
       if (notify) {
@@ -170,6 +174,37 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
             </div>
           </div>
 
+          {/* Empresa Faturadora e Tipo Documento */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Empresa Faturadora</Label>
+              <Select value={form.empresa_faturadora} onValueChange={(v) => set("empresa_faturadora", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ag_topografia">AG Topografia e Construções</SelectItem>
+                  <SelectItem value="ag_cartografia">AG Cartografia</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Tipo de Documento</Label>
+              <Select value={form.tipo_documento} onValueChange={(v) => {
+                set("tipo_documento", v);
+                if (v === "recibo") {
+                  set("retencao_pct", "0");
+                } else {
+                  set("retencao_pct", "5");
+                }
+              }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nota_fiscal">Nota Fiscal</SelectItem>
+                  <SelectItem value="recibo">Recibo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <Separator />
 
           {/* Diárias */}
@@ -199,7 +234,15 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
           <div className="grid grid-cols-3 gap-3">
             <div>
               <Label>Retenção %</Label>
-              <Input type="number" min="0" max="100" step="0.1" value={form.retencao_pct} onChange={(e) => set("retencao_pct", e.target.value)} />
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                value={form.retencao_pct}
+                onChange={(e) => set("retencao_pct", e.target.value)}
+                disabled={form.tipo_documento === "recibo"}
+              />
             </div>
           </div>
 

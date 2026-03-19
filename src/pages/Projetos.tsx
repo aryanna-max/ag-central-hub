@@ -206,6 +206,8 @@ export default function Projetos() {
         notes: editForm.notes,
         start_date: editForm.start_date,
         end_date: editForm.end_date,
+        empresa_faturadora: editForm.empresa_faturadora,
+        tipo_documento: editForm.tipo_documento,
       });
       toast.success("Projeto atualizado");
       setSelectedProject(null);
@@ -388,6 +390,36 @@ export default function Projetos() {
                               {emp.name}
                             </SelectItem>
                           ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Empresa Faturadora</Label>
+                    <Select
+                      value={editForm.empresa_faturadora || "ag_topografia"}
+                      onValueChange={(val) => setEditForm({ ...editForm, empresa_faturadora: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ag_topografia">AG Topografia e Construções</SelectItem>
+                        <SelectItem value="ag_cartografia">AG Cartografia</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Tipo de Documento</Label>
+                    <Select
+                      value={editForm.tipo_documento || "nota_fiscal"}
+                      onValueChange={(val) => setEditForm({ ...editForm, tipo_documento: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nota_fiscal">Nota Fiscal</SelectItem>
+                        <SelectItem value="recibo">Recibo</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

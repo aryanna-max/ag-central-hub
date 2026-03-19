@@ -17,6 +17,8 @@ export interface Project {
   notes: string | null;
   start_date: string | null;
   end_date: string | null;
+  empresa_faturadora: string;
+  tipo_documento: string;
   created_at: string;
   updated_at: string;
 }
@@ -34,6 +36,8 @@ export interface ProjectInsert {
   notes?: string | null;
   start_date?: string | null;
   end_date?: string | null;
+  empresa_faturadora?: string;
+  tipo_documento?: string;
 }
 
 export function useProjects() {

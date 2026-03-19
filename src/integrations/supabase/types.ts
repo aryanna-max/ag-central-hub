@@ -993,6 +993,7 @@ export type Database = {
           created_at: string | null
           dias_fds: number
           dias_semana: number
+          empresa_faturadora: string
           id: string
           nf_data: string | null
           nf_numero: string | null
@@ -1004,6 +1005,7 @@ export type Database = {
           retencao_pct: number
           status: string
           team_id: string | null
+          tipo_documento: string
           updated_at: string | null
           valor_bruto: number | null
           valor_diaria_fds: number
@@ -1016,6 +1018,7 @@ export type Database = {
           created_at?: string | null
           dias_fds?: number
           dias_semana?: number
+          empresa_faturadora?: string
           id?: string
           nf_data?: string | null
           nf_numero?: string | null
@@ -1027,6 +1030,7 @@ export type Database = {
           retencao_pct?: number
           status?: string
           team_id?: string | null
+          tipo_documento?: string
           updated_at?: string | null
           valor_bruto?: number | null
           valor_diaria_fds?: number
@@ -1039,6 +1043,7 @@ export type Database = {
           created_at?: string | null
           dias_fds?: number
           dias_semana?: number
+          empresa_faturadora?: string
           id?: string
           nf_data?: string | null
           nf_numero?: string | null
@@ -1050,6 +1055,7 @@ export type Database = {
           retencao_pct?: number
           status?: string
           team_id?: string | null
+          tipo_documento?: string
           updated_at?: string | null
           valor_bruto?: number | null
           valor_diaria_fds?: number
@@ -1381,6 +1387,7 @@ export type Database = {
           client_cnpj: string | null
           contract_value: number | null
           created_at: string
+          empresa_faturadora: string
           end_date: string | null
           id: string
           lead_id: string | null
@@ -1391,6 +1398,7 @@ export type Database = {
           service: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["project_status"]
+          tipo_documento: string
           updated_at: string
         }
         Insert: {
@@ -1398,6 +1406,7 @@ export type Database = {
           client_cnpj?: string | null
           contract_value?: number | null
           created_at?: string
+          empresa_faturadora?: string
           end_date?: string | null
           id?: string
           lead_id?: string | null
@@ -1408,6 +1417,7 @@ export type Database = {
           service?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
+          tipo_documento?: string
           updated_at?: string
         }
         Update: {
@@ -1415,6 +1425,7 @@ export type Database = {
           client_cnpj?: string | null
           contract_value?: number | null
           created_at?: string
+          empresa_faturadora?: string
           end_date?: string | null
           id?: string
           lead_id?: string | null
@@ -1425,6 +1436,7 @@ export type Database = {
           service?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
+          tipo_documento?: string
           updated_at?: string
         }
         Relationships: [
