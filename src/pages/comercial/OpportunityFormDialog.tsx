@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateOpportunity, useUpdateOpportunity, STAGE_LABELS, PIPELINE_STAGES, type Opportunity, type OpportunityInsert } from "@/hooks/useOpportunities";
 import { useLeads } from "@/hooks/useLeads";
+import { useClients } from "@/hooks/useClients";
 import { toast } from "sonner";
 
 const RESPONSAVEIS = ["Aryanna", "Sérgio", "Ciro"];
@@ -21,6 +22,7 @@ export default function OpportunityFormDialog({ open, onOpenChange, opportunity 
   const createOpp = useCreateOpportunity();
   const updateOpp = useUpdateOpportunity();
   const { data: leads = [] } = useLeads();
+  const { data: clients = [] } = useClients();
   const isEdit = !!opportunity;
 
   const [form, setForm] = useState<OpportunityInsert>({
@@ -34,6 +36,7 @@ export default function OpportunityFormDialog({ open, onOpenChange, opportunity 
         name: opportunity.name,
         lead_id: opportunity.lead_id,
         client: opportunity.client,
+        client_id: opportunity.client_id,
         value: opportunity.value,
         stage: opportunity.stage,
         responsible: opportunity.responsible,
@@ -102,8 +105,16 @@ export default function OpportunityFormDialog({ open, onOpenChange, opportunity 
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Cliente</Label>
-              <Input value={form.client || ""} onChange={(e) => setForm({ ...form, client: e.target.value })} />
+              <Label>Cliente vinculado</Label>
+              <Select value={form.client_id || "none"} onValueChange={(v) => setForm({ ...form, client_id: v === "none" ? null : v })}>
+                <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {clients.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Valor (R$)</Label>

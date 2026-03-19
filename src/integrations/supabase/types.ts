@@ -616,6 +616,7 @@ export type Database = {
       opportunities: {
         Row: {
           client: string | null
+          client_id: string | null
           created_at: string
           expected_close_date: string | null
           id: string
@@ -629,6 +630,7 @@ export type Database = {
         }
         Insert: {
           client?: string | null
+          client_id?: string | null
           created_at?: string
           expected_close_date?: string | null
           id?: string
@@ -642,6 +644,7 @@ export type Database = {
         }
         Update: {
           client?: string | null
+          client_id?: string | null
           created_at?: string
           expected_close_date?: string | null
           id?: string
@@ -654,6 +657,13 @@ export type Database = {
           value?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "opportunities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "opportunities_lead_id_fkey"
             columns: ["lead_id"]
@@ -901,7 +911,7 @@ export type Database = {
       opportunity_stage:
         | "prospeccao"
         | "qualificacao"
-        | "proposta"
+        | "proposta_enviada"
         | "negociacao"
         | "fechado_ganho"
         | "fechado_perdido"
@@ -1087,7 +1097,7 @@ export const Constants = {
       opportunity_stage: [
         "prospeccao",
         "qualificacao",
-        "proposta",
+        "proposta_enviada",
         "negociacao",
         "fechado_ganho",
         "fechado_perdido",
