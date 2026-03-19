@@ -522,12 +522,14 @@ export type Database = {
           client_cnpj: string | null
           contract_value: number | null
           created_at: string
+          end_date: string | null
           id: string
           lead_id: string | null
           name: string
           notes: string | null
           responsible: string | null
           service: string | null
+          start_date: string | null
           status: Database["public"]["Enums"]["project_status"]
           updated_at: string
         }
@@ -536,12 +538,14 @@ export type Database = {
           client_cnpj?: string | null
           contract_value?: number | null
           created_at?: string
+          end_date?: string | null
           id?: string
           lead_id?: string | null
           name: string
           notes?: string | null
           responsible?: string | null
           service?: string | null
+          start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           updated_at?: string
         }
@@ -550,12 +554,14 @@ export type Database = {
           client_cnpj?: string | null
           contract_value?: number | null
           created_at?: string
+          end_date?: string | null
           id?: string
           lead_id?: string | null
           name?: string
           notes?: string | null
           responsible?: string | null
           service?: string | null
+          start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           updated_at?: string
         }
@@ -751,6 +757,7 @@ export type Database = {
         | "entrega"
         | "faturamento"
         | "concluido"
+        | "pausado"
       vehicle_status: "disponivel" | "em_uso" | "manutencao" | "indisponivel"
     }
     CompositeTypes: {
@@ -929,6 +936,7 @@ export const Constants = {
         "entrega",
         "faturamento",
         "concluido",
+        "pausado",
       ],
       vehicle_status: ["disponivel", "em_uso", "manutencao", "indisponivel"],
     },
