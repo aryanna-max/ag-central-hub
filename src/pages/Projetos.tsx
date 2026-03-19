@@ -383,6 +383,7 @@ export default function Projetos() {
                 <ProjectMeasurementsTab
                   projectName={selectedProject.name}
                   clientName={selectedProject.client}
+                  contractValue={selectedProject.contract_value}
                 />
               </TabsContent>
             </Tabs>
