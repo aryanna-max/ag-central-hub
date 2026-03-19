@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateOpportunity, useUpdateOpportunity, STAGE_LABELS, PIPELINE_STAGES, type Opportunity, type OpportunityInsert } from "@/hooks/useOpportunities";
 import { useLeads } from "@/hooks/useLeads";
+import { useClients } from "@/hooks/useClients";
 import { toast } from "sonner";
 
 const RESPONSAVEIS = ["Aryanna", "Sérgio", "Ciro"];
