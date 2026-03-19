@@ -53,6 +53,70 @@ export type Database = {
         }
         Relationships: []
       }
+      attendance: {
+        Row: {
+          confirmed_at: string | null
+          created_at: string
+          date: string
+          employee_id: string
+          id: string
+          project_id: string | null
+          reasons: string | null
+          status: string
+          substituted_by: string | null
+          substituted_by_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          created_at?: string
+          date: string
+          employee_id: string
+          id?: string
+          project_id?: string | null
+          reasons?: string | null
+          status?: string
+          substituted_by?: string | null
+          substituted_by_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          created_at?: string
+          date?: string
+          employee_id?: string
+          id?: string
+          project_id?: string | null
+          reasons?: string | null
+          status?: string
+          substituted_by?: string | null
+          substituted_by_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_substituted_by_fkey"
+            columns: ["substituted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_contacts: {
         Row: {
           client_id: string
@@ -253,6 +317,7 @@ export type Database = {
           is_closed: boolean
           notes: string | null
           schedule_date: string
+          status: string
         }
         Insert: {
           closed_at?: string | null
@@ -262,6 +327,7 @@ export type Database = {
           is_closed?: boolean
           notes?: string | null
           schedule_date: string
+          status?: string
         }
         Update: {
           closed_at?: string | null
@@ -271,6 +337,7 @@ export type Database = {
           is_closed?: boolean
           notes?: string | null
           schedule_date?: string
+          status?: string
         }
         Relationships: []
       }
