@@ -31,6 +31,73 @@ const STATUS_BADGE_COLORS: Record<ProjectStatus, string> = {
   pausado: "bg-rose-100 text-rose-800",
 };
 
+const MEASUREMENT_STATUS: Record<string, { label: string; className: string }> = {
+  rascunho: { label: "Rascunho", className: "bg-muted text-muted-foreground" },
+  aguardando_nf: { label: "Aguardando NF", className: "bg-amber-500 text-white" },
+  nf_emitida: { label: "NF Emitida", className: "bg-blue-600 text-white" },
+  pago: { label: "Pago", className: "bg-green-600 text-white" },
+  cancelado: { label: "Cancelado", className: "bg-red-600 text-white" },
+};
+
+function ProjectMeasurementsTab({
+  projectName,
+  clientName,
+  measurements,
+}: {
+  projectName: string;
+  clientName: string | null;
+  measurements: Measurement[];
+}) {
+  const filtered = useMemo(() => {
+    const nameLC = projectName.toLowerCase();
+    const clientLC = clientName?.toLowerCase() || "";
+    return measurements.filter((m) => {
+      const obraLC = (m.obra_name || "").toLowerCase();
+      return (obraLC && (obraLC.includes(nameLC) || nameLC.includes(obraLC) || (clientLC && obraLC.includes(clientLC))));
+    });
+  }, [projectName, clientName, measurements]);
+
+  if (!filtered.length) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
+        <FileText className="w-8 h-8" />
+        <p className="text-sm">Nenhuma medição vinculada a este projeto.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 mt-2">
+      <p className="text-xs text-muted-foreground">{filtered.length} medição(ões) encontrada(s)</p>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Código</TableHead>
+            <TableHead>Período</TableHead>
+            <TableHead>Valor NF</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filtered.map((m) => {
+            const st = MEASUREMENT_STATUS[m.status] || { label: m.status, className: "" };
+            return (
+              <TableRow key={m.id}>
+                <TableCell className="font-mono text-xs">{m.codigo_bm}</TableCell>
+                <TableCell className="text-xs">{m.period_start} a {m.period_end}</TableCell>
+                <TableCell className="text-sm font-semibold">{formatCurrency(m.valor_nf)}</TableCell>
+                <TableCell>
+                  <Badge className={st.className}>{st.label}</Badge>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 function formatCurrency(value: number | null) {
   if (value == null) return "—";
   return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
