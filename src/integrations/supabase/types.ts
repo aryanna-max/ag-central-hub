@@ -853,71 +853,89 @@ export type Database = {
           },
         ]
       }
-      medicoes: {
+      measurements: {
         Row: {
-          client_name: string | null
-          cnpj_faturamento: string | null
+          codigo_bm: string
           created_at: string | null
+          dias_fds: number
+          dias_semana: number
           id: string
           nf_data: string | null
           nf_numero: string | null
           notes: string | null
           obra_id: string | null
           pdf_signed_url: string | null
-          period_end: string | null
-          period_start: string | null
-          project_id: string | null
+          period_end: string
+          period_start: string
+          retencao_pct: number
           status: string
+          team_id: string | null
           updated_at: string | null
+          valor_bruto: number | null
+          valor_diaria_fds: number
+          valor_diaria_semana: number
           valor_nf: number | null
+          valor_retencao: number | null
         }
         Insert: {
-          client_name?: string | null
-          cnpj_faturamento?: string | null
+          codigo_bm: string
           created_at?: string | null
+          dias_fds?: number
+          dias_semana?: number
           id?: string
           nf_data?: string | null
           nf_numero?: string | null
           notes?: string | null
           obra_id?: string | null
           pdf_signed_url?: string | null
-          period_end?: string | null
-          period_start?: string | null
-          project_id?: string | null
+          period_end: string
+          period_start: string
+          retencao_pct?: number
           status?: string
+          team_id?: string | null
           updated_at?: string | null
+          valor_bruto?: number | null
+          valor_diaria_fds?: number
+          valor_diaria_semana?: number
           valor_nf?: number | null
+          valor_retencao?: number | null
         }
         Update: {
-          client_name?: string | null
-          cnpj_faturamento?: string | null
+          codigo_bm?: string
           created_at?: string | null
+          dias_fds?: number
+          dias_semana?: number
           id?: string
           nf_data?: string | null
           nf_numero?: string | null
           notes?: string | null
           obra_id?: string | null
           pdf_signed_url?: string | null
-          period_end?: string | null
-          period_start?: string | null
-          project_id?: string | null
+          period_end?: string
+          period_start?: string
+          retencao_pct?: number
           status?: string
+          team_id?: string | null
           updated_at?: string | null
+          valor_bruto?: number | null
+          valor_diaria_fds?: number
+          valor_diaria_semana?: number
           valor_nf?: number | null
+          valor_retencao?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "medicoes_obra_id_fkey"
+            foreignKeyName: "measurements_obra_id_fkey"
             columns: ["obra_id"]
             isOneToOne: false
             referencedRelation: "obras"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "medicoes_project_id_fkey"
-            columns: ["project_id"]
+            foreignKeyName: "measurements_team_id_fkey"
+            columns: ["team_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
