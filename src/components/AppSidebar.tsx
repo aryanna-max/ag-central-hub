@@ -24,6 +24,7 @@ import {
   UserPlus,
   FileCheck,
   HeartPulse,
+  Banknote,
 } from "lucide-react";
 
 interface SidebarItem {
