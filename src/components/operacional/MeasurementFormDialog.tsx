@@ -52,12 +52,11 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
     notes: "",
   });
 
-  // Sync defaultObraId when dialog opens
-  useState(() => {
-    if (defaultObraId && !form.obra_id) {
+  useEffect(() => {
+    if (open && defaultObraId) {
       setForm((p) => ({ ...p, obra_id: defaultObraId }));
     }
-  });
+  }, [open, defaultObraId]);
 
   const set = (key: string, value: string) => setForm((p) => ({ ...p, [key]: value }));
 
