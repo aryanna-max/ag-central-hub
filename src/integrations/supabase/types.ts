@@ -1007,6 +1007,44 @@ export type Database = {
           },
         ]
       }
+      payment_reviews: {
+        Row: {
+          action: string
+          comments: string | null
+          created_at: string
+          field_payment_id: string
+          flagged_items: Json | null
+          id: string
+          reviewer: string | null
+        }
+        Insert: {
+          action: string
+          comments?: string | null
+          created_at?: string
+          field_payment_id: string
+          flagged_items?: Json | null
+          id?: string
+          reviewer?: string | null
+        }
+        Update: {
+          action?: string
+          comments?: string | null
+          created_at?: string
+          field_payment_id?: string
+          flagged_items?: Json | null
+          id?: string
+          reviewer?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_reviews_field_payment_id_fkey"
+            columns: ["field_payment_id"]
+            isOneToOne: false
+            referencedRelation: "field_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_benefits: {
         Row: {
           almoco_type: string | null
