@@ -100,7 +100,7 @@ function formatCurrency(value: number | null) {
 
 export default function Projetos() {
   const { data: projects = [], isLoading } = useProjects();
-  const { data: allMeasurements = [] } = useMeasurements();
+  const updateProject = useUpdateProject();
   const updateProject = useUpdateProject();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [editForm, setEditForm] = useState<Partial<Project>>({});
