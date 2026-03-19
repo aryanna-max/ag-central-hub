@@ -107,6 +107,26 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
               <User className="w-4 h-4" /> {lead.responsible}
             </div>
           )}
+          {lead.cnpj && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <FileText className="w-4 h-4" /> CNPJ: <span className="font-medium text-foreground">{lead.cnpj}</span>
+            </div>
+          )}
+          {lead.servico && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Building2 className="w-4 h-4" /> Serviço: <span className="font-medium text-foreground">{lead.servico}</span>
+            </div>
+          )}
+          {lead.endereco && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <MapPin className="w-4 h-4" /> {lead.endereco}
+            </div>
+          )}
+          {lead.valor != null && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <DollarSign className="w-4 h-4" /> R$ {Number(lead.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            </div>
+          )}
           <div className="text-muted-foreground">
             Origem: <span className="font-medium text-foreground">{SOURCE_LABELS[lead.source]}</span>
           </div>

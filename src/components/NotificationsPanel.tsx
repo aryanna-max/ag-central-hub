@@ -89,6 +89,18 @@ export default function NotificationsPanel() {
             </div>
           )}
         </ScrollArea>
+        {unreadCount > 0 && (
+          <div className="border-t border-border px-4 py-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-xs h-8"
+              onClick={handleMarkAllRead}
+            >
+              <CheckCheck className="w-3.5 h-3.5 mr-1" /> Marcar todos como lidos
+            </Button>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );
