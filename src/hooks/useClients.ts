@@ -1,6 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export const SEGMENTOS = [
+  "Construção Civil",
+  "Saneamento",
+  "Ambiental",
+  "Mineração",
+  "Agronegócio",
+  "Órgão Público",
+  "Outros",
+] as const;
+
 export interface Client {
   id: string;
   name: string;
@@ -10,6 +20,7 @@ export interface Client {
   address: string | null;
   city: string | null;
   state: string | null;
+  segmento: string | null;
   notes: string | null;
   is_active: boolean;
   lead_id: string | null;
@@ -25,6 +36,7 @@ export interface ClientInsert {
   address?: string | null;
   city?: string | null;
   state?: string | null;
+  segmento?: string | null;
   notes?: string | null;
   is_active?: boolean;
   lead_id?: string | null;
