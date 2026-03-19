@@ -233,6 +233,22 @@ export default function Projetos() {
                 />
               </div>
               <div>
+                <Label>Data Início</Label>
+                <Input
+                  type="date"
+                  value={editForm.start_date || ""}
+                  onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value || null })}
+                />
+              </div>
+              <div>
+                <Label>Data Fim</Label>
+                <Input
+                  type="date"
+                  value={editForm.end_date || ""}
+                  onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value || null })}
+                />
+              </div>
+              <div>
                 <Label>Status</Label>
                 <Badge className={`${STATUS_BADGE_COLORS[selectedProject.status]} mt-1`}>
                   {COLUMNS.find((c) => c.key === selectedProject.status)?.label}
