@@ -853,6 +853,75 @@ export type Database = {
           },
         ]
       }
+      medicoes: {
+        Row: {
+          client_name: string | null
+          cnpj_faturamento: string | null
+          created_at: string | null
+          id: string
+          nf_data: string | null
+          nf_numero: string | null
+          notes: string | null
+          obra_id: string | null
+          pdf_signed_url: string | null
+          period_end: string | null
+          period_start: string | null
+          project_id: string | null
+          status: string
+          updated_at: string | null
+          valor_nf: number | null
+        }
+        Insert: {
+          client_name?: string | null
+          cnpj_faturamento?: string | null
+          created_at?: string | null
+          id?: string
+          nf_data?: string | null
+          nf_numero?: string | null
+          notes?: string | null
+          obra_id?: string | null
+          pdf_signed_url?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          project_id?: string | null
+          status?: string
+          updated_at?: string | null
+          valor_nf?: number | null
+        }
+        Update: {
+          client_name?: string | null
+          cnpj_faturamento?: string | null
+          created_at?: string | null
+          id?: string
+          nf_data?: string | null
+          nf_numero?: string | null
+          notes?: string | null
+          obra_id?: string | null
+          pdf_signed_url?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          project_id?: string | null
+          status?: string
+          updated_at?: string | null
+          valor_nf?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medicoes_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medicoes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monthly_schedules: {
         Row: {
           created_at: string
