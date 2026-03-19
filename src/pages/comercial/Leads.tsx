@@ -1,14 +1,17 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Eye, Target } from "lucide-react";
-import { useLeads, useDeleteLead, type Lead, type LeadStatus } from "@/hooks/useLeads";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Eye, Target, FolderKanban, ArrowRightLeft } from "lucide-react";
+import { useLeads, useDeleteLead, useUpdateLead, type Lead, type LeadStatus } from "@/hooks/useLeads";
+import { useLeadConversion } from "@/hooks/useLeadConversion";
+import { useProjects } from "@/hooks/useProjects";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -43,6 +46,10 @@ const SOURCE_LABELS: Record<string, string> = {
 export default function Leads() {
   const { data: leads = [], isLoading } = useLeads();
   const deleteLead = useDeleteLead();
+  const updateLead = useUpdateLead();
+  const { convertLead, isPending: isConverting } = useLeadConversion();
+  const { data: projects = [] } = useProjects();
+  const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -50,6 +57,7 @@ export default function Leads() {
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [statusChangeLead, setStatusChangeLead] = useState<Lead | null>(null);
 
   const filtered = useMemo(() => {
     return leads.filter((l) => {
@@ -79,6 +87,25 @@ export default function Leads() {
       toast.error("Erro ao remover lead");
     }
     setDeleteId(null);
+  };
+
+  const handleStatusChange = async (lead: Lead, newStatus: LeadStatus) => {
+    if (newStatus === lead.status) return;
+    try {
+      await updateLead.mutateAsync({ id: lead.id, status: newStatus });
+      if (newStatus === "convertido") {
+        await convertLead(lead);
+        toast.success("Lead convertido — projeto e alertas criados");
+      } else {
+        toast.success(`Status alterado para ${STATUS_LABELS[newStatus]}`);
+      }
+    } catch {
+      toast.error("Erro ao alterar status");
+    }
+  };
+
+  const getLinkedProject = (lead: Lead) => {
+    return projects.find((p) => p.lead_id === lead.id);
   };
 
   return (
@@ -182,12 +209,32 @@ export default function Leads() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setDetailLead(lead)}>
-                            <Eye className="w-4 h-4 mr-2" /> Ver detalhes
-                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => { setEditingLead(lead); setFormOpen(true); }}>
                             <Pencil className="w-4 h-4 mr-2" /> Editar
                           </DropdownMenuItem>
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                              <ArrowRightLeft className="w-4 h-4 mr-2" /> Alterar Status
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent>
+                              {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                                <DropdownMenuItem
+                                  key={k}
+                                  disabled={k === lead.status}
+                                  onClick={() => handleStatusChange(lead, k as LeadStatus)}
+                                >
+                                  <Badge className={`${STATUS_COLORS[k as LeadStatus]} text-xs mr-2`}>{v}</Badge>
+                                  {k === lead.status && <span className="text-xs text-muted-foreground ml-auto">(atual)</span>}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuSubContent>
+                          </DropdownMenuSub>
+                          {getLinkedProject(lead) && (
+                            <DropdownMenuItem onClick={() => navigate("/projetos")}>
+                              <FolderKanban className="w-4 h-4 mr-2" /> Ver Projeto
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(lead.id)}>
                             <Trash2 className="w-4 h-4 mr-2" /> Excluir
                           </DropdownMenuItem>

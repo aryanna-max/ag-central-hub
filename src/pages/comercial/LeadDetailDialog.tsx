@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Phone, Mail, Building2, User, MessageSquare, PhoneCall, Video, MapPin, Send, FileText, DollarSign } from "lucide-react";
-import { useLeadInteractions, useAddLeadInteraction, type Lead, type LeadInteractionType } from "@/hooks/useLeads";
+import { useLeadInteractions, useAddLeadInteraction, useUpdateLead, type Lead, type LeadInteractionType, type LeadStatus } from "@/hooks/useLeads";
+import { useLeadConversion } from "@/hooks/useLeadConversion";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -55,10 +56,29 @@ interface Props {
 export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
   const { data: interactions = [] } = useLeadInteractions(lead?.id);
   const addInteraction = useAddLeadInteraction();
+  const updateLead = useUpdateLead();
+  const { convertLead, isPending: isConverting } = useLeadConversion();
   const [newContent, setNewContent] = useState("");
   const [newType, setNewType] = useState<LeadInteractionType>("nota");
 
   if (!lead) return null;
+
+  const handleStatusChange = async (newStatus: string) => {
+    const status = newStatus as LeadStatus;
+    if (status === lead.status) return;
+    try {
+      await updateLead.mutateAsync({ id: lead.id, status });
+      if (status === "convertido") {
+        await convertLead(lead);
+        toast.success("Lead convertido — projeto e alertas criados");
+      } else {
+        toast.success(`Status alterado para ${STATUS_LABELS[status]}`);
+      }
+      onOpenChange(false);
+    } catch {
+      toast.error("Erro ao alterar status");
+    }
+  };
 
   const handleAddInteraction = async () => {
     if (!newContent.trim()) return;
@@ -82,7 +102,16 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <span>{lead.name}</span>
-            <Badge className={STATUS_COLORS[lead.status]}>{STATUS_LABELS[lead.status]}</Badge>
+            <Select value={lead.status} onValueChange={handleStatusChange} disabled={updateLead.isPending || isConverting}>
+              <SelectTrigger className={`w-auto h-6 text-xs border-0 px-2.5 py-0 rounded-full ${STATUS_COLORS[lead.status]}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </DialogTitle>
         </DialogHeader>
 
