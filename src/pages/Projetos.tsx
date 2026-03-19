@@ -6,8 +6,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FolderKanban, GripVertical, X } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { FolderKanban, GripVertical, FileText } from "lucide-react";
 import { useProjects, useUpdateProject, type Project, type ProjectStatus } from "@/hooks/useProjects";
+import { useMeasurements, type Measurement } from "@/hooks/useMeasurements";
 import { toast } from "sonner";
 
 const COLUMNS: { key: ProjectStatus; label: string; color: string }[] = [
@@ -28,6 +31,73 @@ const STATUS_BADGE_COLORS: Record<ProjectStatus, string> = {
   pausado: "bg-rose-100 text-rose-800",
 };
 
+const MEASUREMENT_STATUS: Record<string, { label: string; className: string }> = {
+  rascunho: { label: "Rascunho", className: "bg-muted text-muted-foreground" },
+  aguardando_nf: { label: "Aguardando NF", className: "bg-amber-500 text-white" },
+  nf_emitida: { label: "NF Emitida", className: "bg-blue-600 text-white" },
+  pago: { label: "Pago", className: "bg-green-600 text-white" },
+  cancelado: { label: "Cancelado", className: "bg-red-600 text-white" },
+};
+
+function ProjectMeasurementsTab({
+  projectName,
+  clientName,
+  measurements,
+}: {
+  projectName: string;
+  clientName: string | null;
+  measurements: Measurement[];
+}) {
+  const filtered = useMemo(() => {
+    const nameLC = projectName.toLowerCase();
+    const clientLC = clientName?.toLowerCase() || "";
+    return measurements.filter((m) => {
+      const obraLC = (m.obra_name || "").toLowerCase();
+      return (obraLC && (obraLC.includes(nameLC) || nameLC.includes(obraLC) || (clientLC && obraLC.includes(clientLC))));
+    });
+  }, [projectName, clientName, measurements]);
+
+  if (!filtered.length) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
+        <FileText className="w-8 h-8" />
+        <p className="text-sm">Nenhuma medição vinculada a este projeto.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 mt-2">
+      <p className="text-xs text-muted-foreground">{filtered.length} medição(ões) encontrada(s)</p>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Código</TableHead>
+            <TableHead>Período</TableHead>
+            <TableHead>Valor NF</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filtered.map((m) => {
+            const st = MEASUREMENT_STATUS[m.status] || { label: m.status, className: "" };
+            return (
+              <TableRow key={m.id}>
+                <TableCell className="font-mono text-xs">{m.codigo_bm}</TableCell>
+                <TableCell className="text-xs">{m.period_start} a {m.period_end}</TableCell>
+                <TableCell className="text-sm font-semibold">{formatCurrency(m.valor_nf)}</TableCell>
+                <TableCell>
+                  <Badge className={st.className}>{st.label}</Badge>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 function formatCurrency(value: number | null) {
   if (value == null) return "—";
   return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
@@ -35,6 +105,7 @@ function formatCurrency(value: number | null) {
 
 export default function Projetos() {
   const { data: projects = [], isLoading } = useProjects();
+  const { data: allMeasurements = [] } = useMeasurements();
   const updateProject = useUpdateProject();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [editForm, setEditForm] = useState<Partial<Project>>({});
@@ -186,91 +257,108 @@ export default function Projetos() {
             <SheetTitle>Detalhes do Projeto</SheetTitle>
           </SheetHeader>
           {selectedProject && (
-            <div className="space-y-4 mt-4">
-              <div>
-                <Label>Nome</Label>
-                <Input
-                  value={editForm.name || ""}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+            <Tabs defaultValue="dados" className="mt-4">
+              <TabsList className="w-full">
+                <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
+                <TabsTrigger value="medicoes" className="flex-1">Medições</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="dados">
+                <div className="space-y-4 mt-2">
+                  <div>
+                    <Label>Nome</Label>
+                    <Input
+                      value={editForm.name || ""}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Cliente</Label>
+                    <Input
+                      value={editForm.client || ""}
+                      onChange={(e) => setEditForm({ ...editForm, client: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>CNPJ</Label>
+                    <Input
+                      value={editForm.client_cnpj || ""}
+                      onChange={(e) => setEditForm({ ...editForm, client_cnpj: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Serviço</Label>
+                    <Input
+                      value={editForm.service || ""}
+                      onChange={(e) => setEditForm({ ...editForm, service: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Valor do Contrato (R$)</Label>
+                    <Input
+                      type="number"
+                      value={editForm.contract_value ?? ""}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, contract_value: e.target.value ? Number(e.target.value) : null })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Responsável</Label>
+                    <Input
+                      value={editForm.responsible || ""}
+                      onChange={(e) => setEditForm({ ...editForm, responsible: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Data Início</Label>
+                    <Input
+                      type="date"
+                      value={editForm.start_date || ""}
+                      onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value || null })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Data Fim</Label>
+                    <Input
+                      type="date"
+                      value={editForm.end_date || ""}
+                      onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value || null })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Status</Label>
+                    <Badge className={`${STATUS_BADGE_COLORS[selectedProject.status]} mt-1`}>
+                      {COLUMNS.find((c) => c.key === selectedProject.status)?.label}
+                    </Badge>
+                  </div>
+                  <div>
+                    <Label>Observações</Label>
+                    <Textarea
+                      value={editForm.notes || ""}
+                      onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button onClick={handleSave} disabled={updateProject.isPending} className="flex-1">
+                      {updateProject.isPending ? "Salvando..." : "Salvar"}
+                    </Button>
+                    <Button variant="outline" onClick={() => setSelectedProject(null)}>
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="medicoes">
+                <ProjectMeasurementsTab
+                  projectName={selectedProject.name}
+                  clientName={selectedProject.client}
+                  measurements={allMeasurements}
                 />
-              </div>
-              <div>
-                <Label>Cliente</Label>
-                <Input
-                  value={editForm.client || ""}
-                  onChange={(e) => setEditForm({ ...editForm, client: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>CNPJ</Label>
-                <Input
-                  value={editForm.client_cnpj || ""}
-                  onChange={(e) => setEditForm({ ...editForm, client_cnpj: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Serviço</Label>
-                <Input
-                  value={editForm.service || ""}
-                  onChange={(e) => setEditForm({ ...editForm, service: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Valor do Contrato (R$)</Label>
-                <Input
-                  type="number"
-                  value={editForm.contract_value ?? ""}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, contract_value: e.target.value ? Number(e.target.value) : null })
-                  }
-                />
-              </div>
-              <div>
-                <Label>Responsável</Label>
-                <Input
-                  value={editForm.responsible || ""}
-                  onChange={(e) => setEditForm({ ...editForm, responsible: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Data Início</Label>
-                <Input
-                  type="date"
-                  value={editForm.start_date || ""}
-                  onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value || null })}
-                />
-              </div>
-              <div>
-                <Label>Data Fim</Label>
-                <Input
-                  type="date"
-                  value={editForm.end_date || ""}
-                  onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value || null })}
-                />
-              </div>
-              <div>
-                <Label>Status</Label>
-                <Badge className={`${STATUS_BADGE_COLORS[selectedProject.status]} mt-1`}>
-                  {COLUMNS.find((c) => c.key === selectedProject.status)?.label}
-                </Badge>
-              </div>
-              <div>
-                <Label>Observações</Label>
-                <Textarea
-                  value={editForm.notes || ""}
-                  onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
-                  rows={3}
-                />
-              </div>
-              <div className="flex gap-2 pt-2">
-                <Button onClick={handleSave} disabled={updateProject.isPending} className="flex-1">
-                  {updateProject.isPending ? "Salvando..." : "Salvar"}
-                </Button>
-                <Button variant="outline" onClick={() => setSelectedProject(null)}>
-                  Cancelar
-                </Button>
-              </div>
-            </div>
+              </TabsContent>
+            </Tabs>
           )}
         </SheetContent>
       </Sheet>
