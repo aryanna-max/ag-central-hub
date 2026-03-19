@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Car, Plus, Trash2 } from "lucide-react";
+import { Car, Plus, Trash2, Pencil, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
-import { useVehicles, useCreateVehicle, useDeleteVehicle } from "@/hooks/useVehicles";
+import { useVehicles, useDeleteVehicle } from "@/hooks/useVehicles";
+import VehicleEditDialog from "@/components/operacional/VehicleEditDialog";
+import VehicleDetailDialog from "@/components/operacional/VehicleDetailDialog";
 import { toast } from "sonner";
 
 const statusColors: Record<string, string> = {
@@ -15,7 +15,6 @@ const statusColors: Record<string, string> = {
   manutencao: "bg-amber-500 text-white",
   indisponivel: "bg-red-600 text-white",
 };
-
 const statusLabels: Record<string, string> = {
   disponivel: "Disponível",
   em_uso: "Em Uso",
@@ -25,28 +24,14 @@ const statusLabels: Record<string, string> = {
 
 export default function Veiculos() {
   const { data: vehicles, isLoading } = useVehicles();
-  const createVehicle = useCreateVehicle();
   const deleteVehicle = useDeleteVehicle();
-  const [showNew, setShowNew] = useState(false);
-  const [form, setForm] = useState({ plate: "", model: "", brand: "", year: "", daily_rate: "" });
+  const [editOpen, setEditOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
 
-  const handleCreate = async () => {
-    if (!form.plate || !form.model) return;
-    try {
-      await createVehicle.mutateAsync({
-        plate: form.plate.toUpperCase(),
-        model: form.model,
-        brand: form.brand || undefined,
-        year: form.year ? parseInt(form.year) : undefined,
-        daily_rate: form.daily_rate ? parseFloat(form.daily_rate) : 0,
-      });
-      setShowNew(false);
-      setForm({ plate: "", model: "", brand: "", year: "", daily_rate: "" });
-      toast.success("Veículo cadastrado!");
-    } catch {
-      toast.error("Erro ao cadastrar veículo");
-    }
-  };
+  const openNew = () => { setSelectedVehicle(null); setEditOpen(true); };
+  const openEdit = (v: any, e: React.MouseEvent) => { e.stopPropagation(); setSelectedVehicle(v); setEditOpen(true); };
+  const openDetail = (v: any) => { setSelectedVehicle(v); setDetailOpen(true); };
 
   return (
     <div className="p-6 space-y-6">
@@ -60,7 +45,7 @@ export default function Veiculos() {
             <p className="text-sm text-muted-foreground">Controle de frota e disponibilidade</p>
           </div>
         </div>
-        <Button onClick={() => setShowNew(true)} className="gap-2">
+        <Button onClick={openNew} className="gap-2">
           <Plus className="w-4 h-4" /> Novo Veículo
         </Button>
       </div>
@@ -79,37 +64,51 @@ export default function Veiculos() {
                   <TableHead>Modelo</TableHead>
                   <TableHead>Marca</TableHead>
                   <TableHead>Ano</TableHead>
-                  <TableHead>Diária (R$)</TableHead>
                   <TableHead>KM Atual</TableHead>
+                  <TableHead>Responsável</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead></TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {vehicles.map((v) => (
-                  <TableRow key={v.id}>
+                {vehicles.map((v: any) => (
+                  <TableRow
+                    key={v.id}
+                    className="cursor-pointer"
+                    onClick={() => openDetail(v)}
+                  >
                     <TableCell className="font-medium">{v.plate}</TableCell>
                     <TableCell>{v.model}</TableCell>
                     <TableCell>{v.brand || "—"}</TableCell>
                     <TableCell>{v.year || "—"}</TableCell>
-                    <TableCell>{v.daily_rate ? `R$ ${Number(v.daily_rate).toFixed(2)}` : "—"}</TableCell>
-                    <TableCell>{v.km_current?.toLocaleString() || "—"}</TableCell>
+                    <TableCell>{v.km_current ? Number(v.km_current).toLocaleString() : "—"}</TableCell>
+                    <TableCell>{v.responsible_employee?.name || "—"}</TableCell>
                     <TableCell>
                       <Badge className={statusColors[v.status] || ""}>
                         {statusLabels[v.status] || v.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={() => {
-                          if (confirm("Excluir este veículo?")) deleteVehicle.mutate(v.id);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" onClick={e => openEdit(v, e)} title="Editar">
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={e => { e.stopPropagation(); openDetail(v); }} title="Detalhes">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive"
+                          onClick={e => {
+                            e.stopPropagation();
+                            if (confirm("Excluir este veículo?")) deleteVehicle.mutate(v.id);
+                          }}
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -119,26 +118,8 @@ export default function Veiculos() {
         </CardContent>
       </Card>
 
-      <Dialog open={showNew} onOpenChange={setShowNew}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Novo Veículo</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Input placeholder="Placa *" value={form.plate} onChange={(e) => setForm({ ...form, plate: e.target.value })} />
-            <Input placeholder="Modelo *" value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
-            <Input placeholder="Marca" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} />
-            <div className="grid grid-cols-2 gap-3">
-              <Input placeholder="Ano" type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} />
-              <Input placeholder="Diária (R$)" type="number" step="0.01" value={form.daily_rate} onChange={(e) => setForm({ ...form, daily_rate: e.target.value })} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNew(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} disabled={!form.plate || !form.model}>Cadastrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <VehicleEditDialog open={editOpen} onOpenChange={setEditOpen} vehicle={selectedVehicle} />
+      <VehicleDetailDialog open={detailOpen} onOpenChange={setDetailOpen} vehicle={selectedVehicle} />
     </div>
   );
 }
