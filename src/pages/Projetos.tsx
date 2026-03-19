@@ -206,6 +206,8 @@ export default function Projetos() {
         notes: editForm.notes,
         start_date: editForm.start_date,
         end_date: editForm.end_date,
+        empresa_faturadora: editForm.empresa_faturadora,
+        tipo_documento: editForm.tipo_documento,
       });
       toast.success("Projeto atualizado");
       setSelectedProject(null);
