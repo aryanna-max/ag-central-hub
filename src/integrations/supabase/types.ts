@@ -479,6 +479,56 @@ export type Database = {
           },
         ]
       }
+      employee_payment_methods: {
+        Row: {
+          active: boolean | null
+          bank: string | null
+          created_at: string | null
+          employee_id: string | null
+          holder_name: string | null
+          id: string
+          intermediary_note: string | null
+          is_intermediary: boolean | null
+          key_value: string | null
+          preference: string | null
+          type: string
+        }
+        Insert: {
+          active?: boolean | null
+          bank?: string | null
+          created_at?: string | null
+          employee_id?: string | null
+          holder_name?: string | null
+          id?: string
+          intermediary_note?: string | null
+          is_intermediary?: boolean | null
+          key_value?: string | null
+          preference?: string | null
+          type: string
+        }
+        Update: {
+          active?: boolean | null
+          bank?: string | null
+          created_at?: string | null
+          employee_id?: string | null
+          holder_name?: string | null
+          id?: string
+          intermediary_note?: string | null
+          is_intermediary?: boolean | null
+          key_value?: string | null
+          preference?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_payment_methods_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_transport: {
         Row: {
           created_at: string
