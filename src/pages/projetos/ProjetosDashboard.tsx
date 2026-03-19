@@ -96,11 +96,20 @@ export default function ProjetosDashboard() {
   };
 
   const totalMedido = useMemo(
-    () => Object.values(measurementsByObra).reduce((s, v) => s + v.totalNF, 0),
-    [measurementsByObra]
+    () => activeProjects.reduce((s, p) => {
+      const m = p.obra_id ? measurementsByObra[p.obra_id] : undefined;
+      return s + (m?.totalNF || 0);
+    }, 0),
+    [activeProjects, measurementsByObra]
   );
 
-  const aReceber = receitaContratada - totalMedido;
+  const aReceber = useMemo(
+    () => activeProjects.reduce((s, p) => {
+      const m = p.obra_id ? measurementsByObra[p.obra_id] : undefined;
+      return s + (m?.totalNFAReceber || 0);
+    }, 0),
+    [activeProjects, measurementsByObra]
+  );
 
   const medicoesPendentes = useMemo(
     () => Object.values(measurementsByObra).reduce((s, v) => s + v.pendentes, 0),
