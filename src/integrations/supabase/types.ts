@@ -516,6 +516,56 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunities: {
+        Row: {
+          client: string | null
+          created_at: string
+          expected_close_date: string | null
+          id: string
+          lead_id: string | null
+          name: string
+          notes: string | null
+          responsible: string | null
+          stage: Database["public"]["Enums"]["opportunity_stage"]
+          updated_at: string
+          value: number | null
+        }
+        Insert: {
+          client?: string | null
+          created_at?: string
+          expected_close_date?: string | null
+          id?: string
+          lead_id?: string | null
+          name: string
+          notes?: string | null
+          responsible?: string | null
+          stage?: Database["public"]["Enums"]["opportunity_stage"]
+          updated_at?: string
+          value?: number | null
+        }
+        Update: {
+          client?: string | null
+          created_at?: string
+          expected_close_date?: string | null
+          id?: string
+          lead_id?: string | null
+          name?: string
+          notes?: string | null
+          responsible?: string | null
+          stage?: Database["public"]["Enums"]["opportunity_stage"]
+          updated_at?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           client: string | null
@@ -751,6 +801,13 @@ export type Database = {
         | "qualificado"
         | "convertido"
         | "descartado"
+      opportunity_stage:
+        | "prospeccao"
+        | "qualificacao"
+        | "proposta"
+        | "negociacao"
+        | "fechado_ganho"
+        | "fechado_perdido"
       project_status:
         | "planejamento"
         | "execucao"
@@ -929,6 +986,14 @@ export const Constants = {
         "qualificado",
         "convertido",
         "descartado",
+      ],
+      opportunity_stage: [
+        "prospeccao",
+        "qualificacao",
+        "proposta",
+        "negociacao",
+        "fechado_ganho",
+        "fechado_perdido",
       ],
       project_status: [
         "planejamento",
