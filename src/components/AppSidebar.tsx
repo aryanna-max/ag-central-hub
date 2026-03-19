@@ -47,7 +47,15 @@ const navigation: SidebarItem[] = [
     ],
   },
   { label: "Propostas", path: "/propostas", icon: FileText },
-  { label: "Projetos", path: "/projetos", icon: FolderKanban },
+  {
+    label: "Projetos",
+    path: "/projetos",
+    icon: FolderKanban,
+    children: [
+      { label: "Dashboard", path: "/projetos/dashboard", icon: LayoutDashboard },
+      { label: "Kanban", path: "/projetos/kanban", icon: FolderKanban },
+    ],
+  },
   {
     label: "Operacional",
     path: "/operacional",

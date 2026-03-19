@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Comercial from "./pages/Comercial";
 import Propostas from "./pages/Propostas";
 import Projetos from "./pages/Projetos";
+import ProjetosDashboard from "./pages/projetos/ProjetosDashboard";
 import Operacional from "./pages/Operacional";
 import SalaTecnica from "./pages/SalaTecnica";
 import Financeiro from "./pages/Financeiro";
@@ -27,7 +28,8 @@ const App = () => (
             <Route path="/" element={<Dashboard />} />
             <Route path="/comercial/*" element={<Comercial />} />
             <Route path="/propostas" element={<Propostas />} />
-            <Route path="/projetos" element={<Projetos />} />
+            <Route path="/projetos/kanban" element={<Projetos />} />
+            <Route path="/projetos/dashboard" element={<ProjetosDashboard />} />
             <Route path="/operacional/*" element={<Operacional />} />
             <Route path="/sala-tecnica/*" element={<SalaTecnica />} />
             <Route path="/financeiro/*" element={<Financeiro />} />
