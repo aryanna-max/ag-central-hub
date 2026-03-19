@@ -441,6 +441,41 @@ export type Database = {
           },
         ]
       }
+      employee_transport: {
+        Row: {
+          created_at: string
+          daily_value: number | null
+          employee_id: string
+          id: string
+          notes: string | null
+          transport_type: string
+        }
+        Insert: {
+          created_at?: string
+          daily_value?: number | null
+          employee_id: string
+          id?: string
+          notes?: string | null
+          transport_type: string
+        }
+        Update: {
+          created_at?: string
+          daily_value?: number | null
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          transport_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_transport_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           admission_date: string | null
@@ -746,6 +781,109 @@ export type Database = {
           },
         ]
       }
+      payment_methods: {
+        Row: {
+          account: string | null
+          agency: string | null
+          bank_name: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          is_primary: boolean | null
+          key_value: string | null
+          type: string
+        }
+        Insert: {
+          account?: string | null
+          agency?: string | null
+          bank_name?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          is_primary?: boolean | null
+          key_value?: string | null
+          type: string
+        }
+        Update: {
+          account?: string | null
+          agency?: string | null
+          bank_name?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          is_primary?: boolean | null
+          key_value?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_methods_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_benefits: {
+        Row: {
+          almoco_type: string | null
+          created_at: string
+          has_restaurant: boolean | null
+          has_ticker: boolean | null
+          has_transport: boolean | null
+          id: string
+          is_active: boolean | null
+          observations: string | null
+          payment_day: string | null
+          project_id: string
+          project_name: string
+          ticker_value: number | null
+          transport_value: number | null
+          updated_at: string
+        }
+        Insert: {
+          almoco_type?: string | null
+          created_at?: string
+          has_restaurant?: boolean | null
+          has_ticker?: boolean | null
+          has_transport?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          observations?: string | null
+          payment_day?: string | null
+          project_id: string
+          project_name: string
+          ticker_value?: number | null
+          transport_value?: number | null
+          updated_at?: string
+        }
+        Update: {
+          almoco_type?: string | null
+          created_at?: string
+          has_restaurant?: boolean | null
+          has_ticker?: boolean | null
+          has_transport?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          observations?: string | null
+          payment_day?: string | null
+          project_id?: string
+          project_name?: string
+          ticker_value?: number | null
+          transport_value?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_benefits_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           client: string | null
@@ -801,6 +939,47 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedule_activity_log: {
+        Row: {
+          action: string
+          created_at: string
+          daily_schedule_id: string
+          details: string | null
+          id: string
+          new_status: string | null
+          old_status: string | null
+          performed_by: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          daily_schedule_id: string
+          details?: string | null
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          performed_by: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          daily_schedule_id?: string
+          details?: string | null
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          performed_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_activity_log_daily_schedule_id_fkey"
+            columns: ["daily_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "daily_schedules"
             referencedColumns: ["id"]
           },
         ]
