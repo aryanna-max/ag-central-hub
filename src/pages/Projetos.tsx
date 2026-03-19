@@ -42,20 +42,15 @@ const MEASUREMENT_STATUS: Record<string, { label: string; className: string }> =
 function ProjectMeasurementsTab({
   projectName,
   clientName,
-  measurements,
 }: {
   projectName: string;
   clientName: string | null;
-  measurements: Measurement[];
 }) {
-  const filtered = useMemo(() => {
-    const nameLC = projectName.toLowerCase();
-    const clientLC = clientName?.toLowerCase() || "";
-    return measurements.filter((m) => {
-      const obraLC = (m.obra_name || "").toLowerCase();
-      return (obraLC && (obraLC.includes(nameLC) || nameLC.includes(obraLC) || (clientLC && obraLC.includes(clientLC))));
-    });
-  }, [projectName, clientName, measurements]);
+  const { data: filtered = [], isLoading } = useProjectMeasurements(projectName, clientName);
+
+  if (isLoading) {
+    return <p className="py-6 text-center text-muted-foreground text-sm">Carregando...</p>;
+  }
 
   if (!filtered.length) {
     return (
