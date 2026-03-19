@@ -627,6 +627,7 @@ export type Database = {
           name: string
           notes: string | null
           responsible: string | null
+          service: string | null
           stage: Database["public"]["Enums"]["opportunity_stage"]
           updated_at: string
           value: number | null
@@ -641,6 +642,7 @@ export type Database = {
           name: string
           notes?: string | null
           responsible?: string | null
+          service?: string | null
           stage?: Database["public"]["Enums"]["opportunity_stage"]
           updated_at?: string
           value?: number | null
@@ -655,6 +657,7 @@ export type Database = {
           name?: string
           notes?: string | null
           responsible?: string | null
+          service?: string | null
           stage?: Database["public"]["Enums"]["opportunity_stage"]
           updated_at?: string
           value?: number | null
