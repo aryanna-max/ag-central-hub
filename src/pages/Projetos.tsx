@@ -8,10 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
-import { FolderKanban, GripVertical, FileText } from "lucide-react";
+import { FolderKanban, GripVertical, FileText, Plus } from "lucide-react";
 import { useProjects, useUpdateProject, type Project, type ProjectStatus } from "@/hooks/useProjects";
 import { useProjectMeasurements } from "@/hooks/useMeasurements";
+import MeasurementFormDialog from "@/components/operacional/MeasurementFormDialog";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const COLUMNS: { key: ProjectStatus; label: string; color: string }[] = [
   { key: "planejamento", label: "Planejamento", color: "bg-blue-500" },
