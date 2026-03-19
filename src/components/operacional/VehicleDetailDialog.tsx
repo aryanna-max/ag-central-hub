@@ -52,15 +52,10 @@ function useVehicleHistory(vehicleId: string | undefined, start: Date, end: Date
     queryKey: ["vehicle-history", vehicleId, start.toISOString(), end.toISOString()],
     enabled: !!vehicleId,
     queryFn: async () => {
-      // Get daily_team_assignments for this vehicle in period
       const { data: assignments, error } = await supabase
         .from("daily_team_assignments")
         .select(`
-          id,
-          daily_schedule_id,
-          obra_id,
-          vehicle_id,
-          notes,
+          id, daily_schedule_id, obra_id, vehicle_id, notes,
           daily_schedules!inner(schedule_date),
           obras(name, location),
           teams(name)
@@ -69,9 +64,27 @@ function useVehicleHistory(vehicleId: string | undefined, start: Date, end: Date
         .gte("daily_schedules.schedule_date", format(start, "yyyy-MM-dd"))
         .lte("daily_schedules.schedule_date", format(end, "yyyy-MM-dd"))
         .order("daily_schedules(schedule_date)", { ascending: false });
-
       if (error) throw error;
       return (assignments || []) as any[];
+    },
+  });
+}
+
+function useVehicleMonthlySummary(vehicleId: string | undefined, open: boolean) {
+  return useQuery({
+    queryKey: ["vehicle-monthly-summary", vehicleId],
+    enabled: !!vehicleId && open,
+    queryFn: async () => {
+      const sixMonthsAgo = format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd");
+      const today = format(endOfMonth(new Date()), "yyyy-MM-dd");
+      const { data, error } = await supabase
+        .from("daily_team_assignments")
+        .select(`id, obra_id, daily_schedules!inner(schedule_date), obras(name)`)
+        .eq("vehicle_id", vehicleId!)
+        .gte("daily_schedules.schedule_date", sixMonthsAgo)
+        .lte("daily_schedules.schedule_date", today);
+      if (error) throw error;
+      return (data || []) as any[];
     },
   });
 }
