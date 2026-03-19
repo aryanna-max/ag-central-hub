@@ -56,14 +56,6 @@ export default function ProjetosDashboard() {
     },
   });
 
-  const { data: obras = [] } = useQuery({
-    queryKey: ["obras-for-dashboard"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("obras").select("id, name, client");
-      if (error) throw error;
-      return data;
-    },
-  });
 
   const activeProjects = useMemo(
     () => projects.filter((p) => !["concluido", "pausado"].includes(p.status)),
