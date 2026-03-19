@@ -8,9 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FolderKanban, GripVertical, FileText, Plus } from "lucide-react";
 import { useProjects, useUpdateProject, type Project, type ProjectStatus } from "@/hooks/useProjects";
 import { useProjectMeasurements } from "@/hooks/useMeasurements";
+import { useEmployees } from "@/hooks/useEmployees";
 import MeasurementFormDialog from "@/components/operacional/MeasurementFormDialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -163,6 +165,7 @@ function formatCurrency(value: number | null) {
 
 export default function Projetos() {
   const { data: projects = [], isLoading } = useProjects();
+  const { data: employees = [] } = useEmployees();
   const updateProject = useUpdateProject();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [editForm, setEditForm] = useState<Partial<Project>>({});
@@ -199,6 +202,7 @@ export default function Projetos() {
         service: editForm.service,
         contract_value: editForm.contract_value,
         responsible: editForm.responsible,
+        responsible_id: editForm.responsible_id,
         notes: editForm.notes,
         start_date: editForm.start_date,
         end_date: editForm.end_date,
@@ -362,10 +366,30 @@ export default function Projetos() {
                   </div>
                   <div>
                     <Label>Responsável</Label>
-                    <Input
-                      value={editForm.responsible || ""}
-                      onChange={(e) => setEditForm({ ...editForm, responsible: e.target.value })}
-                    />
+                    <Select
+                      value={editForm.responsible_id || ""}
+                      onValueChange={(val) => {
+                        const emp = employees.find((e) => e.id === val);
+                        setEditForm({
+                          ...editForm,
+                          responsible_id: val,
+                          responsible: emp?.name || null,
+                        });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um funcionário" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {employees
+                          .filter((e) => e.status !== "desligado")
+                          .map((emp) => (
+                            <SelectItem key={emp.id} value={emp.id}>
+                              {emp.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label>Data Início</Label>

@@ -1,0 +1,1 @@
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS responsible_id UUID REFERENCES public.employees(id);

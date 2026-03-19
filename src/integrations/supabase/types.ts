@@ -1387,6 +1387,7 @@ export type Database = {
           name: string
           notes: string | null
           responsible: string | null
+          responsible_id: string | null
           service: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["project_status"]
@@ -1403,6 +1404,7 @@ export type Database = {
           name: string
           notes?: string | null
           responsible?: string | null
+          responsible_id?: string | null
           service?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
@@ -1419,6 +1421,7 @@ export type Database = {
           name?: string
           notes?: string | null
           responsible?: string | null
+          responsible_id?: string | null
           service?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
@@ -1430,6 +1433,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_responsible_id_fkey"
+            columns: ["responsible_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
