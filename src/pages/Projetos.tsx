@@ -72,6 +72,8 @@ export default function Projetos() {
         contract_value: editForm.contract_value,
         responsible: editForm.responsible,
         notes: editForm.notes,
+        start_date: editForm.start_date,
+        end_date: editForm.end_date,
       });
       toast.success("Projeto atualizado");
       setSelectedProject(null);
