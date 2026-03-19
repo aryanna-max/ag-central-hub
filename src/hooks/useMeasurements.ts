@@ -91,7 +91,7 @@ export function useDeleteMeasurement() {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["measurements"] }),
   });
-
+}
 
 export function useProjectMeasurements(projectName: string, clientName: string | null) {
   return useQuery({
