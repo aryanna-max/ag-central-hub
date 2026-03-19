@@ -558,48 +558,67 @@ export type Database = {
       }
       field_payment_items: {
         Row: {
+          actual_receiver_id: string | null
+          actual_receiver_name: string | null
           created_at: string
           daily_value: number | null
           days_worked: number | null
+          discount_value: number | null
           employee_id: string
           field_payment_id: string
           id: string
           notes: string | null
           others_value: number | null
+          payment_method_id: string | null
           project_id: string | null
           project_name: string | null
           total_value: number | null
           transport_value: number | null
         }
         Insert: {
+          actual_receiver_id?: string | null
+          actual_receiver_name?: string | null
           created_at?: string
           daily_value?: number | null
           days_worked?: number | null
+          discount_value?: number | null
           employee_id: string
           field_payment_id: string
           id?: string
           notes?: string | null
           others_value?: number | null
+          payment_method_id?: string | null
           project_id?: string | null
           project_name?: string | null
           total_value?: number | null
           transport_value?: number | null
         }
         Update: {
+          actual_receiver_id?: string | null
+          actual_receiver_name?: string | null
           created_at?: string
           daily_value?: number | null
           days_worked?: number | null
+          discount_value?: number | null
           employee_id?: string
           field_payment_id?: string
           id?: string
           notes?: string | null
           others_value?: number | null
+          payment_method_id?: string | null
           project_id?: string | null
           project_name?: string | null
           total_value?: number | null
           transport_value?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "field_payment_items_actual_receiver_id_fkey"
+            columns: ["actual_receiver_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "field_payment_items_employee_id_fkey"
             columns: ["employee_id"]
@@ -612,6 +631,13 @@ export type Database = {
             columns: ["field_payment_id"]
             isOneToOne: false
             referencedRelation: "field_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_payment_items_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
             referencedColumns: ["id"]
           },
           {
