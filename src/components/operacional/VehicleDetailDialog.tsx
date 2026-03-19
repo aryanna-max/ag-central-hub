@@ -106,11 +106,40 @@ export default function VehicleDetailDialog({ open, onOpenChange, vehicle }: Veh
     range.start,
     range.end
   );
+  const { data: monthlyData } = useVehicleMonthlySummary(
+    open ? vehicle?.id : undefined,
+    open
+  );
 
   if (!vehicle) return null;
 
   const responsible = vehicle.responsible_employee;
   const dailyRate = Number(vehicle.daily_rate) || 0;
+
+  // Build monthly summary for Diárias tab
+  const months = eachMonthOfInterval({
+    start: startOfMonth(subMonths(new Date(), 5)),
+    end: endOfMonth(new Date()),
+  });
+  const monthlySummary = months.map((m) => {
+    const monthStr = format(m, "yyyy-MM");
+    const entries = (monthlyData || []).filter((d: any) =>
+      d.daily_schedules?.schedule_date?.startsWith(monthStr)
+    );
+    const dias = entries.length;
+    const obrasSet = new Set(entries.map((e: any) => e.obras?.name).filter(Boolean));
+    const calc = dias * dailyRate;
+    const paga = calc; // placeholder
+    return {
+      label: format(m, "MMMM yyyy", { locale: ptBR }),
+      dias,
+      obras: obrasSet.size,
+      kmRodado: 0,
+      calc,
+      paga,
+      status: Math.abs(calc - paga) < 0.01 ? "ok" : "divergencia",
+    };
+  }).reverse();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
