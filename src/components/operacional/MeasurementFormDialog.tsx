@@ -50,6 +50,8 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
     valor_diaria_fds: "",
     retencao_pct: "5",
     notes: "",
+    empresa_faturadora: "ag_topografia",
+    tipo_documento: "nota_fiscal",
   });
 
   useEffect(() => {

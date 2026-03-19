@@ -394,6 +394,36 @@ export default function Projetos() {
                     </Select>
                   </div>
                   <div>
+                    <Label>Empresa Faturadora</Label>
+                    <Select
+                      value={editForm.empresa_faturadora || "ag_topografia"}
+                      onValueChange={(val) => setEditForm({ ...editForm, empresa_faturadora: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ag_topografia">AG Topografia e Construções</SelectItem>
+                        <SelectItem value="ag_cartografia">AG Cartografia</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Tipo de Documento</Label>
+                    <Select
+                      value={editForm.tipo_documento || "nota_fiscal"}
+                      onValueChange={(val) => setEditForm({ ...editForm, tipo_documento: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nota_fiscal">Nota Fiscal</SelectItem>
+                        <SelectItem value="recibo">Recibo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
                     <Label>Data Início</Label>
                     <Input
                       type="date"
