@@ -1,7 +1,15 @@
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Car, MapPin, User } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Car, MapPin, User, AlertTriangle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { format, startOfMonth, endOfMonth, subMonths, subQuarters } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const statusColors: Record<string, string> = {
   disponivel: "bg-green-600 text-white",
@@ -16,6 +24,58 @@ const statusLabels: Record<string, string> = {
   indisponivel: "Indisponível",
 };
 
+type PeriodFilter = "este_mes" | "mes_anterior" | "trimestre" | "personalizado";
+
+function usePeriodRange(period: PeriodFilter, customStart: string, customEnd: string) {
+  return useMemo(() => {
+    const now = new Date();
+    switch (period) {
+      case "este_mes":
+        return { start: startOfMonth(now), end: endOfMonth(now) };
+      case "mes_anterior": {
+        const prev = subMonths(now, 1);
+        return { start: startOfMonth(prev), end: endOfMonth(prev) };
+      }
+      case "trimestre":
+        return { start: startOfMonth(subQuarters(now, 1)), end: endOfMonth(now) };
+      case "personalizado":
+        return {
+          start: customStart ? new Date(customStart) : startOfMonth(now),
+          end: customEnd ? new Date(customEnd) : endOfMonth(now),
+        };
+    }
+  }, [period, customStart, customEnd]);
+}
+
+function useVehicleHistory(vehicleId: string | undefined, start: Date, end: Date) {
+  return useQuery({
+    queryKey: ["vehicle-history", vehicleId, start.toISOString(), end.toISOString()],
+    enabled: !!vehicleId,
+    queryFn: async () => {
+      // Get daily_team_assignments for this vehicle in period
+      const { data: assignments, error } = await supabase
+        .from("daily_team_assignments")
+        .select(`
+          id,
+          daily_schedule_id,
+          obra_id,
+          vehicle_id,
+          notes,
+          daily_schedules!inner(schedule_date),
+          obras(name, location),
+          teams(name)
+        `)
+        .eq("vehicle_id", vehicleId!)
+        .gte("daily_schedules.schedule_date", format(start, "yyyy-MM-dd"))
+        .lte("daily_schedules.schedule_date", format(end, "yyyy-MM-dd"))
+        .order("daily_schedules(schedule_date)", { ascending: false });
+
+      if (error) throw error;
+      return (assignments || []) as any[];
+    },
+  });
+}
+
 interface VehicleDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -23,13 +83,25 @@ interface VehicleDetailDialogProps {
 }
 
 export default function VehicleDetailDialog({ open, onOpenChange, vehicle }: VehicleDetailDialogProps) {
+  const [period, setPeriod] = useState<PeriodFilter>("este_mes");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+
+  const range = usePeriodRange(period, customStart, customEnd);
+  const { data: history, isLoading: historyLoading } = useVehicleHistory(
+    open ? vehicle?.id : undefined,
+    range.start,
+    range.end
+  );
+
   if (!vehicle) return null;
 
   const responsible = vehicle.responsible_employee;
+  const dailyRate = Number(vehicle.daily_rate) || 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
@@ -85,10 +157,10 @@ export default function VehicleDetailDialog({ open, onOpenChange, vehicle }: Veh
               </div>
             </div>
           )}
-          {vehicle.daily_rate > 0 && (
+          {dailyRate > 0 && (
             <div className="bg-muted/50 rounded-lg p-2.5">
               <span className="text-muted-foreground block text-xs">Diária</span>
-              <span className="font-medium">R$ {Number(vehicle.daily_rate).toFixed(2)}</span>
+              <span className="font-medium">R$ {dailyRate.toFixed(2)}</span>
             </div>
           )}
         </div>
@@ -100,10 +172,102 @@ export default function VehicleDetailDialog({ open, onOpenChange, vehicle }: Veh
             <TabsTrigger value="percurso" className="flex-1">Relatório de Percurso</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="historico" className="min-h-[200px]">
-            <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
-              Histórico de uso e manutenções será exibido aqui.
+          <TabsContent value="historico" className="space-y-3">
+            {/* Period filter */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Select value={period} onValueChange={(v) => setPeriod(v as PeriodFilter)}>
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="este_mes">Este mês</SelectItem>
+                  <SelectItem value="mes_anterior">Mês anterior</SelectItem>
+                  <SelectItem value="trimestre">Trimestre</SelectItem>
+                  <SelectItem value="personalizado">Personalizado</SelectItem>
+                </SelectContent>
+              </Select>
+              {period === "personalizado" && (
+                <>
+                  <Input
+                    type="date"
+                    className="w-36"
+                    value={customStart}
+                    onChange={(e) => setCustomStart(e.target.value)}
+                  />
+                  <span className="text-muted-foreground text-sm">até</span>
+                  <Input
+                    type="date"
+                    className="w-36"
+                    value={customEnd}
+                    onChange={(e) => setCustomEnd(e.target.value)}
+                  />
+                </>
+              )}
             </div>
+
+            {/* History table */}
+            {historyLoading ? (
+              <p className="text-muted-foreground text-sm p-4">Carregando...</p>
+            ) : !history?.length ? (
+              <p className="text-muted-foreground text-sm text-center p-8">
+                Nenhum registro no período selecionado.
+              </p>
+            ) : (
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Obra</TableHead>
+                      <TableHead>Local</TableHead>
+                      <TableHead>Equipe</TableHead>
+                      <TableHead>Fonte</TableHead>
+                      <TableHead className="text-right">Diária Calc.</TableHead>
+                      <TableHead className="text-right">Diária Paga</TableHead>
+                      <TableHead className="text-center">Diverg.</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {history.map((h: any) => {
+                      const scheduleDate = h.daily_schedules?.schedule_date;
+                      const obraName = h.obras?.name || "—";
+                      const obraLocation = h.obras?.location || "—";
+                      const teamName = h.teams?.name || "—";
+                      const calculada = dailyRate;
+                      const paga = dailyRate; // placeholder — will come from payment data
+                      const divergent = Math.abs(calculada - paga) > 0.01;
+
+                      return (
+                        <TableRow key={h.id}>
+                          <TableCell className="font-medium whitespace-nowrap">
+                            {scheduleDate
+                              ? format(new Date(scheduleDate + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
+                              : "—"}
+                          </TableCell>
+                          <TableCell>{obraName}</TableCell>
+                          <TableCell className="text-muted-foreground text-xs">{obraLocation}</TableCell>
+                          <TableCell>{teamName}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">Escala</Badge>
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            R$ {calculada.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            R$ {paga.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {divergent && (
+                              <AlertTriangle className="w-4 h-4 text-amber-500 mx-auto" />
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="diarias" className="min-h-[200px]">
