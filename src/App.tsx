@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Comercial from "./pages/Comercial";
 import Propostas from "./pages/Propostas";
 import Projetos from "./pages/Projetos";
+import ProjetosDashboard from "./pages/projetos/ProjetosDashboard";
 import Operacional from "./pages/Operacional";
 import SalaTecnica from "./pages/SalaTecnica";
 import Financeiro from "./pages/Financeiro";
