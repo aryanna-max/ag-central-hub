@@ -42,11 +42,21 @@ const MEASUREMENT_STATUS: Record<string, { label: string; className: string }> =
 function ProjectMeasurementsTab({
   projectName,
   clientName,
+  contractValue,
 }: {
   projectName: string;
   clientName: string | null;
+  contractValue: number | null;
 }) {
   const { data: filtered = [], isLoading } = useProjectMeasurements(projectName, clientName);
+
+  const totals = useMemo(() => {
+    const totalBruto = filtered.reduce((s, m) => s + (m.valor_bruto || 0), 0);
+    const totalNF = filtered.reduce((s, m) => s + (m.valor_nf || 0), 0);
+    return { totalBruto, totalNF };
+  }, [filtered]);
+
+  const pctContrato = contractValue ? ((totals.totalNF / contractValue) * 100).toFixed(1) : null;
 
   if (isLoading) {
     return <p className="py-6 text-center text-muted-foreground text-sm">Carregando...</p>;
@@ -67,9 +77,10 @@ function ProjectMeasurementsTab({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Código</TableHead>
+            <TableHead>Código BM</TableHead>
             <TableHead>Período</TableHead>
-            <TableHead>Valor NF</TableHead>
+            <TableHead>Equipe</TableHead>
+            <TableHead className="text-right">Valor NF</TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
@@ -78,9 +89,10 @@ function ProjectMeasurementsTab({
             const st = MEASUREMENT_STATUS[m.status] || { label: m.status, className: "" };
             return (
               <TableRow key={m.id}>
-                <TableCell className="font-mono text-xs">{m.codigo_bm}</TableCell>
+                <TableCell className="font-mono text-xs font-medium">{m.codigo_bm}</TableCell>
                 <TableCell className="text-xs">{m.period_start} a {m.period_end}</TableCell>
-                <TableCell className="text-sm font-semibold">{formatCurrency(m.valor_nf)}</TableCell>
+                <TableCell className="text-xs">{m.team_name || "—"}</TableCell>
+                <TableCell className="text-sm font-semibold text-right">{formatCurrency(m.valor_nf)}</TableCell>
                 <TableCell>
                   <Badge className={st.className}>{st.label}</Badge>
                 </TableCell>
@@ -88,6 +100,28 @@ function ProjectMeasurementsTab({
             );
           })}
         </TableBody>
+        <tfoot>
+          <tr className="border-t bg-muted/40">
+            <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-foreground">Total Medido</td>
+            <td className="px-4 py-2 text-sm font-bold text-right text-foreground">{formatCurrency(totals.totalBruto)}</td>
+            <td />
+          </tr>
+          <tr className="bg-muted/40">
+            <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-foreground">Total NF</td>
+            <td className="px-4 py-2 text-sm font-bold text-right text-foreground">{formatCurrency(totals.totalNF)}</td>
+            <td />
+          </tr>
+          {contractValue != null && (
+            <tr className="bg-muted/40 border-t">
+              <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-foreground">
+                Acumulado do Contrato
+                <span className="ml-1 text-muted-foreground font-normal">({formatCurrency(contractValue)})</span>
+              </td>
+              <td className="px-4 py-2 text-sm font-bold text-right text-primary">{pctContrato}%</td>
+              <td />
+            </tr>
+          )}
+        </tfoot>
       </Table>
     </div>
   );
@@ -349,6 +383,7 @@ export default function Projetos() {
                 <ProjectMeasurementsTab
                   projectName={selectedProject.name}
                   clientName={selectedProject.client}
+                  contractValue={selectedProject.contract_value}
                 />
               </TabsContent>
             </Tabs>
