@@ -77,6 +77,7 @@ interface Props {
 export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
   const createLead = useCreateLead();
   const updateLead = useUpdateLead();
+  const { convertLead, isPending: conversionPending } = useLeadConversion();
   const isEditing = !!lead;
 
   const [form, setForm] = useState<LeadInsert>({
