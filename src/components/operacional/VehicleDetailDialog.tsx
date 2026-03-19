@@ -8,7 +8,7 @@ import { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableC
 import { Input } from "@/components/ui/input";
 import { Car, MapPin, User, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, subMonths, subQuarters } from "date-fns";
+import { format, startOfMonth, endOfMonth, subMonths, subQuarters, eachMonthOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const statusColors: Record<string, string> = {
