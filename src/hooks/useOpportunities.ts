@@ -8,6 +8,7 @@ export interface Opportunity {
   name: string;
   lead_id: string | null;
   client: string | null;
+  client_id: string | null;
   value: number | null;
   stage: OpportunityStage;
   responsible: string | null;
