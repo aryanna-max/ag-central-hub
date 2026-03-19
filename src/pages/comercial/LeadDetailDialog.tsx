@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Phone, Mail, Building2, User, MessageSquare, PhoneCall, Video, MapPin, Send } from "lucide-react";
+import { Phone, Mail, Building2, User, MessageSquare, PhoneCall, Video, MapPin, Send, FileText, DollarSign } from "lucide-react";
 import { useLeadInteractions, useAddLeadInteraction, type Lead, type LeadInteractionType } from "@/hooks/useLeads";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -105,6 +105,26 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
           {lead.responsible && (
             <div className="flex items-center gap-2 text-muted-foreground">
               <User className="w-4 h-4" /> {lead.responsible}
+            </div>
+          )}
+          {lead.cnpj && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <FileText className="w-4 h-4" /> CNPJ: <span className="font-medium text-foreground">{lead.cnpj}</span>
+            </div>
+          )}
+          {lead.servico && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Building2 className="w-4 h-4" /> Serviço: <span className="font-medium text-foreground">{lead.servico}</span>
+            </div>
+          )}
+          {lead.endereco && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <MapPin className="w-4 h-4" /> {lead.endereco}
+            </div>
+          )}
+          {lead.valor != null && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <DollarSign className="w-4 h-4" /> R$ {Number(lead.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
             </div>
           )}
           <div className="text-muted-foreground">

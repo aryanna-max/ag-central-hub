@@ -24,6 +24,12 @@ export default function NotificationsPanel() {
     if (!alert.read) {
       markRead.mutate(alert.id);
     }
+    setOpen(false);
+  };
+
+  const handleMarkAllRead = () => {
+    markAllRead.mutate();
+    setOpen(false);
   };
 
   return (
@@ -41,16 +47,6 @@ export default function NotificationsPanel() {
       <PopoverContent align="end" className="w-96 p-0">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <span className="text-sm font-semibold text-foreground">Notificações</span>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs h-7"
-              onClick={() => markAllRead.mutate()}
-            >
-              <CheckCheck className="w-3.5 h-3.5 mr-1" /> Marcar todas como lidas
-            </Button>
-          )}
         </div>
         <ScrollArea className="max-h-80">
           {alerts.length === 0 ? (
@@ -93,6 +89,18 @@ export default function NotificationsPanel() {
             </div>
           )}
         </ScrollArea>
+        {unreadCount > 0 && (
+          <div className="border-t border-border px-4 py-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-xs h-8"
+              onClick={handleMarkAllRead}
+            >
+              <CheckCheck className="w-3.5 h-3.5 mr-1" /> Marcar todos como lidos
+            </Button>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );
