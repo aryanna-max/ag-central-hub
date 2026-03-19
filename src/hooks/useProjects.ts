@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type ProjectStatus = "planejamento" | "execucao" | "entrega" | "faturamento" | "concluido";
+export type ProjectStatus = "planejamento" | "execucao" | "entrega" | "faturamento" | "concluido" | "pausado";
 
 export interface Project {
   id: string;
@@ -14,6 +14,8 @@ export interface Project {
   lead_id: string | null;
   status: ProjectStatus;
   notes: string | null;
+  start_date: string | null;
+  end_date: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -28,6 +30,8 @@ export interface ProjectInsert {
   lead_id?: string | null;
   status?: ProjectStatus;
   notes?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
 }
 
 export function useProjects() {

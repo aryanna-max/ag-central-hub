@@ -16,6 +16,7 @@ const COLUMNS: { key: ProjectStatus; label: string; color: string }[] = [
   { key: "entrega", label: "Entrega", color: "bg-purple-500" },
   { key: "faturamento", label: "Faturamento", color: "bg-emerald-500" },
   { key: "concluido", label: "Concluído", color: "bg-muted-foreground" },
+  { key: "pausado", label: "Pausado", color: "bg-rose-500" },
 ];
 
 const STATUS_BADGE_COLORS: Record<ProjectStatus, string> = {
@@ -24,6 +25,7 @@ const STATUS_BADGE_COLORS: Record<ProjectStatus, string> = {
   entrega: "bg-purple-100 text-purple-800",
   faturamento: "bg-emerald-100 text-emerald-800",
   concluido: "bg-muted text-muted-foreground",
+  pausado: "bg-rose-100 text-rose-800",
 };
 
 function formatCurrency(value: number | null) {
@@ -45,6 +47,7 @@ export default function Projetos() {
       entrega: [],
       faturamento: [],
       concluido: [],
+      pausado: [],
     };
     projects.forEach((p) => {
       if (map[p.status]) map[p.status].push(p);
@@ -69,6 +72,8 @@ export default function Projetos() {
         contract_value: editForm.contract_value,
         responsible: editForm.responsible,
         notes: editForm.notes,
+        start_date: editForm.start_date,
+        end_date: editForm.end_date,
       });
       toast.success("Projeto atualizado");
       setSelectedProject(null);
@@ -225,6 +230,22 @@ export default function Projetos() {
                 <Input
                   value={editForm.responsible || ""}
                   onChange={(e) => setEditForm({ ...editForm, responsible: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Data Início</Label>
+                <Input
+                  type="date"
+                  value={editForm.start_date || ""}
+                  onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value || null })}
+                />
+              </div>
+              <div>
+                <Label>Data Fim</Label>
+                <Input
+                  type="date"
+                  value={editForm.end_date || ""}
+                  onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value || null })}
                 />
               </div>
               <div>
