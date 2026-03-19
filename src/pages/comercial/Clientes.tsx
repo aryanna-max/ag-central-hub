@@ -1,27 +1,21 @@
 import { useState, useMemo } from "react";
-import { Building2, Search, Mail, Phone, FileText, DollarSign, FolderOpen, Calendar } from "lucide-react";
+import { Building2, Search, Mail, Phone, FileText, Plus, MoreHorizontal, Pencil, Trash2, UserPlus, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useLeads, useLeadInteractions, type Lead } from "@/hooks/useLeads";
-import { useProjects, type Project } from "@/hooks/useProjects";
+import { Label } from "@/components/ui/label";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useClients, useClientContacts, useCreateClientContact, useDeleteClientContact, useDeleteClient, type Client, type ClientContactInsert } from "@/hooks/useClients";
+import { useProjects } from "@/hooks/useProjects";
+import ClientFormDialog from "./ClientFormDialog";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-interface Client {
-  name: string;
-  company: string | null;
-  cnpj: string | null;
-  email: string | null;
-  phone: string | null;
-  endereco: string | null;
-  leads: Lead[];
-  projects: Project[];
-  totalValue: number;
-}
 
 const STATUS_LABELS: Record<string, string> = {
   planejamento: "Planejamento",
@@ -33,101 +27,55 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function Clientes() {
-  const { data: leads = [], isLoading: loadingLeads } = useLeads();
-  const { data: projects = [], isLoading: loadingProjects } = useProjects();
+  const { data: clients = [], isLoading } = useClients();
+  const { data: projects = [] } = useProjects();
+  const deleteClient = useDeleteClient();
+
   const [search, setSearch] = useState("");
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-
-  // Aggregate clients from converted leads and projects
-  const clients = useMemo(() => {
-    const map = new Map<string, Client>();
-
-    // Group by company or lead name
-    const convertedLeads = leads.filter((l) => l.status === "convertido");
-
-    for (const lead of convertedLeads) {
-      const key = (lead.company || lead.name).toLowerCase().trim();
-      if (!map.has(key)) {
-        map.set(key, {
-          name: lead.company || lead.name,
-          company: lead.company,
-          cnpj: lead.cnpj,
-          email: lead.email,
-          phone: lead.phone,
-          endereco: lead.endereco,
-          leads: [],
-          projects: [],
-          totalValue: 0,
-        });
-      }
-      const client = map.get(key)!;
-      client.leads.push(lead);
-      if (lead.cnpj && !client.cnpj) client.cnpj = lead.cnpj;
-      if (lead.email && !client.email) client.email = lead.email;
-      if (lead.phone && !client.phone) client.phone = lead.phone;
-      if (lead.endereco && !client.endereco) client.endereco = lead.endereco;
-    }
-
-    // Also include projects without a lead match (direct clients)
-    for (const project of projects) {
-      if (project.client) {
-        const key = project.client.toLowerCase().trim();
-        if (!map.has(key)) {
-          map.set(key, {
-            name: project.client,
-            company: project.client,
-            cnpj: project.client_cnpj,
-            email: null,
-            phone: null,
-            endereco: null,
-            leads: [],
-            projects: [],
-            totalValue: 0,
-          });
-        }
-        const client = map.get(key)!;
-        if (!client.projects.find((p) => p.id === project.id)) {
-          client.projects.push(project);
-          client.totalValue += project.contract_value || 0;
-        }
-        if (project.client_cnpj && !client.cnpj) client.cnpj = project.client_cnpj;
-      }
-    }
-
-    // Link projects to clients via lead_id
-    for (const project of projects) {
-      if (project.lead_id) {
-        for (const [, client] of map) {
-          if (client.leads.some((l) => l.id === project.lead_id) && !client.projects.find((p) => p.id === project.id)) {
-            client.projects.push(project);
-            client.totalValue += project.contract_value || 0;
-          }
-        }
-      }
-    }
-
-    return Array.from(map.values()).sort((a, b) => b.totalValue - a.totalValue);
-  }, [leads, projects]);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return clients.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
-        c.cnpj?.includes(q) ||
-        c.email?.toLowerCase().includes(q)
+        c.cnpj?.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().includes(q) ||
+        c.city?.toLowerCase().includes(q)
     );
   }, [clients, search]);
 
-  const isLoading = loadingLeads || loadingProjects;
+  const getClientProjects = (client: Client) =>
+    projects.filter((p) => p.client?.toLowerCase().trim() === client.name.toLowerCase().trim() || (client.cnpj && p.client_cnpj === client.cnpj));
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await deleteClient.mutateAsync(deleteId);
+      toast.success("Cliente excluído");
+    } catch {
+      toast.error("Erro ao excluir");
+    }
+    setDeleteId(null);
+  };
+
   const fmt = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+
+  const totalProjects = clients.reduce((s, c) => s + getClientProjects(c).length, 0);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
-        <p className="text-muted-foreground">Base completa de clientes com histórico de interações e projetos</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
+          <p className="text-muted-foreground">Empresas que já contrataram a AG</p>
+        </div>
+        <Button onClick={() => { setEditingClient(null); setFormOpen(true); }}>
+          <Plus className="w-4 h-4 mr-2" /> Novo Cliente
+        </Button>
       </div>
 
       {/* KPIs */}
@@ -137,12 +85,12 @@ export default function Clientes() {
           <p className="text-2xl font-bold">{clients.length}</p>
         </CardContent></Card>
         <Card><CardContent className="pt-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground"><FolderOpen className="w-4 h-4" />Projetos Vinculados</div>
-          <p className="text-2xl font-bold">{clients.reduce((s, c) => s + c.projects.length, 0)}</p>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground"><Users className="w-4 h-4" />Ativos</div>
+          <p className="text-2xl font-bold">{clients.filter((c) => c.is_active).length}</p>
         </CardContent></Card>
         <Card><CardContent className="pt-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground"><DollarSign className="w-4 h-4" />Valor Total</div>
-          <p className="text-2xl font-bold">{fmt(clients.reduce((s, c) => s + c.totalValue, 0))}</p>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground"><FileText className="w-4 h-4" />Projetos Vinculados</div>
+          <p className="text-2xl font-bold">{totalProjects}</p>
         </CardContent></Card>
       </div>
 
@@ -156,46 +104,116 @@ export default function Clientes() {
       {isLoading ? (
         <p className="text-muted-foreground text-center py-10">Carregando...</p>
       ) : filtered.length === 0 ? (
-        <p className="text-muted-foreground text-center py-10">Nenhum cliente encontrado. Clientes são criados automaticamente ao converter leads.</p>
+        <p className="text-muted-foreground text-center py-10">Nenhum cliente encontrado.</p>
       ) : (
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((client, i) => (
-            <Card
-              key={i}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setSelectedClient(client)}
-            >
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-semibold">{client.name}</p>
-                    {client.cnpj && <p className="text-xs text-muted-foreground">CNPJ: {client.cnpj}</p>}
+          {filtered.map((client) => {
+            const clientProjects = getClientProjects(client);
+            return (
+              <Card
+                key={client.id}
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => setSelectedClient(client)}
+              >
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold">{client.name}</p>
+                      {client.cnpj && <p className="text-xs text-muted-foreground">CNPJ: {client.cnpj}</p>}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Badge variant={client.is_active ? "default" : "secondary"} className="text-xs">
+                        {client.is_active ? "Ativo" : "Inativo"}
+                      </Badge>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingClient(client); setFormOpen(true); }}>
+                            <Pencil className="w-3.5 h-3.5 mr-2" /> Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteId(client.id); }}>
+                            <Trash2 className="w-3.5 h-3.5 mr-2" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
-                  <Badge variant="secondary" className="text-xs">{client.projects.length} projeto(s)</Badge>
-                </div>
-                {client.totalValue > 0 && (
-                  <p className="text-sm font-medium">{fmt(client.totalValue)}</p>
-                )}
-                <div className="flex gap-3 text-xs text-muted-foreground">
-                  {client.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{client.phone}</span>}
-                  {client.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{client.email}</span>}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  {client.city && <p className="text-xs text-muted-foreground">{client.city}{client.state ? ` - ${client.state}` : ""}</p>}
+                  <div className="flex gap-3 text-xs text-muted-foreground">
+                    {client.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{client.phone}</span>}
+                    {client.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{client.email}</span>}
+                  </div>
+                  {clientProjects.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">{clientProjects.length} projeto(s)</Badge>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      {/* Client Detail Dialog */}
+      <ClientFormDialog open={formOpen} onOpenChange={setFormOpen} client={editingClient} />
       <ClientDetailDialog client={selectedClient} open={!!selectedClient} onOpenChange={() => setSelectedClient(null)} />
+
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação excluirá também todos os contatos vinculados.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
+/* ---------- Client Detail Dialog ---------- */
 function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | null; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const { data: contacts = [] } = useClientContacts(client?.id);
+  const { data: projects = [] } = useProjects();
+  const createContact = useCreateClientContact();
+  const deleteContact = useDeleteClientContact();
+
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [contactForm, setContactForm] = useState<Omit<ClientContactInsert, "client_id">>({ contact_name: "" });
+
   if (!client) return null;
 
+  const clientProjects = projects.filter(
+    (p) => p.client?.toLowerCase().trim() === client.name.toLowerCase().trim() || (client.cnpj && p.client_cnpj === client.cnpj)
+  );
+
   const fmt = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+
+  const handleAddContact = async () => {
+    if (!contactForm.contact_name.trim()) return;
+    try {
+      await createContact.mutateAsync({ ...contactForm, client_id: client.id });
+      setContactForm({ contact_name: "" });
+      setShowAddContact(false);
+      toast.success("Contato adicionado");
+    } catch {
+      toast.error("Erro ao adicionar contato");
+    }
+  };
+
+  const handleDeleteContact = async (contactId: string) => {
+    try {
+      await deleteContact.mutateAsync({ id: contactId, clientId: client.id });
+      toast.success("Contato removido");
+    } catch {
+      toast.error("Erro ao remover contato");
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -204,6 +222,9 @@ function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | n
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="w-5 h-5" />
             {client.name}
+            <Badge variant={client.is_active ? "default" : "secondary"} className="text-xs ml-2">
+              {client.is_active ? "Ativo" : "Inativo"}
+            </Badge>
           </DialogTitle>
         </DialogHeader>
 
@@ -223,36 +244,63 @@ function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | n
               <Mail className="w-4 h-4" /> {client.email}
             </div>
           )}
-          {client.endereco && (
+          {client.address && (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Building2 className="w-4 h-4" /> {client.endereco}
+              <Building2 className="w-4 h-4" /> {client.address}
+              {client.city && ` · ${client.city}`}
+              {client.state && ` - ${client.state}`}
             </div>
           )}
         </div>
 
+        {client.notes && <p className="text-sm bg-muted/50 rounded-md p-3">{client.notes}</p>}
+
         <Separator />
 
-        {/* Projects */}
-        <p className="text-sm font-medium">Projetos ({client.projects.length})</p>
-        <ScrollArea className="max-h-40">
-          {client.projects.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-3">Nenhum projeto vinculado.</p>
+        {/* Contacts */}
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">Contatos ({contacts.length})</p>
+          <Button variant="ghost" size="sm" onClick={() => setShowAddContact(!showAddContact)}>
+            <UserPlus className="w-4 h-4 mr-1" /> Adicionar
+          </Button>
+        </div>
+
+        {showAddContact && (
+          <div className="grid grid-cols-4 gap-2 items-end">
+            <div className="space-y-1">
+              <Label className="text-xs">Nome *</Label>
+              <Input value={contactForm.contact_name} onChange={(e) => setContactForm({ ...contactForm, contact_name: e.target.value })} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Telefone</Label>
+              <Input value={contactForm.contact_phone || ""} onChange={(e) => setContactForm({ ...contactForm, contact_phone: e.target.value })} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">E-mail</Label>
+              <Input value={contactForm.contact_email || ""} onChange={(e) => setContactForm({ ...contactForm, contact_email: e.target.value })} className="h-8 text-sm" />
+            </div>
+            <Button size="sm" onClick={handleAddContact} disabled={createContact.isPending}>Salvar</Button>
+          </div>
+        )}
+
+        <ScrollArea className="max-h-28">
+          {contacts.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-2">Nenhum contato cadastrado.</p>
           ) : (
-            <div className="space-y-2">
-              {client.projects.map((p) => (
-                <div key={p.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm">
+            <div className="space-y-1">
+              {contacts.map((c) => (
+                <div key={c.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm">
                   <div>
-                    <p className="font-medium">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{p.service || "Sem serviço"} · {STATUS_LABELS[p.status] || p.status}</p>
+                    <span className="font-medium">{c.contact_name}</span>
+                    {c.role && <span className="text-xs text-muted-foreground ml-2">({c.role})</span>}
+                    {c.is_primary && <Badge className="ml-2 text-[10px] h-4">Principal</Badge>}
                   </div>
-                  <div className="text-right">
-                    {p.contract_value != null && <p className="font-semibold text-sm">{fmt(p.contract_value)}</p>}
-                    {p.start_date && (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
-                        <Calendar className="w-3 h-3" />
-                        {format(new Date(p.start_date), "dd/MM/yyyy", { locale: ptBR })}
-                      </p>
-                    )}
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    {c.contact_phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{c.contact_phone}</span>}
+                    {c.contact_email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{c.contact_email}</span>}
+                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleDeleteContact(c.id)}>
+                      <Trash2 className="w-3 h-3 text-destructive" />
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -262,25 +310,20 @@ function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | n
 
         <Separator />
 
-        {/* Leads history */}
-        <p className="text-sm font-medium">Leads Vinculados ({client.leads.length})</p>
-        <ScrollArea className="max-h-32">
-          {client.leads.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-3">Nenhum lead vinculado.</p>
+        {/* Projects */}
+        <p className="text-sm font-medium">Projetos ({clientProjects.length})</p>
+        <ScrollArea className="max-h-36">
+          {clientProjects.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-3">Nenhum projeto vinculado.</p>
           ) : (
             <div className="space-y-2">
-              {client.leads.map((l) => (
-                <div key={l.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm">
+              {clientProjects.map((p) => (
+                <div key={p.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm">
                   <div>
-                    <p className="font-medium">{l.name}</p>
-                    <p className="text-xs text-muted-foreground">{l.servico || "Sem serviço"}</p>
+                    <p className="font-medium">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">{p.service || "Sem serviço"} · {STATUS_LABELS[p.status] || p.status}</p>
                   </div>
-                  <div className="text-right">
-                    {l.valor != null && <p className="text-sm font-semibold">{fmt(l.valor)}</p>}
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(l.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                    </p>
-                  </div>
+                  {p.contract_value != null && <p className="font-semibold text-sm">{fmt(p.contract_value)}</p>}
                 </div>
               ))}
             </div>
