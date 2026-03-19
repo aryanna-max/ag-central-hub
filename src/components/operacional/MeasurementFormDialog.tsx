@@ -15,6 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultObraId?: string;
 }
 
 function useObras() {
