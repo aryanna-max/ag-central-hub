@@ -93,7 +93,7 @@ function ProjectMeasurementsTab({
       {!filtered.length ? (
         <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
           <FileText className="w-8 h-8" />
-          <p className="text-sm">Nenhuma medição vinculada a este projeto.</p>
+          <p className="text-sm">Nenhuma medição registrada para este projeto.</p>
         </div>
       ) : (
         <Table>
