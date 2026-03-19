@@ -8,7 +8,7 @@ import { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableC
 import { Input } from "@/components/ui/input";
 import { Car, MapPin, User, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, subMonths, subQuarters } from "date-fns";
+import { format, startOfMonth, endOfMonth, subMonths, subQuarters, eachMonthOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const statusColors: Record<string, string> = {
@@ -52,15 +52,10 @@ function useVehicleHistory(vehicleId: string | undefined, start: Date, end: Date
     queryKey: ["vehicle-history", vehicleId, start.toISOString(), end.toISOString()],
     enabled: !!vehicleId,
     queryFn: async () => {
-      // Get daily_team_assignments for this vehicle in period
       const { data: assignments, error } = await supabase
         .from("daily_team_assignments")
         .select(`
-          id,
-          daily_schedule_id,
-          obra_id,
-          vehicle_id,
-          notes,
+          id, daily_schedule_id, obra_id, vehicle_id, notes,
           daily_schedules!inner(schedule_date),
           obras(name, location),
           teams(name)
@@ -69,9 +64,27 @@ function useVehicleHistory(vehicleId: string | undefined, start: Date, end: Date
         .gte("daily_schedules.schedule_date", format(start, "yyyy-MM-dd"))
         .lte("daily_schedules.schedule_date", format(end, "yyyy-MM-dd"))
         .order("daily_schedules(schedule_date)", { ascending: false });
-
       if (error) throw error;
       return (assignments || []) as any[];
+    },
+  });
+}
+
+function useVehicleMonthlySummary(vehicleId: string | undefined, open: boolean) {
+  return useQuery({
+    queryKey: ["vehicle-monthly-summary", vehicleId],
+    enabled: !!vehicleId && open,
+    queryFn: async () => {
+      const sixMonthsAgo = format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd");
+      const today = format(endOfMonth(new Date()), "yyyy-MM-dd");
+      const { data, error } = await supabase
+        .from("daily_team_assignments")
+        .select(`id, obra_id, daily_schedules!inner(schedule_date), obras(name)`)
+        .eq("vehicle_id", vehicleId!)
+        .gte("daily_schedules.schedule_date", sixMonthsAgo)
+        .lte("daily_schedules.schedule_date", today);
+      if (error) throw error;
+      return (data || []) as any[];
     },
   });
 }
@@ -93,11 +106,40 @@ export default function VehicleDetailDialog({ open, onOpenChange, vehicle }: Veh
     range.start,
     range.end
   );
+  const { data: monthlyData } = useVehicleMonthlySummary(
+    open ? vehicle?.id : undefined,
+    open
+  );
 
   if (!vehicle) return null;
 
   const responsible = vehicle.responsible_employee;
   const dailyRate = Number(vehicle.daily_rate) || 0;
+
+  // Build monthly summary for Diárias tab
+  const months = eachMonthOfInterval({
+    start: startOfMonth(subMonths(new Date(), 5)),
+    end: endOfMonth(new Date()),
+  });
+  const monthlySummary = months.map((m) => {
+    const monthStr = format(m, "yyyy-MM");
+    const entries = (monthlyData || []).filter((d: any) =>
+      d.daily_schedules?.schedule_date?.startsWith(monthStr)
+    );
+    const dias = entries.length;
+    const obrasSet = new Set(entries.map((e: any) => e.obras?.name).filter(Boolean));
+    const calc = dias * dailyRate;
+    const paga = calc; // placeholder
+    return {
+      label: format(m, "MMMM yyyy", { locale: ptBR }),
+      dias,
+      obras: obrasSet.size,
+      kmRodado: 0,
+      calc,
+      paga,
+      status: Math.abs(calc - paga) < 0.01 ? "ok" : "divergencia",
+    };
+  }).reverse();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -291,10 +333,70 @@ export default function VehicleDetailDialog({ open, onOpenChange, vehicle }: Veh
             )}
           </TabsContent>
 
-          <TabsContent value="diarias" className="min-h-[200px]">
-            <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
-              Registro de diárias calculadas pelo fechamento de escalas.
-            </div>
+          <TabsContent value="diarias" className="space-y-3">
+            {!monthlySummary.some((r) => r.dias > 0) ? (
+              <p className="text-muted-foreground text-sm text-center p-8">
+                Nenhum dado de diárias disponível.
+              </p>
+            ) : (
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Mês</TableHead>
+                      <TableHead className="text-center">Dias em Campo</TableHead>
+                      <TableHead className="text-center">Obras</TableHead>
+                      <TableHead className="text-right">Km Rodado</TableHead>
+                      <TableHead className="text-right">Diária Calc.</TableHead>
+                      <TableHead className="text-right">Diária Paga</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {monthlySummary.filter((r) => r.dias > 0).map((row) => (
+                      <TableRow key={row.label}>
+                        <TableCell className="font-medium capitalize">{row.label}</TableCell>
+                        <TableCell className="text-center tabular-nums">{row.dias}</TableCell>
+                        <TableCell className="text-center tabular-nums">{row.obras}</TableCell>
+                        <TableCell className="text-right tabular-nums text-muted-foreground">
+                          {row.kmRodado > 0 ? `${row.kmRodado.toLocaleString()} km` : "—"}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          R$ {row.calc.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          R$ {row.paga.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {row.status === "ok" ? (
+                            <Badge className="bg-green-600 text-white text-xs">OK</Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-xs">Divergência</Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow className="font-semibold">
+                      <TableCell>Total</TableCell>
+                      <TableCell className="text-center tabular-nums">
+                        {monthlySummary.reduce((s, r) => s + r.dias, 0)}
+                      </TableCell>
+                      <TableCell className="text-center">—</TableCell>
+                      <TableCell className="text-right">—</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        R$ {monthlySummary.reduce((s, r) => s + r.calc, 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        R$ {monthlySummary.reduce((s, r) => s + r.paga, 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell />
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="percurso" className="min-h-[200px]">
