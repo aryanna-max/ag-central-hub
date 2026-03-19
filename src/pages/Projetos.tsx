@@ -167,6 +167,7 @@ export default function Projetos() {
   const { data: projects = [], isLoading } = useProjects();
   const { data: employees = [] } = useEmployees();
   const updateProject = useUpdateProject();
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [editForm, setEditForm] = useState<Partial<Project>>({});
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
