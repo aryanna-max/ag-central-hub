@@ -46,6 +46,10 @@ const SOURCE_LABELS: Record<string, string> = {
 export default function Leads() {
   const { data: leads = [], isLoading } = useLeads();
   const deleteLead = useDeleteLead();
+  const updateLead = useUpdateLead();
+  const { convertLead, isPending: isConverting } = useLeadConversion();
+  const { data: projects = [] } = useProjects();
+  const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -53,6 +57,7 @@ export default function Leads() {
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [statusChangeLead, setStatusChangeLead] = useState<Lead | null>(null);
 
   const filtered = useMemo(() => {
     return leads.filter((l) => {
