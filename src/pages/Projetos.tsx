@@ -366,10 +366,30 @@ export default function Projetos() {
                   </div>
                   <div>
                     <Label>Responsável</Label>
-                    <Input
-                      value={editForm.responsible || ""}
-                      onChange={(e) => setEditForm({ ...editForm, responsible: e.target.value })}
-                    />
+                    <Select
+                      value={editForm.responsible_id || ""}
+                      onValueChange={(val) => {
+                        const emp = employees.find((e) => e.id === val);
+                        setEditForm({
+                          ...editForm,
+                          responsible_id: val,
+                          responsible: emp?.name || null,
+                        });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um funcionário" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {employees
+                          .filter((e) => e.status !== "desligado")
+                          .map((emp) => (
+                            <SelectItem key={emp.id} value={emp.id}>
+                              {emp.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label>Data Início</Label>
