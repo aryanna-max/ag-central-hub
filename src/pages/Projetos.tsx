@@ -10,7 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { FolderKanban, GripVertical, FileText } from "lucide-react";
 import { useProjects, useUpdateProject, type Project, type ProjectStatus } from "@/hooks/useProjects";
-import { useMeasurements, type Measurement } from "@/hooks/useMeasurements";
+import { useProjectMeasurements } from "@/hooks/useMeasurements";
 import { toast } from "sonner";
 
 const COLUMNS: { key: ProjectStatus; label: string; color: string }[] = [
