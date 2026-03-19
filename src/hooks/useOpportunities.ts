@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type OpportunityStage = "prospeccao" | "qualificacao" | "proposta" | "negociacao" | "fechado_ganho" | "fechado_perdido";
+export type OpportunityStage = "prospeccao" | "qualificacao" | "proposta_enviada" | "negociacao" | "fechado_ganho" | "fechado_perdido";
 
 export interface Opportunity {
   id: string;
