@@ -567,13 +567,18 @@ export type Database = {
           employee_id: string
           field_payment_id: string
           id: string
+          intermediary_reason: string | null
           notes: string | null
           others_value: number | null
+          paid_at: string | null
+          paid_by: string | null
           payment_method_id: string | null
+          payment_status: string | null
           project_id: string | null
           project_name: string | null
           total_value: number | null
           transport_value: number | null
+          updated_at: string | null
         }
         Insert: {
           actual_receiver_id?: string | null
@@ -585,13 +590,18 @@ export type Database = {
           employee_id: string
           field_payment_id: string
           id?: string
+          intermediary_reason?: string | null
           notes?: string | null
           others_value?: number | null
+          paid_at?: string | null
+          paid_by?: string | null
           payment_method_id?: string | null
+          payment_status?: string | null
           project_id?: string | null
           project_name?: string | null
           total_value?: number | null
           transport_value?: number | null
+          updated_at?: string | null
         }
         Update: {
           actual_receiver_id?: string | null
@@ -603,13 +613,18 @@ export type Database = {
           employee_id?: string
           field_payment_id?: string
           id?: string
+          intermediary_reason?: string | null
           notes?: string | null
           others_value?: number | null
+          paid_at?: string | null
+          paid_by?: string | null
           payment_method_id?: string | null
+          payment_status?: string | null
           project_id?: string | null
           project_name?: string | null
           total_value?: number | null
           transport_value?: number | null
+          updated_at?: string | null
         }
         Relationships: [
           {
