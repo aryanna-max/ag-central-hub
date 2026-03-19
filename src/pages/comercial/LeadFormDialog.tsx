@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateLead, useUpdateLead, type Lead, type LeadInsert, type LeadSource, type LeadStatus } from "@/hooks/useLeads";
+import { useLeadConversion } from "@/hooks/useLeadConversion";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -76,6 +77,7 @@ interface Props {
 export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
   const createLead = useCreateLead();
   const updateLead = useUpdateLead();
+  const { convertLead, isPending: conversionPending } = useLeadConversion();
   const isEditing = !!lead;
 
   const [form, setForm] = useState<LeadInsert>({
@@ -159,8 +161,16 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
     }
     try {
       if (isEditing) {
-        await updateLead.mutateAsync({ id: lead.id, ...form });
-        toast.success("Lead atualizado");
+        const updated = await updateLead.mutateAsync({ id: lead.id, ...form });
+        // If status changed to 'convertido', auto-create project + alerts
+        const wasConverted = lead.status !== "convertido" && form.status === "convertido";
+        if (wasConverted) {
+          const fullLead = { ...lead, ...form, id: lead.id } as Lead;
+          await convertLead(fullLead);
+          toast.success("Lead convertido — projeto criado e alertas enviados");
+        } else {
+          toast.success("Lead atualizado");
+        }
       } else {
         await createLead.mutateAsync(form);
         toast.success("Lead criado");
@@ -171,7 +181,7 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
     }
   };
 
-  const isPending = createLead.isPending || updateLead.isPending;
+  const isPending = createLead.isPending || updateLead.isPending || conversionPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

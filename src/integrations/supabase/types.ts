@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          id: string
+          message: string | null
+          priority: Database["public"]["Enums"]["alert_priority"]
+          read: boolean
+          recipient: Database["public"]["Enums"]["alert_recipient"]
+          reference_id: string | null
+          reference_type: string | null
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          priority?: Database["public"]["Enums"]["alert_priority"]
+          read?: boolean
+          recipient: Database["public"]["Enums"]["alert_recipient"]
+          reference_id?: string | null
+          reference_type?: string | null
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          priority?: Database["public"]["Enums"]["alert_priority"]
+          read?: boolean
+          recipient?: Database["public"]["Enums"]["alert_recipient"]
+          reference_id?: string | null
+          reference_type?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       daily_schedule_entries: {
         Row: {
           absence_reason: string | null
@@ -477,6 +516,59 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          client: string | null
+          client_cnpj: string | null
+          contract_value: number | null
+          created_at: string
+          id: string
+          lead_id: string | null
+          name: string
+          notes: string | null
+          responsible: string | null
+          service: string | null
+          status: Database["public"]["Enums"]["project_status"]
+          updated_at: string
+        }
+        Insert: {
+          client?: string | null
+          client_cnpj?: string | null
+          contract_value?: number | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          name: string
+          notes?: string | null
+          responsible?: string | null
+          service?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          updated_at?: string
+        }
+        Update: {
+          client?: string | null
+          client_cnpj?: string | null
+          contract_value?: number | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          name?: string
+          notes?: string | null
+          responsible?: string | null
+          service?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           employee_id: string
@@ -622,6 +714,8 @@ export type Database = {
         | "afastamento"
         | "falta"
         | "outros"
+      alert_priority: "urgente" | "importante" | "informacao"
+      alert_recipient: "alcione" | "marcelo" | "diretoria" | "todos"
       attendance_status: "presente" | "falta" | "justificado" | "atrasado"
       employee_status:
         | "disponivel"
@@ -651,6 +745,12 @@ export type Database = {
         | "qualificado"
         | "convertido"
         | "descartado"
+      project_status:
+        | "planejamento"
+        | "execucao"
+        | "entrega"
+        | "faturamento"
+        | "concluido"
       vehicle_status: "disponivel" | "em_uso" | "manutencao" | "indisponivel"
     }
     CompositeTypes: {
@@ -788,6 +888,8 @@ export const Constants = {
         "falta",
         "outros",
       ],
+      alert_priority: ["urgente", "importante", "informacao"],
+      alert_recipient: ["alcione", "marcelo", "diretoria", "todos"],
       attendance_status: ["presente", "falta", "justificado", "atrasado"],
       employee_status: [
         "disponivel",
@@ -820,6 +922,13 @@ export const Constants = {
         "qualificado",
         "convertido",
         "descartado",
+      ],
+      project_status: [
+        "planejamento",
+        "execucao",
+        "entrega",
+        "faturamento",
+        "concluido",
       ],
       vehicle_status: ["disponivel", "em_uso", "manutencao", "indisponivel"],
     },

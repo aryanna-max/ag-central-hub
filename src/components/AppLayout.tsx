@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import AppSidebar from "./AppSidebar";
-import { Bell, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import NotificationsPanel from "./NotificationsPanel";
 
 export default function AppLayout() {
   return (
@@ -18,10 +19,7 @@ export default function AppLayout() {
             />
           </div>
           <div className="flex items-center gap-4">
-            <button className="relative p-2 rounded-lg hover:bg-muted transition-colors">
-              <Bell className="w-5 h-5 text-muted-foreground" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-secondary rounded-full" />
-            </button>
+            <NotificationsPanel />
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
               <span className="text-primary-foreground text-xs font-bold">SG</span>
             </div>
