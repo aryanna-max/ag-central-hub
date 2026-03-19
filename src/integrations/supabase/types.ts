@@ -613,11 +613,14 @@ export type Database = {
           created_at: string
           daily_value: number | null
           days_worked: number | null
+          description: string | null
           discount_value: number | null
           employee_id: string
+          expense_type: string | null
           field_payment_id: string
           id: string
           intermediary_reason: string | null
+          nature: string | null
           notes: string | null
           others_value: number | null
           paid_at: string | null
@@ -636,11 +639,14 @@ export type Database = {
           created_at?: string
           daily_value?: number | null
           days_worked?: number | null
+          description?: string | null
           discount_value?: number | null
           employee_id: string
+          expense_type?: string | null
           field_payment_id: string
           id?: string
           intermediary_reason?: string | null
+          nature?: string | null
           notes?: string | null
           others_value?: number | null
           paid_at?: string | null
@@ -659,11 +665,14 @@ export type Database = {
           created_at?: string
           daily_value?: number | null
           days_worked?: number | null
+          description?: string | null
           discount_value?: number | null
           employee_id?: string
+          expense_type?: string | null
           field_payment_id?: string
           id?: string
           intermediary_reason?: string | null
+          nature?: string | null
           notes?: string | null
           others_value?: number | null
           paid_at?: string | null
@@ -1593,6 +1602,8 @@ export type Database = {
         | "aprovada"
         | "paga"
         | "cancelada"
+        | "submetido"
+        | "devolvido"
       lead_interaction_type:
         | "nota"
         | "ligacao"
@@ -1790,6 +1801,8 @@ export const Constants = {
         "aprovada",
         "paga",
         "cancelada",
+        "submetido",
+        "devolvido",
       ],
       lead_interaction_type: [
         "nota",
