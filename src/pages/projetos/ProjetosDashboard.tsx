@@ -190,7 +190,9 @@ export default function ProjetosDashboard() {
               {projects.map((p) => {
                 const m = getProjectMeasurements(p);
                 const medido = m?.totalNF || 0;
+                const aReceberRow = m?.totalNFAReceber || 0;
                 const contrato = p.contract_value || 0;
+                const hasObra = !!p.obra_id;
                 return (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.name}</TableCell>
@@ -202,10 +204,8 @@ export default function ProjetosDashboard() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">{contrato ? formatCurrency(contrato) : "—"}</TableCell>
-                    <TableCell className="text-right">{medido ? formatCurrency(medido) : "—"}</TableCell>
-                    <TableCell className="text-right">
-                      {contrato ? formatCurrency(Math.max(contrato - medido, 0)) : "—"}
-                    </TableCell>
+                    <TableCell className="text-right">{hasObra ? (medido ? formatCurrency(medido) : "—") : "—"}</TableCell>
+                    <TableCell className="text-right">{hasObra ? (aReceberRow ? formatCurrency(aReceberRow) : "—") : "—"}</TableCell>
                   </TableRow>
                 );
               })}
