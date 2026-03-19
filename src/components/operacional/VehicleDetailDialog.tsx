@@ -265,6 +265,27 @@ export default function VehicleDetailDialog({ open, onOpenChange, vehicle }: Veh
                       );
                     })}
                   </TableBody>
+                  <TableFooter>
+                    <TableRow className="font-semibold">
+                      <TableCell colSpan={5} className="text-right">
+                        Total ({history.length} {history.length === 1 ? "dia" : "dias"})
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        R$ {(history.length * dailyRate).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        R$ {(history.length * dailyRate).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-center tabular-nums">
+                        {(() => {
+                          const diff = (history.length * dailyRate) - (history.length * dailyRate);
+                          return diff !== 0
+                            ? <span className="text-destructive">R$ {diff.toFixed(2)}</span>
+                            : <span className="text-muted-foreground">—</span>;
+                        })()}
+                      </TableCell>
+                    </TableRow>
+                  </TableFooter>
                 </Table>
               </div>
             )}
