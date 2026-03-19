@@ -91,4 +91,29 @@ export function useDeleteMeasurement() {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["measurements"] }),
   });
+
+
+export function useProjectMeasurements(projectName: string, clientName: string | null) {
+  return useQuery({
+    queryKey: ["measurements", "project", projectName, clientName],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("measurements" as any)
+        .select("*, obras:obra_id(name), teams:team_id(name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const all = (data as any[]).map((r) => ({
+        ...r,
+        obra_name: r.obras?.name ?? null,
+        team_name: r.teams?.name ?? null,
+      })) as Measurement[];
+      const nameLC = projectName.toLowerCase();
+      const clientLC = clientName?.toLowerCase() || "";
+      return all.filter((m) => {
+        const obraLC = (m.obra_name || "").toLowerCase();
+        return obraLC && (obraLC.includes(nameLC) || nameLC.includes(obraLC) || (clientLC && obraLC.includes(clientLC)));
+      });
+    },
+    enabled: !!projectName,
+  });
 }
