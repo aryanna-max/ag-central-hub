@@ -28,6 +28,7 @@ export interface ProjectInsert {
   service?: string | null;
   contract_value?: number | null;
   responsible?: string | null;
+  responsible_id?: string | null;
   lead_id?: string | null;
   status?: ProjectStatus;
   notes?: string | null;
