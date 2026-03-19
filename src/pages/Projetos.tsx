@@ -16,6 +16,7 @@ const COLUMNS: { key: ProjectStatus; label: string; color: string }[] = [
   { key: "entrega", label: "Entrega", color: "bg-purple-500" },
   { key: "faturamento", label: "Faturamento", color: "bg-emerald-500" },
   { key: "concluido", label: "Concluído", color: "bg-muted-foreground" },
+  { key: "pausado", label: "Pausado", color: "bg-rose-500" },
 ];
 
 const STATUS_BADGE_COLORS: Record<ProjectStatus, string> = {
@@ -24,6 +25,7 @@ const STATUS_BADGE_COLORS: Record<ProjectStatus, string> = {
   entrega: "bg-purple-100 text-purple-800",
   faturamento: "bg-emerald-100 text-emerald-800",
   concluido: "bg-muted text-muted-foreground",
+  pausado: "bg-rose-100 text-rose-800",
 };
 
 function formatCurrency(value: number | null) {
