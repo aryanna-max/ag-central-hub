@@ -1,21 +1,18 @@
 import { useState } from "react";
-import { FileText, Plus, Trash2, AlertTriangle } from "lucide-react";
+import { FileText, Plus, Trash2, AlertTriangle, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { useMedicoes, useCreateMedicao, useUpdateMedicao, useDeleteMedicao, type Medicao } from "@/hooks/useMedicoes";
+import { useMeasurements, useDeleteMeasurement, type Measurement } from "@/hooks/useMeasurements";
+import MeasurementFormDialog from "@/components/operacional/MeasurementFormDialog";
 import MedicaoDetailDialog from "@/components/operacional/MedicaoDetailDialog";
 
 const statusColors: Record<string, string> = {
+  rascunho: "bg-muted text-muted-foreground",
   aguardando_nf: "bg-amber-500 text-white",
   nf_emitida: "bg-blue-600 text-white",
   pago: "bg-green-600 text-white",
@@ -23,43 +20,25 @@ const statusColors: Record<string, string> = {
 };
 
 const statusLabels: Record<string, string> = {
+  rascunho: "Rascunho",
   aguardando_nf: "Aguardando NF",
   nf_emitida: "NF Emitida",
   pago: "Pago",
   cancelado: "Cancelado",
 };
 
+function formatCurrency(v: number | null) {
+  if (!v && v !== 0) return "—";
+  return `R$ ${Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+}
+
 export default function Medicoes() {
-  const { data: medicoes, isLoading } = useMedicoes();
-  const createMedicao = useCreateMedicao();
-  const deleteMedicao = useDeleteMedicao();
+  const { data: measurements, isLoading } = useMeasurements();
+  const deleteMeasurement = useDeleteMeasurement();
   const [showNew, setShowNew] = useState(false);
-  const [selected, setSelected] = useState<Medicao | null>(null);
-  const [form, setForm] = useState({
-    client_name: "", cnpj_faturamento: "", valor_nf: "",
-    period_start: "", period_end: "", notes: "",
-  });
+  const [selected, setSelected] = useState<Measurement | null>(null);
 
-  const handleCreate = async () => {
-    if (!form.client_name) return;
-    try {
-      await createMedicao.mutateAsync({
-        client_name: form.client_name,
-        cnpj_faturamento: form.cnpj_faturamento || undefined,
-        valor_nf: form.valor_nf ? parseFloat(form.valor_nf) : 0,
-        period_start: form.period_start || undefined,
-        period_end: form.period_end || undefined,
-        notes: form.notes || undefined,
-      });
-      setShowNew(false);
-      setForm({ client_name: "", cnpj_faturamento: "", valor_nf: "", period_start: "", period_end: "", notes: "" });
-      toast.success("Medição criada!");
-    } catch {
-      toast.error("Erro ao criar medição");
-    }
-  };
-
-  const aguardando = medicoes?.filter((m) => m.status === "aguardando_nf") || [];
+  const aguardando = measurements?.filter((m) => m.status === "aguardando_nf") || [];
 
   return (
     <div className="p-6 space-y-6">
@@ -78,9 +57,8 @@ export default function Medicoes() {
         </Button>
       </div>
 
-      {/* Alertas de medições aguardando NF */}
       {aguardando.length > 0 && (
-        <Card className="border-amber-500/50 bg-amber-500/5">
+        <Card className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
           <CardContent className="p-4 space-y-2">
             <div className="flex items-center gap-2 text-amber-600 font-semibold text-sm">
               <AlertTriangle className="w-4 h-4" />
@@ -88,14 +66,9 @@ export default function Medicoes() {
             </div>
             {aguardando.map((m) => (
               <p key={m.id} className="text-sm text-muted-foreground ml-6">
-                <span className="font-medium text-foreground">{m.client_name}</span>
-                {" — "}R$ {Number(m.valor_nf || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                {m.period_start && m.period_end && (
-                  <> — Período {m.period_start} a {m.period_end}</>
-                )}
-                {m.cnpj_faturamento && (
-                  <>. Emitir NF pelo CNPJ {m.cnpj_faturamento}.</>
-                )}
+                <span className="font-medium text-foreground">{m.codigo_bm}</span>
+                {" — "}{formatCurrency(m.valor_nf)}
+                {" — Período "}{m.period_start} a {m.period_end}
               </p>
             ))}
           </CardContent>
@@ -106,56 +79,51 @@ export default function Medicoes() {
         <CardContent className="p-0">
           {isLoading ? (
             <p className="p-6 text-muted-foreground">Carregando...</p>
-          ) : !medicoes?.length ? (
+          ) : !measurements?.length ? (
             <p className="p-6 text-center text-muted-foreground">Nenhuma medição cadastrada.</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>CNPJ Faturamento</TableHead>
-                  <TableHead>Valor NF</TableHead>
+                  <TableHead>Código BM</TableHead>
+                  <TableHead>Obra</TableHead>
                   <TableHead>Período</TableHead>
-                  <TableHead>NF Nº</TableHead>
+                  <TableHead>Equipe</TableHead>
+                  <TableHead>Valor NF</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead></TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {medicoes.map((m) => (
-                  <TableRow
-                    key={m.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => setSelected(m)}
-                  >
-                    <TableCell className="font-medium">{m.client_name || "—"}</TableCell>
-                    <TableCell className="font-mono text-xs">{m.cnpj_faturamento || "—"}</TableCell>
-                    <TableCell>
-                      {m.valor_nf ? `R$ ${Number(m.valor_nf).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—"}
+                {measurements.map((m) => (
+                  <TableRow key={m.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelected(m)}>
+                    <TableCell className="font-mono font-medium">{m.codigo_bm}</TableCell>
+                    <TableCell>{m.obra_name || "—"}</TableCell>
+                    <TableCell className="text-sm">
+                      {m.period_start} a {m.period_end}
                     </TableCell>
-                    <TableCell>
-                      {m.period_start && m.period_end
-                        ? `${m.period_start} a ${m.period_end}`
-                        : "—"}
-                    </TableCell>
-                    <TableCell>{m.nf_numero || "—"}</TableCell>
+                    <TableCell>{m.team_name || "—"}</TableCell>
+                    <TableCell className="font-semibold">{formatCurrency(m.valor_nf)}</TableCell>
                     <TableCell>
                       <Badge className={statusColors[m.status] || ""}>
                         {statusLabels[m.status] || m.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm("Excluir esta medição?")) deleteMedicao.mutate(m.id);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setSelected(m); }}>
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon" className="text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm("Excluir esta medição?")) deleteMeasurement.mutate(m.id);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -165,36 +133,8 @@ export default function Medicoes() {
         </CardContent>
       </Card>
 
-      {/* Dialog nova medição */}
-      <Dialog open={showNew} onOpenChange={setShowNew}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nova Medição</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Input placeholder="Cliente *" value={form.client_name} onChange={(e) => setForm({ ...form, client_name: e.target.value })} />
-            <Input placeholder="CNPJ Faturamento" value={form.cnpj_faturamento} onChange={(e) => setForm({ ...form, cnpj_faturamento: e.target.value })} />
-            <Input placeholder="Valor NF (R$)" type="number" step="0.01" value={form.valor_nf} onChange={(e) => setForm({ ...form, valor_nf: e.target.value })} />
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-muted-foreground">Início do Período</label>
-                <Input type="date" value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Fim do Período</label>
-                <Input type="date" value={form.period_end} onChange={(e) => setForm({ ...form, period_end: e.target.value })} />
-              </div>
-            </div>
-            <Textarea placeholder="Observações" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNew(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} disabled={!form.client_name}>Cadastrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <MeasurementFormDialog open={showNew} onOpenChange={setShowNew} />
 
-      {/* Dialog detalhe */}
       {selected && (
         <MedicaoDetailDialog
           medicao={selected}
