@@ -75,7 +75,7 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
   }, [form.dias_semana, form.valor_diaria_semana, form.dias_fds, form.valor_diaria_fds, form.retencao_pct]);
 
   const resetForm = () =>
-    setForm({ codigo_bm: "", obra_id: "", team_id: "", period_start: "", period_end: "", dias_semana: "", valor_diaria_semana: "", dias_fds: "", valor_diaria_fds: "", retencao_pct: "5", notes: "" });
+    setForm({ codigo_bm: "", obra_id: "", team_id: "", period_start: "", period_end: "", dias_semana: "", valor_diaria_semana: "", dias_fds: "", valor_diaria_fds: "", retencao_pct: "5", notes: "", empresa_faturadora: "ag_topografia", tipo_documento: "nota_fiscal" });
 
   const handleSave = async (notify: boolean) => {
     if (!form.codigo_bm || !form.period_start || !form.period_end) {
