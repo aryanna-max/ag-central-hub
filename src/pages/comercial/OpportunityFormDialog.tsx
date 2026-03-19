@@ -116,11 +116,11 @@ export default function OpportunityFormDialog({ open, onOpenChange, opportunity 
                 </SelectContent>
               </Select>
             </div>
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Cliente</Label>
-              <Input value={form.client || ""} onChange={(e) => setForm({ ...form, client: e.target.value })} />
+              <Label>Valor (R$)</Label>
+              <Input type="number" step="0.01" value={form.value ?? ""} onChange={(e) => setForm({ ...form, value: e.target.value ? Number(e.target.value) : null })} />
             </div>
+          </div>
             <div className="space-y-2">
               <Label>Valor (R$)</Label>
               <Input type="number" step="0.01" value={form.value ?? ""} onChange={(e) => setForm({ ...form, value: e.target.value ? Number(e.target.value) : null })} />
