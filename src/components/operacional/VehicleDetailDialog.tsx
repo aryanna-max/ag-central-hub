@@ -333,10 +333,70 @@ export default function VehicleDetailDialog({ open, onOpenChange, vehicle }: Veh
             )}
           </TabsContent>
 
-          <TabsContent value="diarias" className="min-h-[200px]">
-            <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
-              Registro de diárias calculadas pelo fechamento de escalas.
-            </div>
+          <TabsContent value="diarias" className="space-y-3">
+            {!monthlySummary.some((r) => r.dias > 0) ? (
+              <p className="text-muted-foreground text-sm text-center p-8">
+                Nenhum dado de diárias disponível.
+              </p>
+            ) : (
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Mês</TableHead>
+                      <TableHead className="text-center">Dias em Campo</TableHead>
+                      <TableHead className="text-center">Obras</TableHead>
+                      <TableHead className="text-right">Km Rodado</TableHead>
+                      <TableHead className="text-right">Diária Calc.</TableHead>
+                      <TableHead className="text-right">Diária Paga</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {monthlySummary.filter((r) => r.dias > 0).map((row) => (
+                      <TableRow key={row.label}>
+                        <TableCell className="font-medium capitalize">{row.label}</TableCell>
+                        <TableCell className="text-center tabular-nums">{row.dias}</TableCell>
+                        <TableCell className="text-center tabular-nums">{row.obras}</TableCell>
+                        <TableCell className="text-right tabular-nums text-muted-foreground">
+                          {row.kmRodado > 0 ? `${row.kmRodado.toLocaleString()} km` : "—"}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          R$ {row.calc.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          R$ {row.paga.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {row.status === "ok" ? (
+                            <Badge className="bg-green-600 text-white text-xs">OK</Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-xs">Divergência</Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow className="font-semibold">
+                      <TableCell>Total</TableCell>
+                      <TableCell className="text-center tabular-nums">
+                        {monthlySummary.reduce((s, r) => s + r.dias, 0)}
+                      </TableCell>
+                      <TableCell className="text-center">—</TableCell>
+                      <TableCell className="text-right">—</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        R$ {monthlySummary.reduce((s, r) => s + r.calc, 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        R$ {monthlySummary.reduce((s, r) => s + r.paga, 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell />
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="percurso" className="min-h-[200px]">
