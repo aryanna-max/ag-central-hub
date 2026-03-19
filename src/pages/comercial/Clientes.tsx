@@ -1,29 +1,30 @@
 import { useState, useMemo } from "react";
-import { Building2, Search, Mail, Phone, FileText, Plus, MoreHorizontal, Pencil, Trash2, UserPlus, Users } from "lucide-react";
+import { Building2, Search, Mail, Phone, FileText, Plus, MoreHorizontal, Pencil, Trash2, UserPlus, Users, FolderOpen } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useClients, useClientContacts, useCreateClientContact, useDeleteClientContact, useDeleteClient, type Client, type ClientContactInsert } from "@/hooks/useClients";
-import { useProjects } from "@/hooks/useProjects";
+import {
+  useClients, useClientContacts, useCreateClientContact, useDeleteClientContact, useDeleteClient,
+  type Client, type ClientContactInsert,
+} from "@/hooks/useClients";
+import { useProjects, type Project } from "@/hooks/useProjects";
 import ClientFormDialog from "./ClientFormDialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const STATUS_LABELS: Record<string, string> = {
-  planejamento: "Planejamento",
-  execucao: "Execução",
-  entrega: "Entrega",
-  faturamento: "Faturamento",
-  concluido: "Concluído",
-  pausado: "Pausado",
+const PROJECT_STATUS_LABELS: Record<string, string> = {
+  planejamento: "Planejamento", execucao: "Execução", entrega: "Entrega",
+  faturamento: "Faturamento", concluido: "Concluído", pausado: "Pausado",
 };
 
 export default function Clientes() {
@@ -37,6 +38,13 @@ export default function Clientes() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  const getClientProjects = (client: Client): Project[] =>
+    projects.filter(
+      (p) =>
+        p.client?.toLowerCase().trim() === client.name.toLowerCase().trim() ||
+        (client.cnpj && p.client_cnpj === client.cnpj)
+    );
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return clients.filter(
@@ -44,12 +52,16 @@ export default function Clientes() {
         c.name.toLowerCase().includes(q) ||
         c.cnpj?.toLowerCase().includes(q) ||
         c.email?.toLowerCase().includes(q) ||
-        c.city?.toLowerCase().includes(q)
+        c.city?.toLowerCase().includes(q) ||
+        c.segmento?.toLowerCase().includes(q)
     );
   }, [clients, search]);
 
-  const getClientProjects = (client: Client) =>
-    projects.filter((p) => p.client?.toLowerCase().trim() === client.name.toLowerCase().trim() || (client.cnpj && p.client_cnpj === client.cnpj));
+  const stats = useMemo(() => ({
+    total: clients.length,
+    active: clients.filter((c) => c.is_active).length,
+    totalProjects: clients.reduce((s, c) => s + getClientProjects(c).length, 0),
+  }), [clients, projects]);
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -62,12 +74,9 @@ export default function Clientes() {
     setDeleteId(null);
   };
 
-  const fmt = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-
-  const totalProjects = clients.reduce((s, c) => s + getClientProjects(c).length, 0);
-
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
@@ -79,84 +88,162 @@ export default function Clientes() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <Card><CardContent className="pt-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><Building2 className="w-4 h-4" />Total de Clientes</div>
-          <p className="text-2xl font-bold">{clients.length}</p>
+          <p className="text-2xl font-bold">{stats.total}</p>
         </CardContent></Card>
         <Card><CardContent className="pt-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground"><Users className="w-4 h-4" />Ativos</div>
-          <p className="text-2xl font-bold">{clients.filter((c) => c.is_active).length}</p>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground"><Users className="w-4 h-4" />Clientes Ativos</div>
+          <p className="text-2xl font-bold">{stats.active}</p>
         </CardContent></Card>
         <Card><CardContent className="pt-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground"><FileText className="w-4 h-4" />Projetos Vinculados</div>
-          <p className="text-2xl font-bold">{totalProjects}</p>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground"><FolderOpen className="w-4 h-4" />Total de Projetos</div>
+          <p className="text-2xl font-bold">{stats.totalProjects}</p>
         </CardContent></Card>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-xs">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input placeholder="Buscar clientes..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-      </div>
+      {/* Tabs */}
+      <Tabs defaultValue="clientes" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="clientes">Base de Clientes</TabsTrigger>
+          <TabsTrigger value="historico">Histórico</TabsTrigger>
+        </TabsList>
 
-      {/* Client cards */}
-      {isLoading ? (
-        <p className="text-muted-foreground text-center py-10">Carregando...</p>
-      ) : filtered.length === 0 ? (
-        <p className="text-muted-foreground text-center py-10">Nenhum cliente encontrado.</p>
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((client) => {
-            const clientProjects = getClientProjects(client);
-            return (
-              <Card
-                key={client.id}
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => setSelectedClient(client)}
-              >
-                <CardContent className="p-4 space-y-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-semibold">{client.name}</p>
-                      {client.cnpj && <p className="text-xs text-muted-foreground">CNPJ: {client.cnpj}</p>}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant={client.is_active ? "default" : "secondary"} className="text-xs">
-                        {client.is_active ? "Ativo" : "Inativo"}
-                      </Badge>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-7 w-7">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingClient(client); setFormOpen(true); }}>
-                            <Pencil className="w-3.5 h-3.5 mr-2" /> Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteId(client.id); }}>
-                            <Trash2 className="w-3.5 h-3.5 mr-2" /> Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                  {client.city && <p className="text-xs text-muted-foreground">{client.city}{client.state ? ` - ${client.state}` : ""}</p>}
-                  <div className="flex gap-3 text-xs text-muted-foreground">
-                    {client.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{client.phone}</span>}
-                    {client.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{client.email}</span>}
-                  </div>
-                  {clientProjects.length > 0 && (
-                    <Badge variant="secondary" className="text-xs">{clientProjects.length} projeto(s)</Badge>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+        <TabsContent value="clientes" className="space-y-4">
+          {/* Search */}
+          <div className="relative max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input placeholder="Buscar clientes..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          </div>
 
+          {isLoading ? (
+            <p className="text-muted-foreground text-center py-10">Carregando...</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-muted-foreground text-center py-10">Nenhum cliente encontrado.</p>
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome / Razão Social</TableHead>
+                      <TableHead>CNPJ</TableHead>
+                      <TableHead>Cidade/UF</TableHead>
+                      <TableHead>Contato</TableHead>
+                      <TableHead>Segmento</TableHead>
+                      <TableHead className="text-center">Projetos</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-10"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((client) => {
+                      const projCount = getClientProjects(client).length;
+                      return (
+                        <TableRow
+                          key={client.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setSelectedClient(client)}
+                        >
+                          <TableCell className="font-medium">{client.name}</TableCell>
+                          <TableCell className="text-muted-foreground text-xs font-mono">{client.cnpj || "—"}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {client.city ? `${client.city}${client.state ? `/${client.state}` : ""}` : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-xs space-y-0.5">
+                              {client.phone && <div className="flex items-center gap-1 text-muted-foreground"><Phone className="w-3 h-3" />{client.phone}</div>}
+                              {client.email && <div className="flex items-center gap-1 text-muted-foreground"><Mail className="w-3 h-3" />{client.email}</div>}
+                              {!client.phone && !client.email && <span className="text-muted-foreground">—</span>}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">{client.segmento || "—"}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="secondary" className="text-xs">{projCount}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={client.is_active ? "default" : "secondary"} className="text-xs">
+                              {client.is_active ? "Ativo" : "Inativo"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                <Button variant="ghost" size="icon" className="h-7 w-7">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingClient(client); setFormOpen(true); }}>
+                                  <Pencil className="w-3.5 h-3.5 mr-2" /> Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteId(client.id); }}>
+                                  <Trash2 className="w-3.5 h-3.5 mr-2" /> Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="historico" className="space-y-4">
+          <p className="text-sm text-muted-foreground">Histórico de projetos e interações por cliente</p>
+          {clients.length === 0 ? (
+            <p className="text-muted-foreground text-center py-10">Nenhum cliente cadastrado.</p>
+          ) : (
+            <div className="space-y-3">
+              {clients.map((client) => {
+                const clientProjects = getClientProjects(client);
+                if (clientProjects.length === 0) return null;
+                return (
+                  <Card key={client.id}>
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold">{client.name}</p>
+                          {client.cnpj && <p className="text-xs text-muted-foreground font-mono">{client.cnpj}</p>}
+                        </div>
+                        <Badge variant="secondary" className="text-xs">{clientProjects.length} projeto(s)</Badge>
+                      </div>
+                      <div className="space-y-1.5">
+                        {clientProjects.map((p) => (
+                          <div key={p.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm">
+                            <div>
+                              <p className="font-medium">{p.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {p.service || "Sem serviço"} · {PROJECT_STATUS_LABELS[p.status] || p.status}
+                                {p.start_date && ` · ${format(new Date(p.start_date), "dd/MM/yyyy", { locale: ptBR })}`}
+                              </p>
+                            </div>
+                            {p.contract_value != null && (
+                              <p className="font-semibold text-sm">
+                                R$ {Number(p.contract_value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+              {clients.every((c) => getClientProjects(c).length === 0) && (
+                <p className="text-muted-foreground text-center py-10">Nenhum projeto vinculado a clientes.</p>
+              )}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Dialogs */}
       <ClientFormDialog open={formOpen} onOpenChange={setFormOpen} client={editingClient} />
       <ClientDetailDialog client={selectedClient} open={!!selectedClient} onOpenChange={() => setSelectedClient(null)} />
 
@@ -231,25 +318,22 @@ function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | n
         <div className="grid grid-cols-2 gap-3 text-sm">
           {client.cnpj && (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <FileText className="w-4 h-4" /> CNPJ: <span className="font-medium text-foreground">{client.cnpj}</span>
+              <FileText className="w-4 h-4" /> CNPJ: <span className="font-medium text-foreground font-mono">{client.cnpj}</span>
             </div>
           )}
           {client.phone && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Phone className="w-4 h-4" /> {client.phone}
-            </div>
+            <div className="flex items-center gap-2 text-muted-foreground"><Phone className="w-4 h-4" /> {client.phone}</div>
           )}
           {client.email && (
+            <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-4 h-4" /> {client.email}</div>
+          )}
+          {client.city && (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Mail className="w-4 h-4" /> {client.email}
+              <Building2 className="w-4 h-4" /> {client.city}{client.state ? `/${client.state}` : ""}
             </div>
           )}
-          {client.address && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Building2 className="w-4 h-4" /> {client.address}
-              {client.city && ` · ${client.city}`}
-              {client.state && ` - ${client.state}`}
-            </div>
+          {client.segmento && (
+            <div className="text-muted-foreground">Segmento: <span className="font-medium text-foreground">{client.segmento}</span></div>
           )}
         </div>
 
@@ -321,7 +405,9 @@ function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | n
                 <div key={p.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm">
                   <div>
                     <p className="font-medium">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{p.service || "Sem serviço"} · {STATUS_LABELS[p.status] || p.status}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {p.service || "Sem serviço"} · {PROJECT_STATUS_LABELS[p.status] || p.status}
+                    </p>
                   </div>
                   {p.contract_value != null && <p className="font-semibold text-sm">{fmt(p.contract_value)}</p>}
                 </div>
