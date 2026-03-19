@@ -1572,7 +1572,14 @@ export type Database = {
         | "falta"
         | "outros"
       alert_priority: "urgente" | "importante" | "informacao"
-      alert_recipient: "alcione" | "marcelo" | "diretoria" | "todos"
+      alert_recipient:
+        | "operacional"
+        | "comercial"
+        | "financeiro"
+        | "rh"
+        | "sala_tecnica"
+        | "diretoria"
+        | "todos"
       attendance_status: "presente" | "falta" | "justificado" | "atrasado"
       employee_status:
         | "disponivel"
@@ -1760,7 +1767,15 @@ export const Constants = {
         "outros",
       ],
       alert_priority: ["urgente", "importante", "informacao"],
-      alert_recipient: ["alcione", "marcelo", "diretoria", "todos"],
+      alert_recipient: [
+        "operacional",
+        "comercial",
+        "financeiro",
+        "rh",
+        "sala_tecnica",
+        "diretoria",
+        "todos",
+      ],
       attendance_status: ["presente", "falta", "justificado", "atrasado"],
       employee_status: [
         "disponivel",
