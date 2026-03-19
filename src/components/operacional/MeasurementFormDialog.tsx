@@ -174,6 +174,37 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
             </div>
           </div>
 
+          {/* Empresa Faturadora e Tipo Documento */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Empresa Faturadora</Label>
+              <Select value={form.empresa_faturadora} onValueChange={(v) => set("empresa_faturadora", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ag_topografia">AG Topografia e Construções</SelectItem>
+                  <SelectItem value="ag_cartografia">AG Cartografia</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Tipo de Documento</Label>
+              <Select value={form.tipo_documento} onValueChange={(v) => {
+                set("tipo_documento", v);
+                if (v === "recibo") {
+                  set("retencao_pct", "0");
+                } else {
+                  set("retencao_pct", "5");
+                }
+              }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nota_fiscal">Nota Fiscal</SelectItem>
+                  <SelectItem value="recibo">Recibo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <Separator />
 
           {/* Diárias */}
@@ -203,7 +234,15 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
           <div className="grid grid-cols-3 gap-3">
             <div>
               <Label>Retenção %</Label>
-              <Input type="number" min="0" max="100" step="0.1" value={form.retencao_pct} onChange={(e) => set("retencao_pct", e.target.value)} />
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                value={form.retencao_pct}
+                onChange={(e) => set("retencao_pct", e.target.value)}
+                disabled={form.tipo_documento === "recibo"}
+              />
             </div>
           </div>
 
