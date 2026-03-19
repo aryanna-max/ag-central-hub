@@ -1,0 +1,1 @@
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS obra_id UUID REFERENCES public.obras(id);

@@ -1393,6 +1393,7 @@ export type Database = {
           lead_id: string | null
           name: string
           notes: string | null
+          obra_id: string | null
           responsible: string | null
           responsible_id: string | null
           service: string | null
@@ -1412,6 +1413,7 @@ export type Database = {
           lead_id?: string | null
           name: string
           notes?: string | null
+          obra_id?: string | null
           responsible?: string | null
           responsible_id?: string | null
           service?: string | null
@@ -1431,6 +1433,7 @@ export type Database = {
           lead_id?: string | null
           name?: string
           notes?: string | null
+          obra_id?: string | null
           responsible?: string | null
           responsible_id?: string | null
           service?: string | null
@@ -1445,6 +1448,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
             referencedColumns: ["id"]
           },
           {
