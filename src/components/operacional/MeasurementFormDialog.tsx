@@ -93,9 +93,11 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
         valor_diaria_semana: Number(form.valor_diaria_semana) || 0,
         dias_fds: Number(form.dias_fds) || 0,
         valor_diaria_fds: Number(form.valor_diaria_fds) || 0,
-        retencao_pct: Number(form.retencao_pct) || 5,
+        retencao_pct: form.tipo_documento === "recibo" ? 0 : (Number(form.retencao_pct) || 5),
         status: notify ? "aguardando_nf" : "rascunho",
         notes: form.notes || null,
+        empresa_faturadora: form.empresa_faturadora,
+        tipo_documento: form.tipo_documento,
       });
 
       if (notify) {
