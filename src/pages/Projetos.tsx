@@ -202,6 +202,7 @@ export default function Projetos() {
         service: editForm.service,
         contract_value: editForm.contract_value,
         responsible: editForm.responsible,
+        responsible_id: editForm.responsible_id,
         notes: editForm.notes,
         start_date: editForm.start_date,
         end_date: editForm.end_date,
