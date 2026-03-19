@@ -33,7 +33,7 @@ export interface OpportunityInsert {
 export const STAGE_LABELS: Record<OpportunityStage, string> = {
   prospeccao: "Prospecção",
   qualificacao: "Qualificação",
-  proposta: "Proposta",
+  proposta_enviada: "Proposta Enviada",
   negociacao: "Negociação",
   fechado_ganho: "Fechado (Ganho)",
   fechado_perdido: "Fechado (Perdido)",
