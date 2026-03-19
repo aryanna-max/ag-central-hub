@@ -95,7 +95,7 @@ export default function MeasurementFormDialog({ open, onOpenChange }: Props) {
           message: `${form.codigo_bm} — R$ ${calc.nf.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} — Período ${form.period_start} a ${form.period_end}.`,
           alert_type: "medicao_aguardando_nf",
           priority: "importante",
-          recipient: "alcione",
+          recipient: "financeiro",
         });
         toast.success("Medição salva e Alcione notificada!");
       } else {

@@ -30,7 +30,7 @@ export function useLeadConversion() {
       {
         alert_type: "novo_projeto",
         priority: "importante",
-        recipient: "alcione",
+        recipient: "financeiro",
         title: `Novo projeto — ${clientName}`,
         message: "Proposta convertida. Cadastrar condições de faturamento e data prevista de NF.",
         reference_type: "project",
@@ -39,7 +39,7 @@ export function useLeadConversion() {
       {
         alert_type: "novo_projeto",
         priority: "importante",
-        recipient: "marcelo",
+        recipient: "operacional",
         title: `Nova obra aprovada — ${clientName}`,
         message: "Iniciar planejamento de equipe, logística e escala.",
         reference_type: "project",

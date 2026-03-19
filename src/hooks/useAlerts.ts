@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AlertPriority = "urgente" | "importante" | "informacao";
-export type AlertRecipient = "alcione" | "marcelo" | "diretoria" | "todos";
+export type AlertRecipient = "operacional" | "comercial" | "financeiro" | "rh" | "sala_tecnica" | "diretoria" | "todos";
 
 export interface Alert {
   id: string;
