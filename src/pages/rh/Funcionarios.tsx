@@ -89,6 +89,20 @@ export default function Funcionarios() {
     }
   };
 
+  const totalCount = employees.length;
+  const disponiveisCount = employees.filter((e) => e.status === "disponivel").length;
+  const campoRoles = ["topógrafo", "ajudante"];
+  const campoCount = employees.filter((e) => campoRoles.some((r) => (e.role || "").toLowerCase().includes(r))).length;
+  const adminRoles = ["analista", "auxiliar", "cadista", "supervisor", "gerente", "técnico", "relações"];
+  const adminCount = employees.filter((e) => adminRoles.some((r) => (e.role || "").toLowerCase().includes(r))).length;
+
+  const summaryCards = [
+    { label: "Total de Funcionários", value: totalCount, color: "text-primary" },
+    { label: "Disponíveis", value: disponiveisCount, color: "text-green-600" },
+    { label: "Campo", value: campoCount, color: "text-amber-600" },
+    { label: "Administrativo", value: adminCount, color: "text-blue-600" },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -103,6 +117,18 @@ export default function Funcionarios() {
         <Button onClick={() => setShowNew(true)}>
           <Plus className="w-4 h-4 mr-1" /> Novo Funcionário
         </Button>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {summaryCards.map((c) => (
+          <Card key={c.label}>
+            <CardContent className="pt-4 pb-4">
+              <p className="text-xs text-muted-foreground">{c.label}</p>
+              <p className={`text-2xl font-bold ${c.color}`}>{c.value}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Filtros */}
