@@ -1496,12 +1496,16 @@ export type Database = {
       vehicles: {
         Row: {
           brand: string | null
+          color: string | null
           created_at: string
           daily_rate: number | null
+          home_address: string | null
           id: string
           km_current: number | null
           model: string
+          owner_name: string | null
           plate: string
+          responsible_employee_id: string | null
           status: Database["public"]["Enums"]["vehicle_status"]
           tracker_url: string | null
           updated_at: string
@@ -1509,12 +1513,16 @@ export type Database = {
         }
         Insert: {
           brand?: string | null
+          color?: string | null
           created_at?: string
           daily_rate?: number | null
+          home_address?: string | null
           id?: string
           km_current?: number | null
           model: string
+          owner_name?: string | null
           plate: string
+          responsible_employee_id?: string | null
           status?: Database["public"]["Enums"]["vehicle_status"]
           tracker_url?: string | null
           updated_at?: string
@@ -1522,18 +1530,30 @@ export type Database = {
         }
         Update: {
           brand?: string | null
+          color?: string | null
           created_at?: string
           daily_rate?: number | null
+          home_address?: string | null
           id?: string
           km_current?: number | null
           model?: string
+          owner_name?: string | null
           plate?: string
+          responsible_employee_id?: string | null
           status?: Database["public"]["Enums"]["vehicle_status"]
           tracker_url?: string | null
           updated_at?: string
           year?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_responsible_employee_id_fkey"
+            columns: ["responsible_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
