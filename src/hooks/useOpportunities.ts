@@ -42,7 +42,7 @@ export const STAGE_LABELS: Record<OpportunityStage, string> = {
 export const STAGE_COLORS: Record<OpportunityStage, string> = {
   prospeccao: "bg-blue-100 text-blue-800",
   qualificacao: "bg-amber-100 text-amber-800",
-  proposta: "bg-purple-100 text-purple-800",
+  proposta_enviada: "bg-purple-100 text-purple-800",
   negociacao: "bg-orange-100 text-orange-800",
   fechado_ganho: "bg-green-100 text-green-800",
   fechado_perdido: "bg-red-100 text-red-800",
