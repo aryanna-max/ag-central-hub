@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { format, startOfWeek, getWeek, getYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Plus, Trash2, User, Receipt } from "lucide-react";
