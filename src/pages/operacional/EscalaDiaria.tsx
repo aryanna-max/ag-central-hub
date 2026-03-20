@@ -23,13 +23,14 @@ import {
 } from "@/hooks/useDailySchedule";
 import { useTeams } from "@/hooks/useTeams";
 import { useVehicles } from "@/hooks/useVehicles";
-import { useEmployeesWithAbsences } from "@/hooks/useEmployees";
+import { useEmployees, useEmployeesWithAbsences } from "@/hooks/useEmployees";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import DailyScheduleReport from "@/components/operacional/DailyScheduleReport";
 import AbsencesSection from "@/components/operacional/AbsencesSection";
 import TeamLocationMap from "@/components/operacional/TeamLocationMap";
 import MonthlyDayEditDialog from "@/components/operacional/MonthlyDayEditDialog";
+import EmployeeAvailabilityKanban from "@/components/operacional/EmployeeAvailabilityKanban";
 import { useUpdateMonthlySchedule } from "@/hooks/useMonthlySchedules";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
@@ -66,6 +67,20 @@ export default function EscalaDiaria() {
   const { data: teams } = useTeams();
   const { data: vehicles } = useVehicles();
   const { data: employees } = useEmployeesWithAbsences(selectedDate);
+  const { data: allEmployees } = useEmployees();
+
+  // Load attendance records for the selected date (folga, falta, atestado, reserva)
+  const { data: attendanceRecords } = useQuery({
+    queryKey: ["attendance", selectedDate],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("attendance")
+        .select("*")
+        .eq("date", selectedDate);
+      if (error) throw error;
+      return data || [];
+    },
+  });
   const { data: obrasData } = useObrasList();
   const createSchedule = useCreateDailySchedule();
   const addAssignment = useAddTeamAssignment();
@@ -479,65 +494,46 @@ export default function EscalaDiaria() {
             <TeamLocationMap assignments={assignments} date={selectedDate} />
           )}
 
-          {/* Available employees */}
+          {/* Employee Availability Kanban */}
           {(() => {
             const assignedIds = new Set(
               (schedule.entries || []).map((e: any) => e.employee_id)
             );
-            const availableEmployees = (employees || []).filter(
+
+            // Build attendance map from DB records
+            const attendanceMap: Record<string, string> = {};
+            (attendanceRecords || []).forEach((rec: any) => {
+              if (["folga", "falta", "atestado", "reserva_ag"].includes(rec.status)) {
+                attendanceMap[rec.employee_id] = rec.status;
+              }
+            });
+
+            // All field employees (topógrafos + auxiliares) not assigned to a team today
+            const fieldEmployees = (allEmployees || []).filter(
               (e) =>
-                e.availability === "disponivel" &&
+                e.status !== "desligado" &&
                 !assignedIds.has(e.id) &&
                 (e.role?.toLowerCase().includes("topógrafo") ||
                  e.role?.toLowerCase().includes("topografo") ||
                  e.role?.toLowerCase().includes("auxiliar") ||
                  e.role?.toLowerCase().includes("ajudante"))
             );
-            const availTopografos = availableEmployees.filter((e) =>
-              e.role?.toLowerCase().includes("topógrafo") || e.role?.toLowerCase().includes("topografo")
-            );
-            const availAuxiliares = availableEmployees.filter(
-              (e) =>
-                e.role?.toLowerCase().includes("auxiliar") || e.role?.toLowerCase().includes("ajudante")
-            );
 
-            if (!availableEmployees.length) return null;
+            // Also exclude employees on vacation/leave (from useEmployeesWithAbsences)
+            const absentIds = new Set(
+              (employees || [])
+                .filter((e) => e.availability === "ferias" || e.availability === "licenca" || e.availability === "afastado")
+                .map((e) => e.id)
+            );
+            const kanbanEmployees = fieldEmployees.filter((e) => !absentIds.has(e.id));
 
             return (
-              <Card>
-                <CardContent className="p-4">
-                  <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                    <UserPlus className="w-4 h-4 text-primary" />
-                    Funcionários Disponíveis (Sem Alocação)
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {availTopografos.length > 0 && (
-                      <div>
-                        <p className="text-xs font-semibold text-muted-foreground mb-1">TOPÓGRAFOS</p>
-                        <div className="flex flex-wrap gap-1">
-                          {availTopografos.map((e) => (
-                            <Badge key={e.id} variant="outline" className="text-xs bg-primary/5">
-                              {e.name.split(" ").slice(0, 2).join(" ")}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {availAuxiliares.length > 0 && (
-                      <div>
-                        <p className="text-xs font-semibold text-muted-foreground mb-1">AUXILIARES</p>
-                        <div className="flex flex-wrap gap-1">
-                          {availAuxiliares.map((e) => (
-                            <Badge key={e.id} variant="outline" className="text-xs bg-secondary/30">
-                              {e.name.split(" ").slice(0, 2).join(" ")}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              <EmployeeAvailabilityKanban
+                unassignedEmployees={kanbanEmployees}
+                attendanceMap={attendanceMap}
+                scheduleDate={selectedDate}
+                dailyScheduleId={schedule.id}
+              />
             );
           })()}
 
