@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Users, Plus, Trash2, UserPlus, X, Crown, Car } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Users, Plus, Trash2, UserPlus, X, Crown, Car, Filter, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,24 @@ export default function Equipes() {
   const [addMemberTeamId, setAddMemberTeamId] = useState<string | null>(null);
   const [addMemberRole, setAddMemberRole] = useState<string>("auxiliar");
   const [searchEmployee, setSearchEmployee] = useState("");
+
+  // Filters
+  const [filterSearch, setFilterSearch] = useState("");
+  const [filterActive, setFilterActive] = useState("all");
+
+  const filteredTeams = useMemo(() => {
+    if (!teams) return [];
+    return teams.filter((t: any) => {
+      if (filterActive === "active" && !t.is_active) return false;
+      if (filterActive === "inactive" && t.is_active) return false;
+      if (filterSearch) {
+        const q = filterSearch.toLowerCase();
+        const memberNames = (t.team_members || []).map((m: any) => m.employees?.name || "").join(" ").toLowerCase();
+        if (!t.name.toLowerCase().includes(q) && !memberNames.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [teams, filterSearch, filterActive]);
 
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) return;
@@ -88,7 +106,7 @@ export default function Equipes() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10">
             <Users className="w-6 h-6 text-primary" />
@@ -98,22 +116,56 @@ export default function Equipes() {
             <p className="text-sm text-muted-foreground">Equipes de campo: 1 topógrafo + até 2 auxiliares + veículo</p>
           </div>
         </div>
-        <Button onClick={() => setShowNewTeam(true)} className="gap-2">
-          <Plus className="w-4 h-4" /> Nova Equipe
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => window.print()} className="gap-2">
+            <Printer className="w-4 h-4" /> Imprimir
+          </Button>
+          <Button onClick={() => setShowNewTeam(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Nova Equipe
+          </Button>
+        </div>
       </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar equipe ou membro..."
+              value={filterSearch}
+              onChange={(e) => setFilterSearch(e.target.value)}
+              className="w-60"
+            />
+            <Select value={filterActive} onValueChange={setFilterActive}>
+              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="active">Ativas</SelectItem>
+                <SelectItem value="inactive">Inativas</SelectItem>
+              </SelectContent>
+            </Select>
+            {(filterSearch || filterActive !== "all") && (
+              <Button variant="ghost" size="sm" onClick={() => { setFilterSearch(""); setFilterActive("all"); }}>
+                Limpar
+              </Button>
+            )}
+            <Badge variant="outline" className="ml-auto">{filteredTeams.length} equipes</Badge>
+          </div>
+        </CardContent>
+      </Card>
 
       {isLoading ? (
         <p className="text-muted-foreground">Carregando...</p>
-      ) : !teams?.length ? (
+      ) : !filteredTeams.length ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            Nenhuma equipe cadastrada. Crie a primeira equipe para começar.
+            Nenhuma equipe encontrada.
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {teams.map((team: any) => {
+          {filteredTeams.map((team: any) => {
             const topografo = getTopografo(team);
             const auxiliares = getAuxiliares(team);
             const currentVehicle = team.vehicles;
