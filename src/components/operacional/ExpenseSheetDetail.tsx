@@ -17,8 +17,12 @@ import {
   useExpenseSheetWithItems,
   useUpdateExpenseSheetStatus,
   useUpdateExpenseItemStatus,
+  PAYMENT_METHODS,
   type ExpenseItem,
 } from "@/hooks/useExpenseSheets";
+
+const pmIcon = (method: string) =>
+  PAYMENT_METHODS.find((m) => m.value === method)?.icon ?? "—";
 
 interface Props {
   sheetId: string | null;
@@ -40,10 +44,10 @@ export default function ExpenseSheetDetail({ sheetId, onClose }: Props) {
   const items = data?.items ?? [];
   const status = sheet?.status ?? "";
 
-  const adiantamentos = items.filter((i) => i.nature === "adiantamento");
-  const reembolsos = items.filter((i) => i.nature === "reembolso");
-  const sumAd = adiantamentos.reduce((s, i) => s + (Number(i.value) || 0), 0);
-  const sumRe = reembolsos.reduce((s, i) => s + (Number(i.value) || 0), 0);
+  const funcItems = items.filter((i) => (i.item_type ?? "funcionario") === "funcionario");
+  const extraItems = items.filter((i) => i.item_type === "despesa_extra");
+  const sumFunc = funcItems.reduce((s, i) => s + (Number(i.value) || 0), 0);
+  const sumExtra = extraItems.reduce((s, i) => s + (Number(i.value) || 0), 0);
 
   const handleApprove = async () => {
     try {
@@ -53,7 +57,7 @@ export default function ExpenseSheetDetail({ sheetId, onClose }: Props) {
         recipient: "financeiro",
         priority: "importante",
         title: "Folha de despesas aprovada",
-        message: `Ref.: ${sheet?.week_ref} • Total: ${(Number(sheet?.total_value) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}`,
+        message: `Ref.: ${sheet?.week_label} • Total: ${(Number(sheet?.total_value) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}`,
         reference_type: "expense_sheet",
         reference_id: sheetId,
       } as AlertInsert]);
@@ -104,12 +108,23 @@ export default function ExpenseSheetDetail({ sheetId, onClose }: Props) {
     }
   };
 
-  const natureBadge = (nature: string) =>
-    nature === "adiantamento" ? (
+  const natureBadge = (item: ExpenseItem) => {
+    if (item.item_type === "despesa_extra") {
+      return (
+        <div className="flex flex-col gap-1">
+          <Badge className="bg-orange-500 text-white text-[10px]">DESPESA EXTRA</Badge>
+          {item.fiscal_alert && (
+            <Badge variant="destructive" className="text-[10px]">⚠️ AGUARDA NF/RECIBO</Badge>
+          )}
+        </div>
+      );
+    }
+    return item.nature === "adiantamento" ? (
       <Badge className="bg-blue-600 text-white text-[10px]">ADIANTAMENTO</Badge>
     ) : (
       <Badge className="bg-emerald-600 text-white text-[10px]">REEMBOLSO</Badge>
     );
+  };
 
   const statusBadge = (ps: string) => {
     if (ps === "pago") return <Badge className="bg-emerald-600 text-white text-[10px]">Pago</Badge>;
@@ -119,12 +134,50 @@ export default function ExpenseSheetDetail({ sheetId, onClose }: Props) {
 
   const canActFinanceiro = status === "aprovado" || status === "pago";
 
+  const renderRow = (item: ExpenseItem) => {
+    const isExtra = item.item_type === "despesa_extra";
+    return (
+      <TableRow key={item.id} className={isExtra ? "bg-orange-50 dark:bg-orange-950/20" : ""}>
+        <TableCell>{natureBadge(item)}</TableCell>
+        <TableCell className="font-medium text-sm">
+          {isExtra ? (item.receiver_name ?? "—") : (item.employees?.name ?? "—")}
+        </TableCell>
+        <TableCell className="text-xs">{item.project_name ?? "—"}</TableCell>
+        <TableCell className="text-xs">{item.expense_type}</TableCell>
+        <TableCell className="text-xs max-w-[180px]">{item.description}</TableCell>
+        <TableCell className="text-right font-semibold text-sm">
+          {Number(item.value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+        </TableCell>
+        <TableCell className="text-center" title={item.payment_method}>
+          {pmIcon(item.payment_method)}
+        </TableCell>
+        <TableCell>{statusBadge(item.payment_status)}</TableCell>
+        {canActFinanceiro && (
+          <TableCell className="text-right">
+            {item.payment_status === "pendente" && (
+              <div className="flex gap-1 justify-end">
+                <Button size="sm" variant="outline" onClick={() => markPaid(item.id)}>
+                  <DollarSign className="w-3 h-3 mr-1" /> Pagar
+                </Button>
+                {item.nature === "adiantamento" && (
+                  <Button size="sm" variant="destructive" onClick={() => reverse(item.id)}>
+                    <Ban className="w-3 h-3 mr-1" /> Estornar
+                  </Button>
+                )}
+              </div>
+            )}
+          </TableCell>
+        )}
+      </TableRow>
+    );
+  };
+
   return (
     <Dialog open={!!sheetId} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            Folha de Despesas — {sheet?.week_ref ?? ""}
+            Folha de Despesas — {sheet?.week_label ?? ""}
           </DialogTitle>
         </DialogHeader>
 
@@ -132,7 +185,6 @@ export default function ExpenseSheetDetail({ sheetId, onClose }: Props) {
           <p className="text-center py-8 text-muted-foreground">Carregando…</p>
         ) : (
           <div className="space-y-6">
-            {/* Return comment banner */}
             {sheet?.return_comment && status === "devolvido" && (
               <div className="p-3 rounded-lg border border-destructive bg-destructive/10 text-sm">
                 <span className="font-semibold text-destructive">Motivo da devolução: </span>
@@ -140,49 +192,23 @@ export default function ExpenseSheetDetail({ sheetId, onClose }: Props) {
               </div>
             )}
 
-            {/* Items table */}
             <div className="overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Natureza</TableHead>
-                    <TableHead>Funcionário</TableHead>
                     <TableHead>Tipo</TableHead>
-                    <TableHead className="min-w-[180px]">Descrição</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Projeto</TableHead>
+                    <TableHead>Gasto</TableHead>
+                    <TableHead className="min-w-[150px]">Descrição</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
-                    <TableHead>Pgto</TableHead>
+                    <TableHead className="text-center">Pgto</TableHead>
+                    <TableHead>Status</TableHead>
                     {canActFinanceiro && <TableHead className="text-right">Ações</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{natureBadge(item.nature)}</TableCell>
-                      <TableCell className="font-medium text-sm">{item.employees?.name ?? "—"}</TableCell>
-                      <TableCell className="text-xs">{item.expense_type}</TableCell>
-                      <TableCell className="text-xs max-w-[220px]">{item.description}</TableCell>
-                      <TableCell className="text-right font-semibold text-sm">
-                        {Number(item.value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                      </TableCell>
-                      <TableCell>{statusBadge(item.payment_status)}</TableCell>
-                      {canActFinanceiro && (
-                        <TableCell className="text-right">
-                          {item.payment_status === "pendente" && (
-                            <div className="flex gap-1 justify-end">
-                              <Button size="sm" variant="outline" onClick={() => markPaid(item.id)}>
-                                <DollarSign className="w-3 h-3 mr-1" /> Pagar
-                              </Button>
-                              {item.nature === "adiantamento" && (
-                                <Button size="sm" variant="destructive" onClick={() => reverse(item.id)}>
-                                  <Ban className="w-3 h-3 mr-1" /> Estornar
-                                </Button>
-                              )}
-                            </div>
-                          )}
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ))}
+                  {items.map(renderRow)}
                 </TableBody>
               </Table>
             </div>
@@ -192,42 +218,35 @@ export default function ExpenseSheetDetail({ sheetId, onClose }: Props) {
             {/* Subtotals */}
             <div className="grid grid-cols-3 gap-4">
               <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
-                <p className="text-xs font-medium text-blue-700 dark:text-blue-400">Adiantamentos</p>
+                <p className="text-xs font-medium text-blue-700 dark:text-blue-400">Total Funcionários</p>
                 <p className="text-lg font-bold text-blue-800 dark:text-blue-300">
-                  {sumAd.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                  {sumFunc.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                 </p>
               </div>
-              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-                <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Reembolsos</p>
-                <p className="text-lg font-bold text-emerald-800 dark:text-emerald-300">
-                  {sumRe.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+              <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800">
+                <p className="text-xs font-medium text-orange-700 dark:text-orange-400">Total Despesas Extras</p>
+                <p className="text-lg font-bold text-orange-800 dark:text-orange-300">
+                  {sumExtra.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-muted border border-border">
                 <p className="text-xs font-medium text-muted-foreground">Total Geral</p>
                 <p className="text-lg font-bold text-foreground">
-                  {(sumAd + sumRe).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                  {(sumFunc + sumExtra).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                 </p>
               </div>
             </div>
 
-            {/* Approval actions */}
             {status === "submetido" && (
               <>
                 <Separator />
                 {showReturn ? (
                   <div className="space-y-3">
                     <Label>Motivo da Devolução</Label>
-                    <Textarea
-                      value={returnComment}
-                      onChange={(e) => setReturnComment(e.target.value)}
-                      placeholder="Descreva o motivo da devolução…"
-                    />
+                    <Textarea value={returnComment} onChange={(e) => setReturnComment(e.target.value)} placeholder="Descreva o motivo da devolução…" />
                     <div className="flex gap-2 justify-end">
                       <Button variant="outline" onClick={() => setShowReturn(false)}>Cancelar</Button>
-                      <Button variant="destructive" onClick={handleReturn} disabled={updateStatus.isPending}>
-                        Confirmar Devolução
-                      </Button>
+                      <Button variant="destructive" onClick={handleReturn} disabled={updateStatus.isPending}>Confirmar Devolução</Button>
                     </div>
                   </div>
                 ) : (

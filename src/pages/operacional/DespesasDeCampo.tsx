@@ -45,7 +45,6 @@ export default function DespesasDeCampo() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Despesas de Campo</h1>
@@ -56,7 +55,6 @@ export default function DespesasDeCampo() {
         </Button>
       </div>
 
-      {/* Date range filter */}
       <div className="flex items-end gap-4 flex-wrap">
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">De</Label>
@@ -73,7 +71,6 @@ export default function DespesasDeCampo() {
         )}
       </div>
 
-      {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -106,7 +103,6 @@ export default function DespesasDeCampo() {
         </Card>
       </div>
 
-      {/* Table */}
       <Card>
         <CardContent className="p-0">
           <Table>
@@ -133,7 +129,7 @@ export default function DespesasDeCampo() {
                   const cfg = statusCfg[s.status] ?? statusCfg.rascunho;
                   return (
                     <TableRow key={s.id} className="cursor-pointer" onClick={() => setSelectedId(s.id)}>
-                      <TableCell className="font-medium">{s.week_ref}</TableCell>
+                      <TableCell className="font-medium font-mono">{s.week_label}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {format(parseISO(s.period_start), "dd/MM", { locale: ptBR })} – {format(parseISO(s.period_end), "dd/MM/yyyy", { locale: ptBR })}
                       </TableCell>
