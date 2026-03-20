@@ -1435,6 +1435,33 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          must_change_password: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          must_change_password?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          must_change_password?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       project_benefits: {
         Row: {
           almoco_type: string | null
@@ -1925,6 +1952,24 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       vehicles: {
         Row: {
           brand: string | null
@@ -1992,7 +2037,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       absence_type:
@@ -2012,6 +2067,13 @@ export type Database = {
         | "sala_tecnica"
         | "diretoria"
         | "todos"
+      app_role:
+        | "master"
+        | "diretor"
+        | "operacional"
+        | "sala_tecnica"
+        | "comercial"
+        | "financeiro"
       attendance_status: "presente" | "falta" | "justificado" | "atrasado"
       employee_status:
         | "disponivel"
@@ -2209,6 +2271,14 @@ export const Constants = {
         "sala_tecnica",
         "diretoria",
         "todos",
+      ],
+      app_role: [
+        "master",
+        "diretor",
+        "operacional",
+        "sala_tecnica",
+        "comercial",
+        "financeiro",
       ],
       attendance_status: ["presente", "falta", "justificado", "atrasado"],
       employee_status: [
