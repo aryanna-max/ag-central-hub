@@ -323,7 +323,7 @@ export default function ExpenseSheetDrawer({ open, onOpenChange, editSheetId }: 
             const projName = projects.find((p) => p.id === line.project_id)?.name ?? "";
             if (projName && !allProjectNames.includes(projName)) allProjectNames.push(projName);
             dbItems.push({
-              sheet_id: sheet.id,
+              sheet_id: sheetId,
               item_type: "funcionario",
               employee_id: item.employee_id,
               project_id: line.project_id,
@@ -343,7 +343,7 @@ export default function ExpenseSheetDrawer({ open, onOpenChange, editSheetId }: 
           const projName = projects.find((p) => p.id === item.project_id)?.name ?? "";
           if (projName && !allProjectNames.includes(projName)) allProjectNames.push(projName);
           dbItems.push({
-            sheet_id: sheet.id,
+            sheet_id: sheetId,
             item_type: "despesa_extra",
             employee_id: active[0]?.id ?? "",
             project_id: item.project_id,
@@ -376,7 +376,7 @@ export default function ExpenseSheetDrawer({ open, onOpenChange, editSheetId }: 
             title: "⚠️ Despesa extra — conferir NF/Recibo",
             message: `${ei.receiver_name} — ${ei.expense_type} R$${ei.value.toFixed(2)} — Doc: ${ei.receiver_document} — Projeto: ${projName} — Folha: ${weekLabel}`,
             reference_type: "expense_sheet",
-            reference_id: sheet.id,
+            reference_id: sheetId,
             action_type: "conferir_recibo",
             action_label: "Conferir e marcar OK",
             action_url: "/operacional/despesas-de-campo",
@@ -406,7 +406,7 @@ export default function ExpenseSheetDrawer({ open, onOpenChange, editSheetId }: 
             title: "📋 Folha aguardando sua aprovação",
             message: `Folha ${weekLabel} — Total: ${totalStr} — Projetos: ${projList}`,
             reference_type: "expense_sheet",
-            reference_id: sheet.id,
+            reference_id: sheetId,
             action_type: "aprovar",
             action_url: "/operacional/despesas-de-campo",
             action_label: "Aprovar folha",
@@ -422,7 +422,7 @@ export default function ExpenseSheetDrawer({ open, onOpenChange, editSheetId }: 
             title: "📋 Nova folha de despesas submetida",
             message: `Folha ${weekLabel} — Total: ${totalStr} — Aguardando aprovação de Sérgio.`,
             reference_type: "expense_sheet",
-            reference_id: sheet.id,
+            reference_id: sheetId,
             action_type: "visualizar",
             action_url: "/operacional/despesas-de-campo",
             action_label: "Ver folha",
