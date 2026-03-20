@@ -16,7 +16,11 @@ export type Database = {
     Tables: {
       alerts: {
         Row: {
+          action_label: string | null
+          action_type: string | null
+          action_url: string | null
           alert_type: string
+          assigned_to: string | null
           created_at: string
           id: string
           message: string | null
@@ -25,10 +29,17 @@ export type Database = {
           recipient: Database["public"]["Enums"]["alert_recipient"]
           reference_id: string | null
           reference_type: string | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
           title: string
         }
         Insert: {
+          action_label?: string | null
+          action_type?: string | null
+          action_url?: string | null
           alert_type: string
+          assigned_to?: string | null
           created_at?: string
           id?: string
           message?: string | null
@@ -37,10 +48,17 @@ export type Database = {
           recipient: Database["public"]["Enums"]["alert_recipient"]
           reference_id?: string | null
           reference_type?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
           title: string
         }
         Update: {
+          action_label?: string | null
+          action_type?: string | null
+          action_url?: string | null
           alert_type?: string
+          assigned_to?: string | null
           created_at?: string
           id?: string
           message?: string | null
@@ -49,9 +67,27 @@ export type Database = {
           recipient?: Database["public"]["Enums"]["alert_recipient"]
           reference_id?: string | null
           reference_type?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "alerts_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       attendance: {
         Row: {
@@ -149,6 +185,59 @@ export type Database = {
           {
             foreignKeyName: "benefit_rules_employee_id_fkey"
             columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendar_events: {
+        Row: {
+          calendar_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          event_date: string
+          event_time: string | null
+          google_event_id: string | null
+          id: string
+          module: string
+          related_id: string | null
+          related_type: string | null
+          title: string
+        }
+        Insert: {
+          calendar_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_date: string
+          event_time?: string | null
+          google_event_id?: string | null
+          id?: string
+          module: string
+          related_id?: string | null
+          related_type?: string | null
+          title: string
+        }
+        Update: {
+          calendar_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_date?: string
+          event_time?: string | null
+          google_event_id?: string | null
+          id?: string
+          module?: string
+          related_id?: string | null
+          related_type?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "employees"
             referencedColumns: ["id"]
