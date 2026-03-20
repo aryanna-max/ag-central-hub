@@ -4,9 +4,10 @@ import {
   LayoutDashboard, Users, FileText, FolderKanban, Truck, Monitor,
   DollarSign, UserCog, ChevronLeft, ChevronRight, Target, UserCheck,
   Building2, CalendarDays, Car, FolderOpen, PackageCheck, Receipt,
-  CreditCard, Wallet, UserPlus, FileCheck, HeartPulse, Banknote,
+  CreditCard, Wallet, UserPlus, FileCheck, HeartPulse, Banknote, Shield,
 } from "lucide-react";
 import { useModuleAlertCounts } from "@/hooks/useModuleAlertCounts";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarItem {
   label: string;
@@ -71,11 +72,25 @@ const navigation: SidebarItem[] = [
   },
 ];
 
+const adminNavigation: SidebarItem[] = [
+  {
+    label: "Administração", path: "/admin", icon: Shield,
+    children: [
+      { label: "Usuários", path: "/admin/usuarios", icon: UserPlus },
+    ],
+  },
+];
+
 export default function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<string[]>([]);
   const location = useLocation();
   const alertCounts = useModuleAlertCounts();
+  const { isMaster } = useAuth();
+  
+  const fullNavigation = useMemo(() => {
+    return isMaster ? [...navigation, ...adminNavigation] : navigation;
+  }, [isMaster]);
 
   const toggleMenu = (path: string) => {
     setOpenMenus((prev) =>
@@ -119,7 +134,7 @@ export default function AppSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
-        {navigation.map((item) => {
+        {fullNavigation.map((item) => {
           const Icon = item.icon;
           const hasChildren = !!item.children?.length;
           const parentActive = isParentActive(item);
