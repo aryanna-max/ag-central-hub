@@ -197,3 +197,73 @@ export function useUpdateExpenseItemStatus() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["expense_sheet_detail"] }),
   });
 }
+
+export function useDeleteExpenseSheet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error: iErr } = await supabase
+        .from("field_expense_items")
+        .delete()
+        .eq("sheet_id", id);
+      if (iErr) throw iErr;
+      const { error } = await supabase
+        .from("field_expense_sheets")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["expense_sheets"] });
+      qc.invalidateQueries({ queryKey: ["expense_sheet_detail"] });
+    },
+  });
+}
+
+export function useDeleteExpenseItems() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (sheetId: string) => {
+      const { error } = await supabase
+        .from("field_expense_items")
+        .delete()
+        .eq("sheet_id", sheetId);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["expense_sheet_detail"] }),
+  });
+}
+
+export function useUpdateExpenseSheet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      period_start?: string;
+      period_end?: string;
+      total_value?: number;
+      status?: string;
+    }) => {
+      const { id, ...updates } = payload;
+      const { error } = await supabase
+        .from("field_expense_sheets")
+        .update(updates as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["expense_sheets"] });
+      qc.invalidateQueries({ queryKey: ["expense_sheet_detail"] });
+    },
+  });
+}
+
+export async function countSheetsForWeek(weekNumber: number, weekYear: number): Promise<number> {
+  const { count, error } = await supabase
+    .from("field_expense_sheets")
+    .select("id", { count: "exact", head: true })
+    .eq("week_number", weekNumber)
+    .eq("week_year", weekYear);
+  if (error) throw error;
+  return count ?? 0;
+}
