@@ -280,14 +280,38 @@ export default function ExpenseSheetDrawer({ open, onOpenChange, editSheetId }: 
     if (err) return toast({ title: err, variant: "destructive" });
 
     try {
-      const sheet = await createSheet.mutateAsync({
-        week_number: weekNum,
-        week_year: weekYr,
-        period_start: periodStart,
-        period_end: periodEnd,
-        total_value: total,
-        status: submit ? "submetido" : "rascunho",
-      });
+      let sheetId: string;
+
+      if (isEditing && editSheetId) {
+        // Update existing sheet
+        sheetId = editSheetId;
+        await updateSheet.mutateAsync({
+          id: editSheetId,
+          period_start: periodStart,
+          period_end: periodEnd,
+          total_value: total,
+          status: submit ? "submetido" : "rascunho",
+        });
+        // Delete old items and re-insert
+        await deleteItems.mutateAsync(editSheetId);
+      } else {
+        // Check sequential numbering
+        const existingCount = await countSheetsForWeek(weekNum, weekYr);
+        const seqLabel = existingCount > 0
+          ? `${String(weekNum).padStart(3, "0")}/${String(weekYr % 100)}-${existingCount + 1}`
+          : undefined;
+
+        const sheet = await createSheet.mutateAsync({
+          week_number: weekNum,
+          week_year: weekYr,
+          period_start: periodStart,
+          period_end: periodEnd,
+          total_value: total,
+          status: submit ? "submetido" : "rascunho",
+          ...(seqLabel ? { week_label: seqLabel } : {}),
+        } as any);
+        sheetId = sheet.id;
+      }
 
       // Flatten funcionario items into individual DB rows per sub-line
       const dbItems: any[] = [];
