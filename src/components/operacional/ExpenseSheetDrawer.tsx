@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
-import { format, startOfWeek, endOfWeek, getWeek, getYear } from "date-fns";
+import { useState, useMemo } from "react";
+import { format, startOfWeek, getWeek, getYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Plus, Trash2, User, Receipt } from "lucide-react";
 import {
@@ -25,19 +25,23 @@ import {
   PAYMENT_METHODS,
 } from "@/hooks/useExpenseSheets";
 
-/* ── Draft types ── */
+/* ── Sub-line for funcionario items ── */
+interface SubLine {
+  key: number;
+  project_id: string;
+  expense_type: string;
+  nature: string;
+  value: number;
+}
 
 interface FuncionarioItem {
   kind: "funcionario";
   key: number;
   employee_id: string;
-  expense_type: string;
-  nature: string;
-  description: string;
-  value: number;
   payment_method: string;
   receiver_id: string;
   intermediary_reason: string;
+  lines: SubLine[];
 }
 
 interface DespesaExtraItem {
@@ -46,6 +50,7 @@ interface DespesaExtraItem {
   receiver_name: string;
   receiver_document: string;
   receiver_type: string;
+  project_id: string;
   expense_type: string;
   description: string;
   value: number;
@@ -55,18 +60,24 @@ interface DespesaExtraItem {
 type ItemDraft = FuncionarioItem | DespesaExtraItem;
 
 let _nextKey = 1;
+let _nextLineKey = 1;
+
+const newSubLine = (): SubLine => ({
+  key: _nextLineKey++,
+  project_id: "",
+  expense_type: "",
+  nature: "reembolso",
+  value: 0,
+});
 
 const newFuncionario = (): FuncionarioItem => ({
   kind: "funcionario",
   key: _nextKey++,
   employee_id: "",
-  expense_type: "",
-  nature: "reembolso",
-  description: "",
-  value: 0,
   payment_method: "cartao",
   receiver_id: "",
   intermediary_reason: "",
+  lines: [newSubLine()],
 });
 
 const newDespesaExtra = (): DespesaExtraItem => ({
@@ -75,6 +86,7 @@ const newDespesaExtra = (): DespesaExtraItem => ({
   receiver_name: "",
   receiver_document: "",
   receiver_type: "",
+  project_id: "",
   expense_type: "",
   description: "",
   value: 0,
@@ -91,8 +103,11 @@ function formatDoc(v: string) {
 
 function detectType(doc: string): string {
   const d = doc.replace(/\D/g, "");
-  if (d.length <= 11) return "pf";
-  return "pj";
+  return d.length <= 11 ? "pf" : "pj";
+}
+
+function funcTotal(item: FuncionarioItem): number {
+  return item.lines.reduce((s, l) => s + (Number(l.value) || 0), 0);
 }
 
 /* ── Component ── */
@@ -114,7 +129,6 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
 
   const [periodStart, setPeriodStart] = useState(format(monday, "yyyy-MM-dd"));
   const [periodEnd, setPeriodEnd] = useState(format(saturday, "yyyy-MM-dd"));
-  const [projectId, setProjectId] = useState("");
   const [items, setItems] = useState<ItemDraft[]>([]);
 
   const { data: employees = [] } = useEmployees();
@@ -125,38 +139,73 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
   const createAlerts = useCreateAlerts();
 
   const active = useMemo(() => {
-    const list = employees.filter((e) => e.status !== "desligado");
-    const clts = list.filter((e) => e.role !== "Prestador de Serviço");
-    const prest = list.filter((e) => e.role === "Prestador de Serviço");
+    const list = employees.filter((e: any) => e.status !== "desligado");
+    const clts = list.filter((e: any) => e.role !== "Prestador de Serviço");
+    const prest = list.filter((e: any) => e.role === "Prestador de Serviço");
     return [...clts, ...prest];
   }, [employees]);
 
-  const projectName = projects.find((p) => p.id === projectId)?.name ?? "";
-  const total = items.reduce((s, i) => s + (Number(i.value) || 0), 0);
+  const total = items.reduce((s, i) => {
+    if (i.kind === "funcionario") return s + funcTotal(i);
+    return s + (Number(i.value) || 0);
+  }, 0);
 
   const addFuncionario = () => setItems((prev) => [...prev, newFuncionario()]);
   const addDespesaExtra = () => setItems((prev) => [...prev, newDespesaExtra()]);
   const removeItem = (key: number) => setItems((prev) => prev.filter((i) => i.key !== key));
 
-  const set = (key: number, field: string, value: any) =>
+  const setField = (key: number, field: string, value: any) =>
     setItems((prev) => prev.map((i) => (i.key === key ? { ...i, [field]: value } : i)));
+
+  const setFuncLine = (itemKey: number, lineKey: number, field: string, value: any) =>
+    setItems((prev) => prev.map((i) => {
+      if (i.key !== itemKey || i.kind !== "funcionario") return i;
+      return { ...i, lines: i.lines.map((l) => l.key === lineKey ? { ...l, [field]: value } : l) };
+    }));
+
+  const addLine = (itemKey: number) =>
+    setItems((prev) => prev.map((i) => {
+      if (i.key !== itemKey || i.kind !== "funcionario") return i;
+      return { ...i, lines: [...i.lines, newSubLine()] };
+    }));
+
+  const removeLine = (itemKey: number, lineKey: number) =>
+    setItems((prev) => prev.map((i) => {
+      if (i.key !== itemKey || i.kind !== "funcionario") return i;
+      return { ...i, lines: i.lines.filter((l) => l.key !== lineKey) };
+    }));
 
   const validate = (): string | null => {
     if (!periodStart || !periodEnd) return "Informe o período.";
-    if (!projectId) return "Selecione o projeto da folha.";
     if (items.length === 0) return "Adicione pelo menos um item.";
     for (const item of items) {
       if (item.kind === "funcionario") {
         if (!item.employee_id) return "Selecione o funcionário em todos os itens.";
+        if (item.lines.length === 0) return "Adicione pelo menos uma linha de gasto.";
+        for (const line of item.lines) {
+          if (!line.project_id) return "Selecione o projeto em todas as linhas.";
+          if (!line.expense_type) return "Selecione o tipo de gasto em todas as linhas.";
+          if (!line.value || line.value <= 0) return "Informe o valor em todas as linhas.";
+        }
       } else {
         if (!item.receiver_name.trim()) return "Informe o nome/razão social em todas as despesas extras.";
         if (item.receiver_document.replace(/\D/g, "").length < 11) return "CPF/CNPJ inválido em despesa extra.";
         if (!item.description.trim()) return "Preencha a descrição em todas as despesas extras.";
+        if (!item.project_id) return "Selecione o projeto na despesa extra.";
+        if (!item.expense_type) return "Selecione o tipo de gasto na despesa extra.";
+        if (!item.value || item.value <= 0) return "Informe o valor na despesa extra.";
       }
-      if (!item.expense_type) return "Selecione o tipo de gasto em todos os itens.";
-      if (!item.value || item.value <= 0) return "Informe o valor em todos os itens.";
     }
     return null;
+  };
+
+  const findEmployeeByName = async (pattern: string) => {
+    const { data } = await (await import("@/integrations/supabase/client")).supabase
+      .from("employees")
+      .select("id, name")
+      .ilike("name", pattern)
+      .limit(1);
+    return data?.[0] ?? null;
   };
 
   const save = async (submit: boolean) => {
@@ -173,31 +222,41 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
         status: submit ? "submetido" : "rascunho",
       });
 
-      const dbItems = items.map((item) => {
+      // Flatten funcionario items into individual DB rows per sub-line
+      const dbItems: any[] = [];
+      const allProjectNames: string[] = [];
+
+      for (const item of items) {
         if (item.kind === "funcionario") {
-          return {
-            sheet_id: sheet.id,
-            item_type: "funcionario" as const,
-            employee_id: item.employee_id,
-            project_id: projectId,
-            project_name: projectName,
-            expense_type: item.expense_type,
-            nature: item.nature,
-            description: item.description || `${item.expense_type} — ${projectName}`,
-            value: item.value,
-            payment_method: item.payment_method,
-            receiver_id: item.receiver_id || null,
-            receiver_name: item.receiver_id ? active.find((e) => e.id === item.receiver_id)?.name || null : null,
-            intermediary_reason: item.receiver_id && item.receiver_id !== item.employee_id ? item.intermediary_reason : null,
-            fiscal_alert: false,
-          };
+          for (const line of item.lines) {
+            const projName = projects.find((p) => p.id === line.project_id)?.name ?? "";
+            if (projName && !allProjectNames.includes(projName)) allProjectNames.push(projName);
+            dbItems.push({
+              sheet_id: sheet.id,
+              item_type: "funcionario",
+              employee_id: item.employee_id,
+              project_id: line.project_id,
+              project_name: projName,
+              expense_type: line.expense_type,
+              nature: line.nature,
+              description: `${line.expense_type} — ${projName}`,
+              value: line.value,
+              payment_method: item.payment_method,
+              receiver_id: item.receiver_id || null,
+              receiver_name: item.receiver_id ? active.find((e: any) => e.id === item.receiver_id)?.name || null : null,
+              intermediary_reason: item.receiver_id && item.receiver_id !== item.employee_id ? item.intermediary_reason : null,
+              fiscal_alert: false,
+            });
+          }
         } else {
-          return {
+          const projName = projects.find((p) => p.id === item.project_id)?.name ?? "";
+          if (projName && !allProjectNames.includes(projName)) allProjectNames.push(projName);
+          dbItems.push({
             sheet_id: sheet.id,
-            item_type: "despesa_extra" as const,
-            employee_id: active[0]?.id ?? "", // placeholder
-            project_id: projectId,
-            project_name: projectName,
+            item_type: "despesa_extra",
+            employee_id: active[0]?.id ?? "",
+            project_id: item.project_id,
+            project_name: projName,
             expense_type: item.expense_type,
             nature: "reembolso",
             description: item.description,
@@ -207,41 +266,88 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
             receiver_document: item.receiver_document.replace(/\D/g, ""),
             receiver_type: detectType(item.receiver_document),
             fiscal_alert: true,
-          };
+          });
         }
-      });
+      }
 
       await bulkItems.mutateAsync(dbItems);
 
-      // Alert for despesa_extra items
+      // Alerts for despesa_extra → Alcione
       const extraItems = items.filter((i) => i.kind === "despesa_extra") as DespesaExtraItem[];
       if (extraItems.length > 0) {
-        const alerts: AlertInsert[] = extraItems.map((ei) => ({
-          alert_type: "despesa_campo",
-          recipient: "financeiro" as const,
-          priority: "urgente" as const,
-          title: "Despesa Extra — conferir NF/Recibo",
-          message: `${ei.receiver_name} — ${ei.expense_type} R$${ei.value.toFixed(2)} — Projeto: ${projectName} — Doc: ${ei.receiver_document}`,
-          reference_type: "expense_sheet",
-          reference_id: sheet.id,
-        }));
+        const alcione = await findEmployeeByName("%Alcione%");
+        const alerts: AlertInsert[] = extraItems.map((ei) => {
+          const projName = projects.find((p) => p.id === ei.project_id)?.name ?? "";
+          return {
+            alert_type: "despesa_campo",
+            recipient: "financeiro" as const,
+            priority: "urgente" as const,
+            title: "⚠️ Despesa extra — conferir NF/Recibo",
+            message: `${ei.receiver_name} — ${ei.expense_type} R$${ei.value.toFixed(2)} — Doc: ${ei.receiver_document} — Projeto: ${projName} — Folha: ${weekLabel}`,
+            reference_type: "expense_sheet",
+            reference_id: sheet.id,
+            action_type: "conferir_recibo",
+            action_label: "Conferir e marcar OK",
+            action_url: "/operacional/despesas-de-campo",
+            ...(alcione ? { assigned_to: alcione.id } : {}),
+          };
+        });
         await createAlerts.mutateAsync(alerts);
       }
 
+      // Alerts when submitting
       if (submit) {
-        const label = `${format(new Date(periodStart + "T12:00:00"), "dd/MM", { locale: ptBR })} – ${format(new Date(periodEnd + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })}`;
-        await createAlerts.mutateAsync([{
-          alert_type: "despesa_campo",
-          recipient: "diretoria",
-          priority: "importante",
-          title: "Nova folha de despesas submetida",
-          message: `Ref.: ${weekLabel} • Período ${label} • Total: ${total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}`,
-          reference_type: "expense_sheet",
-          reference_id: sheet.id,
-        } as AlertInsert]);
+        const [sergio, alcione] = await Promise.all([
+          findEmployeeByName("%Sergio%Gonzaga%"),
+          findEmployeeByName("%Alcione%"),
+        ]);
+
+        const projList = allProjectNames.join(", ") || "—";
+        const totalStr = total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+        const submitAlerts: AlertInsert[] = [];
+
+        if (sergio) {
+          submitAlerts.push({
+            alert_type: "despesa_campo",
+            recipient: "operacional",
+            priority: "urgente",
+            title: "📋 Folha aguardando sua aprovação",
+            message: `Folha ${weekLabel} — Total: ${totalStr} — Projetos: ${projList}`,
+            reference_type: "expense_sheet",
+            reference_id: sheet.id,
+            action_type: "aprovar",
+            action_url: "/operacional/despesas-de-campo",
+            action_label: "Aprovar folha",
+            assigned_to: sergio.id,
+          });
+        }
+
+        if (alcione) {
+          submitAlerts.push({
+            alert_type: "despesa_campo",
+            recipient: "financeiro",
+            priority: "importante",
+            title: "📋 Nova folha de despesas submetida",
+            message: `Folha ${weekLabel} — Total: ${totalStr} — Aguardando aprovação de Sérgio.`,
+            reference_type: "expense_sheet",
+            reference_id: sheet.id,
+            action_type: "visualizar",
+            action_url: "/operacional/despesas-de-campo",
+            action_label: "Ver folha",
+            assigned_to: alcione.id,
+          });
+        }
+
+        if (submitAlerts.length > 0) {
+          await createAlerts.mutateAsync(submitAlerts);
+        }
+
+        toast({ title: `✅ Folha ${weekLabel} submetida. Sérgio foi notificado para aprovação.` });
+      } else {
+        toast({ title: "Rascunho salvo" });
       }
 
-      toast({ title: submit ? "Folha submetida para aprovação" : "Rascunho salvo" });
       reset();
       onOpenChange(false);
     } catch (e: any) {
@@ -252,7 +358,6 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
   const reset = () => {
     setPeriodStart(format(monday, "yyyy-MM-dd"));
     setPeriodEnd(format(saturday, "yyyy-MM-dd"));
-    setProjectId("");
     setItems([]);
   };
 
@@ -286,18 +391,6 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Projeto *</Label>
-            <Select value={projectId} onValueChange={setProjectId}>
-              <SelectTrigger><SelectValue placeholder="Selecione o projeto" /></SelectTrigger>
-              <SelectContent>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           <Separator />
 
           {/* Add buttons */}
@@ -323,7 +416,11 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
                   item={item}
                   idx={idx}
                   employees={active}
-                  onSet={(f, v) => set(item.key, f, v)}
+                  projects={projects}
+                  onSet={(f, v) => setField(item.key, f, v)}
+                  onSetLine={(lk, f, v) => setFuncLine(item.key, lk, f, v)}
+                  onAddLine={() => addLine(item.key)}
+                  onRemoveLine={(lk) => removeLine(item.key, lk)}
                   onRemove={() => removeItem(item.key)}
                 />
               ) : (
@@ -331,8 +428,8 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
                   key={item.key}
                   item={item}
                   idx={idx}
-                  projectName={projectName}
-                  onSet={(f, v) => set(item.key, f, v)}
+                  projects={projects}
+                  onSet={(f, v) => setField(item.key, f, v)}
                   onRemove={() => removeItem(item.key)}
                 />
               )
@@ -363,17 +460,23 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
   );
 }
 
-/* ── Funcionario Card ── */
+/* ── Funcionario Card with multi-line sub-items ── */
 
 function FuncionarioCard({
-  item, idx, employees, onSet, onRemove,
+  item, idx, employees, projects, onSet, onSetLine, onAddLine, onRemoveLine, onRemove,
 }: {
   item: FuncionarioItem;
   idx: number;
   employees: Array<{ id: string; name: string; role: string }>;
+  projects: Array<{ id: string; name: string }>;
   onSet: (f: string, v: any) => void;
+  onSetLine: (lineKey: number, f: string, v: any) => void;
+  onAddLine: () => void;
+  onRemoveLine: (lineKey: number) => void;
   onRemove: () => void;
 }) {
+  const itemTotal = funcTotal(item);
+
   return (
     <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/30">
       <div className="flex items-center justify-between">
@@ -401,27 +504,6 @@ function FuncionarioCard({
           </Select>
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">Tipo de Gasto *</Label>
-          <Select value={item.expense_type} onValueChange={(v) => onSet("expense_type", v)}>
-            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-            <SelectContent>
-              {EXPENSE_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>{t}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Natureza *</Label>
-          <Select value={item.nature} onValueChange={(v) => onSet("nature", v)}>
-            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="adiantamento">Adiantamento</SelectItem>
-              <SelectItem value="reembolso">Reembolso</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
           <Label className="text-xs">Forma de Pagamento *</Label>
           <Select value={item.payment_method} onValueChange={(v) => onSet("payment_method", v)}>
             <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -434,31 +516,80 @@ function FuncionarioCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs">Valor (R$) *</Label>
-          <Input
-            type="number" step="0.01" min="0"
-            value={item.value || ""}
-            onChange={(e) => onSet("value", parseFloat(e.target.value) || 0)}
-          />
+      {/* Sub-lines */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-semibold">Linhas de Gasto</Label>
+          <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={onAddLine}>
+            <Plus className="w-3 h-3 mr-1" /> Linha
+          </Button>
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Total do Item</Label>
-          <div className="h-9 px-3 flex items-center rounded-md border bg-muted text-sm font-semibold">
-            {(item.value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+
+        {item.lines.map((line, li) => (
+          <div key={line.key} className="grid grid-cols-[1fr_1fr_auto_auto_auto] gap-2 items-end bg-background p-2 rounded border border-border">
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground">Projeto</Label>
+              <Select value={line.project_id} onValueChange={(v) => onSetLine(line.key, "project_id", v)}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Projeto" /></SelectTrigger>
+                <SelectContent>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground">Tipo de Gasto</Label>
+              <Select value={line.expense_type} onValueChange={(v) => onSetLine(line.key, "expense_type", v)}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Tipo" /></SelectTrigger>
+                <SelectContent>
+                  {EXPENSE_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground">Nat.</Label>
+              <Select value={line.nature} onValueChange={(v) => onSetLine(line.key, "nature", v)}>
+                <SelectTrigger className="h-8 text-xs w-[90px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="adiantamento">Adiant.</SelectItem>
+                  <SelectItem value="reembolso">Reemb.</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground">Valor</Label>
+              <Input
+                type="number" step="0.01" min="0"
+                className="h-8 text-xs w-[90px]"
+                value={line.value || ""}
+                onChange={(e) => onSetLine(line.key, "value", parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            {item.lines.length > 1 && (
+              <Button size="icon" variant="ghost" className="h-8 w-8 mt-4" onClick={() => onRemoveLine(line.key)}>
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            )}
           </div>
-        </div>
+        ))}
       </div>
 
-      <div className="space-y-1">
-        <Label className="text-xs">Descrição</Label>
-        <Textarea
-          placeholder="Ex: Café semana 23-28/03 COLGRAVATA"
-          value={item.description}
-          onChange={(e) => onSet("description", e.target.value)}
-          className="min-h-[48px]"
-        />
+      {/* Total + recebedor */}
+      <div className="flex items-center justify-between pt-1">
+        <div className="flex items-center gap-2">
+          {item.lines.some(l => l.nature === "adiantamento") && (
+            <Badge className="bg-blue-600 hover:bg-blue-700 text-white text-[10px]">ADIANTAMENTO</Badge>
+          )}
+          {item.lines.some(l => l.nature === "reembolso") && (
+            <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px]">REEMBOLSO</Badge>
+          )}
+        </div>
+        <div className="text-sm font-bold text-foreground">
+          Total: {itemTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -484,17 +615,6 @@ function FuncionarioCard({
           </div>
         )}
       </div>
-
-      <div className="flex items-center gap-2 pt-1">
-        {item.nature === "adiantamento" ? (
-          <Badge className="bg-blue-600 hover:bg-blue-700 text-white text-[10px]">ADIANTAMENTO</Badge>
-        ) : (
-          <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px]">REEMBOLSO</Badge>
-        )}
-        <span className="text-[10px] text-muted-foreground">
-          {item.nature === "adiantamento" ? "Pago antes — ajustável / estornável" : "Já gasto pelo funcionário — irreversível"}
-        </span>
-      </div>
     </div>
   );
 }
@@ -502,11 +622,11 @@ function FuncionarioCard({
 /* ── Despesa Extra Card ── */
 
 function DespesaExtraCard({
-  item, idx, projectName, onSet, onRemove,
+  item, idx, projects, onSet, onRemove,
 }: {
   item: DespesaExtraItem;
   idx: number;
-  projectName: string;
+  projects: Array<{ id: string; name: string }>;
   onSet: (f: string, v: any) => void;
   onRemove: () => void;
 }) {
@@ -557,6 +677,17 @@ function DespesaExtraCard({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
+          <Label className="text-xs">Projeto *</Label>
+          <Select value={item.project_id} onValueChange={(v) => onSet("project_id", v)}>
+            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectContent>
+              {projects.map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
           <Label className="text-xs">Tipo de Gasto *</Label>
           <Select value={item.expense_type} onValueChange={(v) => onSet("expense_type", v)}>
             <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -567,6 +698,9 @@ function DespesaExtraCard({
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label className="text-xs">Forma de Pagamento *</Label>
           <Select value={item.payment_method} onValueChange={(v) => onSet("payment_method", v)}>
@@ -578,6 +712,14 @@ function DespesaExtraCard({
             </SelectContent>
           </Select>
         </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Valor (R$) *</Label>
+          <Input
+            type="number" step="0.01" min="0"
+            value={item.value || ""}
+            onChange={(e) => onSet("value", parseFloat(e.target.value) || 0)}
+          />
+        </div>
       </div>
 
       <div className="space-y-1">
@@ -588,23 +730,6 @@ function DespesaExtraCard({
           onChange={(e) => onSet("description", e.target.value)}
           className="min-h-[56px]"
         />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs">Valor (R$) *</Label>
-          <Input
-            type="number" step="0.01" min="0"
-            value={item.value || ""}
-            onChange={(e) => onSet("value", parseFloat(e.target.value) || 0)}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Projeto</Label>
-          <div className="h-9 px-3 flex items-center rounded-md border bg-muted text-sm text-muted-foreground">
-            {projectName || "—"}
-          </div>
-        </div>
       </div>
     </div>
   );
