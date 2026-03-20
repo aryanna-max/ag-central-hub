@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type AlertPriority = "urgente" | "importante" | "informacao";
 export type AlertRecipient = "operacional" | "comercial" | "financeiro" | "rh" | "sala_tecnica" | "diretoria" | "todos";
+export type AlertActionType = "aprovar" | "visualizar" | "marcar_pago" | "emitir_nf" | "conferir_recibo" | "confirmar_presenca" | "outro";
 
 export interface Alert {
   id: string;
@@ -15,6 +16,13 @@ export interface Alert {
   reference_id: string | null;
   read: boolean;
   created_at: string;
+  assigned_to: string | null;
+  action_url: string | null;
+  action_label: string | null;
+  action_type: string | null;
+  resolved: boolean;
+  resolved_at: string | null;
+  resolved_by: string | null;
 }
 
 export interface AlertInsert {
@@ -25,6 +33,10 @@ export interface AlertInsert {
   message?: string | null;
   reference_type?: string | null;
   reference_id?: string | null;
+  assigned_to?: string | null;
+  action_url?: string | null;
+  action_label?: string | null;
+  action_type?: string | null;
 }
 
 export function useAlerts() {
@@ -36,7 +48,7 @@ export function useAlerts() {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Alert[];
+      return data as unknown as Alert[];
     },
   });
 }
@@ -48,9 +60,43 @@ export function useUnreadAlertCount() {
       const { count, error } = await supabase
         .from("alerts")
         .select("*", { count: "exact", head: true })
-        .eq("read", false);
+        .eq("resolved", false);
       if (error) throw error;
       return count ?? 0;
+    },
+    refetchInterval: 30000,
+  });
+}
+
+export function useUnresolvedAlerts() {
+  return useQuery({
+    queryKey: ["alerts", "unresolved"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("alerts")
+        .select("*")
+        .eq("resolved", false)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as unknown as Alert[];
+    },
+    refetchInterval: 30000,
+  });
+}
+
+export function useAlertsByAssignee(employeeId: string | null) {
+  return useQuery({
+    queryKey: ["alerts", "assignee", employeeId],
+    enabled: !!employeeId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("alerts")
+        .select("*")
+        .eq("assigned_to", employeeId!)
+        .eq("resolved", false)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as unknown as Alert[];
     },
     refetchInterval: 30000,
   });
@@ -60,7 +106,7 @@ export function useCreateAlerts() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (alerts: AlertInsert[]) => {
-      const { error } = await supabase.from("alerts").insert(alerts);
+      const { error } = await supabase.from("alerts").insert(alerts as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -73,7 +119,7 @@ export function useMarkAlertRead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("alerts").update({ read: true }).eq("id", id);
+      const { error } = await supabase.from("alerts").update({ read: true } as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -86,7 +132,22 @@ export function useMarkAllAlertsRead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("alerts").update({ read: true }).eq("read", false);
+      const { error } = await supabase.from("alerts").update({ read: true } as any).eq("read", false);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["alerts"] });
+    },
+  });
+}
+
+export function useResolveAlert() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, resolved_by }: { id: string; resolved_by?: string }) => {
+      const updates: any = { resolved: true, resolved_at: new Date().toISOString(), read: true };
+      if (resolved_by) updates.resolved_by = resolved_by;
+      const { error } = await supabase.from("alerts").update(updates).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

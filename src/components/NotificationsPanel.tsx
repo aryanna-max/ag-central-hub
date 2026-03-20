@@ -1,35 +1,39 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Bell, AlertTriangle, Info, AlertCircle, CheckCheck } from "lucide-react";
-import { useAlerts, useUnreadAlertCount, useMarkAlertRead, useMarkAllAlertsRead, type Alert } from "@/hooks/useAlerts";
+import { Bell, AlertTriangle, Info, AlertCircle, CheckCircle, ExternalLink } from "lucide-react";
+import { useUnresolvedAlerts, useResolveAlert, useMarkAlertRead, type Alert } from "@/hooks/useAlerts";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const PRIORITY_CONFIG = {
-  urgente: { icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
-  importante: { icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-50" },
-  informacao: { icon: Info, color: "text-blue-600", bg: "bg-blue-50" },
+  urgente: { icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10", badge: "🔴" },
+  importante: { icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-50", badge: "🟡" },
+  informacao: { icon: Info, color: "text-blue-600", bg: "bg-blue-50", badge: "🔵" },
 };
 
 export default function NotificationsPanel() {
-  const { data: alerts = [] } = useAlerts();
-  const { data: unreadCount = 0 } = useUnreadAlertCount();
+  const { data: alerts = [] } = useUnresolvedAlerts();
+  const resolveAlert = useResolveAlert();
   const markRead = useMarkAlertRead();
-  const markAllRead = useMarkAllAlertsRead();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  const handleClickAlert = (alert: Alert) => {
-    if (!alert.read) {
-      markRead.mutate(alert.id);
+  const unreadCount = alerts.filter((a) => !a.resolved).length;
+
+  const handleAction = (alert: Alert) => {
+    if (!alert.read) markRead.mutate(alert.id);
+    if (alert.action_url) {
+      navigate(alert.action_url);
+      setOpen(false);
     }
-    setOpen(false);
   };
 
-  const handleMarkAllRead = () => {
-    markAllRead.mutate();
-    setOpen(false);
+  const handleResolve = (e: React.MouseEvent, alert: Alert) => {
+    e.stopPropagation();
+    resolveAlert.mutate({ id: alert.id });
   };
 
   return (
@@ -44,34 +48,31 @@ export default function NotificationsPanel() {
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-96 p-0">
+      <PopoverContent align="end" className="w-[420px] p-0">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <span className="text-sm font-semibold text-foreground">Notificações</span>
+          <span className="text-xs text-muted-foreground">{unreadCount} pendente(s)</span>
         </div>
-        <ScrollArea className="max-h-80">
+        <ScrollArea className="max-h-[400px]">
           {alerts.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Nenhuma notificação</p>
+            <p className="text-sm text-muted-foreground text-center py-8">Nenhuma notificação pendente</p>
           ) : (
             <div className="divide-y divide-border">
               {alerts.map((alert) => {
-                const cfg = PRIORITY_CONFIG[alert.priority];
+                const cfg = PRIORITY_CONFIG[alert.priority] ?? PRIORITY_CONFIG.informacao;
                 const Icon = cfg.icon;
                 return (
                   <div
                     key={alert.id}
-                    className={`flex gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors ${
-                      !alert.read ? "bg-muted/30" : ""
-                    }`}
-                    onClick={() => handleClickAlert(alert)}
+                    className="flex gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
                   >
                     <div className={`mt-0.5 p-1.5 rounded-md ${cfg.bg} shrink-0`}>
                       <Icon className={`w-3.5 h-3.5 ${cfg.color}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className={`text-sm truncate ${!alert.read ? "font-semibold" : "font-medium"} text-foreground`}>
-                          {alert.title}
-                        </p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px]">{cfg.badge}</span>
+                        <p className="text-sm font-semibold text-foreground truncate">{alert.title}</p>
                       </div>
                       {alert.message && (
                         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{alert.message}</p>
@@ -79,28 +80,24 @@ export default function NotificationsPanel() {
                       <p className="text-[10px] text-muted-foreground mt-1">
                         {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true, locale: ptBR })}
                       </p>
+                      <div className="flex gap-1.5 mt-2">
+                        {alert.action_url && alert.action_label && (
+                          <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => handleAction(alert)}>
+                            <ExternalLink className="w-3 h-3 mr-1" />
+                            {alert.action_label}
+                          </Button>
+                        )}
+                        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={(e) => handleResolve(e, alert)}>
+                          <CheckCircle className="w-3 h-3 mr-1" /> Resolver
+                        </Button>
+                      </div>
                     </div>
-                    {!alert.read && (
-                      <div className="mt-2 w-2 h-2 rounded-full bg-primary shrink-0" />
-                    )}
                   </div>
                 );
               })}
             </div>
           )}
         </ScrollArea>
-        {unreadCount > 0 && (
-          <div className="border-t border-border px-4 py-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full text-xs h-8"
-              onClick={handleMarkAllRead}
-            >
-              <CheckCheck className="w-3.5 h-3.5 mr-1" /> Marcar todos como lidos
-            </Button>
-          </div>
-        )}
       </PopoverContent>
     </Popover>
   );

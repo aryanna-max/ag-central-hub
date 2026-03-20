@@ -1,45 +1,26 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  FolderKanban,
-  Truck,
-  Monitor,
-  DollarSign,
-  UserCog,
-  ChevronLeft,
-  ChevronRight,
-  Target,
-  UserCheck,
-  Building2,
-  CalendarDays,
-  Car,
-  FolderOpen,
-  PackageCheck,
-  Receipt,
-  CreditCard,
-  Wallet,
-  UserPlus,
-  FileCheck,
-  HeartPulse,
-  Banknote,
+  LayoutDashboard, Users, FileText, FolderKanban, Truck, Monitor,
+  DollarSign, UserCog, ChevronLeft, ChevronRight, Target, UserCheck,
+  Building2, CalendarDays, Car, FolderOpen, PackageCheck, Receipt,
+  CreditCard, Wallet, UserPlus, FileCheck, HeartPulse, Banknote,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useAlerts, type Alert } from "@/hooks/useAlerts";
 
 interface SidebarItem {
   label: string;
   path: string;
   icon: React.ElementType;
-  children?: { label: string; path: string; icon: React.ElementType }[];
+  badgeKey?: string;
+  children?: { label: string; path: string; icon: React.ElementType; badgeKey?: string }[];
 }
 
 const navigation: SidebarItem[] = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard },
   {
-    label: "Comercial",
-    path: "/comercial",
-    icon: Users,
+    label: "Comercial", path: "/comercial", icon: Users,
     children: [
       { label: "Leads", path: "/comercial/leads", icon: Target },
       { label: "Oportunidades", path: "/comercial/oportunidades", icon: UserCheck },
@@ -48,18 +29,14 @@ const navigation: SidebarItem[] = [
   },
   { label: "Propostas", path: "/propostas", icon: FileText },
   {
-    label: "Projetos",
-    path: "/projetos",
-    icon: FolderKanban,
+    label: "Projetos", path: "/projetos", icon: FolderKanban,
     children: [
       { label: "Dashboard", path: "/projetos/dashboard", icon: LayoutDashboard },
       { label: "Kanban", path: "/projetos/kanban", icon: FolderKanban },
     ],
   },
   {
-    label: "Operacional",
-    path: "/operacional",
-    icon: Truck,
+    label: "Operacional", path: "/operacional", icon: Truck,
     children: [
       { label: "Dashboard", path: "/operacional/dashboard", icon: LayoutDashboard },
       { label: "Equipes", path: "/operacional/equipes", icon: Users },
@@ -71,18 +48,14 @@ const navigation: SidebarItem[] = [
     ],
   },
   {
-    label: "Sala Técnica",
-    path: "/sala-tecnica",
-    icon: Monitor,
+    label: "Sala Técnica", path: "/sala-tecnica", icon: Monitor,
     children: [
       { label: "Arquivos", path: "/sala-tecnica/arquivos", icon: FolderOpen },
       { label: "Entregas", path: "/sala-tecnica/entregas", icon: PackageCheck },
     ],
   },
   {
-    label: "Financeiro",
-    path: "/financeiro",
-    icon: DollarSign,
+    label: "Financeiro", path: "/financeiro", icon: DollarSign, badgeKey: "financeiro",
     children: [
       { label: "Faturamento", path: "/financeiro/faturamento", icon: Receipt },
       { label: "Pagamentos", path: "/financeiro/pagamentos", icon: CreditCard },
@@ -90,9 +63,7 @@ const navigation: SidebarItem[] = [
     ],
   },
   {
-    label: "RH",
-    path: "/rh",
-    icon: UserCog,
+    label: "RH", path: "/rh", icon: UserCog,
     children: [
       { label: "Funcionários", path: "/rh/funcionarios", icon: UserPlus },
       { label: "Documentos", path: "/rh/documentos", icon: FileCheck },
@@ -105,6 +76,11 @@ export default function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<string[]>([]);
   const location = useLocation();
+  const { data: allAlerts = [] } = useAlerts();
+
+  const financeiroPending = useMemo(() =>
+    allAlerts.filter((a: Alert) => !a.resolved && a.recipient === "financeiro").length
+  , [allAlerts]);
 
   const toggleMenu = (path: string) => {
     setOpenMenus((prev) =>
@@ -116,6 +92,18 @@ export default function AppSidebar() {
   const isParentActive = (item: SidebarItem) =>
     item.children?.some((c) => location.pathname.startsWith(c.path)) ||
     location.pathname === item.path;
+
+  const getBadge = (key?: string) => {
+    if (!key || collapsed) return null;
+    if (key === "financeiro" && financeiroPending > 0) {
+      return (
+        <span className="ml-auto min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+          {financeiroPending}
+        </span>
+      );
+    }
+    return null;
+  };
 
   return (
     <aside
@@ -130,9 +118,7 @@ export default function AppSidebar() {
         </div>
         {!collapsed && (
           <div className="overflow-hidden">
-            <p className="text-sidebar-accent-foreground font-bold text-sm leading-tight">
-              AG Topografia
-            </p>
+            <p className="text-sidebar-accent-foreground font-bold text-sm leading-tight">AG Topografia</p>
             <p className="text-sidebar-muted text-xs">Sistema de Gestão</p>
           </div>
         )}
@@ -161,9 +147,8 @@ export default function AppSidebar() {
                   {!collapsed && (
                     <>
                       <span className="flex-1 text-left">{item.label}</span>
-                      <ChevronRight
-                        className={`w-4 h-4 transition-transform ${isOpen ? "rotate-90" : ""}`}
-                      />
+                      {getBadge(item.badgeKey)}
+                      <ChevronRight className={`w-4 h-4 transition-transform ${isOpen ? "rotate-90" : ""}`} />
                     </>
                   )}
                 </button>

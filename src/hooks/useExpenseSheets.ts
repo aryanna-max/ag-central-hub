@@ -8,6 +8,7 @@ export const EXPENSE_TYPES = [
 
 export const PAYMENT_METHODS = [
   { value: "cartao", label: "Cartão", icon: "💳" },
+  { value: "cartao_despesas", label: "Cartão Despesas (Alelo/Corporativo)", icon: "💳" },
   { value: "pix", label: "PIX", icon: "📱" },
   { value: "dinheiro", label: "Dinheiro", icon: "💵" },
   { value: "transferencia", label: "Transferência", icon: "🏦" },
