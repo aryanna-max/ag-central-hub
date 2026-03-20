@@ -72,11 +72,25 @@ const navigation: SidebarItem[] = [
   },
 ];
 
+const adminNavigation: SidebarItem[] = [
+  {
+    label: "Administração", path: "/admin", icon: Shield,
+    children: [
+      { label: "Usuários", path: "/admin/usuarios", icon: UserPlus },
+    ],
+  },
+];
+
 export default function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<string[]>([]);
   const location = useLocation();
   const alertCounts = useModuleAlertCounts();
+  const { isMaster } = useAuth();
+  
+  const fullNavigation = useMemo(() => {
+    return isMaster ? [...navigation, ...adminNavigation] : navigation;
+  }, [isMaster]);
 
   const toggleMenu = (path: string) => {
     setOpenMenus((prev) =>
