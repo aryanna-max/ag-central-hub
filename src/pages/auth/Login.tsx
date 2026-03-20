@@ -24,7 +24,7 @@ export default function Login() {
     const { error: err } = await signIn(email, password);
     setLoading(false);
     if (err) {
-      setError("Email ou senha inválidos.");
+      setError(err.includes("Invalid login credentials") ? "Email ou senha inválidos." : err);
     } else {
       navigate("/");
     }
@@ -45,7 +45,7 @@ export default function Login() {
         <div className="bg-card/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 p-8 space-y-6">
           {/* Logo */}
           <div className="flex flex-col items-center gap-3">
-            <img src={logoAg} alt="AG Topografia" className="h-20 w-auto" />
+            <img src={logoAg} alt="AG Topografia e Construções" className="h-24 w-auto" />
             <p className="text-muted-foreground text-sm">Sistema de Gestão</p>
           </div>
 
