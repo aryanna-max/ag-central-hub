@@ -134,7 +134,7 @@ export default function AppSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
-        {navigation.map((item) => {
+        {fullNavigation.map((item) => {
           const Icon = item.icon;
           const hasChildren = !!item.children?.length;
           const parentActive = isParentActive(item);
