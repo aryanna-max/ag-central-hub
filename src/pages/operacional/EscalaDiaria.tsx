@@ -68,7 +68,6 @@ export default function EscalaDiaria() {
   const { data: vehicles } = useVehicles();
   const { data: employees } = useEmployeesWithAbsences(selectedDate);
   const { data: allEmployees } = useEmployees();
-  const { data: obrasData } = useObrasList();
 
   // Load attendance records for the selected date (folga, falta, atestado, reserva)
   const { data: attendanceRecords } = useQuery({
