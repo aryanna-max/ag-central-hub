@@ -108,6 +108,7 @@ export function useCreateExpenseSheet() {
       period_end: string;
       total_value: number;
       status: string;
+      week_label?: string;
     }) => {
       const { data, error } = await supabase
         .from("field_expense_sheets")
