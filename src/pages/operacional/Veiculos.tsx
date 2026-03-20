@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { Car, Plus, Trash2, Pencil, Eye } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Car, Plus, Trash2, Pencil, Eye, Filter, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { useVehicles, useDeleteVehicle } from "@/hooks/useVehicles";
 import VehicleEditDialog from "@/components/operacional/VehicleEditDialog";
@@ -29,13 +31,35 @@ export default function Veiculos() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
 
+  // Filters
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterSearch, setFilterSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    if (!vehicles) return [];
+    return vehicles.filter((v: any) => {
+      if (filterStatus !== "all" && v.status !== filterStatus) return false;
+      if (filterSearch) {
+        const q = filterSearch.toLowerCase();
+        if (
+          !v.plate.toLowerCase().includes(q) &&
+          !v.model.toLowerCase().includes(q) &&
+          !(v.brand || "").toLowerCase().includes(q) &&
+          !(v.owner_name || "").toLowerCase().includes(q)
+        )
+          return false;
+      }
+      return true;
+    });
+  }, [vehicles, filterStatus, filterSearch]);
+
   const openNew = () => { setSelectedVehicle(null); setEditOpen(true); };
   const openEdit = (v: any, e: React.MouseEvent) => { e.stopPropagation(); setSelectedVehicle(v); setEditOpen(true); };
   const openDetail = (v: any) => { setSelectedVehicle(v); setDetailOpen(true); };
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10">
             <Car className="w-6 h-6 text-primary" />
@@ -45,17 +69,53 @@ export default function Veiculos() {
             <p className="text-sm text-muted-foreground">Controle de frota e disponibilidade</p>
           </div>
         </div>
-        <Button onClick={openNew} className="gap-2">
-          <Plus className="w-4 h-4" /> Novo Veículo
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => window.print()} className="gap-2">
+            <Printer className="w-4 h-4" /> Imprimir
+          </Button>
+          <Button onClick={openNew} className="gap-2">
+            <Plus className="w-4 h-4" /> Novo Veículo
+          </Button>
+        </div>
       </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar placa, modelo, marca..."
+              value={filterSearch}
+              onChange={(e) => setFilterSearch(e.target.value)}
+              className="w-60"
+            />
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                <SelectItem value="disponivel">Disponível</SelectItem>
+                <SelectItem value="em_uso">Em Uso</SelectItem>
+                <SelectItem value="manutencao">Manutenção</SelectItem>
+                <SelectItem value="indisponivel">Indisponível</SelectItem>
+              </SelectContent>
+            </Select>
+            {(filterStatus !== "all" || filterSearch) && (
+              <Button variant="ghost" size="sm" onClick={() => { setFilterStatus("all"); setFilterSearch(""); }}>
+                Limpar
+              </Button>
+            )}
+            <Badge variant="outline" className="ml-auto">{filtered.length} veículos</Badge>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
             <p className="p-6 text-muted-foreground">Carregando...</p>
-          ) : !vehicles?.length ? (
-            <p className="p-6 text-center text-muted-foreground">Nenhum veículo cadastrado.</p>
+          ) : !filtered.length ? (
+            <p className="p-6 text-center text-muted-foreground">Nenhum veículo encontrado.</p>
           ) : (
             <Table>
               <TableHeader>
@@ -71,7 +131,7 @@ export default function Veiculos() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {vehicles.map((v: any) => (
+                {filtered.map((v: any) => (
                   <TableRow
                     key={v.id}
                     className="cursor-pointer"
