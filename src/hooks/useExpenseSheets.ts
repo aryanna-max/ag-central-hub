@@ -6,9 +6,19 @@ export const EXPENSE_TYPES = [
   "Hospedagem", "Pedágio", "Combustível", "Outros",
 ] as const;
 
+export const PAYMENT_METHODS = [
+  { value: "cartao", label: "Cartão", icon: "💳" },
+  { value: "pix", label: "PIX", icon: "📱" },
+  { value: "dinheiro", label: "Dinheiro", icon: "💵" },
+  { value: "transferencia", label: "Transferência", icon: "🏦" },
+  { value: "boleto", label: "Boleto", icon: "📄" },
+] as const;
+
 export interface ExpenseSheet {
   id: string;
-  week_ref: string;
+  week_number: number;
+  week_year: number;
+  week_label: string;
   period_start: string;
   period_end: string;
   total_value: number | null;
@@ -18,7 +28,6 @@ export interface ExpenseSheet {
   approved_at: string | null;
   created_at: string;
   updated_at: string;
-  item_count?: number;
 }
 
 export interface ExpenseItem {
@@ -31,9 +40,15 @@ export interface ExpenseItem {
   nature: string;
   description: string;
   value: number;
+  total_value: number | null;
+  item_type: string;
+  payment_method: string;
   receiver_id: string | null;
   receiver_name: string | null;
+  receiver_document: string | null;
+  receiver_type: string | null;
   intermediary_reason: string | null;
+  fiscal_alert: boolean;
   payment_status: string;
   paid_at: string | null;
   created_at: string;
@@ -51,7 +66,7 @@ export function useExpenseSheets() {
         .select("*")
         .order("period_start", { ascending: false });
       if (error) throw error;
-      return data as ExpenseSheet[];
+      return data as unknown as ExpenseSheet[];
     },
   });
 }
@@ -75,7 +90,7 @@ export function useExpenseSheetWithItems(sheetId: string | null) {
         .order("created_at");
       if (iErr) throw iErr;
 
-      return { sheet: sheet as ExpenseSheet, items: items as ExpenseItem[] };
+      return { sheet: sheet as unknown as ExpenseSheet, items: items as unknown as ExpenseItem[] };
     },
   });
 }
@@ -86,7 +101,8 @@ export function useCreateExpenseSheet() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: {
-      week_ref: string;
+      week_number: number;
+      week_year: number;
       period_start: string;
       period_end: string;
       total_value: number;
@@ -98,7 +114,7 @@ export function useCreateExpenseSheet() {
         .select()
         .single();
       if (error) throw error;
-      return data as ExpenseSheet;
+      return data as unknown as ExpenseSheet;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["expense_sheets"] }),
   });
@@ -116,9 +132,14 @@ export function useBulkCreateExpenseItems() {
       nature: string;
       description: string;
       value: number;
+      item_type?: string;
+      payment_method?: string;
       receiver_id?: string | null;
       receiver_name?: string | null;
+      receiver_document?: string | null;
+      receiver_type?: string | null;
       intermediary_reason?: string | null;
+      fiscal_alert?: boolean;
     }>) => {
       const { data, error } = await supabase
         .from("field_expense_items")
