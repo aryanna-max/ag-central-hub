@@ -6,15 +6,13 @@ import {
   Building2, CalendarDays, Car, FolderOpen, PackageCheck, Receipt,
   CreditCard, Wallet, UserPlus, FileCheck, HeartPulse, Banknote,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { useAlerts, type Alert } from "@/hooks/useAlerts";
+import { useModuleAlertCounts } from "@/hooks/useModuleAlertCounts";
 
 interface SidebarItem {
   label: string;
   path: string;
   icon: React.ElementType;
-  badgeKey?: string;
-  children?: { label: string; path: string; icon: React.ElementType; badgeKey?: string }[];
+  children?: { label: string; path: string; icon: React.ElementType }[];
 }
 
 const navigation: SidebarItem[] = [
@@ -55,8 +53,9 @@ const navigation: SidebarItem[] = [
     ],
   },
   {
-    label: "Financeiro", path: "/financeiro", icon: DollarSign, badgeKey: "financeiro",
+    label: "Financeiro", path: "/financeiro", icon: DollarSign,
     children: [
+      { label: "Dashboard", path: "/financeiro/dashboard", icon: LayoutDashboard },
       { label: "Faturamento", path: "/financeiro/faturamento", icon: Receipt },
       { label: "Pagamentos", path: "/financeiro/pagamentos", icon: CreditCard },
       { label: "Contas", path: "/financeiro/contas", icon: Wallet },
@@ -76,11 +75,7 @@ export default function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<string[]>([]);
   const location = useLocation();
-  const { data: allAlerts = [] } = useAlerts();
-
-  const financeiroPending = useMemo(() =>
-    allAlerts.filter((a: Alert) => !a.resolved && a.recipient === "financeiro").length
-  , [allAlerts]);
+  const alertCounts = useModuleAlertCounts();
 
   const toggleMenu = (path: string) => {
     setOpenMenus((prev) =>
@@ -93,16 +88,14 @@ export default function AppSidebar() {
     item.children?.some((c) => location.pathname.startsWith(c.path)) ||
     location.pathname === item.path;
 
-  const getBadge = (key?: string) => {
-    if (!key || collapsed) return null;
-    if (key === "financeiro" && financeiroPending > 0) {
-      return (
-        <span className="ml-auto min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
-          {financeiroPending}
-        </span>
-      );
-    }
-    return null;
+  const renderBadge = (path: string) => {
+    const count = alertCounts[path];
+    if (!count || collapsed) return null;
+    return (
+      <span className="ml-auto min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+        {count > 99 ? "99+" : count}
+      </span>
+    );
   };
 
   return (
@@ -147,7 +140,7 @@ export default function AppSidebar() {
                   {!collapsed && (
                     <>
                       <span className="flex-1 text-left">{item.label}</span>
-                      {getBadge(item.badgeKey)}
+                      {renderBadge(item.path)}
                       <ChevronRight className={`w-4 h-4 transition-transform ${isOpen ? "rotate-90" : ""}`} />
                     </>
                   )}
