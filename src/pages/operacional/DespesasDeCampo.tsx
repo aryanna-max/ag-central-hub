@@ -129,7 +129,7 @@ export default function DespesasDeCampo() {
                   const cfg = statusCfg[s.status] ?? statusCfg.rascunho;
                   return (
                     <TableRow key={s.id} className="cursor-pointer" onClick={() => setSelectedId(s.id)}>
-                      <TableCell className="font-medium font-mono">{s.week_label}</TableCell>
+                      <TableCell className="font-medium font-mono">{s.week_label || `${String(s.week_number).padStart(3, '0')}/${s.week_year % 100}`}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {format(parseISO(s.period_start), "dd/MM", { locale: ptBR })} – {format(parseISO(s.period_end), "dd/MM/yyyy", { locale: ptBR })}
                       </TableCell>
