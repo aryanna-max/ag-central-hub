@@ -23,13 +23,14 @@ import {
 } from "@/hooks/useDailySchedule";
 import { useTeams } from "@/hooks/useTeams";
 import { useVehicles } from "@/hooks/useVehicles";
-import { useEmployeesWithAbsences } from "@/hooks/useEmployees";
+import { useEmployees, useEmployeesWithAbsences } from "@/hooks/useEmployees";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import DailyScheduleReport from "@/components/operacional/DailyScheduleReport";
 import AbsencesSection from "@/components/operacional/AbsencesSection";
 import TeamLocationMap from "@/components/operacional/TeamLocationMap";
 import MonthlyDayEditDialog from "@/components/operacional/MonthlyDayEditDialog";
+import EmployeeAvailabilityKanban from "@/components/operacional/EmployeeAvailabilityKanban";
 import { useUpdateMonthlySchedule } from "@/hooks/useMonthlySchedules";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
