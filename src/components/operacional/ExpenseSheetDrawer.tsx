@@ -450,15 +450,16 @@ export default function ExpenseSheetDrawer({ open, onOpenChange, editSheetId }: 
     setPeriodStart(format(monday, "yyyy-MM-dd"));
     setPeriodEnd(format(saturday, "yyyy-MM-dd"));
     setItems([]);
+    setLoaded(null);
   };
 
-  const busy = createSheet.isPending || bulkItems.isPending;
+  const busy = createSheet.isPending || bulkItems.isPending || updateSheet.isPending || deleteItems.isPending;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Nova Folha de Despesas de Campo</SheetTitle>
+          <SheetTitle>{isEditing ? "Editar Folha de Despesas" : "Nova Folha de Despesas de Campo"}</SheetTitle>
         </SheetHeader>
 
         <div className="space-y-6 py-6">
