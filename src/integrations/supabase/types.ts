@@ -1579,6 +1579,159 @@ export type Database = {
           },
         ]
       }
+      proposal_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          proposal_id: string
+          quantity: number | null
+          sort_order: number | null
+          total_price: number | null
+          unit: string | null
+          unit_price: number | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          proposal_id: string
+          quantity?: number | null
+          sort_order?: number | null
+          total_price?: number | null
+          unit?: string | null
+          unit_price?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          proposal_id?: string
+          quantity?: number | null
+          sort_order?: number | null
+          total_price?: number | null
+          unit?: string | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_items_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposals: {
+        Row: {
+          approved_at: string | null
+          client_id: string | null
+          client_name: string | null
+          code: string
+          created_at: string
+          discount_pct: number | null
+          empresa_faturadora: string
+          estimated_duration: string | null
+          estimated_value: number | null
+          final_value: number | null
+          id: string
+          lead_id: string | null
+          location: string | null
+          opportunity_id: string | null
+          payment_conditions: string | null
+          rejected_at: string | null
+          rejection_reason: string | null
+          responsible: string | null
+          scope: string | null
+          sent_at: string | null
+          service: string | null
+          status: string
+          technical_notes: string | null
+          title: string
+          updated_at: string
+          validity_days: number | null
+        }
+        Insert: {
+          approved_at?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          code: string
+          created_at?: string
+          discount_pct?: number | null
+          empresa_faturadora?: string
+          estimated_duration?: string | null
+          estimated_value?: number | null
+          final_value?: number | null
+          id?: string
+          lead_id?: string | null
+          location?: string | null
+          opportunity_id?: string | null
+          payment_conditions?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          responsible?: string | null
+          scope?: string | null
+          sent_at?: string | null
+          service?: string | null
+          status?: string
+          technical_notes?: string | null
+          title: string
+          updated_at?: string
+          validity_days?: number | null
+        }
+        Update: {
+          approved_at?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          code?: string
+          created_at?: string
+          discount_pct?: number | null
+          empresa_faturadora?: string
+          estimated_duration?: string | null
+          estimated_value?: number | null
+          final_value?: number | null
+          id?: string
+          lead_id?: string | null
+          location?: string | null
+          opportunity_id?: string | null
+          payment_conditions?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          responsible?: string | null
+          scope?: string | null
+          sent_at?: string | null
+          service?: string | null
+          status?: string
+          technical_notes?: string | null
+          title?: string
+          updated_at?: string
+          validity_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schedule_activity_log: {
         Row: {
           action: string

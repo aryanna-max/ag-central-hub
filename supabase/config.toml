@@ -1,1 +1,4 @@
 project_id = "bphgtvwgsgaqaxmkrtqj"
+
+[functions.generate-proposal]
+verify_jwt = false
