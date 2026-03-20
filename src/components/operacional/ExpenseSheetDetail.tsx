@@ -8,15 +8,22 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { CheckCircle, Undo2, Ban, DollarSign } from "lucide-react";
+import { CheckCircle, Undo2, Ban, DollarSign, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCreateAlerts, type AlertInsert } from "@/hooks/useAlerts";
 import {
   useExpenseSheetWithItems,
   useUpdateExpenseSheetStatus,
   useUpdateExpenseItemStatus,
+  useDeleteExpenseSheet,
   PAYMENT_METHODS,
   type ExpenseItem,
 } from "@/hooks/useExpenseSheets";
@@ -27,14 +34,17 @@ const pmIcon = (method: string) =>
 interface Props {
   sheetId: string | null;
   onClose: () => void;
+  onEdit?: (sheetId: string) => void;
 }
 
-export default function ExpenseSheetDetail({ sheetId, onClose }: Props) {
+export default function ExpenseSheetDetail({ sheetId, onClose, onEdit }: Props) {
   const { data, isLoading } = useExpenseSheetWithItems(sheetId);
   const updateStatus = useUpdateExpenseSheetStatus();
   const updateItem = useUpdateExpenseItemStatus();
+  const deleteSheet = useDeleteExpenseSheet();
   const createAlerts = useCreateAlerts();
   const { toast } = useToast();
+  const { role, isMaster } = useAuth();
   const [returnComment, setReturnComment] = useState("");
   const [showReturn, setShowReturn] = useState(false);
 
@@ -43,6 +53,10 @@ export default function ExpenseSheetDetail({ sheetId, onClose }: Props) {
   const sheet = data?.sheet;
   const items = data?.items ?? [];
   const status = sheet?.status ?? "";
+
+  const canEdit = (status === "rascunho" || status === "devolvido") &&
+    (role === "operacional" || role === "diretor" || isMaster);
+  const canDelete = isMaster;
 
   const funcItems = items.filter((i) => (i.item_type ?? "funcionario") === "funcionario");
   const extraItems = items.filter((i) => i.item_type === "despesa_extra");
@@ -85,6 +99,16 @@ export default function ExpenseSheetDetail({ sheetId, onClose }: Props) {
       toast({ title: "Folha devolvida" });
       setShowReturn(false);
       setReturnComment("");
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteSheet.mutateAsync(sheetId);
+      toast({ title: "Folha excluída" });
+      onClose();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
     }
@@ -176,9 +200,41 @@ export default function ExpenseSheetDetail({ sheetId, onClose }: Props) {
     <Dialog open={!!sheetId} onOpenChange={() => onClose()}>
       <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            Folha de Despesas — {sheet?.week_label ?? ""}
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>
+              Folha de Despesas — {sheet?.week_label ?? ""}
+            </DialogTitle>
+            <div className="flex items-center gap-2">
+              {canEdit && onEdit && (
+                <Button size="sm" variant="outline" onClick={() => { onClose(); onEdit(sheetId); }}>
+                  <Pencil className="w-4 h-4 mr-1" /> Editar
+                </Button>
+              )}
+              {canDelete && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="destructive">
+                      <Trash2 className="w-4 h-4 mr-1" /> Excluir
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir folha?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta ação é irreversível. Todos os itens desta folha serão apagados.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+          </div>
         </DialogHeader>
 
         {isLoading ? (

@@ -25,6 +25,7 @@ const statusCfg: Record<string, { label: string; cls: string }> = {
 export default function DespesasDeCampo() {
   const { data: sheets = [], isLoading } = useExpenseSheets();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterStart, setFilterStart] = useState("");
   const [filterEnd, setFilterEnd] = useState("");
@@ -43,6 +44,16 @@ export default function DespesasDeCampo() {
   const pendentes = filtered.filter((p) => ["rascunho", "submetido"].includes(p.status)).length;
   const aprovadas = filtered.filter((p) => ["aprovado", "pago"].includes(p.status)).length;
 
+  const handleEdit = (sheetId: string) => {
+    setEditingSheetId(sheetId);
+    setDrawerOpen(true);
+  };
+
+  const handleDrawerClose = (open: boolean) => {
+    setDrawerOpen(open);
+    if (!open) setEditingSheetId(null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -50,7 +61,7 @@ export default function DespesasDeCampo() {
           <h1 className="text-2xl font-bold text-foreground">Despesas de Campo</h1>
           <p className="text-sm text-muted-foreground">Folhas de despesas semanais de campo</p>
         </div>
-        <Button onClick={() => setDrawerOpen(true)}>
+        <Button onClick={() => { setEditingSheetId(null); setDrawerOpen(true); }}>
           <Plus className="w-4 h-4 mr-2" /> Nova Folha
         </Button>
       </div>
@@ -153,8 +164,8 @@ export default function DespesasDeCampo() {
         </CardContent>
       </Card>
 
-      <ExpenseSheetDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
-      <ExpenseSheetDetail sheetId={selectedId} onClose={() => setSelectedId(null)} />
+      <ExpenseSheetDrawer open={drawerOpen} onOpenChange={handleDrawerClose} editSheetId={editingSheetId} />
+      <ExpenseSheetDetail sheetId={selectedId} onClose={() => setSelectedId(null)} onEdit={handleEdit} />
     </div>
   );
 }

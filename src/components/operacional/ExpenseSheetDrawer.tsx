@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { format, startOfWeek, getWeek, getYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Plus, Trash2, User, Receipt } from "lucide-react";
@@ -21,6 +21,10 @@ import { useCreateAlerts, type AlertInsert } from "@/hooks/useAlerts";
 import {
   useCreateExpenseSheet,
   useBulkCreateExpenseItems,
+  useUpdateExpenseSheet,
+  useDeleteExpenseItems,
+  useExpenseSheetWithItems,
+  countSheetsForWeek,
   EXPENSE_TYPES,
   PAYMENT_METHODS,
 } from "@/hooks/useExpenseSheets";
@@ -115,9 +119,13 @@ function funcTotal(item: FuncionarioItem): number {
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  editSheetId?: string | null;
 }
 
-export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
+export default function ExpenseSheetDrawer({ open, onOpenChange, editSheetId }: Props) {
+  const isEditing = !!editSheetId;
+  const { data: editData } = useExpenseSheetWithItems(editSheetId ?? null);
+
   const now = new Date();
   const weekNum = getWeek(now, { weekStartsOn: 1 });
   const weekYr = getYear(now);
@@ -130,13 +138,72 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
   const [periodStart, setPeriodStart] = useState(format(monday, "yyyy-MM-dd"));
   const [periodEnd, setPeriodEnd] = useState(format(saturday, "yyyy-MM-dd"));
   const [items, setItems] = useState<ItemDraft[]>([]);
+  const [loaded, setLoaded] = useState<string | null>(null);
 
   const { data: employees = [] } = useEmployees();
   const { data: projects = [] } = useProjects();
   const { toast } = useToast();
   const createSheet = useCreateExpenseSheet();
+  const updateSheet = useUpdateExpenseSheet();
+  const deleteItems = useDeleteExpenseItems();
   const bulkItems = useBulkCreateExpenseItems();
   const createAlerts = useCreateAlerts();
+
+  // Load existing sheet data for editing
+  useEffect(() => {
+    if (isEditing && editData && loaded !== editSheetId) {
+      const sheet = editData.sheet;
+      setPeriodStart(sheet.period_start);
+      setPeriodEnd(sheet.period_end);
+
+      // Rebuild items from DB rows
+      const dbItems = editData.items;
+      const funcMap = new Map<string, FuncionarioItem>();
+      const extras: DespesaExtraItem[] = [];
+
+      for (const di of dbItems) {
+        if ((di.item_type ?? "funcionario") === "funcionario") {
+          const existing = funcMap.get(di.employee_id);
+          const subLine: SubLine = {
+            key: _nextLineKey++,
+            project_id: di.project_id ?? "",
+            expense_type: di.expense_type,
+            nature: di.nature ?? "reembolso",
+            value: Number(di.value) || 0,
+          };
+          if (existing) {
+            existing.lines.push(subLine);
+          } else {
+            funcMap.set(di.employee_id, {
+              kind: "funcionario",
+              key: _nextKey++,
+              employee_id: di.employee_id,
+              payment_method: di.payment_method ?? "cartao",
+              receiver_id: di.receiver_id ?? "",
+              intermediary_reason: di.intermediary_reason ?? "",
+              lines: [subLine],
+            });
+          }
+        } else {
+          extras.push({
+            kind: "despesa_extra",
+            key: _nextKey++,
+            receiver_name: di.receiver_name ?? "",
+            receiver_document: di.receiver_document ?? "",
+            receiver_type: di.receiver_type ?? "",
+            project_id: di.project_id ?? "",
+            expense_type: di.expense_type,
+            description: di.description,
+            value: Number(di.value) || 0,
+            payment_method: di.payment_method ?? "cartao",
+          });
+        }
+      }
+
+      setItems([...Array.from(funcMap.values()), ...extras]);
+      setLoaded(editSheetId!);
+    }
+  }, [isEditing, editData, editSheetId, loaded]);
 
   const active = useMemo(() => {
     const list = employees.filter((e: any) => e.status !== "desligado");
@@ -213,14 +280,38 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
     if (err) return toast({ title: err, variant: "destructive" });
 
     try {
-      const sheet = await createSheet.mutateAsync({
-        week_number: weekNum,
-        week_year: weekYr,
-        period_start: periodStart,
-        period_end: periodEnd,
-        total_value: total,
-        status: submit ? "submetido" : "rascunho",
-      });
+      let sheetId: string;
+
+      if (isEditing && editSheetId) {
+        // Update existing sheet
+        sheetId = editSheetId;
+        await updateSheet.mutateAsync({
+          id: editSheetId,
+          period_start: periodStart,
+          period_end: periodEnd,
+          total_value: total,
+          status: submit ? "submetido" : "rascunho",
+        });
+        // Delete old items and re-insert
+        await deleteItems.mutateAsync(editSheetId);
+      } else {
+        // Check sequential numbering
+        const existingCount = await countSheetsForWeek(weekNum, weekYr);
+        const seqLabel = existingCount > 0
+          ? `${String(weekNum).padStart(3, "0")}/${String(weekYr % 100)}-${existingCount + 1}`
+          : undefined;
+
+        const sheet = await createSheet.mutateAsync({
+          week_number: weekNum,
+          week_year: weekYr,
+          period_start: periodStart,
+          period_end: periodEnd,
+          total_value: total,
+          status: submit ? "submetido" : "rascunho",
+          ...(seqLabel ? { week_label: seqLabel } : {}),
+        } as any);
+        sheetId = sheet.id;
+      }
 
       // Flatten funcionario items into individual DB rows per sub-line
       const dbItems: any[] = [];
@@ -232,7 +323,7 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
             const projName = projects.find((p) => p.id === line.project_id)?.name ?? "";
             if (projName && !allProjectNames.includes(projName)) allProjectNames.push(projName);
             dbItems.push({
-              sheet_id: sheet.id,
+              sheet_id: sheetId,
               item_type: "funcionario",
               employee_id: item.employee_id,
               project_id: line.project_id,
@@ -252,7 +343,7 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
           const projName = projects.find((p) => p.id === item.project_id)?.name ?? "";
           if (projName && !allProjectNames.includes(projName)) allProjectNames.push(projName);
           dbItems.push({
-            sheet_id: sheet.id,
+            sheet_id: sheetId,
             item_type: "despesa_extra",
             employee_id: active[0]?.id ?? "",
             project_id: item.project_id,
@@ -285,7 +376,7 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
             title: "⚠️ Despesa extra — conferir NF/Recibo",
             message: `${ei.receiver_name} — ${ei.expense_type} R$${ei.value.toFixed(2)} — Doc: ${ei.receiver_document} — Projeto: ${projName} — Folha: ${weekLabel}`,
             reference_type: "expense_sheet",
-            reference_id: sheet.id,
+            reference_id: sheetId,
             action_type: "conferir_recibo",
             action_label: "Conferir e marcar OK",
             action_url: "/operacional/despesas-de-campo",
@@ -315,7 +406,7 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
             title: "📋 Folha aguardando sua aprovação",
             message: `Folha ${weekLabel} — Total: ${totalStr} — Projetos: ${projList}`,
             reference_type: "expense_sheet",
-            reference_id: sheet.id,
+            reference_id: sheetId,
             action_type: "aprovar",
             action_url: "/operacional/despesas-de-campo",
             action_label: "Aprovar folha",
@@ -331,7 +422,7 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
             title: "📋 Nova folha de despesas submetida",
             message: `Folha ${weekLabel} — Total: ${totalStr} — Aguardando aprovação de Sérgio.`,
             reference_type: "expense_sheet",
-            reference_id: sheet.id,
+            reference_id: sheetId,
             action_type: "visualizar",
             action_url: "/operacional/despesas-de-campo",
             action_label: "Ver folha",
@@ -359,15 +450,16 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
     setPeriodStart(format(monday, "yyyy-MM-dd"));
     setPeriodEnd(format(saturday, "yyyy-MM-dd"));
     setItems([]);
+    setLoaded(null);
   };
 
-  const busy = createSheet.isPending || bulkItems.isPending;
+  const busy = createSheet.isPending || bulkItems.isPending || updateSheet.isPending || deleteItems.isPending;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Nova Folha de Despesas de Campo</SheetTitle>
+          <SheetTitle>{isEditing ? "Editar Folha de Despesas" : "Nova Folha de Despesas de Campo"}</SheetTitle>
         </SheetHeader>
 
         <div className="space-y-6 py-6">
