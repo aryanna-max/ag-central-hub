@@ -24,7 +24,7 @@ export default function Login() {
     const { error: err } = await signIn(email, password);
     setLoading(false);
     if (err) {
-      setError("Email ou senha inválidos.");
+      setError(err.includes("Invalid login credentials") ? "Email ou senha inválidos." : err);
     } else {
       navigate("/");
     }
