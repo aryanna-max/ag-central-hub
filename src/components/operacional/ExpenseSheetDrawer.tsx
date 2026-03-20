@@ -119,6 +119,7 @@ function funcTotal(item: FuncionarioItem): number {
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  editSheetId?: string | null;
 }
 
 export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
