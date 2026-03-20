@@ -612,16 +612,22 @@ export type Database = {
           description: string
           employee_id: string
           expense_type: string
+          fiscal_alert: boolean
           id: string
           intermediary_reason: string | null
+          item_type: string
           nature: string
           paid_at: string | null
+          payment_method: string
           payment_status: string
           project_id: string | null
           project_name: string | null
+          receiver_document: string | null
           receiver_id: string | null
           receiver_name: string | null
+          receiver_type: string | null
           sheet_id: string
+          total_value: number | null
           value: number
         }
         Insert: {
@@ -629,16 +635,22 @@ export type Database = {
           description: string
           employee_id: string
           expense_type: string
+          fiscal_alert?: boolean
           id?: string
           intermediary_reason?: string | null
+          item_type?: string
           nature?: string
           paid_at?: string | null
+          payment_method?: string
           payment_status?: string
           project_id?: string | null
           project_name?: string | null
+          receiver_document?: string | null
           receiver_id?: string | null
           receiver_name?: string | null
+          receiver_type?: string | null
           sheet_id: string
+          total_value?: number | null
           value?: number
         }
         Update: {
@@ -646,16 +658,22 @@ export type Database = {
           description?: string
           employee_id?: string
           expense_type?: string
+          fiscal_alert?: boolean
           id?: string
           intermediary_reason?: string | null
+          item_type?: string
           nature?: string
           paid_at?: string | null
+          payment_method?: string
           payment_status?: string
           project_id?: string | null
           project_name?: string | null
+          receiver_document?: string | null
           receiver_id?: string | null
           receiver_name?: string | null
+          receiver_type?: string | null
           sheet_id?: string
+          total_value?: number | null
           value?: number
         }
         Relationships: [
@@ -701,7 +719,9 @@ export type Database = {
           status: string
           total_value: number | null
           updated_at: string
-          week_ref: string
+          week_label: string | null
+          week_number: number
+          week_year: number
         }
         Insert: {
           approved_at?: string | null
@@ -714,7 +734,9 @@ export type Database = {
           status?: string
           total_value?: number | null
           updated_at?: string
-          week_ref: string
+          week_label?: string | null
+          week_number: number
+          week_year: number
         }
         Update: {
           approved_at?: string | null
@@ -727,7 +749,9 @@ export type Database = {
           status?: string
           total_value?: number | null
           updated_at?: string
-          week_ref?: string
+          week_label?: string | null
+          week_number?: number
+          week_year?: number
         }
         Relationships: []
       }
