@@ -21,6 +21,10 @@ import { useCreateAlerts, type AlertInsert } from "@/hooks/useAlerts";
 import {
   useCreateExpenseSheet,
   useBulkCreateExpenseItems,
+  useUpdateExpenseSheet,
+  useDeleteExpenseItems,
+  useExpenseSheetWithItems,
+  countSheetsForWeek,
   EXPENSE_TYPES,
   PAYMENT_METHODS,
 } from "@/hooks/useExpenseSheets";
