@@ -97,7 +97,8 @@ export default function PropostaAIDialog({ open, onOpenChange, onApply }: Props)
 
         // Use browser speech recognition as fallback
         toast.info("Processando áudio...");
-        const recognition = new (window as any).webkitSpeechRecognition?.() || new (window as any).SpeechRecognition?.();
+        const SpeechRec = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+        const recognition = SpeechRec ? new SpeechRec() : null;
         if (!recognition) {
           toast.error("Reconhecimento de voz não suportado neste navegador. Use texto.");
           return;
