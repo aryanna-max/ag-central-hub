@@ -122,7 +122,10 @@ interface Props {
   editSheetId?: string | null;
 }
 
-export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
+export default function ExpenseSheetDrawer({ open, onOpenChange, editSheetId }: Props) {
+  const isEditing = !!editSheetId;
+  const { data: editData } = useExpenseSheetWithItems(editSheetId ?? null);
+
   const now = new Date();
   const weekNum = getWeek(now, { weekStartsOn: 1 });
   const weekYr = getYear(now);
@@ -135,13 +138,72 @@ export default function ExpenseSheetDrawer({ open, onOpenChange }: Props) {
   const [periodStart, setPeriodStart] = useState(format(monday, "yyyy-MM-dd"));
   const [periodEnd, setPeriodEnd] = useState(format(saturday, "yyyy-MM-dd"));
   const [items, setItems] = useState<ItemDraft[]>([]);
+  const [loaded, setLoaded] = useState<string | null>(null);
 
   const { data: employees = [] } = useEmployees();
   const { data: projects = [] } = useProjects();
   const { toast } = useToast();
   const createSheet = useCreateExpenseSheet();
+  const updateSheet = useUpdateExpenseSheet();
+  const deleteItems = useDeleteExpenseItems();
   const bulkItems = useBulkCreateExpenseItems();
   const createAlerts = useCreateAlerts();
+
+  // Load existing sheet data for editing
+  useEffect(() => {
+    if (isEditing && editData && loaded !== editSheetId) {
+      const sheet = editData.sheet;
+      setPeriodStart(sheet.period_start);
+      setPeriodEnd(sheet.period_end);
+
+      // Rebuild items from DB rows
+      const dbItems = editData.items;
+      const funcMap = new Map<string, FuncionarioItem>();
+      const extras: DespesaExtraItem[] = [];
+
+      for (const di of dbItems) {
+        if ((di.item_type ?? "funcionario") === "funcionario") {
+          const existing = funcMap.get(di.employee_id);
+          const subLine: SubLine = {
+            key: _nextLineKey++,
+            project_id: di.project_id ?? "",
+            expense_type: di.expense_type,
+            nature: di.nature ?? "reembolso",
+            value: Number(di.value) || 0,
+          };
+          if (existing) {
+            existing.lines.push(subLine);
+          } else {
+            funcMap.set(di.employee_id, {
+              kind: "funcionario",
+              key: _nextKey++,
+              employee_id: di.employee_id,
+              payment_method: di.payment_method ?? "cartao",
+              receiver_id: di.receiver_id ?? "",
+              intermediary_reason: di.intermediary_reason ?? "",
+              lines: [subLine],
+            });
+          }
+        } else {
+          extras.push({
+            kind: "despesa_extra",
+            key: _nextKey++,
+            receiver_name: di.receiver_name ?? "",
+            receiver_document: di.receiver_document ?? "",
+            receiver_type: di.receiver_type ?? "",
+            project_id: di.project_id ?? "",
+            expense_type: di.expense_type,
+            description: di.description,
+            value: Number(di.value) || 0,
+            payment_method: di.payment_method ?? "cartao",
+          });
+        }
+      }
+
+      setItems([...Array.from(funcMap.values()), ...extras]);
+      setLoaded(editSheetId!);
+    }
+  }, [isEditing, editData, editSheetId, loaded]);
 
   const active = useMemo(() => {
     const list = employees.filter((e: any) => e.status !== "desligado");
