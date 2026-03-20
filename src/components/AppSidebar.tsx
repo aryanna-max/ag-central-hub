@@ -4,9 +4,10 @@ import {
   LayoutDashboard, Users, FileText, FolderKanban, Truck, Monitor,
   DollarSign, UserCog, ChevronLeft, ChevronRight, Target, UserCheck,
   Building2, CalendarDays, Car, FolderOpen, PackageCheck, Receipt,
-  CreditCard, Wallet, UserPlus, FileCheck, HeartPulse, Banknote,
+  CreditCard, Wallet, UserPlus, FileCheck, HeartPulse, Banknote, Shield,
 } from "lucide-react";
 import { useModuleAlertCounts } from "@/hooks/useModuleAlertCounts";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarItem {
   label: string;
