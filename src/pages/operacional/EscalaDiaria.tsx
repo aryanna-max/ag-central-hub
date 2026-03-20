@@ -67,6 +67,21 @@ export default function EscalaDiaria() {
   const { data: teams } = useTeams();
   const { data: vehicles } = useVehicles();
   const { data: employees } = useEmployeesWithAbsences(selectedDate);
+  const { data: allEmployees } = useEmployees();
+  const { data: obrasData } = useObrasList();
+
+  // Load attendance records for the selected date (folga, falta, atestado, reserva)
+  const { data: attendanceRecords } = useQuery({
+    queryKey: ["attendance", selectedDate],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("attendance")
+        .select("*")
+        .eq("date", selectedDate);
+      if (error) throw error;
+      return data || [];
+    },
+  });
   const { data: obrasData } = useObrasList();
   const createSchedule = useCreateDailySchedule();
   const addAssignment = useAddTeamAssignment();
