@@ -86,6 +86,7 @@ function AppRoutes() {
         <Route path="/financeiro/*" element={<Financeiro />} />
         <Route path="/rh/*" element={<RH />} />
         <Route path="/admin/usuarios" element={<UserManagement />} />
+        <Route path="/admin/cadastros" element={<CadastrosBase />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
