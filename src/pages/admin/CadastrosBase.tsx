@@ -311,7 +311,7 @@ export default function CadastrosBase() {
                       <TableRow key={e.id}>
                         <TableCell className="font-medium">{e.name}</TableCell>
                         <TableCell>
-                          {e.cpf || <span className="text-amber-600 text-xs">⚠ sem CPF</span>}
+                          {e.cpf || <span className="text-destructive text-xs">⚠ sem CPF</span>}
                         </TableCell>
                         <TableCell>{e.role}</TableCell>
                         <TableCell>{e.phone || "—"}</TableCell>
