@@ -20,6 +20,7 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import ChangePassword from "./pages/auth/ChangePassword";
 import UserManagement from "./pages/admin/UserManagement";
+import CadastrosBase from "./pages/admin/CadastrosBase";
 
 const queryClient = new QueryClient();
 
