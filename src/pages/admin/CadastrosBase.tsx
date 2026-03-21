@@ -59,12 +59,12 @@ function DiagnosticCard({ title, icon: Icon, total, issues, ok }: {
       </CardHeader>
       <CardContent className="space-y-1">
         {issues.map((i, idx) => (
-          <div key={idx} className="flex items-start gap-2 text-sm text-amber-700">
+          <div key={idx} className="flex items-start gap-2 text-sm text-destructive">
             <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" /> {i}
           </div>
         ))}
         {ok.map((o, idx) => (
-          <div key={idx} className="flex items-start gap-2 text-sm text-green-700">
+          <div key={idx} className="flex items-start gap-2 text-sm text-primary">
             <CheckCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" /> {o}
           </div>
         ))}
