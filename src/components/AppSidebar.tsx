@@ -5,6 +5,7 @@ import {
   DollarSign, UserCog, ChevronLeft, ChevronRight, Target, UserCheck,
   Building2, CalendarDays, Car, FolderOpen, PackageCheck, Receipt,
   CreditCard, Wallet, UserPlus, FileCheck, HeartPulse, Banknote, Shield,
+  Database,
 } from "lucide-react";
 import { useModuleAlertCounts } from "@/hooks/useModuleAlertCounts";
 import { useAuth } from "@/contexts/AuthContext";
