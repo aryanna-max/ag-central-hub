@@ -5,6 +5,7 @@ import {
   DollarSign, UserCog, ChevronLeft, ChevronRight, Target, UserCheck,
   Building2, CalendarDays, Car, FolderOpen, PackageCheck, Receipt,
   CreditCard, Wallet, UserPlus, FileCheck, HeartPulse, Banknote, Shield,
+  Database,
 } from "lucide-react";
 import { useModuleAlertCounts } from "@/hooks/useModuleAlertCounts";
 import { useAuth } from "@/contexts/AuthContext";
@@ -77,6 +78,7 @@ const adminNavigation: SidebarItem[] = [
     label: "Administração", path: "/admin", icon: Shield,
     children: [
       { label: "Usuários", path: "/admin/usuarios", icon: UserPlus },
+      { label: "Cadastros Base", path: "/admin/cadastros", icon: Database },
     ],
   },
 ];
