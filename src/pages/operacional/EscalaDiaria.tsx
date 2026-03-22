@@ -56,7 +56,7 @@ export default function EscalaDiaria() {
   const [selectedDate, setSelectedDate] = useState(tomorrow);
   const [showAddTeam, setShowAddTeam] = useState(false);
   const [showReport, setShowReport] = useState(false);
-  const [assignForm, setAssignForm] = useState({ team_id: "", obra_id: "", vehicle_id: "" });
+  const [assignForm, setAssignForm] = useState({ team_id: "", project_id: "", vehicle_id: "" });
 
   // Edit dialog state
   const [editOpen, setEditOpen] = useState(false);
