@@ -36,7 +36,7 @@ function useActiveProjects() {
 export default function MeasurementFormDialog({ open, onOpenChange, defaultObraId }: Props) {
   const createMeasurement = useCreateMeasurement();
   const { data: teams } = useTeams();
-  const { data: obras } = useObras();
+  const { data: projects } = useActiveProjects();
 
   const [form, setForm] = useState({
     codigo_bm: "",
