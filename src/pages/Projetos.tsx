@@ -58,10 +58,10 @@ function ProjectMeasurementsTab({
 
   // Find matching obra_id by project name
   const { data: matchedObraId } = useQuery({
-    queryKey: ["obra-match", projectName],
+    queryKey: ["project-match", projectName],
     queryFn: async () => {
       const { data } = await supabase
-        .from("obras")
+        .from("projects")
         .select("id")
         .ilike("name", `%${projectName}%`)
         .eq("is_active", true)

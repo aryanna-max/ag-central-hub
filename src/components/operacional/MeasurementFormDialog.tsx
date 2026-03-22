@@ -139,11 +139,11 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
           {/* Obra e Equipe */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Obra</Label>
+              <Label>Projeto</Label>
               <Select value={form.obra_id} onValueChange={(v) => set("obra_id", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecionar obra" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecionar projeto" /></SelectTrigger>
                 <SelectContent>
-                  {obras?.map((o) => (
+                  {(projects || []).map((o: any) => (
                     <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                   ))}
                 </SelectContent>

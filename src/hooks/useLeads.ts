@@ -139,7 +139,7 @@ export function useAddLeadInteraction() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (interaction: Omit<LeadInteraction, "id" | "created_at">) => {
-      const { data, error } = await supabase.from("lead_interactions").insert(interaction).select().single();
+      const { data, error } = await supabase.from("lead_interactions" as any).insert(interaction as any).select().single();
       if (error) throw error;
       return data;
     },

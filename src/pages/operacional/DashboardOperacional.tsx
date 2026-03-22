@@ -233,7 +233,7 @@ export default function DashboardOperacional() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {unallocatedProjects!.map((obra) => (
+              {unallocatedProjects!.map((obra: any) => (
                 <div key={obra.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
                   <div>
                     <p className="text-sm font-medium">{obra.name}</p>
