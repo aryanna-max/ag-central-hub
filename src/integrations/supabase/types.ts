@@ -89,6 +89,61 @@ export type Database = {
           },
         ]
       }
+      attendance: {
+        Row: {
+          created_at: string
+          created_by_id: string | null
+          date: string
+          employee_id: string
+          id: string
+          notes: string | null
+          project_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_id?: string | null
+          date?: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          project_id?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_id?: string | null
+          date?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          project_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_events: {
         Row: {
           calendar_id: string | null
@@ -214,6 +269,7 @@ export type Database = {
           id: string
           notes: string | null
           obra_id: string | null
+          project_id: string | null
           team_id: string | null
           vehicle_id: string | null
         }
@@ -229,6 +285,7 @@ export type Database = {
           id?: string
           notes?: string | null
           obra_id?: string | null
+          project_id?: string | null
           team_id?: string | null
           vehicle_id?: string | null
         }
@@ -244,6 +301,7 @@ export type Database = {
           id?: string
           notes?: string | null
           obra_id?: string | null
+          project_id?: string | null
           team_id?: string | null
           vehicle_id?: string | null
         }
@@ -270,6 +328,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "daily_schedule_entries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "daily_schedule_entries_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -290,8 +355,10 @@ export type Database = {
           closed_at: string | null
           created_at: string
           created_by: string | null
+          created_by_id: string | null
           id: string
           is_closed: boolean
+          kanban_filled: boolean
           notes: string | null
           project_id: string | null
           schedule_date: string
@@ -301,8 +368,10 @@ export type Database = {
           closed_at?: string | null
           created_at?: string
           created_by?: string | null
+          created_by_id?: string | null
           id?: string
           is_closed?: boolean
+          kanban_filled?: boolean
           notes?: string | null
           project_id?: string | null
           schedule_date: string
@@ -312,14 +381,23 @@ export type Database = {
           closed_at?: string | null
           created_at?: string
           created_by?: string | null
+          created_by_id?: string | null
           id?: string
           is_closed?: boolean
+          kanban_filled?: boolean
           notes?: string | null
           project_id?: string | null
           schedule_date?: string
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "daily_schedules_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "daily_schedules_project_id_fkey"
             columns: ["project_id"]
@@ -541,6 +619,7 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          approved_by_id: string | null
           created_at: string
           id: string
           period_end: string
@@ -557,6 +636,7 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          approved_by_id?: string | null
           created_at?: string
           id?: string
           period_end: string
@@ -573,6 +653,7 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          approved_by_id?: string | null
           created_at?: string
           id?: string
           period_end?: string
@@ -587,6 +668,13 @@ export type Database = {
           week_year?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "field_expense_sheets_approved_by_id_fkey"
+            columns: ["approved_by_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "field_expense_sheets_project_id_fkey"
             columns: ["project_id"]
@@ -671,6 +759,7 @@ export type Database = {
           pdf_signed_url: string | null
           period_end: string
           period_start: string
+          project_id: string | null
           retencao_pct: number
           status: string
           team_id: string | null
@@ -696,6 +785,7 @@ export type Database = {
           pdf_signed_url?: string | null
           period_end: string
           period_start: string
+          project_id?: string | null
           retencao_pct?: number
           status?: string
           team_id?: string | null
@@ -721,6 +811,7 @@ export type Database = {
           pdf_signed_url?: string | null
           period_end?: string
           period_start?: string
+          project_id?: string | null
           retencao_pct?: number
           status?: string
           team_id?: string | null
@@ -733,6 +824,13 @@ export type Database = {
           valor_retencao?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "measurements_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "measurements_team_id_fkey"
             columns: ["team_id"]
@@ -1188,10 +1286,13 @@ export type Database = {
           daily_rate: number | null
           home_address: string | null
           id: string
+          is_rented: boolean
           km_current: number | null
           model: string
           owner_name: string | null
           plate: string
+          rental_end: string | null
+          rental_start: string | null
           responsible_employee_id: string | null
           status: Database["public"]["Enums"]["vehicle_status"]
           tracker_url: string | null
@@ -1205,10 +1306,13 @@ export type Database = {
           daily_rate?: number | null
           home_address?: string | null
           id?: string
+          is_rented?: boolean
           km_current?: number | null
           model: string
           owner_name?: string | null
           plate: string
+          rental_end?: string | null
+          rental_start?: string | null
           responsible_employee_id?: string | null
           status?: Database["public"]["Enums"]["vehicle_status"]
           tracker_url?: string | null
@@ -1222,10 +1326,13 @@ export type Database = {
           daily_rate?: number | null
           home_address?: string | null
           id?: string
+          is_rented?: boolean
           km_current?: number | null
           model?: string
           owner_name?: string | null
           plate?: string
+          rental_end?: string | null
+          rental_start?: string | null
           responsible_employee_id?: string | null
           status?: Database["public"]["Enums"]["vehicle_status"]
           tracker_url?: string | null
