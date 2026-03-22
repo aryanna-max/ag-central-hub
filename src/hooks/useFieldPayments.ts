@@ -1,9 +1,33 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
-export type FieldPayment = Tables<"field_payments">;
-export type FieldPaymentItem = Tables<"field_payment_items">;
+export interface FieldPayment {
+  id: string;
+  week_start: string;
+  week_end: string;
+  status: string;
+  total_value: number | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  created_at: string;
+  [key: string]: any;
+}
+
+export interface FieldPaymentItem {
+  id: string;
+  field_payment_id: string;
+  employee_id: string;
+  project_id: string | null;
+  project_name: string | null;
+  expense_type: string;
+  nature: string;
+  description: string;
+  total_value: number | null;
+  payment_status: string;
+  paid_at: string | null;
+  created_at: string;
+  [key: string]: any;
+}
 
 export type FieldPaymentStatus = "rascunho" | "submetido" | "devolvido" | "aprovada" | "paga" | "cancelada";
 
@@ -19,11 +43,11 @@ export function useFieldPayments() {
     queryKey: ["field_payments"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("field_payments")
+        .from("field_payments" as any)
         .select("*")
         .order("week_start", { ascending: false });
       if (error) throw error;
-      return data as FieldPayment[];
+      return data as unknown as FieldPayment[];
     },
   });
 }
@@ -34,20 +58,20 @@ export function useFieldPaymentWithItems(paymentId: string | null) {
     enabled: !!paymentId,
     queryFn: async () => {
       const { data: payment, error: pErr } = await supabase
-        .from("field_payments")
+        .from("field_payments" as any)
         .select("*")
         .eq("id", paymentId!)
         .single();
       if (pErr) throw pErr;
 
       const { data: items, error: iErr } = await supabase
-        .from("field_payment_items")
+        .from("field_payment_items" as any)
         .select("*, employees(name)")
         .eq("field_payment_id", paymentId!)
         .order("created_at");
       if (iErr) throw iErr;
 
-      return { payment: payment as FieldPayment, items };
+      return { payment: payment as unknown as FieldPayment, items: items as any[] };
     },
   });
 }
@@ -58,12 +82,12 @@ export function useFieldPaymentItems(paymentId: string | null) {
     enabled: !!paymentId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("field_payment_items")
+        .from("field_payment_items" as any)
         .select("*, employees(name)")
         .eq("field_payment_id", paymentId!)
         .order("created_at");
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 }
@@ -71,14 +95,14 @@ export function useFieldPaymentItems(paymentId: string | null) {
 export function useCreateFieldPayment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: TablesInsert<"field_payments">) => {
+    mutationFn: async (payload: any) => {
       const { data, error } = await supabase
-        .from("field_payments")
+        .from("field_payments" as any)
         .insert(payload)
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return data as unknown as FieldPayment;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["field_payments"] }),
   });
@@ -87,9 +111,9 @@ export function useCreateFieldPayment() {
 export function useCreateFieldPaymentItem() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: TablesInsert<"field_payment_items">) => {
+    mutationFn: async (payload: any) => {
       const { data, error } = await supabase
-        .from("field_payment_items")
+        .from("field_payment_items" as any)
         .insert(payload)
         .select()
         .single();
@@ -107,7 +131,7 @@ export function useUpdateFieldPaymentStatus() {
       const updates: any = { status };
       if (approved_by) updates.approved_by = approved_by;
       if (status === "aprovada") updates.approved_at = new Date().toISOString();
-      const { error } = await supabase.from("field_payments").update(updates).eq("id", id);
+      const { error } = await supabase.from("field_payments" as any).update(updates).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -123,7 +147,7 @@ export function useUpdateFieldPaymentItemStatus() {
     mutationFn: async ({ id, payment_status }: { id: string; payment_status: string }) => {
       const updates: any = { payment_status };
       if (payment_status === "pago") updates.paid_at = new Date().toISOString();
-      const { error } = await supabase.from("field_payment_items").update(updates).eq("id", id);
+      const { error } = await supabase.from("field_payment_items" as any).update(updates).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -136,9 +160,9 @@ export function useUpdateFieldPaymentItemStatus() {
 export function useBulkCreateFieldPaymentItems() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (items: TablesInsert<"field_payment_items">[]) => {
+    mutationFn: async (items: any[]) => {
       const { data, error } = await supabase
-        .from("field_payment_items")
+        .from("field_payment_items" as any)
         .insert(items)
         .select();
       if (error) throw error;

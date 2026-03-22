@@ -10,7 +10,7 @@ export function useMonthlySchedules(month: number, year: number) {
 
       const { data, error } = await supabase
         .from("monthly_schedules")
-        .select("*, teams(*, team_members(*, employees(*))), obras(*), vehicles(*)")
+        .select("*, teams(*, team_members(*, employees(*))), projects:project_id(id, name, client, client_name, location), vehicles(*)")
         .lte("start_date", endOfMonth)
         .gte("end_date", startOfMonth);
       if (error) throw error;
@@ -24,7 +24,7 @@ export function useCreateMonthlySchedule() {
   return useMutation({
     mutationFn: async (payload: {
       team_id: string;
-      obra_id: string;
+      project_id: string;
       start_date: string;
       end_date: string;
       month: number;
@@ -32,11 +32,12 @@ export function useCreateMonthlySchedule() {
       vehicle_id?: string;
       schedule_type?: string;
     }) => {
-      const { error } = await supabase.from("monthly_schedules").insert(payload);
+      // Also set obra_id for backward compat
+      const insertPayload: any = { ...payload, obra_id: payload.project_id };
+      const { error } = await supabase.from("monthly_schedules").insert(insertPayload);
       if (error) throw error;
 
-      // Sync to daily: create/update daily schedules for each day in range
-      await syncMonthlyToDaily(payload.team_id, payload.obra_id, payload.vehicle_id || null, payload.start_date, payload.end_date, payload.schedule_type || "mensal");
+      await syncMonthlyToDaily(payload.team_id, payload.project_id, payload.vehicle_id || null, payload.start_date, payload.end_date, payload.schedule_type || "mensal");
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["monthly-schedules"] });
@@ -54,23 +55,25 @@ export function useUpdateMonthlySchedule() {
       syncToDaily,
     }: {
       id: string;
-      updates: { team_id?: string; obra_id?: string; vehicle_id?: string };
+      updates: { team_id?: string; project_id?: string; vehicle_id?: string };
       syncToDaily?: boolean;
     }) => {
-      // Get current schedule before update
       const { data: oldSchedule } = await supabase
         .from("monthly_schedules")
         .select("*")
         .eq("id", id)
         .single();
 
+      // Also sync obra_id for backward compat
+      const dbUpdates: any = { ...updates };
+      if (updates.project_id) dbUpdates.obra_id = updates.project_id;
+
       const { error } = await supabase
         .from("monthly_schedules")
-        .update(updates)
+        .update(dbUpdates)
         .eq("id", id);
       if (error) throw error;
 
-      // Sync to open daily schedules if requested
       if (syncToDaily && oldSchedule) {
         const { data: dailySchedules } = await supabase
           .from("daily_schedules")
@@ -83,7 +86,10 @@ export function useUpdateMonthlySchedule() {
           for (const ds of dailySchedules) {
             const updatePayload: Record<string, string> = {};
             if (updates.team_id) updatePayload.team_id = updates.team_id;
-            if (updates.obra_id) updatePayload.obra_id = updates.obra_id;
+            if (updates.project_id) {
+              updatePayload.obra_id = updates.project_id;
+              (updatePayload as any).project_id = updates.project_id;
+            }
             if (updates.vehicle_id) updatePayload.vehicle_id = updates.vehicle_id;
 
             if (Object.keys(updatePayload).length > 0) {
@@ -93,7 +99,6 @@ export function useUpdateMonthlySchedule() {
                 .eq("daily_schedule_id", ds.id)
                 .eq("team_id", oldSchedule.team_id);
 
-              // Also update daily_schedule_entries
               await supabase
                 .from("daily_schedule_entries")
                 .update(updatePayload)
@@ -129,8 +134,8 @@ export function useUnallocatedProjects(month: number, year: number) {
       const startOfMonth = `${year}-${String(month).padStart(2, "0")}-01`;
       const endOfMonth = new Date(year, month, 0).toISOString().slice(0, 10);
 
-      const { data: obras, error: oErr } = await supabase
-        .from("obras")
+      const { data: projects, error: oErr } = await supabase
+        .from("projects")
         .select("*")
         .eq("is_active", true)
         .order("name");
@@ -138,13 +143,13 @@ export function useUnallocatedProjects(month: number, year: number) {
 
       const { data: schedules, error: sErr } = await supabase
         .from("monthly_schedules")
-        .select("obra_id")
+        .select("project_id")
         .lte("start_date", endOfMonth)
         .gte("end_date", startOfMonth);
       if (sErr) throw sErr;
 
-      const allocatedIds = new Set((schedules || []).map((s) => s.obra_id));
-      return (obras || []).filter((o) => !allocatedIds.has(o.id));
+      const allocatedIds = new Set((schedules || []).map((s) => s.project_id));
+      return (projects || []).filter((o) => !allocatedIds.has(o.id));
     },
   });
 }
@@ -153,13 +158,12 @@ export function useUnallocatedProjects(month: number, year: number) {
 export async function syncDailyToMonthly(
   date: string,
   teamId: string,
-  updates: { obra_id?: string; vehicle_id?: string | null }
+  updates: { project_id?: string; vehicle_id?: string | null }
 ) {
   const d = new Date(date + "T12:00:00");
   const month = d.getMonth() + 1;
   const year = d.getFullYear();
 
-  // Find monthly schedule covering this date for this team
   const { data: monthlySchedules } = await supabase
     .from("monthly_schedules")
     .select("id, start_date, end_date")
@@ -168,9 +172,11 @@ export async function syncDailyToMonthly(
     .gte("end_date", date);
 
   if (monthlySchedules?.length) {
-    // Update the first matching monthly schedule
     const updatePayload: Record<string, unknown> = {};
-    if (updates.obra_id) updatePayload.obra_id = updates.obra_id;
+    if (updates.project_id) {
+      updatePayload.project_id = updates.project_id;
+      updatePayload.obra_id = updates.project_id;
+    }
     if (updates.vehicle_id !== undefined) updatePayload.vehicle_id = updates.vehicle_id;
 
     if (Object.keys(updatePayload).length > 0) {
@@ -179,11 +185,11 @@ export async function syncDailyToMonthly(
         .update(updatePayload)
         .eq("id", monthlySchedules[0].id);
     }
-  } else if (updates.obra_id) {
-    // No monthly schedule exists - create one for this single day
+  } else if (updates.project_id) {
     await supabase.from("monthly_schedules").insert({
       team_id: teamId,
-      obra_id: updates.obra_id,
+      obra_id: updates.project_id,
+      project_id: updates.project_id,
       vehicle_id: updates.vehicle_id || null,
       month,
       year,
@@ -197,7 +203,7 @@ export async function syncDailyToMonthly(
 /** Helper to sync a monthly allocation to daily schedules */
 async function syncMonthlyToDaily(
   teamId: string,
-  obraId: string,
+  projectId: string,
   vehicleId: string | null,
   startDate: string,
   endDate: string,
@@ -208,19 +214,17 @@ async function syncMonthlyToDaily(
 
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const dow = d.getDay();
-    // Skip weekends for "mensal" type
     if (scheduleType === "mensal" && (dow === 0 || dow === 6)) continue;
 
     const dateStr = d.toISOString().slice(0, 10);
 
-    // Get or create daily schedule
     let { data: ds } = await supabase
       .from("daily_schedules")
       .select("id, is_closed")
       .eq("schedule_date", dateStr)
       .maybeSingle();
 
-    if (ds?.is_closed) continue; // Don't touch closed schedules
+    if (ds?.is_closed) continue;
 
     if (!ds) {
       const { data: created } = await supabase
@@ -233,7 +237,6 @@ async function syncMonthlyToDaily(
 
     if (!ds) continue;
 
-    // Check if assignment already exists
     const { data: existing } = await supabase
       .from("daily_team_assignments")
       .select("id")
@@ -245,7 +248,8 @@ async function syncMonthlyToDaily(
       await supabase.from("daily_team_assignments").insert({
         daily_schedule_id: ds.id,
         team_id: teamId,
-        obra_id: obraId,
+        obra_id: projectId,
+        project_id: projectId,
         vehicle_id: vehicleId,
       });
     }

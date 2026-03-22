@@ -82,12 +82,12 @@ export function useClientContacts(clientId: string | undefined) {
     enabled: !!clientId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("client_contacts")
+        .from("client_contacts" as any)
         .select("*")
         .eq("client_id", clientId!)
         .order("is_primary", { ascending: false });
       if (error) throw error;
-      return data as ClientContact[];
+      return data as unknown as ClientContact[];
     },
   });
 }
@@ -131,9 +131,9 @@ export function useCreateClientContact() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (contact: ClientContactInsert) => {
-      const { data, error } = await supabase.from("client_contacts").insert(contact).select().single();
+      const { data, error } = await supabase.from("client_contacts" as any).insert(contact as any).select().single();
       if (error) throw error;
-      return data as ClientContact;
+      return data as unknown as ClientContact;
     },
     onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ["client_contacts", vars.client_id] }),
   });
@@ -143,7 +143,7 @@ export function useDeleteClientContact() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, clientId }: { id: string; clientId: string }) => {
-      const { error } = await supabase.from("client_contacts").delete().eq("id", id);
+      const { error } = await supabase.from("client_contacts" as any).delete().eq("id", id);
       if (error) throw error;
       return clientId;
     },

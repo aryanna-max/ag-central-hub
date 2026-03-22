@@ -19,7 +19,7 @@ export function useDailySchedule(date: string) {
 
       const { data: assignments, error: assErr } = await supabase
         .from("daily_team_assignments")
-        .select("*, teams(*, team_members(*, employees(*))), obras(*), vehicles(*)")
+        .select("*, teams(*, team_members(*, employees(*))), projects:project_id(id, name, client, client_name, location), vehicles(*)")
         .eq("daily_schedule_id", schedule.id);
       if (assErr) throw assErr;
 
@@ -56,12 +56,16 @@ export function useAddTeamAssignment() {
     mutationFn: async (assignment: {
       daily_schedule_id: string;
       team_id: string;
-      obra_id?: string;
+      project_id?: string;
       vehicle_id?: string;
       notes?: string;
-      date?: string; // for monthly sync
+      date?: string;
     }) => {
-      const { date, ...insertPayload } = assignment;
+      const { date, ...rest } = assignment;
+      // Also set obra_id for backward compat
+      const insertPayload: any = { ...rest };
+      if (rest.project_id) insertPayload.obra_id = rest.project_id;
+      
       const { data, error } = await supabase
         .from("daily_team_assignments")
         .insert(insertPayload)
@@ -69,10 +73,9 @@ export function useAddTeamAssignment() {
         .single();
       if (error) throw error;
 
-      // Sync to monthly if date provided
-      if (date && assignment.obra_id) {
+      if (date && assignment.project_id) {
         await syncDailyToMonthly(date, assignment.team_id, {
-          obra_id: assignment.obra_id,
+          project_id: assignment.project_id,
           vehicle_id: assignment.vehicle_id || null,
         });
       }
@@ -96,20 +99,22 @@ export function useUpdateTeamAssignment() {
       teamId,
     }: {
       id: string;
-      updates: { obra_id?: string; vehicle_id?: string; notes?: string };
+      updates: { project_id?: string; vehicle_id?: string; notes?: string };
       date?: string;
       teamId?: string;
     }) => {
+      const dbUpdates: any = { ...updates };
+      if (updates.project_id) dbUpdates.obra_id = updates.project_id;
+
       const { error } = await supabase
         .from("daily_team_assignments")
-        .update(updates)
+        .update(dbUpdates)
         .eq("id", id);
       if (error) throw error;
 
-      // Sync to monthly
       if (date && teamId) {
         await syncDailyToMonthly(date, teamId, {
-          obra_id: updates.obra_id,
+          project_id: updates.project_id,
           vehicle_id: updates.vehicle_id || null,
         });
       }
@@ -142,13 +147,16 @@ export function useAddDailyEntry() {
       daily_schedule_id: string;
       employee_id: string;
       team_id?: string;
-      obra_id?: string;
+      project_id?: string;
       vehicle_id?: string;
       daily_team_assignment_id?: string;
     }) => {
+      const insertPayload: any = { ...entry };
+      if (entry.project_id) insertPayload.obra_id = entry.project_id;
+
       const { data, error } = await supabase
         .from("daily_schedule_entries")
-        .insert(entry)
+        .insert(insertPayload)
         .select()
         .single();
       if (error) throw error;
@@ -239,12 +247,15 @@ export function usePreFillFromMonthly() {
           continue;
         }
 
+        const projectId = ms.project_id || ms.obra_id;
+
         const { error } = await supabase
           .from("daily_team_assignments")
           .insert({
             daily_schedule_id: scheduleId,
             team_id: ms.team_id,
-            obra_id: ms.obra_id,
+            obra_id: projectId,
+            project_id: projectId,
             vehicle_id: ms.vehicle_id,
           });
         if (error && !error.message.includes("duplicate")) throw error;
@@ -257,7 +268,7 @@ export function usePreFillFromMonthly() {
               daily_schedule_id: scheduleId,
               employee_id: member.employee_id,
               team_id: ms.team_id,
-              obra_id: ms.obra_id,
+              obra_id: projectId,
               vehicle_id: ms.vehicle_id,
             });
           if (entErr && !entErr.message.includes("duplicate")) {
