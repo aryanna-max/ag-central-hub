@@ -373,9 +373,9 @@ export default function EscalaMensal() {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Obra/Projeto</label>
-              <Select value={form.obra_id} onValueChange={(v) => setForm({ ...form, obra_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecionar obra..." /></SelectTrigger>
+              <label className="text-sm font-medium mb-1 block">Projeto</label>
+              <Select value={form.project_id} onValueChange={(v) => setForm({ ...form, project_id: v })}>
+                <SelectTrigger><SelectValue placeholder="Selecionar projeto..." /></SelectTrigger>
                 <SelectContent>
                   {(obras || []).map((o: any) => (
                     <SelectItem key={o.id} value={o.id}>{o.name} {o.client ? `(${o.client})` : ""}</SelectItem>
