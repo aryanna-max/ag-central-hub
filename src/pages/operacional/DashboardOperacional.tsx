@@ -207,7 +207,7 @@ export default function DashboardOperacional() {
               <p className="text-sm text-muted-foreground">Nenhum projeto ativo.</p>
             ) : (
               <div className="space-y-2">
-                {(obras || []).map((obra) => (
+                {(obras || []).map((obra: any) => (
                   <div key={obra.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
                     <div>
                       <p className="text-sm font-medium">{obra.name}</p>
