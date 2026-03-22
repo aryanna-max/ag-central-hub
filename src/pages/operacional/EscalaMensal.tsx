@@ -38,7 +38,7 @@ export default function EscalaMensal() {
   const [showReport, setShowReport] = useState(false);
   const [form, setForm] = useState({
     team_id: "",
-    obra_id: "",
+    project_id: "",
     vehicle_id: "",
     schedule_type: "mensal" as "mensal" | "diaria",
     start_date: undefined as Date | undefined,
