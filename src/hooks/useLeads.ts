@@ -87,12 +87,12 @@ export function useLeadInteractions(leadId: string | undefined) {
     enabled: !!leadId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("lead_interactions")
+        .from("lead_interactions" as any)
         .select("*")
         .eq("lead_id", leadId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as LeadInteraction[];
+      return data as unknown as LeadInteraction[];
     },
   });
 }
