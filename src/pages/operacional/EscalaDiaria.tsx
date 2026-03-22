@@ -111,12 +111,12 @@ export default function EscalaDiaria() {
       await addAssignment.mutateAsync({
         daily_schedule_id: schedule.id,
         team_id: assignForm.team_id,
-        obra_id: assignForm.obra_id || undefined,
+        project_id: assignForm.project_id || undefined,
         vehicle_id: assignForm.vehicle_id || undefined,
         date: selectedDate,
       });
       setShowAddTeam(false);
-      setAssignForm({ team_id: "", obra_id: "", vehicle_id: "" });
+      setAssignForm({ team_id: "", project_id: "", vehicle_id: "" });
       toast.success("Equipe adicionada à escala!");
     } catch {
       toast.error("Erro ao adicionar equipe");

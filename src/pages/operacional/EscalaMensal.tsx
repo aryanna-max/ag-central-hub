@@ -66,11 +66,11 @@ export default function EscalaMensal() {
   const updateSchedule = useUpdateMonthlySchedule();
 
   const handleCreate = () => {
-    if (!form.team_id || !form.obra_id || !form.start_date || !form.end_date) return;
+    if (!form.team_id || !form.project_id || !form.start_date || !form.end_date) return;
     createSchedule.mutate(
       {
         team_id: form.team_id,
-        obra_id: form.obra_id,
+        project_id: form.project_id,
         vehicle_id: form.vehicle_id && form.vehicle_id !== "none" ? form.vehicle_id : undefined,
         schedule_type: form.schedule_type,
         start_date: format(form.start_date, "yyyy-MM-dd"),
@@ -81,7 +81,7 @@ export default function EscalaMensal() {
       {
         onSuccess: () => {
           setShowNew(false);
-          setForm({ team_id: "", obra_id: "", vehicle_id: "", schedule_type: "mensal", start_date: undefined, end_date: undefined });
+          setForm({ team_id: "", project_id: "", vehicle_id: "", schedule_type: "mensal", start_date: undefined, end_date: undefined });
           toast.success("Alocação criada!");
         },
         onError: () => toast.error("Erro ao criar alocação."),
