@@ -46,7 +46,7 @@ export default function DashboardOperacional() {
   const { data: employees } = useEmployeesWithAbsences(today);
   const { data: teams } = useTeams();
   const { data: vehicles } = useVehicles();
-  const { data: obras } = useObras();
+  const { data: obras } = useActiveProjects();
   const { data: unallocatedProjects } = useUnallocatedProjects(currentMonth, currentYear);
   const stats = useMemo(() => {
     const emps = employees || [];
