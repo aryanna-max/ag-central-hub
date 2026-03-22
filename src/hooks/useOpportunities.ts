@@ -108,9 +108,9 @@ export function useCreateOpportunity() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (opp: OpportunityInsert) => {
-      const { data, error } = await supabase.from("opportunities").insert(opp).select().single();
+      const { data, error } = await supabase.from("opportunities" as any).insert(opp as any).select().single();
       if (error) throw error;
-      return data as Opportunity;
+      return data as unknown as Opportunity;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["opportunities"] }),
   });
