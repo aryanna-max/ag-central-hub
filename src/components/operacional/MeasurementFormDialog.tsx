@@ -18,12 +18,12 @@ interface Props {
   defaultObraId?: string;
 }
 
-function useObras() {
+function useActiveProjects() {
   return useQuery({
-    queryKey: ["obras-active"],
+    queryKey: ["projects-active"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("obras")
+        .from("projects")
         .select("id, name")
         .eq("is_active", true)
         .order("name");
