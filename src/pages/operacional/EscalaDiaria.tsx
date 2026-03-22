@@ -35,12 +35,12 @@ import { useUpdateMonthlySchedule } from "@/hooks/useMonthlySchedules";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
 
-function useObrasList() {
+function useProjectsList() {
   return useQuery({
-    queryKey: ["obras"],
+    queryKey: ["projects-active"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("obras")
+        .from("projects")
         .select("*")
         .eq("is_active", true)
         .order("name");
