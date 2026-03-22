@@ -95,11 +95,11 @@ export function useOpportunities() {
     queryKey: ["opportunities"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("opportunities")
+        .from("opportunities" as any)
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Opportunity[];
+      return data as unknown as Opportunity[];
     },
   });
 }
