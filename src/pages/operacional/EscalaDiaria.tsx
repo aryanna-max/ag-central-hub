@@ -35,12 +35,12 @@ import { useUpdateMonthlySchedule } from "@/hooks/useMonthlySchedules";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
 
-function useObrasList() {
+function useProjectsList() {
   return useQuery({
-    queryKey: ["obras"],
+    queryKey: ["projects-active"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("obras")
+        .from("projects")
         .select("*")
         .eq("is_active", true)
         .order("name");
@@ -56,7 +56,7 @@ export default function EscalaDiaria() {
   const [selectedDate, setSelectedDate] = useState(tomorrow);
   const [showAddTeam, setShowAddTeam] = useState(false);
   const [showReport, setShowReport] = useState(false);
-  const [assignForm, setAssignForm] = useState({ team_id: "", obra_id: "", vehicle_id: "" });
+  const [assignForm, setAssignForm] = useState({ team_id: "", project_id: "", vehicle_id: "" });
 
   // Edit dialog state
   const [editOpen, setEditOpen] = useState(false);
@@ -81,7 +81,7 @@ export default function EscalaDiaria() {
       return data || [];
     },
   });
-  const { data: obrasData } = useObrasList();
+  const { data: obrasData } = useProjectsList();
   const createSchedule = useCreateDailySchedule();
   const addAssignment = useAddTeamAssignment();
   const removeAssignment = useRemoveTeamAssignment();
@@ -111,12 +111,12 @@ export default function EscalaDiaria() {
       await addAssignment.mutateAsync({
         daily_schedule_id: schedule.id,
         team_id: assignForm.team_id,
-        obra_id: assignForm.obra_id || undefined,
+        project_id: assignForm.project_id || undefined,
         vehicle_id: assignForm.vehicle_id || undefined,
         date: selectedDate,
       });
       setShowAddTeam(false);
-      setAssignForm({ team_id: "", obra_id: "", vehicle_id: "" });
+      setAssignForm({ team_id: "", project_id: "", vehicle_id: "" });
       toast.success("Equipe adicionada à escala!");
     } catch {
       toast.error("Erro ao adicionar equipe");

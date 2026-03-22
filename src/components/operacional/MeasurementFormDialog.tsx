@@ -18,12 +18,12 @@ interface Props {
   defaultObraId?: string;
 }
 
-function useObras() {
+function useActiveProjects() {
   return useQuery({
-    queryKey: ["obras-active"],
+    queryKey: ["projects-active"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("obras")
+        .from("projects")
         .select("id, name")
         .eq("is_active", true)
         .order("name");
@@ -36,7 +36,7 @@ function useObras() {
 export default function MeasurementFormDialog({ open, onOpenChange, defaultObraId }: Props) {
   const createMeasurement = useCreateMeasurement();
   const { data: teams } = useTeams();
-  const { data: obras } = useObras();
+  const { data: projects } = useActiveProjects();
 
   const [form, setForm] = useState({
     codigo_bm: "",
@@ -139,11 +139,11 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
           {/* Obra e Equipe */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Obra</Label>
+              <Label>Projeto</Label>
               <Select value={form.obra_id} onValueChange={(v) => set("obra_id", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecionar obra" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecionar projeto" /></SelectTrigger>
                 <SelectContent>
-                  {obras?.map((o) => (
+                  {(projects || []).map((o: any) => (
                     <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                   ))}
                 </SelectContent>

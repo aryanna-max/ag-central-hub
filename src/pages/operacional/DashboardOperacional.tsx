@@ -28,11 +28,11 @@ const PIE_COLORS = [
   "hsl(0, 0%, 48%)",
 ];
 
-function useObras() {
+function useActiveProjects() {
   return useQuery({
-    queryKey: ["obras"],
+    queryKey: ["projects-active"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("obras").select("*").eq("is_active", true).order("name");
+      const { data, error } = await supabase.from("projects").select("*").eq("is_active", true).order("name");
       if (error) throw error;
       return data;
     },
@@ -46,7 +46,7 @@ export default function DashboardOperacional() {
   const { data: employees } = useEmployeesWithAbsences(today);
   const { data: teams } = useTeams();
   const { data: vehicles } = useVehicles();
-  const { data: obras } = useObras();
+  const { data: obras } = useActiveProjects();
   const { data: unallocatedProjects } = useUnallocatedProjects(currentMonth, currentYear);
   const stats = useMemo(() => {
     const emps = employees || [];
@@ -207,7 +207,7 @@ export default function DashboardOperacional() {
               <p className="text-sm text-muted-foreground">Nenhum projeto ativo.</p>
             ) : (
               <div className="space-y-2">
-                {(obras || []).map((obra) => (
+                {(obras || []).map((obra: any) => (
                   <div key={obra.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
                     <div>
                       <p className="text-sm font-medium">{obra.name}</p>
@@ -233,7 +233,7 @@ export default function DashboardOperacional() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {unallocatedProjects!.map((obra) => (
+              {unallocatedProjects!.map((obra: any) => (
                 <div key={obra.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
                   <div>
                     <p className="text-sm font-medium">{obra.name}</p>

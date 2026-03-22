@@ -59,9 +59,9 @@ export default function MonthlyDayEditDialog({
   const { data: vehicles } = useVehicles();
   const { data: allEmployees } = useEmployees();
   const { data: obras } = useQuery({
-    queryKey: ["obras"],
+    queryKey: ["projects-active"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("obras").select("*").eq("is_active", true).order("name");
+      const { data, error } = await supabase.from("projects").select("*").eq("is_active", true).order("name");
       if (error) throw error;
       return data;
     },

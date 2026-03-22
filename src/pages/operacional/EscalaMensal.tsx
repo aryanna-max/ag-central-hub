@@ -38,7 +38,7 @@ export default function EscalaMensal() {
   const [showReport, setShowReport] = useState(false);
   const [form, setForm] = useState({
     team_id: "",
-    obra_id: "",
+    project_id: "",
     vehicle_id: "",
     schedule_type: "mensal" as "mensal" | "diaria",
     start_date: undefined as Date | undefined,
@@ -52,9 +52,9 @@ export default function EscalaMensal() {
   const { data: teams } = useTeams();
   const { data: vehicles } = useVehicles();
   const { data: obras } = useQuery({
-    queryKey: ["obras"],
+    queryKey: ["projects-active"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("obras").select("*").eq("is_active", true).order("name");
+      const { data, error } = await supabase.from("projects").select("*").eq("is_active", true).order("name");
       if (error) throw error;
       return data;
     },
@@ -66,11 +66,11 @@ export default function EscalaMensal() {
   const updateSchedule = useUpdateMonthlySchedule();
 
   const handleCreate = () => {
-    if (!form.team_id || !form.obra_id || !form.start_date || !form.end_date) return;
+    if (!form.team_id || !form.project_id || !form.start_date || !form.end_date) return;
     createSchedule.mutate(
       {
         team_id: form.team_id,
-        obra_id: form.obra_id,
+        project_id: form.project_id,
         vehicle_id: form.vehicle_id && form.vehicle_id !== "none" ? form.vehicle_id : undefined,
         schedule_type: form.schedule_type,
         start_date: format(form.start_date, "yyyy-MM-dd"),
@@ -81,7 +81,7 @@ export default function EscalaMensal() {
       {
         onSuccess: () => {
           setShowNew(false);
-          setForm({ team_id: "", obra_id: "", vehicle_id: "", schedule_type: "mensal", start_date: undefined, end_date: undefined });
+          setForm({ team_id: "", project_id: "", vehicle_id: "", schedule_type: "mensal", start_date: undefined, end_date: undefined });
           toast.success("Alocação criada!");
         },
         onError: () => toast.error("Erro ao criar alocação."),

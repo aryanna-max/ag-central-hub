@@ -95,11 +95,11 @@ export function useOpportunities() {
     queryKey: ["opportunities"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("opportunities")
+        .from("opportunities" as any)
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Opportunity[];
+      return data as unknown as Opportunity[];
     },
   });
 }
@@ -108,9 +108,9 @@ export function useCreateOpportunity() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (opp: OpportunityInsert) => {
-      const { data, error } = await supabase.from("opportunities").insert(opp).select().single();
+      const { data, error } = await supabase.from("opportunities" as any).insert(opp as any).select().single();
       if (error) throw error;
-      return data as Opportunity;
+      return data as unknown as Opportunity;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["opportunities"] }),
   });
@@ -120,9 +120,9 @@ export function useUpdateOpportunity() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Opportunity> & { id: string }) => {
-      const { data, error } = await supabase.from("opportunities").update(updates).eq("id", id).select().single();
+      const { data, error } = await supabase.from("opportunities" as any).update(updates as any).eq("id", id).select().single();
       if (error) throw error;
-      return data as Opportunity;
+      return data as unknown as Opportunity;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["opportunities"] }),
   });
@@ -132,7 +132,7 @@ export function useDeleteOpportunity() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("opportunities").delete().eq("id", id);
+      const { error } = await supabase.from("opportunities" as any).delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["opportunities"] }),
