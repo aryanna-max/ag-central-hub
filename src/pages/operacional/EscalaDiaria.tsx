@@ -81,7 +81,7 @@ export default function EscalaDiaria() {
       return data || [];
     },
   });
-  const { data: obrasData } = useObrasList();
+  const { data: obrasData } = useProjectsList();
   const createSchedule = useCreateDailySchedule();
   const addAssignment = useAddTeamAssignment();
   const removeAssignment = useRemoveTeamAssignment();
