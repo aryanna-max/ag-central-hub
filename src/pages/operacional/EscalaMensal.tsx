@@ -458,7 +458,7 @@ export default function EscalaMensal() {
             <Button variant="outline" onClick={() => setShowNew(false)}>Cancelar</Button>
             <Button
               onClick={handleCreate}
-              disabled={!form.team_id || !form.obra_id || !form.start_date || !form.end_date || createSchedule.isPending}
+              disabled={!form.team_id || !form.project_id || !form.start_date || !form.end_date || createSchedule.isPending}
             >
               Alocar Equipe
             </Button>

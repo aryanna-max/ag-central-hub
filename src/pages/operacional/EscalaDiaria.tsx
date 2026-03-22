@@ -563,8 +563,8 @@ export default function EscalaDiaria() {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Obra/Projeto</label>
-              <Select value={assignForm.obra_id} onValueChange={(v) => setAssignForm({ ...assignForm, obra_id: v })}>
+              <label className="text-sm font-medium mb-1 block">Projeto</label>
+              <Select value={assignForm.project_id} onValueChange={(v) => setAssignForm({ ...assignForm, project_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Selecionar obra..." /></SelectTrigger>
                 <SelectContent>
                   {(obrasData || []).map((o: any) => (
