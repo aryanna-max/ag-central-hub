@@ -208,7 +208,15 @@ export default function Projetos() {
         end_date: editForm.end_date,
         empresa_faturadora: editForm.empresa_faturadora,
         tipo_documento: editForm.tipo_documento,
-      });
+        cnpj: (editForm as any).cnpj,
+        empresa_emissora: (editForm as any).empresa_emissora,
+        conta_bancaria: (editForm as any).conta_bancaria,
+        modalidade_faturamento: (editForm as any).modalidade_faturamento,
+        referencia_contrato: (editForm as any).referencia_contrato,
+        instrucao_faturamento_variavel: (editForm as any).instrucao_faturamento_variavel,
+        contato_engenheiro: (editForm as any).contato_engenheiro,
+        contato_financeiro: (editForm as any).contato_financeiro,
+      } as any);
       toast.success("Projeto atualizado");
       setSelectedProject(null);
     } catch {
