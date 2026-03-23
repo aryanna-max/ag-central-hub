@@ -24,6 +24,7 @@ export default function RH() {
     <Routes>
       <Route index element={<Navigate to="funcionarios" replace />} />
       <Route path="funcionarios" element={<Funcionarios />} />
+      <Route path="ausencias" element={<RelatorioAusencias />} />
       <Route path="documentos" element={<RHPlaceholder />} />
       <Route path="exames" element={<RHPlaceholder />} />
       <Route path="*" element={<Navigate to="funcionarios" replace />} />

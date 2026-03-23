@@ -115,6 +115,9 @@ export default function Equipes() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Equipes</h1>
             <p className="text-sm text-muted-foreground">Equipes de campo: 1 topógrafo + até 2 auxiliares + veículo</p>
+            <Badge variant="outline" className="mt-1 text-[10px] text-amber-600 border-amber-300 bg-amber-50">
+              ⚠ Equipe é agrupamento temporário para facilitar escala, não vínculo fixo
+            </Badge>
           </div>
         </div>
         <div className="flex items-center gap-2">
