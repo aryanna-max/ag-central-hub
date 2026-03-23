@@ -5,8 +5,10 @@ export type ProjectStatus = "planejamento" | "execucao" | "entrega" | "faturamen
 
 export interface Project {
   id: string;
+  codigo: string | null;
   name: string;
   client: string | null;
+  client_name: string | null;
   client_cnpj: string | null;
   service: string | null;
   contract_value: number | null;
@@ -20,6 +22,15 @@ export interface Project {
   end_date: string | null;
   empresa_faturadora: string;
   tipo_documento: string;
+  cnpj: string | null;
+  empresa_emissora: string | null;
+  conta_bancaria: string | null;
+  contato_engenheiro: string | null;
+  contato_financeiro: string | null;
+  modalidade_faturamento: string | null;
+  referencia_contrato: string | null;
+  instrucao_faturamento_variavel: boolean | null;
+  is_active: boolean | null;
   created_at: string;
   updated_at: string;
 }
@@ -50,7 +61,7 @@ export function useProjects() {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Project[];
+      return data as unknown as Project[];
     },
   });
 }
@@ -58,10 +69,24 @@ export function useProjects() {
 export function useCreateProject() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (project: ProjectInsert) => {
-      const { data, error } = await supabase.from("projects").insert(project).select().single();
+    mutationFn: async (project: ProjectInsert & { client_codigo?: string }) => {
+      let codigo: string | undefined;
+      if (project.client_codigo) {
+        const year = new Date().getFullYear();
+        const prefix = `${year}-${project.client_codigo}-`;
+        // Count existing projects for this client+year
+        const { data: existing } = await supabase
+          .from("projects")
+          .select("codigo")
+          .like("codigo" as any, `${prefix}%`);
+        const seq = (existing?.length || 0) + 1;
+        codigo = `${prefix}${String(seq).padStart(3, "0")}`;
+      }
+      const { client_codigo, ...rest } = project;
+      const payload = { ...rest, ...(codigo ? { codigo } : {}) };
+      const { data, error } = await supabase.from("projects").insert(payload as any).select().single();
       if (error) throw error;
-      return data as Project;
+      return data as unknown as Project;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
   });
@@ -71,9 +96,9 @@ export function useUpdateProject() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Project> & { id: string }) => {
-      const { data, error } = await supabase.from("projects").update(updates).eq("id", id).select().single();
+      const { data, error } = await supabase.from("projects").update(updates as any).eq("id", id).select().single();
       if (error) throw error;
-      return data as Project;
+      return data as unknown as Project;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
   });

@@ -294,6 +294,9 @@ export default function Projetos() {
                     }`}
                   >
                     <CardContent className="p-3 space-y-2">
+                      {project.codigo && (
+                        <p className="text-[10px] font-mono font-bold text-primary">{project.codigo}</p>
+                      )}
                       <div className="flex items-start gap-1.5">
                         <GripVertical className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0 cursor-grab" />
                         <div className="flex-1 min-w-0">
@@ -330,6 +333,13 @@ export default function Projetos() {
           </SheetHeader>
           {selectedProject && (
             <Tabs defaultValue="dados" className="mt-4">
+              {selectedProject.codigo && (
+                <div className="mb-3 px-1">
+                  <span className="font-mono text-sm font-bold text-primary bg-primary/10 px-2 py-1 rounded">
+                    {selectedProject.codigo}
+                  </span>
+                </div>
+              )}
               <TabsList className="w-full">
                 <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
                 <TabsTrigger value="medicoes" className="flex-1">Medições</TabsTrigger>

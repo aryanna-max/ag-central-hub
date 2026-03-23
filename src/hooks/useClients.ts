@@ -13,6 +13,7 @@ export const SEGMENTOS = [
 
 export interface Client {
   id: string;
+  codigo: string | null;
   name: string;
   cnpj: string | null;
   email: string | null;
@@ -21,6 +22,9 @@ export interface Client {
   city: string | null;
   state: string | null;
   segmento: string | null;
+  tipo: string | null;
+  contato_engenheiro: string | null;
+  contato_financeiro: string | null;
   notes: string | null;
   is_active: boolean;
   lead_id: string | null;
@@ -29,6 +33,7 @@ export interface Client {
 }
 
 export interface ClientInsert {
+  codigo?: string | null;
   name: string;
   cnpj?: string | null;
   email?: string | null;
@@ -37,6 +42,9 @@ export interface ClientInsert {
   city?: string | null;
   state?: string | null;
   segmento?: string | null;
+  tipo?: string | null;
+  contato_engenheiro?: string | null;
+  contato_financeiro?: string | null;
   notes?: string | null;
   is_active?: boolean;
   lead_id?: string | null;
