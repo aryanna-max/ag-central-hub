@@ -411,5 +411,3 @@ export default function DailyReportDialog({
   );
 }
 
-// Need toast import for the confirmed button
-import { toast } from "sonner";
