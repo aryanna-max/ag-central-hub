@@ -79,6 +79,7 @@ const adminNavigation: SidebarItem[] = [
     children: [
       { label: "Usuários", path: "/admin/usuarios", icon: UserPlus },
       { label: "Cadastros Base", path: "/admin/cadastros", icon: Database },
+      { label: "Clientes", path: "/admin/clientes", icon: Building2 },
     ],
   },
 ];
