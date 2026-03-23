@@ -5,8 +5,10 @@ export type ProjectStatus = "planejamento" | "execucao" | "entrega" | "faturamen
 
 export interface Project {
   id: string;
+  codigo: string | null;
   name: string;
   client: string | null;
+  client_name: string | null;
   client_cnpj: string | null;
   service: string | null;
   contract_value: number | null;
@@ -20,6 +22,15 @@ export interface Project {
   end_date: string | null;
   empresa_faturadora: string;
   tipo_documento: string;
+  cnpj: string | null;
+  empresa_emissora: string | null;
+  conta_bancaria: string | null;
+  contato_engenheiro: string | null;
+  contato_financeiro: string | null;
+  modalidade_faturamento: string | null;
+  referencia_contrato: string | null;
+  instrucao_faturamento_variavel: boolean | null;
+  is_active: boolean | null;
   created_at: string;
   updated_at: string;
 }
