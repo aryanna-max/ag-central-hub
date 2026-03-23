@@ -67,6 +67,7 @@ const navigation: SidebarItem[] = [
     label: "RH", path: "/rh", icon: UserCog,
     children: [
       { label: "Funcionários", path: "/rh/funcionarios", icon: UserPlus },
+      { label: "Ausências", path: "/rh/ausencias", icon: FileCheck },
       { label: "Documentos", path: "/rh/documentos", icon: FileCheck },
       { label: "Exames", path: "/rh/exames", icon: HeartPulse },
     ],
