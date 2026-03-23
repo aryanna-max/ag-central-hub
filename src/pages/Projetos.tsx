@@ -293,19 +293,19 @@ export default function Projetos() {
                       draggedId === project.id ? "opacity-40" : ""
                     }`}
                   >
-                      <div className="p-3 space-y-2">
-                        {project.codigo && (
-                          <p className="text-[10px] font-mono font-bold text-primary">{project.codigo}</p>
-                        )}
-                        <div className="flex items-start gap-1.5">
-                          <GripVertical className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0 cursor-grab" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">{project.client || project.name}</p>
-                            {project.service && (
-                              <p className="text-xs text-muted-foreground truncate">{project.service}</p>
-                            )}
-                          </div>
+                    <CardContent className="p-3 space-y-2">
+                      {project.codigo && (
+                        <p className="text-[10px] font-mono font-bold text-primary">{project.codigo}</p>
+                      )}
+                      <div className="flex items-start gap-1.5">
+                        <GripVertical className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0 cursor-grab" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{project.client || project.name}</p>
+                          {project.service && (
+                            <p className="text-xs text-muted-foreground truncate">{project.service}</p>
+                          )}
                         </div>
+                      </div>
                       <div className="flex items-center justify-between gap-1">
                         <span className="text-xs font-semibold text-foreground">
                           {formatCurrency(project.contract_value)}
