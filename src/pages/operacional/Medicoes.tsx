@@ -54,7 +54,7 @@ export default function Medicoes() {
         const q = filterSearch.toLowerCase();
         if (
           !m.codigo_bm.toLowerCase().includes(q) &&
-          !(m.obra_name || "").toLowerCase().includes(q) &&
+          !(m.project_name || "").toLowerCase().includes(q) &&
           !(m.team_name || "").toLowerCase().includes(q)
         )
           return false;
