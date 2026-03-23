@@ -21,6 +21,7 @@ import ResetPassword from "./pages/auth/ResetPassword";
 import ChangePassword from "./pages/auth/ChangePassword";
 import UserManagement from "./pages/admin/UserManagement";
 import CadastrosBase from "./pages/admin/CadastrosBase";
+import AdminClientes from "./pages/admin/Clientes";
 
 const queryClient = new QueryClient();
 
