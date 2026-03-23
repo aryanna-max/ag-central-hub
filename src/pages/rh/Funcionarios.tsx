@@ -8,12 +8,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Search, Plus, Users, MoreVertical, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 import type { Employee } from "@/hooks/useEmployees";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -25,6 +27,14 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 const PAGE_SIZE = 20;
+
+function validateMatricula(value: string): string | null {
+  if (!value) return null;
+  const trimmed = value.trim().toUpperCase();
+  if (/^000\d{3}$/.test(trimmed)) return null; // CLT valid
+  if (/^PREST-\d{3}$/.test(trimmed)) return null; // Prestador valid
+  return "Matrícula deve ser formato 000XXX (CLT) ou PREST-XXX (prestador)";
+}
 
 export default function Funcionarios() {
   const { data: employees = [], isLoading } = useEmployees();
@@ -43,12 +53,20 @@ export default function Funcionarios() {
   const [newRole, setNewRole] = useState("");
   const [newAdmission, setNewAdmission] = useState("");
   const [newStatus, setNewStatus] = useState("disponivel");
+  const [newMatricula, setNewMatricula] = useState("");
+  const [newCpf, setNewCpf] = useState("");
+  const [newHasVt, setNewHasVt] = useState(false);
+  const [newVtCash, setNewVtCash] = useState(false);
+  const [newVtValue, setNewVtValue] = useState("");
 
   // Edit dialog
   const [editEmp, setEditEmp] = useState<Employee | null>(null);
   const [editName, setEditName] = useState("");
   const [editRole, setEditRole] = useState("");
   const [editAdmission, setEditAdmission] = useState("");
+  const [editHasVt, setEditHasVt] = useState(false);
+  const [editVtCash, setEditVtCash] = useState(false);
+  const [editVtValue, setEditVtValue] = useState("");
 
   // Status change dialog
   const [statusEmp, setStatusEmp] = useState<Employee | null>(null);
@@ -89,19 +107,43 @@ export default function Funcionarios() {
     { label: "Afastados / Férias", value: afastadosFeriasCount, color: "text-red-600" },
   ];
 
+  const getTypeBadge = (matricula?: string | null) => {
+    if (!matricula) return null;
+    if (matricula.startsWith("000")) return <Badge className="bg-blue-600 text-white text-[10px] px-1.5">CLT</Badge>;
+    if (matricula.toUpperCase().startsWith("PREST")) return <Badge className="bg-muted text-muted-foreground text-[10px] px-1.5">PREST</Badge>;
+    return null;
+  };
+
   // Handlers
   const handleCreate = async () => {
     if (!newName.trim()) { toast.error("Nome é obrigatório"); return; }
+    const matError = validateMatricula(newMatricula);
+    if (newMatricula && matError) { toast.error(matError); return; }
+    // CPF uniqueness
+    if (newCpf.trim()) {
+      const existing = employees.find(e => e.cpf === newCpf.trim());
+      if (existing) { toast.error(`CPF já cadastrado: ${existing.name}`); return; }
+    }
     try {
       await createEmployee.mutateAsync({
         name: newName.trim(),
-        role: newRole.trim() || "Ajudante",
+        role: newRole.trim() || "Ajudante de Topografia",
         admission_date: newAdmission || null,
         status: newStatus as any,
-      });
+        matricula: newMatricula.trim().toUpperCase() || null,
+        cpf: newCpf.trim() || null,
+      } as any);
+      // Update VT fields separately (not in types yet)
+      if (newHasVt) {
+        const { data: created } = await supabase.from("employees").select("id").eq("name", newName.trim()).order("created_at", { ascending: false }).limit(1).single();
+        if (created) {
+          await supabase.from("employees").update({ has_vt: newHasVt, vt_cash: newVtCash, vt_value: Number(newVtValue) || 0 } as any).eq("id", created.id);
+        }
+      }
       toast.success("Funcionário cadastrado!");
       setShowNew(false);
       setNewName(""); setNewRole(""); setNewAdmission(""); setNewStatus("disponivel");
+      setNewMatricula(""); setNewCpf(""); setNewHasVt(false); setNewVtCash(false); setNewVtValue("");
     } catch { toast.error("Erro ao cadastrar"); }
   };
 
@@ -110,6 +152,9 @@ export default function Funcionarios() {
     setEditName(emp.name);
     setEditRole(emp.role);
     setEditAdmission(emp.admission_date || "");
+    setEditHasVt((emp as any).has_vt || false);
+    setEditVtCash((emp as any).vt_cash || false);
+    setEditVtValue(String((emp as any).vt_value || ""));
   };
 
   const handleEdit = async () => {
@@ -118,9 +163,15 @@ export default function Funcionarios() {
       await updateEmployee.mutateAsync({
         id: editEmp.id,
         name: editName.trim(),
-        role: editRole.trim() || "Ajudante",
+        role: editRole.trim() || "Ajudante de Topografia",
         admission_date: editAdmission || null,
       });
+      // Update VT fields
+      await supabase.from("employees").update({
+        has_vt: editHasVt,
+        vt_cash: editVtCash,
+        vt_value: Number(editVtValue) || 0,
+      } as any).eq("id", editEmp.id);
       toast.success("Funcionário atualizado!");
       setEditEmp(null);
     } catch { toast.error("Erro ao atualizar"); }
@@ -184,7 +235,7 @@ export default function Funcionarios() {
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nome..."
+              placeholder="Buscar por nome, CPF ou matrícula..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               className="pl-9"
@@ -233,6 +284,7 @@ export default function Funcionarios() {
                 <TableHeader>
                   <TableRow>
                      <TableHead>Matrícula</TableHead>
+                     <TableHead>Tipo</TableHead>
                      <TableHead>Nome</TableHead>
                      <TableHead>Função</TableHead>
                      <TableHead>Admissão</TableHead>
@@ -246,6 +298,7 @@ export default function Funcionarios() {
                     return (
                       <TableRow key={emp.id}>
                          <TableCell className="font-mono text-xs text-muted-foreground">{emp.matricula || "—"}</TableCell>
+                         <TableCell>{getTypeBadge(emp.matricula)}</TableCell>
                          <TableCell className="font-medium">{emp.name}</TableCell>
                         <TableCell>{emp.role}</TableCell>
                         <TableCell>
@@ -325,7 +378,7 @@ export default function Funcionarios() {
 
       {/* Dialog: Novo Funcionário */}
       <Dialog open={showNew} onOpenChange={setShowNew}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Novo Funcionário</DialogTitle>
           </DialogHeader>
@@ -333,6 +386,15 @@ export default function Funcionarios() {
             <div>
               <Label>Nome *</Label>
               <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nome completo" />
+            </div>
+            <div>
+              <Label>CPF</Label>
+              <Input value={newCpf} onChange={(e) => setNewCpf(e.target.value)} placeholder="000.000.000-00" />
+            </div>
+            <div>
+              <Label>Matrícula</Label>
+              <Input value={newMatricula} onChange={(e) => setNewMatricula(e.target.value.toUpperCase())} placeholder="000XXX ou PREST-XXX" maxLength={10} />
+              <p className="text-[10px] text-muted-foreground mt-0.5">CLT: 000XXX (6 dígitos) | Prestador: PREST-XXX</p>
             </div>
             <div>
               <Label>Função</Label>
@@ -354,6 +416,25 @@ export default function Funcionarios() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="border rounded-lg p-3 space-y-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase">Vale Transporte</p>
+              <div className="flex items-center justify-between">
+                <Label>Tem VT?</Label>
+                <Switch checked={newHasVt} onCheckedChange={setNewHasVt} />
+              </div>
+              {newHasVt && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <Label>Recebe em dinheiro?</Label>
+                    <Switch checked={newVtCash} onCheckedChange={setNewVtCash} />
+                  </div>
+                  <div>
+                    <Label>Valor VT mensal (R$)</Label>
+                    <Input type="number" value={newVtValue} onChange={(e) => setNewVtValue(e.target.value)} placeholder="0.00" />
+                  </div>
+                </>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNew(false)}>Cancelar</Button>
@@ -366,7 +447,7 @@ export default function Funcionarios() {
 
       {/* Dialog: Editar */}
       <Dialog open={!!editEmp} onOpenChange={(o) => !o && setEditEmp(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Funcionário</DialogTitle>
           </DialogHeader>
@@ -374,7 +455,10 @@ export default function Funcionarios() {
             {editEmp?.matricula && (
               <div>
                 <Label>Matrícula</Label>
-                <Input value={editEmp.matricula} readOnly disabled className="bg-muted" />
+                <div className="flex items-center gap-2">
+                  <Input value={editEmp.matricula} readOnly disabled className="bg-muted flex-1" />
+                  {getTypeBadge(editEmp.matricula)}
+                </div>
               </div>
             )}
             <div>
@@ -388,6 +472,25 @@ export default function Funcionarios() {
             <div>
               <Label>Data de Admissão</Label>
               <Input type="date" value={editAdmission} onChange={(e) => setEditAdmission(e.target.value)} />
+            </div>
+            <div className="border rounded-lg p-3 space-y-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase">Vale Transporte</p>
+              <div className="flex items-center justify-between">
+                <Label>Tem VT?</Label>
+                <Switch checked={editHasVt} onCheckedChange={setEditHasVt} />
+              </div>
+              {editHasVt && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <Label>Recebe em dinheiro?</Label>
+                    <Switch checked={editVtCash} onCheckedChange={setEditVtCash} />
+                  </div>
+                  <div>
+                    <Label>Valor VT mensal (R$)</Label>
+                    <Input type="number" value={editVtValue} onChange={(e) => setEditVtValue(e.target.value)} placeholder="0.00" />
+                  </div>
+                </>
+              )}
             </div>
           </div>
           <DialogFooter>

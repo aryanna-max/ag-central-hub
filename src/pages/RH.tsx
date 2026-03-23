@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import ModulePage from "@/components/ModulePage";
 import { UserCog } from "lucide-react";
 import Funcionarios from "./rh/Funcionarios";
+import RelatorioAusencias from "./rh/RelatorioAusencias";
 
 function RHPlaceholder() {
   return (
@@ -23,6 +24,7 @@ export default function RH() {
     <Routes>
       <Route index element={<Navigate to="funcionarios" replace />} />
       <Route path="funcionarios" element={<Funcionarios />} />
+      <Route path="ausencias" element={<RelatorioAusencias />} />
       <Route path="documentos" element={<RHPlaceholder />} />
       <Route path="exames" element={<RHPlaceholder />} />
       <Route path="*" element={<Navigate to="funcionarios" replace />} />

@@ -487,6 +487,7 @@ export type Database = {
           cpf: string | null
           created_at: string
           email: string | null
+          has_vt: boolean | null
           id: string
           matricula: string | null
           name: string
@@ -495,12 +496,15 @@ export type Database = {
           role: string
           status: Database["public"]["Enums"]["employee_status"]
           updated_at: string
+          vt_cash: boolean | null
+          vt_value: number | null
         }
         Insert: {
           admission_date?: string | null
           cpf?: string | null
           created_at?: string
           email?: string | null
+          has_vt?: boolean | null
           id?: string
           matricula?: string | null
           name: string
@@ -509,12 +513,15 @@ export type Database = {
           role?: string
           status?: Database["public"]["Enums"]["employee_status"]
           updated_at?: string
+          vt_cash?: boolean | null
+          vt_value?: number | null
         }
         Update: {
           admission_date?: string | null
           cpf?: string | null
           created_at?: string
           email?: string | null
+          has_vt?: boolean | null
           id?: string
           matricula?: string | null
           name?: string
@@ -523,6 +530,8 @@ export type Database = {
           role?: string
           status?: Database["public"]["Enums"]["employee_status"]
           updated_at?: string
+          vt_cash?: boolean | null
+          vt_value?: number | null
         }
         Relationships: []
       }
@@ -951,6 +960,68 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      project_benefits: {
+        Row: {
+          almoco_diferenca_value: number | null
+          almoco_type: string | null
+          cafe_enabled: boolean | null
+          cafe_value: number | null
+          created_at: string | null
+          dia_pagamento: string | null
+          hospedagem_enabled: boolean | null
+          hospedagem_type: string | null
+          hospedagem_value: number | null
+          id: string
+          jantar_enabled: boolean | null
+          jantar_value: number | null
+          pagamento_antecipado: boolean | null
+          project_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          almoco_diferenca_value?: number | null
+          almoco_type?: string | null
+          cafe_enabled?: boolean | null
+          cafe_value?: number | null
+          created_at?: string | null
+          dia_pagamento?: string | null
+          hospedagem_enabled?: boolean | null
+          hospedagem_type?: string | null
+          hospedagem_value?: number | null
+          id?: string
+          jantar_enabled?: boolean | null
+          jantar_value?: number | null
+          pagamento_antecipado?: boolean | null
+          project_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          almoco_diferenca_value?: number | null
+          almoco_type?: string | null
+          cafe_enabled?: boolean | null
+          cafe_value?: number | null
+          created_at?: string | null
+          dia_pagamento?: string | null
+          hospedagem_enabled?: boolean | null
+          hospedagem_type?: string | null
+          hospedagem_value?: number | null
+          id?: string
+          jantar_enabled?: boolean | null
+          jantar_value?: number | null
+          pagamento_antecipado?: boolean | null
+          project_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_benefits_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       projects: {
         Row: {
