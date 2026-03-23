@@ -370,6 +370,12 @@ export default function Funcionarios() {
             <DialogTitle>Editar Funcionário</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            {editEmp?.matricula && (
+              <div>
+                <Label>Matrícula</Label>
+                <Input value={editEmp.matricula} readOnly disabled className="bg-muted" />
+              </div>
+            )}
             <div>
               <Label>Nome *</Label>
               <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
