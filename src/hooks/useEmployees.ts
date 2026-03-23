@@ -31,6 +31,7 @@ export function useEmployeesWithAbsences(date?: string) {
         .neq("status", "desligado")
         .order("name");
       if (empError) throw empError;
+      if (empError) throw empError;
 
       // Try to fetch absences from employee_absences table (may not exist in types)
       let absences: any[] = [];

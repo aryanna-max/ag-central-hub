@@ -88,6 +88,7 @@ function AppRoutes() {
         <Route path="/rh/*" element={<RH />} />
         <Route path="/admin/usuarios" element={<UserManagement />} />
         <Route path="/admin/cadastros" element={<CadastrosBase />} />
+        <Route path="/admin/clientes" element={<AdminClientes />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

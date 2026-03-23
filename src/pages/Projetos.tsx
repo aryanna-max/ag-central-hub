@@ -453,6 +453,66 @@ export default function Projetos() {
                       {COLUMNS.find((c) => c.key === selectedProject.status)?.label}
                     </Badge>
                   </div>
+                  <Separator className="my-2" />
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Faturamento</p>
+                  <div>
+                    <Label>CNPJ Tomador da NF</Label>
+                    <Input value={(editForm as any).cnpj || ""} onChange={(e) => setEditForm({ ...editForm, cnpj: e.target.value } as any)} />
+                  </div>
+                  <div>
+                    <Label>Empresa Emissora</Label>
+                    <Select value={(editForm as any).empresa_emissora || "AG Topografia"} onValueChange={(v) => setEditForm({ ...editForm, empresa_emissora: v } as any)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AG Topografia">AG Topografia</SelectItem>
+                        <SelectItem value="AG Cartografia">AG Cartografia</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Conta Bancária</Label>
+                    <Select value={(editForm as any).conta_bancaria || ""} onValueChange={(v) => setEditForm({ ...editForm, conta_bancaria: v } as any)}>
+                      <SelectTrigger><SelectValue placeholder="Selecionar conta" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Bradesco Gonzaga">Bradesco Gonzaga</SelectItem>
+                        <SelectItem value="BB Cartografia">BB Cartografia</SelectItem>
+                        <SelectItem value="BB Gonzaga">BB Gonzaga</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Modalidade</Label>
+                    <Select value={(editForm as any).modalidade_faturamento || ""} onValueChange={(v) => setEditForm({ ...editForm, modalidade_faturamento: v } as any)}>
+                      <SelectTrigger><SelectValue placeholder="Selecionar modalidade" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="equipe_mensal">Equipe mensal</SelectItem>
+                        <SelectItem value="por_medicao">Por medição</SelectItem>
+                        <SelectItem value="diaria">Diária</SelectItem>
+                        <SelectItem value="por_servico">Por serviço</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Referência de Faturamento</Label>
+                    <Input value={(editForm as any).referencia_contrato || ""} onChange={(e) => setEditForm({ ...editForm, referencia_contrato: e.target.value } as any)} placeholder="Contrato, BM, pedido..." />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Label>Instrução variável de faturamento</Label>
+                    <input type="checkbox" checked={(editForm as any).instrucao_faturamento_variavel || false} onChange={(e) => setEditForm({ ...editForm, instrucao_faturamento_variavel: e.target.checked } as any)} />
+                  </div>
+
+                  <Separator className="my-2" />
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contatos</p>
+                  <div>
+                    <Label>Engenheiro Responsável</Label>
+                    <Input value={(editForm as any).contato_engenheiro || ""} onChange={(e) => setEditForm({ ...editForm, contato_engenheiro: e.target.value } as any)} />
+                  </div>
+                  <div>
+                    <Label>Contato Financeiro</Label>
+                    <Input value={(editForm as any).contato_financeiro || ""} onChange={(e) => setEditForm({ ...editForm, contato_financeiro: e.target.value } as any)} />
+                  </div>
+
+                  <Separator className="my-2" />
                   <div>
                     <Label>Observações</Label>
                     <Textarea

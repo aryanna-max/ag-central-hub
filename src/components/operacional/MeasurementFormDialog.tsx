@@ -24,7 +24,7 @@ function useActiveProjects() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name")
+        .select("id, name, instrucao_faturamento_variavel")
         .eq("is_active", true)
         .order("name");
       if (error) throw error;

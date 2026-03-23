@@ -65,7 +65,8 @@ export default function Funcionarios() {
 
   // Filtering
   const filtered = employees.filter((e) => {
-    const matchesSearch = e.name.toLowerCase().includes(search.toLowerCase());
+    const q = search.toLowerCase();
+    const matchesSearch = e.name.toLowerCase().includes(q) || e.role?.toLowerCase().includes(q) || e.cpf?.includes(q) || e.matricula?.includes(q);
     const matchesStatus = statusFilter === "todos" || e.status === statusFilter;
     const matchesRole = roleFilter === "todos" || e.role === roleFilter;
     return matchesSearch && matchesStatus && matchesRole;
