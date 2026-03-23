@@ -69,8 +69,22 @@ export function useProjects() {
 export function useCreateProject() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (project: ProjectInsert) => {
-      const { data, error } = await supabase.from("projects").insert(project).select().single();
+    mutationFn: async (project: ProjectInsert & { client_codigo?: string }) => {
+      let codigo: string | undefined;
+      if (project.client_codigo) {
+        const year = new Date().getFullYear();
+        const prefix = `${year}-${project.client_codigo}-`;
+        // Count existing projects for this client+year
+        const { data: existing } = await supabase
+          .from("projects")
+          .select("codigo")
+          .like("codigo" as any, `${prefix}%`);
+        const seq = (existing?.length || 0) + 1;
+        codigo = `${prefix}${String(seq).padStart(3, "0")}`;
+      }
+      const { client_codigo, ...rest } = project;
+      const payload = { ...rest, ...(codigo ? { codigo } : {}) };
+      const { data, error } = await supabase.from("projects").insert(payload as any).select().single();
       if (error) throw error;
       return data as unknown as Project;
     },
