@@ -22,6 +22,10 @@ export interface Measurement {
   nf_data: string | null;
   pdf_signed_url: string | null;
   notes: string | null;
+  empresa_faturadora?: string;
+  tipo_documento?: string;
+  instrucao_faturamento?: string | null;
+  responsavel_cobranca?: string | null;
   created_at: string;
   updated_at: string;
   // joined
@@ -51,9 +55,14 @@ export function useCreateMeasurement() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (values: Record<string, any>) => {
+      // Ensure project_id is set; also set obra_id for legacy compatibility
+      const payload = { ...values };
+      if (payload.project_id && !payload.obra_id) {
+        payload.obra_id = payload.project_id;
+      }
       const { data, error } = await supabase
         .from("measurements")
-        .insert(values as any)
+        .insert(payload as any)
         .select()
         .single();
       if (error) throw error;

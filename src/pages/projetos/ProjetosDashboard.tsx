@@ -56,7 +56,6 @@ export default function ProjetosDashboard() {
     },
   });
 
-
   const activeProjects = useMemo(
     () => projects.filter((p) => !["concluido", "pausado"].includes(p.status)),
     [projects]
@@ -67,10 +66,11 @@ export default function ProjetosDashboard() {
     [activeProjects]
   );
 
-  const measurementsByObra = useMemo(() => {
+  // Aggregate measurements by project_id (primary) and obra_id (legacy fallback)
+  const measurementsByProject = useMemo(() => {
     const map: Record<string, { totalBruto: number; totalNF: number; totalNFAReceber: number; pendentes: number }> = {};
     measurements.forEach((m) => {
-      const key = m.obra_id || "sem_obra";
+      const key = m.project_id || m.obra_id || "sem_projeto";
       if (!map[key]) map[key] = { totalBruto: 0, totalNF: 0, totalNFAReceber: 0, pendentes: 0 };
       map[key].totalBruto += m.valor_bruto || 0;
       map[key].totalNF += m.valor_nf || 0;
@@ -83,29 +83,28 @@ export default function ProjetosDashboard() {
   }, [measurements]);
 
   const getProjectMeasurements = (p: Project) => {
-    if (!p.obra_id) return undefined;
-    return measurementsByObra[p.obra_id];
+    return measurementsByProject[p.id] || (p.obra_id ? measurementsByProject[p.obra_id] : undefined);
   };
 
   const totalMedido = useMemo(
     () => activeProjects.reduce((s, p) => {
-      const m = p.obra_id ? measurementsByObra[p.obra_id] : undefined;
+      const m = getProjectMeasurements(p);
       return s + (m?.totalNF || 0);
     }, 0),
-    [activeProjects, measurementsByObra]
+    [activeProjects, measurementsByProject]
   );
 
   const aReceber = useMemo(
     () => activeProjects.reduce((s, p) => {
-      const m = p.obra_id ? measurementsByObra[p.obra_id] : undefined;
+      const m = getProjectMeasurements(p);
       return s + (m?.totalNFAReceber || 0);
     }, 0),
-    [activeProjects, measurementsByObra]
+    [activeProjects, measurementsByProject]
   );
 
   const medicoesPendentes = useMemo(
-    () => Object.values(measurementsByObra).reduce((s, v) => s + v.pendentes, 0),
-    [measurementsByObra]
+    () => Object.values(measurementsByProject).reduce((s, v) => s + v.pendentes, 0),
+    [measurementsByProject]
   );
 
   // Bar chart: faturamento últimos 6 meses
@@ -177,6 +176,7 @@ export default function ProjetosDashboard() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Código</TableHead>
                 <TableHead>Projeto</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Serviço</TableHead>
@@ -192,9 +192,9 @@ export default function ProjetosDashboard() {
                 const medido = m?.totalNF || 0;
                 const aReceberRow = m?.totalNFAReceber || 0;
                 const contrato = p.contract_value || 0;
-                const hasObra = !!p.obra_id;
                 return (
                   <TableRow key={p.id}>
+                    <TableCell className="font-mono text-xs font-bold text-primary">{p.codigo || "—"}</TableCell>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>{p.client || "—"}</TableCell>
                     <TableCell>{p.service || "—"}</TableCell>
@@ -204,14 +204,14 @@ export default function ProjetosDashboard() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">{contrato ? formatCurrency(contrato) : "—"}</TableCell>
-                    <TableCell className="text-right">{hasObra ? (medido ? formatCurrency(medido) : "—") : "—"}</TableCell>
-                    <TableCell className="text-right">{hasObra ? (aReceberRow ? formatCurrency(aReceberRow) : "—") : "—"}</TableCell>
+                    <TableCell className="text-right">{medido ? formatCurrency(medido) : "—"}</TableCell>
+                    <TableCell className="text-right">{aReceberRow ? formatCurrency(aReceberRow) : "—"}</TableCell>
                   </TableRow>
                 );
               })}
               {!projects.length && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     Nenhum projeto cadastrado.
                   </TableCell>
                 </TableRow>
@@ -223,7 +223,6 @@ export default function ProjetosDashboard() {
 
       {/* Alertas + Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Alertas */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -250,7 +249,6 @@ export default function ProjetosDashboard() {
           </CardContent>
         </Card>
 
-        {/* BarChart faturamento */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Faturamento (6 meses)</CardTitle>
@@ -271,7 +269,6 @@ export default function ProjetosDashboard() {
           </CardContent>
         </Card>
 
-        {/* PieChart por serviço */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Por Tipo de Serviço</CardTitle>
