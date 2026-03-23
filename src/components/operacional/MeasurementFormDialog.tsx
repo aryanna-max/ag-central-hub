@@ -24,7 +24,7 @@ function useActiveProjects() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name")
+        .select("id, name, instrucao_faturamento_variavel")
         .eq("is_active", true)
         .order("name");
       if (error) throw error;
@@ -52,7 +52,12 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
     notes: "",
     empresa_faturadora: "ag_topografia",
     tipo_documento: "nota_fiscal",
+    instrucao_faturamento: "",
+    responsavel_cobranca: "",
   });
+
+  const selectedProject = (projects || []).find((p: any) => p.id === form.obra_id);
+  const needsInstrucao = !!(selectedProject as any)?.instrucao_faturamento_variavel;
 
   useEffect(() => {
     if (open && defaultObraId) {
@@ -75,11 +80,15 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
   }, [form.dias_semana, form.valor_diaria_semana, form.dias_fds, form.valor_diaria_fds, form.retencao_pct]);
 
   const resetForm = () =>
-    setForm({ codigo_bm: "", obra_id: "", team_id: "", period_start: "", period_end: "", dias_semana: "", valor_diaria_semana: "", dias_fds: "", valor_diaria_fds: "", retencao_pct: "5", notes: "", empresa_faturadora: "ag_topografia", tipo_documento: "nota_fiscal" });
+    setForm({ codigo_bm: "", obra_id: "", team_id: "", period_start: "", period_end: "", dias_semana: "", valor_diaria_semana: "", dias_fds: "", valor_diaria_fds: "", retencao_pct: "5", notes: "", empresa_faturadora: "ag_topografia", tipo_documento: "nota_fiscal", instrucao_faturamento: "", responsavel_cobranca: "" });
 
   const handleSave = async (notify: boolean) => {
     if (!form.codigo_bm || !form.period_start || !form.period_end) {
       toast.error("Preencha os campos obrigatórios");
+      return;
+    }
+    if (needsInstrucao && !form.instrucao_faturamento.trim()) {
+      toast.error("Instrução de faturamento é obrigatória para este projeto");
       return;
     }
     try {
@@ -98,6 +107,8 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
         notes: form.notes || null,
         empresa_faturadora: form.empresa_faturadora,
         tipo_documento: form.tipo_documento,
+        instrucao_faturamento: form.instrucao_faturamento || null,
+        responsavel_cobranca: form.responsavel_cobranca || null,
       });
 
       if (notify) {
@@ -263,6 +274,31 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
               <span>Valor NF</span>
               <span>{fmt(calc.nf)}</span>
             </div>
+          </div>
+
+          {/* Instrução de faturamento (conditional) */}
+          {needsInstrucao && (
+            <div>
+              <Label>Instrução de Faturamento *</Label>
+              <Textarea
+                placeholder="Ex: Colorado pediu para faturar pelo Colarrio 4 — R$4.800"
+                value={form.instrucao_faturamento}
+                onChange={(e) => set("instrucao_faturamento", e.target.value)}
+              />
+            </div>
+          )}
+
+          {/* Responsável pela cobrança */}
+          <div>
+            <Label>Responsável pela Cobrança</Label>
+            <Select value={form.responsavel_cobranca} onValueChange={(v) => set("responsavel_cobranca", v)}>
+              <SelectTrigger><SelectValue placeholder="Selecionar (opcional)" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Marcelo">Marcelo</SelectItem>
+                <SelectItem value="Sérgio">Sérgio</SelectItem>
+                <SelectItem value="Ciro">Ciro</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Observações */}

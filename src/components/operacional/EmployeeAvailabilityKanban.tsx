@@ -145,21 +145,38 @@ export default function EmployeeAvailabilityKanban({
   const rhCount = rhAbsentEmployees.length;
   if (totalCount === 0 && rhCount === 0) return null;
 
+  const formatEmployeeName = (emp: Employee) => {
+    const parts = emp.name.split(" ");
+    if (parts.length <= 2) return emp.name;
+    return `${parts[0]} ${parts[parts.length - 1]}`;
+  };
+
+  const getMatriculaBadge = (matricula?: string | null) => {
+    if (!matricula) return null;
+    if (matricula.startsWith("000")) return <Badge className="text-[8px] h-3.5 px-1 bg-blue-600 text-white shrink-0">CLT</Badge>;
+    if (matricula.toUpperCase().startsWith("PREST")) return <Badge className="text-[8px] h-3.5 px-1 bg-muted text-muted-foreground shrink-0">PREST</Badge>;
+    return null;
+  };
+
   const EmployeeChip = ({ emp, draggable: isDraggable = true }: { emp: Employee; draggable?: boolean }) => (
     <div
       draggable={isDraggable}
       onDragStart={isDraggable ? (e) => handleDragStart(e, emp.id) : undefined}
+      title={emp.name}
       className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-border/60 bg-card transition-shadow text-xs ${
         isDraggable ? "cursor-grab active:cursor-grabbing hover:shadow-sm" : "opacity-70 cursor-default"
       } ${draggedId === emp.id ? "opacity-40" : ""}`}
     >
+      {getMatriculaBadge((emp as any).matricula)}
       <Badge
         variant={isTopografo(emp.role) ? "default" : "secondary"}
         className="text-[9px] h-4 px-1 shrink-0"
       >
         {isTopografo(emp.role) ? "TOP" : "AUX"}
       </Badge>
-      <span className="truncate leading-tight">{emp.name.split(" ").slice(0, 2).join(" ")}</span>
+      <span className="truncate leading-tight">
+        {(emp as any).matricula ? `${(emp as any).matricula} — ${formatEmployeeName(emp)}` : formatEmployeeName(emp)}
+      </span>
     </div>
   );
 

@@ -95,6 +95,7 @@ export default function Equipes() {
 
   const filteredEmployees = (employees || []).filter(
     (e) =>
+      e.status !== "desligado" &&
       !currentTeamMemberIds.includes(e.id) &&
       e.name.toLowerCase().includes(searchEmployee.toLowerCase())
   );

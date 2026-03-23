@@ -65,7 +65,8 @@ export default function Funcionarios() {
 
   // Filtering
   const filtered = employees.filter((e) => {
-    const matchesSearch = e.name.toLowerCase().includes(search.toLowerCase());
+    const q = search.toLowerCase();
+    const matchesSearch = e.name.toLowerCase().includes(q) || e.role?.toLowerCase().includes(q) || e.cpf?.includes(q) || e.matricula?.includes(q);
     const matchesStatus = statusFilter === "todos" || e.status === statusFilter;
     const matchesRole = roleFilter === "todos" || e.role === roleFilter;
     return matchesSearch && matchesStatus && matchesRole;
@@ -231,10 +232,11 @@ export default function Funcionarios() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Função</TableHead>
-                    <TableHead>Admissão</TableHead>
-                    <TableHead>Status</TableHead>
+                     <TableHead>Matrícula</TableHead>
+                     <TableHead>Nome</TableHead>
+                     <TableHead>Função</TableHead>
+                     <TableHead>Admissão</TableHead>
+                     <TableHead>Status</TableHead>
                     <TableHead className="w-[50px]" />
                   </TableRow>
                 </TableHeader>
@@ -243,7 +245,8 @@ export default function Funcionarios() {
                     const st = statusConfig[emp.status] || statusConfig.disponivel;
                     return (
                       <TableRow key={emp.id}>
-                        <TableCell className="font-medium">{emp.name}</TableCell>
+                         <TableCell className="font-mono text-xs text-muted-foreground">{emp.matricula || "—"}</TableCell>
+                         <TableCell className="font-medium">{emp.name}</TableCell>
                         <TableCell>{emp.role}</TableCell>
                         <TableCell>
                           {emp.admission_date
@@ -368,6 +371,12 @@ export default function Funcionarios() {
             <DialogTitle>Editar Funcionário</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            {editEmp?.matricula && (
+              <div>
+                <Label>Matrícula</Label>
+                <Input value={editEmp.matricula} readOnly disabled className="bg-muted" />
+              </div>
+            )}
             <div>
               <Label>Nome *</Label>
               <Input value={editName} onChange={(e) => setEditName(e.target.value)} />

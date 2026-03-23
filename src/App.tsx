@@ -21,6 +21,7 @@ import ResetPassword from "./pages/auth/ResetPassword";
 import ChangePassword from "./pages/auth/ChangePassword";
 import UserManagement from "./pages/admin/UserManagement";
 import CadastrosBase from "./pages/admin/CadastrosBase";
+import AdminClientes from "./pages/admin/Clientes";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,7 @@ function AppRoutes() {
         <Route path="/rh/*" element={<RH />} />
         <Route path="/admin/usuarios" element={<UserManagement />} />
         <Route path="/admin/cadastros" element={<CadastrosBase />} />
+        <Route path="/admin/clientes" element={<AdminClientes />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
