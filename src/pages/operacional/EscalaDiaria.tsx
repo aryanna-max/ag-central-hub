@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CalendarDays, Plus, Lock, Printer, Trash2, UserPlus, Pencil } from "lucide-react";
+import { CalendarDays, Plus, Lock, Printer, Trash2, Pencil } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -26,11 +26,11 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useEmployees, useEmployeesWithAbsences } from "@/hooks/useEmployees";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
-import DailyScheduleReport from "@/components/operacional/DailyScheduleReport";
 import AbsencesSection from "@/components/operacional/AbsencesSection";
 import TeamLocationMap from "@/components/operacional/TeamLocationMap";
 import MonthlyDayEditDialog from "@/components/operacional/MonthlyDayEditDialog";
 import EmployeeAvailabilityKanban from "@/components/operacional/EmployeeAvailabilityKanban";
+import DailyReportDialog from "@/components/operacional/DailyReportDialog";
 import { useUpdateMonthlySchedule } from "@/hooks/useMonthlySchedules";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
@@ -57,8 +57,6 @@ export default function EscalaDiaria() {
   const [showAddTeam, setShowAddTeam] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [assignForm, setAssignForm] = useState({ team_id: "", project_id: "", vehicle_id: "" });
-
-  // Edit dialog state
   const [editOpen, setEditOpen] = useState(false);
   const [editAssignment, setEditAssignment] = useState<any>(null);
 
@@ -69,7 +67,6 @@ export default function EscalaDiaria() {
   const { data: employees } = useEmployeesWithAbsences(selectedDate);
   const { data: allEmployees } = useEmployees();
 
-  // Load attendance records for the selected date (folga, falta, atestado, reserva)
   const { data: attendanceRecords } = useQuery({
     queryKey: ["attendance", selectedDate],
     queryFn: async () => {
@@ -81,6 +78,7 @@ export default function EscalaDiaria() {
       return data || [];
     },
   });
+
   const { data: obrasData } = useProjectsList();
   const createSchedule = useCreateDailySchedule();
   const addAssignment = useAddTeamAssignment();
@@ -93,7 +91,6 @@ export default function EscalaDiaria() {
 
   const isClosed = schedule?.is_closed;
   const isToday = selectedDate === today;
-  const isFuture = selectedDate > today;
 
   const handleCreateSchedule = async () => {
     try {
@@ -141,16 +138,13 @@ export default function EscalaDiaria() {
     if (!schedule || !confirm("Fechar esta escala? Após o fechamento, não poderá mais ser editada.")) return;
     try {
       await closeSchedule.mutateAsync(schedule.id);
-      toast.success("Escala fechada! Relatórios gerados.");
+      toast.success("Escala fechada!");
     } catch {
       toast.error("Erro ao fechar escala");
     }
   };
 
-  // Open edit dialog for a team assignment
   const handleEditAssignment = (assignment: any) => {
-    // Build a schedule-like object compatible with MonthlyDayEditDialog
-    const d = new Date(selectedDate + "T12:00:00");
     setEditAssignment({
       id: assignment.id,
       team_id: assignment.team_id,
@@ -173,10 +167,8 @@ export default function EscalaDiaria() {
     memberOverrides?: { additions: string[]; removals: string[] }
   ) => {
     if (updates.vehicle_id === "none") updates.vehicle_id = undefined;
-
     try {
-      // Update the daily team assignment
-      const dailyUpdates: { obra_id?: string; vehicle_id?: string; notes?: string } = {};
+      const dailyUpdates: { obra_id?: string; vehicle_id?: string } = {};
       if (updates.obra_id) dailyUpdates.obra_id = updates.obra_id;
       if (updates.vehicle_id !== undefined) dailyUpdates.vehicle_id = updates.vehicle_id;
 
@@ -189,7 +181,6 @@ export default function EscalaDiaria() {
         });
       }
 
-      // Handle member overrides for daily entries
       if (memberOverrides && schedule) {
         const teamId = updates.team_id || editAssignment?.team_id;
         const obraId = updates.obra_id || editAssignment?.obra_id;
@@ -204,19 +195,16 @@ export default function EscalaDiaria() {
             .eq("team_id", editAssignment?.team_id);
         }
         for (const empId of memberOverrides.additions) {
-          await supabase
-            .from("daily_schedule_entries")
-            .insert({
-              daily_schedule_id: schedule.id,
-              employee_id: empId,
-              team_id: teamId,
-              obra_id: obraId,
-              vehicle_id: vehicleId,
-            });
+          await supabase.from("daily_schedule_entries").insert({
+            daily_schedule_id: schedule.id,
+            employee_id: empId,
+            team_id: teamId,
+            obra_id: obraId,
+            vehicle_id: vehicleId,
+          });
         }
       }
 
-      // If scope is "period", also sync to monthly
       if (scope === "period" && editAssignment) {
         const { data: monthlySchedules } = await supabase
           .from("monthly_schedules")
@@ -230,10 +218,7 @@ export default function EscalaDiaria() {
           if (updates.obra_id) monthlyUpdates.obra_id = updates.obra_id;
           if (updates.vehicle_id) monthlyUpdates.vehicle_id = updates.vehicle_id;
           if (Object.keys(monthlyUpdates).length > 0) {
-            await supabase
-              .from("monthly_schedules")
-              .update(monthlyUpdates)
-              .eq("id", monthlySchedules[0].id);
+            await supabase.from("monthly_schedules").update(monthlyUpdates).eq("id", monthlySchedules[0].id);
           }
         }
       }
@@ -241,7 +226,7 @@ export default function EscalaDiaria() {
       qc.invalidateQueries({ queryKey: ["daily-schedule"] });
       qc.invalidateQueries({ queryKey: ["monthly-schedules"] });
       setEditOpen(false);
-      toast.success(scope === "period" ? "Atualizado e sincronizado com escala mensal!" : "Dia atualizado!");
+      toast.success(scope === "period" ? "Atualizado e sincronizado!" : "Dia atualizado!");
     } catch {
       toast.error("Erro ao atualizar alocação.");
     }
@@ -256,40 +241,6 @@ export default function EscalaDiaria() {
     });
   };
 
-  const handlePrint = () => {
-    const printContent = document.getElementById("daily-report");
-    if (!printContent) return;
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Escala Diária - ${format(new Date(selectedDate + "T12:00:00"), "dd/MM/yyyy")}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            table { width: 100%; border-collapse: collapse; font-size: 13px; }
-            th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
-            th { background: #f0f0f0; font-weight: bold; }
-            .text-center { text-align: center; }
-            .font-bold { font-weight: bold; }
-            .text-xs { font-size: 11px; }
-            .text-sm { font-size: 13px; }
-            .uppercase { text-transform: uppercase; }
-            .mt-4 { margin-top: 16px; }
-            .mb-4 { margin-bottom: 16px; }
-            .bg-primary { background: #006B54; color: white; padding: 6px 12px; border-radius: 4px 4px 0 0; }
-            .bg-amber-100 { background: #fef3c7; }
-            .bg-yellow-200 { background: #fef08a; }
-            .bg-muted { background: #f5f5f5; }
-          </style>
-        </head>
-        <body>${printContent.innerHTML}</body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
-  };
-
   const assignments = schedule?.assignments || [];
 
   const absentEmployees = (employees || []).filter(
@@ -301,6 +252,37 @@ export default function EscalaDiaria() {
 
   const dateFormatted = format(new Date(selectedDate + "T12:00:00"), "dd/MM/yyyy (EEEE)", { locale: ptBR });
   const d = new Date(selectedDate + "T12:00:00");
+
+  // Kanban data
+  const assignedIds = new Set((schedule?.entries || []).map((e: any) => e.employee_id));
+  const attendanceMap: Record<string, string> = {};
+  (attendanceRecords || []).forEach((rec: any) => {
+    if (["folga", "falta", "atestado", "reserva_ag"].includes(rec.status)) {
+      attendanceMap[rec.employee_id] = rec.status;
+    }
+  });
+
+  const fieldEmployees = (allEmployees || []).filter(
+    (e) =>
+      e.status !== "desligado" &&
+      !assignedIds.has(e.id) &&
+      (e.role?.toLowerCase().includes("topógrafo") ||
+       e.role?.toLowerCase().includes("topografo") ||
+       e.role?.toLowerCase().includes("auxiliar") ||
+       e.role?.toLowerCase().includes("ajudante"))
+  );
+
+  const absentIds = new Set(absentEmployees.map((e) => e.id));
+  const kanbanEmployees = fieldEmployees.filter((e) => !absentIds.has(e.id));
+
+  // RH absent employees that are field workers (for kanban read-only section)
+  const rhAbsentFieldEmployees = absentEmployees.filter(
+    (e) =>
+      e.role?.toLowerCase().includes("topógrafo") ||
+      e.role?.toLowerCase().includes("topografo") ||
+      e.role?.toLowerCase().includes("auxiliar") ||
+      e.role?.toLowerCase().includes("ajudante")
+  );
 
   return (
     <div className="p-6 space-y-6">
@@ -346,6 +328,11 @@ export default function EscalaDiaria() {
                 <Lock className="w-3 h-3" /> Escala Fechada
               </Badge>
             )}
+            {!schedule.kanban_filled && (
+              <Badge variant="destructive" className="gap-1 animate-pulse">
+                Kanban não preenchido
+              </Badge>
+            )}
             <div className="flex gap-2 ml-auto">
               <Button variant="outline" className="gap-2" onClick={() => setShowReport(true)}>
                 <Printer className="w-4 h-4" /> Relatório
@@ -365,6 +352,15 @@ export default function EscalaDiaria() {
             </div>
           </div>
 
+          {/* KANBAN — ABOVE teams table */}
+          <EmployeeAvailabilityKanban
+            unassignedEmployees={kanbanEmployees}
+            attendanceMap={attendanceMap}
+            scheduleDate={selectedDate}
+            dailyScheduleId={schedule.id}
+            rhAbsentEmployees={rhAbsentFieldEmployees}
+          />
+
           {/* Team-centric table */}
           {assignments.length === 0 ? (
             <Card>
@@ -377,7 +373,7 @@ export default function EscalaDiaria() {
               <CardContent className="p-0">
                 <div className="bg-primary text-primary-foreground px-4 py-2 flex items-center justify-between rounded-t-lg">
                   <span className="font-bold text-sm">ACOMPANHAMENTO DIÁRIO DAS EQUIPES</span>
-                  <span className="text-sm font-medium">DATA: {format(new Date(selectedDate + "T12:00:00"), "dd/MM/yyyy")}</span>
+                  <span className="text-sm font-medium">DATA: {format(d, "dd/MM/yyyy")}</span>
                 </div>
                 <Table>
                   <TableHeader>
@@ -385,7 +381,7 @@ export default function EscalaDiaria() {
                       <TableHead className="w-10">#</TableHead>
                       <TableHead>TOPÓGRAFO</TableHead>
                       <TableHead>AUXILIARES</TableHead>
-                      <TableHead>LOCAL</TableHead>
+                      <TableHead>PROJETO</TableHead>
                       <TableHead>VEÍCULO</TableHead>
                       {isToday && !isClosed && <TableHead>PRESENÇA</TableHead>}
                       <TableHead className="w-20">AÇÕES</TableHead>
@@ -396,18 +392,13 @@ export default function EscalaDiaria() {
                       const teamMembers = a.teams?.team_members || [];
                       const topografo = teamMembers.find((m: any) => m.role === "topografo");
                       const auxiliares = teamMembers.filter((m: any) => m.role !== "topografo");
-
-                      const teamEntries = (schedule.entries || []).filter(
-                        (e: any) => e.team_id === a.team_id
-                      );
+                      const teamEntries = (schedule.entries || []).filter((e: any) => e.team_id === a.team_id);
 
                       return (
                         <TableRow key={a.id} className="border-b">
                           <TableCell className="font-bold text-center">{idx + 1}</TableCell>
                           <TableCell>
-                            <span className="font-bold text-sm uppercase">
-                              {topografo?.employees?.name || "—"}
-                            </span>
+                            <span className="font-bold text-sm uppercase">{topografo?.employees?.name || "—"}</span>
                           </TableCell>
                           <TableCell>
                             <div className="space-y-0.5">
@@ -422,8 +413,8 @@ export default function EscalaDiaria() {
                           </TableCell>
                           <TableCell>
                             <div>
-                              <p className="text-sm font-medium">{a.obras?.client || "—"}</p>
-                              <p className="text-xs text-muted-foreground">{a.obras?.location || a.obras?.name || ""}</p>
+                              <p className="text-sm font-medium">{a.projects?.name || a.projects?.client_name || "—"}</p>
+                              <p className="text-xs text-muted-foreground">{a.projects?.location || ""}</p>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -458,25 +449,14 @@ export default function EscalaDiaria() {
                           <TableCell>
                             <div className="flex items-center gap-1">
                               {!isClosed && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-primary"
-                                  title="Editar alocação"
-                                  onClick={() => handleEditAssignment(a)}
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </Button>
-                              )}
-                              {!isClosed && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-destructive h-7 w-7"
-                                  onClick={() => removeAssignment.mutate(a.id)}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </Button>
+                                <>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" title="Editar" onClick={() => handleEditAssignment(a)}>
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="text-destructive h-7 w-7" onClick={() => removeAssignment.mutate(a.id)}>
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </>
                               )}
                             </div>
                           </TableCell>
@@ -490,54 +470,9 @@ export default function EscalaDiaria() {
           )}
 
           {/* Map */}
-          {assignments.length > 0 && (
-            <TeamLocationMap assignments={assignments} date={selectedDate} />
-          )}
+          {assignments.length > 0 && <TeamLocationMap assignments={assignments} date={selectedDate} />}
 
-          {/* Employee Availability Kanban */}
-          {(() => {
-            const assignedIds = new Set(
-              (schedule.entries || []).map((e: any) => e.employee_id)
-            );
-
-            // Build attendance map from DB records
-            const attendanceMap: Record<string, string> = {};
-            (attendanceRecords || []).forEach((rec: any) => {
-              if (["folga", "falta", "atestado", "reserva_ag"].includes(rec.status)) {
-                attendanceMap[rec.employee_id] = rec.status;
-              }
-            });
-
-            // All field employees (topógrafos + auxiliares) not assigned to a team today
-            const fieldEmployees = (allEmployees || []).filter(
-              (e) =>
-                e.status !== "desligado" &&
-                !assignedIds.has(e.id) &&
-                (e.role?.toLowerCase().includes("topógrafo") ||
-                 e.role?.toLowerCase().includes("topografo") ||
-                 e.role?.toLowerCase().includes("auxiliar") ||
-                 e.role?.toLowerCase().includes("ajudante"))
-            );
-
-            // Also exclude employees on vacation/leave (from useEmployeesWithAbsences)
-            const absentIds = new Set(
-              (employees || [])
-                .filter((e) => e.availability === "ferias" || e.availability === "licenca" || e.availability === "afastado")
-                .map((e) => e.id)
-            );
-            const kanbanEmployees = fieldEmployees.filter((e) => !absentIds.has(e.id));
-
-            return (
-              <EmployeeAvailabilityKanban
-                unassignedEmployees={kanbanEmployees}
-                attendanceMap={attendanceMap}
-                scheduleDate={selectedDate}
-                dailyScheduleId={schedule.id}
-              />
-            );
-          })()}
-
-          {/* Absences section */}
+          {/* Absences section (RH) */}
           <AbsencesSection employees={absentEmployees} />
         </>
       )}
@@ -551,8 +486,7 @@ export default function EscalaDiaria() {
               <label className="text-sm font-medium mb-1 block">Equipe</label>
               <Select value={assignForm.team_id} onValueChange={(v) => {
                 const team = availableTeams.find((t: any) => t.id === v);
-                const defaultVehicle = team?.default_vehicle_id || "";
-                setAssignForm({ ...assignForm, team_id: v, vehicle_id: defaultVehicle });
+                setAssignForm({ ...assignForm, team_id: v, vehicle_id: team?.default_vehicle_id || "" });
               }}>
                 <SelectTrigger><SelectValue placeholder="Selecionar equipe..." /></SelectTrigger>
                 <SelectContent>
@@ -565,7 +499,7 @@ export default function EscalaDiaria() {
             <div>
               <label className="text-sm font-medium mb-1 block">Projeto</label>
               <Select value={assignForm.project_id} onValueChange={(v) => setAssignForm({ ...assignForm, project_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecionar obra..." /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecionar projeto..." /></SelectTrigger>
                 <SelectContent>
                   {(obrasData || []).map((o: any) => (
                     <SelectItem key={o.id} value={o.id}>{o.name} {o.client ? `(${o.client})` : ""}</SelectItem>
@@ -592,26 +526,20 @@ export default function EscalaDiaria() {
         </DialogContent>
       </Dialog>
 
-      {/* Print Report Dialog */}
-      <Dialog open={showReport} onOpenChange={setShowReport}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>Relatório de Escala Diária</span>
-              <Button onClick={handlePrint} className="gap-2" size="sm">
-                <Printer className="w-4 h-4" /> Imprimir
-              </Button>
-            </DialogTitle>
-          </DialogHeader>
-          <DailyScheduleReport
-            date={selectedDate}
-            assignments={assignments}
-            absentEmployees={absentEmployees}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Report Dialog */}
+      <DailyReportDialog
+        open={showReport}
+        onOpenChange={setShowReport}
+        date={selectedDate}
+        assignments={assignments}
+        entries={schedule?.entries || []}
+        absentEmployees={absentEmployees}
+        attendanceRecords={attendanceRecords || []}
+        kanbanFilled={schedule?.kanban_filled || false}
+        allEmployees={allEmployees || []}
+      />
 
-      {/* Edit Assignment Dialog (same as monthly) */}
+      {/* Edit Assignment Dialog */}
       <MonthlyDayEditDialog
         open={editOpen}
         onOpenChange={setEditOpen}
