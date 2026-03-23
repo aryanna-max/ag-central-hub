@@ -62,7 +62,6 @@ export function useAddTeamAssignment() {
       date?: string;
     }) => {
       const { date, ...rest } = assignment;
-      // Also set obra_id for backward compat
       const insertPayload: any = { ...rest };
       if (rest.project_id) insertPayload.obra_id = rest.project_id;
       

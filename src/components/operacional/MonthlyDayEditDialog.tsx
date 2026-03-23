@@ -19,18 +19,19 @@ interface Props {
   schedule: {
     id: string;
     team_id: string;
-    obra_id: string;
+    obra_id?: string;
+    project_id?: string;
     vehicle_id?: string | null;
     start_date: string;
     end_date: string;
     teams: { id: string; name: string; team_members?: any[] } | null;
-    obras: { id: string; name: string; client: string | null } | null;
+    projects?: { id: string; name: string; client: string | null } | null;
     vehicles?: { id: string; model: string; plate: string } | null;
   } | null;
   day: number;
   month: number;
   year: number;
-  onSave: (scheduleId: string, updates: { team_id?: string; obra_id?: string; vehicle_id?: string }, scope: "period" | "day", dayDate?: string, memberOverrides?: { additions: string[]; removals: string[] }) => void;
+  onSave: (scheduleId: string, updates: { team_id?: string; project_id?: string; vehicle_id?: string }, scope: "period" | "day", dayDate?: string, memberOverrides?: { additions: string[]; removals: string[] }) => void;
   onDelete?: (scheduleId: string) => void;
   isPending: boolean;
 }
@@ -47,7 +48,7 @@ export default function MonthlyDayEditDialog({
   isPending,
 }: Props) {
   const [teamId, setTeamId] = useState("");
-  const [obraId, setObraId] = useState("");
+  const [projectId, setProjectId] = useState("");
   const [vehicleId, setVehicleId] = useState("");
   const [scope, setScope] = useState<"period" | "day">("period");
   const [editMode, setEditMode] = useState<"team" | "members">("team");
@@ -58,7 +59,7 @@ export default function MonthlyDayEditDialog({
   const { data: teams } = useTeams();
   const { data: vehicles } = useVehicles();
   const { data: allEmployees } = useEmployees();
-  const { data: obras } = useQuery({
+  const { data: projectsList } = useQuery({
     queryKey: ["projects-active"],
     queryFn: async () => {
       const { data, error } = await supabase.from("projects").select("*").eq("is_active", true).order("name");
@@ -70,7 +71,7 @@ export default function MonthlyDayEditDialog({
   useEffect(() => {
     if (schedule) {
       setTeamId(schedule.team_id);
-      setObraId(schedule.obra_id);
+      setProjectId(schedule.project_id || schedule.obra_id || "");
       setVehicleId(schedule.vehicle_id || "");
       setScope("period");
       setEditMode("team");
@@ -92,28 +93,28 @@ export default function MonthlyDayEditDialog({
   const topografo = currentMembers.find((m: any) => m.role === "topografo");
   const auxiliares = currentMembers.filter((m: any) => m.role !== "topografo");
 
-  // Effective members for this day (considering additions/removals)
   const effectiveMembers = currentMembers
     .filter((m: any) => !memberRemovals.includes(m.employee_id))
     .map((m: any) => m.employees);
   const addedEmployees = (allEmployees || []).filter((e: any) => memberAdditions.includes(e.id));
 
-  // Available employees to add (not already in team and not already added)
   const currentMemberIds = new Set(currentMembers.map((m: any) => m.employee_id));
   const availableToAdd = (allEmployees || [])
     .filter((e: any) => !currentMemberIds.has(e.id) && !memberAdditions.includes(e.id) && e.status !== "desligado");
 
+  const scheduleProjectId = schedule.project_id || schedule.obra_id || "";
+
   const hasChanges =
     teamId !== schedule.team_id ||
-    obraId !== schedule.obra_id ||
+    projectId !== scheduleProjectId ||
     vehicleId !== (schedule.vehicle_id || "") ||
     memberAdditions.length > 0 ||
     memberRemovals.length > 0;
 
   const handleSave = () => {
-    const updates: { team_id?: string; obra_id?: string; vehicle_id?: string } = {};
+    const updates: { team_id?: string; project_id?: string; vehicle_id?: string } = {};
     if (teamId !== schedule.team_id) updates.team_id = teamId;
-    if (obraId !== schedule.obra_id) updates.obra_id = obraId;
+    if (projectId !== scheduleProjectId) updates.project_id = projectId;
     if (vehicleId !== (schedule.vehicle_id || "")) updates.vehicle_id = vehicleId;
 
     const memberOverrides = (memberAdditions.length > 0 || memberRemovals.length > 0)
@@ -210,13 +211,13 @@ export default function MonthlyDayEditDialog({
               </div>
             )}
 
-            {/* Obra/Projeto */}
+            {/* Projeto */}
             <div>
-              <label className="text-sm font-medium mb-1 block">Obra/Projeto</label>
-              <Select value={obraId} onValueChange={setObraId}>
-                <SelectTrigger><SelectValue placeholder="Selecionar obra..." /></SelectTrigger>
+              <label className="text-sm font-medium mb-1 block">Projeto</label>
+              <Select value={projectId} onValueChange={setProjectId}>
+                <SelectTrigger><SelectValue placeholder="Selecionar projeto..." /></SelectTrigger>
                 <SelectContent>
-                  {(obras || []).map((o: any) => (
+                  {(projectsList || []).map((o: any) => (
                     <SelectItem key={o.id} value={o.id}>
                       {o.name} {o.client ? `(${o.client})` : ""}
                     </SelectItem>

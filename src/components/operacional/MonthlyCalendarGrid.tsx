@@ -18,9 +18,10 @@ interface Schedule {
   start_date: string;
   end_date: string;
   team_id: string;
-  obra_id: string;
+  obra_id?: string;
+  project_id?: string;
   teams: { id: string; name: string; team_members?: TeamMember[] } | null;
-  obras: { id: string; name: string; client: string | null } | null;
+  projects?: { id: string; name: string; client: string | null } | null;
   vehicles?: { id: string; model: string; plate: string } | null;
 }
 
@@ -43,7 +44,7 @@ const TEAM_COLORS = [
   "bg-secondary/10 text-secondary-foreground border-secondary/20",
 ];
 
-type FilterType = "all" | "equipe" | "topografo" | "auxiliar" | "obra" | "veiculo";
+type FilterType = "all" | "equipe" | "topografo" | "auxiliar" | "projeto" | "veiculo";
 
 export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick }: Props) {
   const [filterType, setFilterType] = useState<FilterType>("all");
@@ -69,12 +70,16 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
     return map;
   }, [schedules]);
 
+  const getProjectName = (s: Schedule) => s.projects?.name || "—";
+  const getProjectClient = (s: Schedule) => s.projects?.client || "";
+  const getProjectId = (s: Schedule) => s.project_id || s.obra_id || "";
+
   // Build filter options
   const filterOptions = useMemo(() => {
     const teams = new Map<string, string>();
     const topografos = new Map<string, string>();
     const auxiliares = new Map<string, string>();
-    const obras = new Map<string, string>();
+    const projetos = new Map<string, string>();
 
     schedules.forEach((s) => {
       if (s.teams) {
@@ -87,10 +92,11 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
           }
         });
       }
-      if (s.obras) obras.set(s.obras.id, s.obras.name);
+      const pid = getProjectId(s);
+      if (pid) projetos.set(pid, getProjectName(s));
     });
 
-    return { teams, topografos, auxiliares, obras };
+    return { teams, topografos, auxiliares, projetos };
   }, [schedules]);
 
   // Filter schedules
@@ -101,10 +107,10 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
     if (q) {
       result = result.filter((s) => {
         const teamName = s.teams?.name?.toLowerCase() || "";
-        const obraName = s.obras?.name?.toLowerCase() || "";
-        const client = s.obras?.client?.toLowerCase() || "";
+        const projectName = getProjectName(s).toLowerCase();
+        const client = getProjectClient(s).toLowerCase();
         const members = (s.teams?.team_members || []).map((m) => m.employees?.name?.toLowerCase() || "").join(" ");
-        return teamName.includes(q) || obraName.includes(q) || client.includes(q) || members.includes(q);
+        return teamName.includes(q) || projectName.includes(q) || client.includes(q) || members.includes(q);
       });
     }
 
@@ -121,8 +127,8 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
             return (s.teams?.team_members || []).some(
               (m) => m.role !== "topografo" && m.employees?.id === filterValue
             );
-          case "obra":
-            return s.obras?.id === filterValue;
+          case "projeto":
+            return getProjectId(s) === filterValue;
           default:
             return true;
         }
@@ -156,8 +162,8 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
         return [...filterOptions.topografos.entries()].map(([id, name]) => ({ id, name }));
       case "auxiliar":
         return [...filterOptions.auxiliares.entries()].map(([id, name]) => ({ id, name }));
-      case "obra":
-        return [...filterOptions.obras.entries()].map(([id, name]) => ({ id, name }));
+      case "projeto":
+        return [...filterOptions.projetos.entries()].map(([id, name]) => ({ id, name }));
       default:
         return [];
     }
@@ -186,7 +192,7 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
               <SelectItem value="equipe">Equipe</SelectItem>
               <SelectItem value="topografo">Topógrafo</SelectItem>
               <SelectItem value="auxiliar">Auxiliar</SelectItem>
-              <SelectItem value="obra">Obra/Projeto</SelectItem>
+              <SelectItem value="projeto">Projeto</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -283,7 +289,7 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
                             onClick={() => onDayClick?.(day, s)}
                           >
                             <p className="font-bold uppercase truncate">
-                              {s.obras?.name || "—"}
+                              {getProjectName(s)}
                             </p>
                             <p className="truncate">
                               <span className="font-semibold">{topo?.employees?.name?.split(" ")[0] || "—"}</span>
@@ -296,9 +302,9 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="text-xs max-w-[220px]">
-                          <p className="font-bold uppercase">{s.obras?.name}</p>
-                          {s.obras?.client && (
-                            <p className="text-muted-foreground">Cliente: {s.obras.client}</p>
+                          <p className="font-bold uppercase">{getProjectName(s)}</p>
+                          {getProjectClient(s) && (
+                            <p className="text-muted-foreground">Cliente: {getProjectClient(s)}</p>
                           )}
                           <p className="mt-1">
                             <span className="font-semibold">Topógrafo:</span>{" "}
@@ -366,12 +372,12 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
                           #{idx + 1}
                         </Badge>
                         <span className="font-bold uppercase text-sm truncate">
-                          {s.obras?.name || "—"}
+                          {getProjectName(s)}
                         </span>
                       </div>
-                      {s.obras?.client && (
+                      {getProjectClient(s) && (
                         <p className="text-xs text-muted-foreground mb-2">
-                          Cliente: {s.obras.client}
+                          Cliente: {getProjectClient(s)}
                         </p>
                       )}
                       <div className="grid grid-cols-2 gap-2 text-sm">
@@ -429,21 +435,15 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
         <div className="flex flex-wrap gap-3 mt-3">
           {[...new Map(filteredSchedules.map((s) => [s.teams?.id, s])).values()].map((s) => {
             const topo = getTopografo(s);
-            const auxs = getAuxiliares(s);
             return (
-              <div key={s.teams?.id} className="flex items-center gap-1.5 text-xs">
-                <div
-                  className={`w-3 h-3 rounded border ${teamColorMap.get(s.teams?.id || "") || TEAM_COLORS[0]}`}
-                />
-                <span>
-                  <span className="font-bold">{topo?.employees?.name || "—"}</span>
-                  {auxs.length > 0 && (
-                    <span className="text-muted-foreground">
-                      {" "}({auxs.map((a) => a.employees?.name?.split(" ")[0]).join(", ")})
-                    </span>
-                  )}
-                  <span className="text-muted-foreground"> → {s.obras?.name}</span>
-                </span>
+              <div
+                key={s.teams?.id}
+                className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs border ${
+                  teamColorMap.get(s.teams?.id || "") || TEAM_COLORS[0]
+                }`}
+              >
+                <span className="font-bold">{s.teams?.name}</span>
+                <span className="text-muted-foreground">({topo?.employees?.name?.split(" ")[0] || "—"})</span>
               </div>
             );
           })}
