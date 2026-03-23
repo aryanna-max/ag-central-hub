@@ -317,7 +317,6 @@ export default function Projetos() {
                         )}
                       </div>
                     </CardContent>
-                  </Card>
                 ))}
               </div>
             </div>
