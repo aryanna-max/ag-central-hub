@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import ModulePage from "@/components/ModulePage";
 import { UserCog } from "lucide-react";
 import Funcionarios from "./rh/Funcionarios";
+import RelatorioAusencias from "./rh/RelatorioAusencias";
 
 function RHPlaceholder() {
   return (
