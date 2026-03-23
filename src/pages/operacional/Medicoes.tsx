@@ -169,7 +169,7 @@ export default function Medicoes() {
                 {filtered.map((m) => (
                   <TableRow key={m.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelected(m)}>
                     <TableCell className="font-mono font-medium">{m.codigo_bm}</TableCell>
-                    <TableCell>{m.obra_name || "—"}</TableCell>
+                    <TableCell>{m.project_name || "—"}</TableCell>
                     <TableCell className="text-sm">
                       {m.period_start} a {m.period_end}
                     </TableCell>
