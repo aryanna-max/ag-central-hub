@@ -276,6 +276,31 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
             </div>
           </div>
 
+          {/* Instrução de faturamento (conditional) */}
+          {needsInstrucao && (
+            <div>
+              <Label>Instrução de Faturamento *</Label>
+              <Textarea
+                placeholder="Ex: Colorado pediu para faturar pelo Colarrio 4 — R$4.800"
+                value={form.instrucao_faturamento}
+                onChange={(e) => set("instrucao_faturamento", e.target.value)}
+              />
+            </div>
+          )}
+
+          {/* Responsável pela cobrança */}
+          <div>
+            <Label>Responsável pela Cobrança</Label>
+            <Select value={form.responsavel_cobranca} onValueChange={(v) => set("responsavel_cobranca", v)}>
+              <SelectTrigger><SelectValue placeholder="Selecionar (opcional)" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Marcelo">Marcelo</SelectItem>
+                <SelectItem value="Sérgio">Sérgio</SelectItem>
+                <SelectItem value="Ciro">Ciro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Observações */}
           <div>
             <Label>Observações</Label>
