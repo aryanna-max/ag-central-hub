@@ -764,6 +764,7 @@ export type Database = {
           dias_semana: number
           empresa_faturadora: string
           id: string
+          instrucao_faturamento: string | null
           nf_data: string | null
           nf_numero: string | null
           notes: string | null
@@ -772,6 +773,7 @@ export type Database = {
           period_end: string
           period_start: string
           project_id: string | null
+          responsavel_cobranca: string | null
           retencao_pct: number
           status: string
           team_id: string | null
@@ -790,6 +792,7 @@ export type Database = {
           dias_semana?: number
           empresa_faturadora?: string
           id?: string
+          instrucao_faturamento?: string | null
           nf_data?: string | null
           nf_numero?: string | null
           notes?: string | null
@@ -798,6 +801,7 @@ export type Database = {
           period_end: string
           period_start: string
           project_id?: string | null
+          responsavel_cobranca?: string | null
           retencao_pct?: number
           status?: string
           team_id?: string | null
@@ -816,6 +820,7 @@ export type Database = {
           dias_semana?: number
           empresa_faturadora?: string
           id?: string
+          instrucao_faturamento?: string | null
           nf_data?: string | null
           nf_numero?: string | null
           notes?: string | null
@@ -824,6 +829,7 @@ export type Database = {
           period_end?: string
           period_start?: string
           project_id?: string | null
+          responsavel_cobranca?: string | null
           retencao_pct?: number
           status?: string
           team_id?: string | null
