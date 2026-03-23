@@ -13,6 +13,7 @@ export function useEmployees() {
       const { data, error } = await supabase
         .from("employees")
         .select("*")
+        .neq("status", "desligado")
         .order("name");
       if (error) throw error;
       return data as Employee[];
@@ -30,7 +31,6 @@ export function useEmployeesWithAbsences(date?: string) {
         .select("*")
         .neq("status", "desligado")
         .order("name");
-      if (empError) throw empError;
       if (empError) throw empError;
 
       // Try to fetch absences from employee_absences table (may not exist in types)
@@ -57,7 +57,7 @@ export function useEmployeesWithAbsences(date?: string) {
       if (entries) {
         const { data: schedEntries } = await supabase
           .from("daily_schedule_entries")
-          .select("employee_id, obra_id")
+          .select("employee_id, project_id")
           .eq("daily_schedule_id", entries.id);
         assignedEmployeeIds = (schedEntries || []).map((e) => e.employee_id);
       }
@@ -68,7 +68,7 @@ export function useEmployeesWithAbsences(date?: string) {
         );
         const isAssigned = assignedEmployeeIds.includes(emp.id);
 
-        let availability: "disponivel" | "ferias" | "licenca" | "afastado" | "em_obra" = "disponivel";
+        let availability: "disponivel" | "ferias" | "licenca" | "afastado" | "em_projeto" = "disponivel";
         if (emp.status === "ferias") availability = "ferias";
         else if (emp.status === "licenca") availability = "licenca";
         else if (emp.status === "afastado") availability = "afastado";
@@ -77,7 +77,7 @@ export function useEmployeesWithAbsences(date?: string) {
           else if (activeAbsence.absence_type?.startsWith("licenca")) availability = "licenca";
           else availability = "afastado";
         } else if (isAssigned) {
-          availability = "em_obra";
+          availability = "em_projeto";
         }
 
         return { ...emp, availability, activeAbsence };

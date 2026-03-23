@@ -28,7 +28,7 @@ export default function DailyScheduleReport({ date, assignments, absentEmployees
             <th className="border border-border px-2 py-1.5 text-left w-8"></th>
             <th className="border border-border px-2 py-1.5 text-left">TOPÓGRAFO</th>
             <th className="border border-border px-2 py-1.5 text-left">AUXILIARES</th>
-            <th className="border border-border px-2 py-1.5 text-left">LOCAL</th>
+            <th className="border border-border px-2 py-1.5 text-left">PROJETO</th>
             <th className="border border-border px-2 py-1.5 text-left">VEÍCULO</th>
           </tr>
         </thead>
@@ -51,8 +51,8 @@ export default function DailyScheduleReport({ date, assignments, absentEmployees
                   {auxiliares.length === 0 && "—"}
                 </td>
                 <td className="border border-border px-2 py-1">
-                  <div>{a.obras?.client || a.obras?.name || "—"}</div>
-                  <div className="text-xs text-muted-foreground">{a.obras?.location || ""}</div>
+                  <div>{a.projects?.name || a.projects?.client_name || "—"}</div>
+                  <div className="text-xs text-muted-foreground">{a.projects?.location || ""}</div>
                 </td>
                 <td className="border border-border px-2 py-1">
                   <div>{a.vehicles?.model || "—"}</div>

@@ -32,7 +32,6 @@ export function useCreateMonthlySchedule() {
       vehicle_id?: string;
       schedule_type?: string;
     }) => {
-      // Also set obra_id for backward compat
       const insertPayload: any = { ...payload, obra_id: payload.project_id };
       const { error } = await supabase.from("monthly_schedules").insert(insertPayload);
       if (error) throw error;
@@ -64,7 +63,6 @@ export function useUpdateMonthlySchedule() {
         .eq("id", id)
         .single();
 
-      // Also sync obra_id for backward compat
       const dbUpdates: any = { ...updates };
       if (updates.project_id) dbUpdates.obra_id = updates.project_id;
 

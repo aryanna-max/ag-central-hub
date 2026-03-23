@@ -5,6 +5,7 @@ export interface Measurement {
   id: string;
   codigo_bm: string;
   obra_id: string | null;
+  project_id: string | null;
   team_id: string | null;
   period_start: string;
   period_end: string;
@@ -24,7 +25,7 @@ export interface Measurement {
   created_at: string;
   updated_at: string;
   // joined
-  obra_name?: string;
+  project_name?: string;
   team_name?: string;
 }
 
@@ -33,13 +34,13 @@ export function useMeasurements() {
     queryKey: ["measurements"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("measurements" as any)
-        .select("*, obras:obra_id(name), teams:team_id(name)")
+        .from("measurements")
+        .select("*, projects:project_id(name), teams:team_id(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data as any[]).map((r) => ({
         ...r,
-        obra_name: r.obras?.name ?? null,
+        project_name: r.projects?.name ?? null,
         team_name: r.teams?.name ?? null,
       })) as Measurement[];
     },
@@ -51,7 +52,7 @@ export function useCreateMeasurement() {
   return useMutation({
     mutationFn: async (values: Record<string, any>) => {
       const { data, error } = await supabase
-        .from("measurements" as any)
+        .from("measurements")
         .insert(values as any)
         .select()
         .single();
@@ -67,7 +68,7 @@ export function useUpdateMeasurement() {
   return useMutation({
     mutationFn: async ({ id, ...values }: { id: string; [key: string]: any }) => {
       const { data, error } = await supabase
-        .from("measurements" as any)
+        .from("measurements")
         .update(values as any)
         .eq("id", id)
         .select()
@@ -84,7 +85,7 @@ export function useDeleteMeasurement() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("measurements" as any)
+        .from("measurements")
         .delete()
         .eq("id", id);
       if (error) throw error;
@@ -93,27 +94,23 @@ export function useDeleteMeasurement() {
   });
 }
 
-export function useProjectMeasurements(projectName: string, clientName: string | null) {
+export function useProjectMeasurements(projectId: string | null) {
   return useQuery({
-    queryKey: ["measurements", "project", projectName, clientName],
+    queryKey: ["measurements", "project", projectId],
     queryFn: async () => {
+      if (!projectId) return [];
       const { data, error } = await supabase
-        .from("measurements" as any)
-        .select("*, obras:obra_id(name), teams:team_id(name)")
+        .from("measurements")
+        .select("*, projects:project_id(name), teams:team_id(name)")
+        .or(`project_id.eq.${projectId},obra_id.eq.${projectId}`)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      const all = (data as any[]).map((r) => ({
+      return (data as any[]).map((r) => ({
         ...r,
-        obra_name: r.obras?.name ?? null,
+        project_name: r.projects?.name ?? null,
         team_name: r.teams?.name ?? null,
       })) as Measurement[];
-      const nameLC = projectName.toLowerCase();
-      const clientLC = clientName?.toLowerCase() || "";
-      return all.filter((m) => {
-        const obraLC = (m.obra_name || "").toLowerCase();
-        return obraLC && (obraLC.includes(nameLC) || nameLC.includes(obraLC) || (clientLC && obraLC.includes(clientLC)));
-      });
     },
-    enabled: !!projectName,
+    enabled: !!projectId,
   });
 }

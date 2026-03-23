@@ -15,7 +15,6 @@ interface Props {
 export default function MonthlyScheduleReport({ month, year, schedules }: Props) {
   const monthName = format(new Date(year, month - 1), "MMMM yyyy", { locale: ptBR }).toUpperCase();
 
-  // Fetch daily data for the whole month
   const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
   const endDate = new Date(year, month, 0).toISOString().slice(0, 10);
 
@@ -34,7 +33,7 @@ export default function MonthlyScheduleReport({ month, year, schedules }: Props)
 
       const { data: assignments } = await supabase
         .from("daily_team_assignments")
-        .select("*, teams(name), obras(name, client), vehicles(model, plate)")
+        .select("*, teams(name), projects:project_id(name, client), vehicles(model, plate)")
         .in("daily_schedule_id", ids);
 
       const { data: entries } = await supabase
@@ -50,12 +49,15 @@ export default function MonthlyScheduleReport({ month, year, schedules }: Props)
     },
   });
 
+  const getProjectName = (s: any) => s.projects?.name || "—";
+  const getProjectClient = (s: any) => s.projects?.client || "";
+  const getProjectId = (s: any) => s.project_id || s.obra_id || "";
+
   // --- Resumo por Equipe ---
   const teamMap = new Map<string, { name: string; days: Set<string>; projects: Set<string>; vehicles: Set<string> }>();
   for (const s of schedules) {
     const teamName = s.teams?.name || "—";
     const entry = teamMap.get(s.team_id) || { name: teamName, days: new Set(), projects: new Set(), vehicles: new Set() };
-    // Count working days
     const start = new Date(s.start_date + "T12:00:00");
     const end = new Date(s.end_date + "T12:00:00");
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -63,7 +65,8 @@ export default function MonthlyScheduleReport({ month, year, schedules }: Props)
       if (s.schedule_type === "mensal" && (dow === 0 || dow === 6)) continue;
       entry.days.add(d.toISOString().slice(0, 10));
     }
-    if (s.obras?.name) entry.projects.add(s.obras.name);
+    const pName = getProjectName(s);
+    if (pName !== "—") entry.projects.add(pName);
     if (s.vehicles) entry.vehicles.add(`${s.vehicles.model} (${s.vehicles.plate})`);
     teamMap.set(s.team_id, entry);
   }
@@ -71,7 +74,8 @@ export default function MonthlyScheduleReport({ month, year, schedules }: Props)
   // --- Resumo por Projeto ---
   const projectMap = new Map<string, { name: string; client: string; teams: Set<string>; days: number }>();
   for (const s of schedules) {
-    const proj = projectMap.get(s.obra_id) || { name: s.obras?.name || "—", client: s.obras?.client || "", teams: new Set(), days: 0 };
+    const pid = getProjectId(s);
+    const proj = projectMap.get(pid) || { name: getProjectName(s), client: getProjectClient(s), teams: new Set(), days: 0 };
     proj.teams.add(s.teams?.name || "—");
     const start = new Date(s.start_date + "T12:00:00");
     const end = new Date(s.end_date + "T12:00:00");
@@ -82,10 +86,10 @@ export default function MonthlyScheduleReport({ month, year, schedules }: Props)
       count++;
     }
     proj.days += count;
-    projectMap.set(s.obra_id, proj);
+    projectMap.set(pid, proj);
   }
 
-  // --- Resumo por Funcionário (from daily entries) ---
+  // --- Resumo por Funcionário ---
   const employeeMap = new Map<string, { name: string; role: string; daysWorked: number; absences: number; projects: Set<string>; late: number }>();
   if (dailyData?.entries) {
     for (const e of dailyData.entries) {
@@ -100,9 +104,10 @@ export default function MonthlyScheduleReport({ month, year, schedules }: Props)
       if (e.attendance === "presente" || e.attendance === "atrasado") emp.daysWorked++;
       if (e.attendance === "falta") emp.absences++;
       if (e.attendance === "atrasado") emp.late++;
-      if (e.obra_id) {
-        const assignment = dailyData.assignments?.find((a: any) => a.obra_id === e.obra_id);
-        if (assignment?.obras?.name) emp.projects.add(assignment.obras.name);
+      if (e.project_id || e.obra_id) {
+        const projId = e.project_id || e.obra_id;
+        const assignment = dailyData.assignments?.find((a: any) => (a.project_id || a.obra_id) === projId);
+        if (assignment?.projects?.name) emp.projects.add(assignment.projects.name);
       }
       employeeMap.set(e.employee_id, emp);
     }
@@ -119,7 +124,8 @@ export default function MonthlyScheduleReport({ month, year, schedules }: Props)
       projects: new Set(),
     };
     v.teams.add(s.teams?.name || "—");
-    if (s.obras?.name) v.projects.add(s.obras.name);
+    const pName = getProjectName(s);
+    if (pName !== "—") v.projects.add(pName);
     const start = new Date(s.start_date + "T12:00:00");
     const end = new Date(s.end_date + "T12:00:00");
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -168,7 +174,7 @@ export default function MonthlyScheduleReport({ month, year, schedules }: Props)
       {/* Resumo por Projeto */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Resumo por Projeto/Obra</CardTitle>
+          <CardTitle className="text-base">Resumo por Projeto</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -297,7 +303,7 @@ export default function MonthlyScheduleReport({ month, year, schedules }: Props)
                       <TableRow key={a.id}>
                         <TableCell className="text-sm">{date ? format(new Date(date + "T12:00:00"), "dd/MM") : "—"}</TableCell>
                         <TableCell className="text-sm font-medium">{a.teams?.name || "—"}</TableCell>
-                        <TableCell className="text-sm">{a.obras?.name || "—"}</TableCell>
+                        <TableCell className="text-sm">{a.projects?.name || "—"}</TableCell>
                         <TableCell className="text-sm">{a.vehicles ? `${a.vehicles.model} (${a.vehicles.plate})` : "—"}</TableCell>
                       </TableRow>
                     );
