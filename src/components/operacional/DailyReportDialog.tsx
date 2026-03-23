@@ -6,6 +6,7 @@ import { FileImage, FileText, FileSpreadsheet, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import html2canvas from "html2canvas";
+import { toast } from "sonner";
 
 interface Props {
   open: boolean;
