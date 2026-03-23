@@ -231,10 +231,11 @@ export default function Funcionarios() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Função</TableHead>
-                    <TableHead>Admissão</TableHead>
-                    <TableHead>Status</TableHead>
+                     <TableHead>Matrícula</TableHead>
+                     <TableHead>Nome</TableHead>
+                     <TableHead>Função</TableHead>
+                     <TableHead>Admissão</TableHead>
+                     <TableHead>Status</TableHead>
                     <TableHead className="w-[50px]" />
                   </TableRow>
                 </TableHeader>
