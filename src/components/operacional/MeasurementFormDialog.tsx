@@ -87,6 +87,10 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
       toast.error("Preencha os campos obrigatórios");
       return;
     }
+    if (needsInstrucao && !form.instrucao_faturamento.trim()) {
+      toast.error("Instrução de faturamento é obrigatória para este projeto");
+      return;
+    }
     try {
       await createMeasurement.mutateAsync({
         codigo_bm: form.codigo_bm,
