@@ -244,7 +244,8 @@ export default function Funcionarios() {
                     const st = statusConfig[emp.status] || statusConfig.disponivel;
                     return (
                       <TableRow key={emp.id}>
-                        <TableCell className="font-medium">{emp.name}</TableCell>
+                         <TableCell className="font-mono text-xs text-muted-foreground">{emp.matricula || "—"}</TableCell>
+                         <TableCell className="font-medium">{emp.name}</TableCell>
                         <TableCell>{emp.role}</TableCell>
                         <TableCell>
                           {emp.admission_date
