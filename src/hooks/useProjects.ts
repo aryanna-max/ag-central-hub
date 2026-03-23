@@ -72,7 +72,7 @@ export function useCreateProject() {
     mutationFn: async (project: ProjectInsert) => {
       const { data, error } = await supabase.from("projects").insert(project).select().single();
       if (error) throw error;
-      return data as Project;
+      return data as unknown as Project;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
   });
