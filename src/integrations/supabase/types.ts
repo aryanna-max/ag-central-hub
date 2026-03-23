@@ -202,6 +202,8 @@ export type Database = {
           address: string | null
           city: string | null
           cnpj: string | null
+          contato_engenheiro: string | null
+          contato_financeiro: string | null
           created_at: string
           email: string | null
           id: string
@@ -212,12 +214,15 @@ export type Database = {
           phone: string | null
           segmento: string | null
           state: string | null
+          tipo: string | null
           updated_at: string
         }
         Insert: {
           address?: string | null
           city?: string | null
           cnpj?: string | null
+          contato_engenheiro?: string | null
+          contato_financeiro?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -228,12 +233,15 @@ export type Database = {
           phone?: string | null
           segmento?: string | null
           state?: string | null
+          tipo?: string | null
           updated_at?: string
         }
         Update: {
           address?: string | null
           city?: string | null
           cnpj?: string | null
+          contato_engenheiro?: string | null
+          contato_financeiro?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -244,6 +252,7 @@ export type Database = {
           phone?: string | null
           segmento?: string | null
           state?: string | null
+          tipo?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -479,6 +488,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          matricula: string | null
           name: string
           phone: string | null
           photo_url: string | null
@@ -492,6 +502,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          matricula?: string | null
           name: string
           phone?: string | null
           photo_url?: string | null
@@ -505,6 +516,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          matricula?: string | null
           name?: string
           phone?: string | null
           photo_url?: string | null
@@ -939,19 +951,27 @@ export type Database = {
           client: string | null
           client_cnpj: string | null
           client_name: string | null
+          cnpj: string | null
+          conta_bancaria: string | null
+          contato_engenheiro: string | null
+          contato_financeiro: string | null
           contract_value: number | null
           created_at: string
+          empresa_emissora: string | null
           empresa_faturadora: string
           end_date: string | null
           id: string
+          instrucao_faturamento_variavel: boolean | null
           is_active: boolean | null
           latitude: number | null
           lead_id: string | null
           location: string | null
           longitude: number | null
+          modalidade_faturamento: string | null
           name: string
           notes: string | null
           obra_id: string | null
+          referencia_contrato: string | null
           responsible: string | null
           responsible_id: string | null
           service: string | null
@@ -964,19 +984,27 @@ export type Database = {
           client?: string | null
           client_cnpj?: string | null
           client_name?: string | null
+          cnpj?: string | null
+          conta_bancaria?: string | null
+          contato_engenheiro?: string | null
+          contato_financeiro?: string | null
           contract_value?: number | null
           created_at?: string
+          empresa_emissora?: string | null
           empresa_faturadora?: string
           end_date?: string | null
           id?: string
+          instrucao_faturamento_variavel?: boolean | null
           is_active?: boolean | null
           latitude?: number | null
           lead_id?: string | null
           location?: string | null
           longitude?: number | null
+          modalidade_faturamento?: string | null
           name: string
           notes?: string | null
           obra_id?: string | null
+          referencia_contrato?: string | null
           responsible?: string | null
           responsible_id?: string | null
           service?: string | null
@@ -989,19 +1017,27 @@ export type Database = {
           client?: string | null
           client_cnpj?: string | null
           client_name?: string | null
+          cnpj?: string | null
+          conta_bancaria?: string | null
+          contato_engenheiro?: string | null
+          contato_financeiro?: string | null
           contract_value?: number | null
           created_at?: string
+          empresa_emissora?: string | null
           empresa_faturadora?: string
           end_date?: string | null
           id?: string
+          instrucao_faturamento_variavel?: boolean | null
           is_active?: boolean | null
           latitude?: number | null
           lead_id?: string | null
           location?: string | null
           longitude?: number | null
+          modalidade_faturamento?: string | null
           name?: string
           notes?: string | null
           obra_id?: string | null
+          referencia_contrato?: string | null
           responsible?: string | null
           responsible_id?: string | null
           service?: string | null
