@@ -14,10 +14,9 @@ import { FolderKanban, GripVertical, FileText, Plus } from "lucide-react";
 import { useProjects, useUpdateProject, type Project, type ProjectStatus } from "@/hooks/useProjects";
 import { useProjectMeasurements } from "@/hooks/useMeasurements";
 import { useEmployees } from "@/hooks/useEmployees";
+import { useClients } from "@/hooks/useClients";
 import MeasurementFormDialog from "@/components/operacional/MeasurementFormDialog";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 
 const COLUMNS: { key: ProjectStatus; label: string; color: string }[] = [
   { key: "planejamento", label: "Planejamento", color: "bg-blue-500" },
@@ -46,38 +45,14 @@ const MEASUREMENT_STATUS: Record<string, { label: string; className: string }> =
 };
 
 function ProjectMeasurementsTab({
-  projectName,
-  clientName,
+  projectId,
   contractValue,
 }: {
-  projectName: string;
-  clientName: string | null;
+  projectId: string;
   contractValue: number | null;
 }) {
-  const { data: matchedProject } = useQuery({
-    queryKey: ["project-id-by-name", projectName],
-    queryFn: async () => {
-      const { data } = await supabase.from("projects").select("id").eq("name", projectName).maybeSingle();
-      return data?.id ?? null;
-    },
-  });
-  const { data: filtered = [], isLoading } = useProjectMeasurements(matchedProject ?? null);
+  const { data: filtered = [], isLoading } = useProjectMeasurements(projectId);
   const [showNewMeasurement, setShowNewMeasurement] = useState(false);
-
-  // Find matching obra_id by project name
-  const { data: matchedObraId } = useQuery({
-    queryKey: ["project-match", projectName],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("projects")
-        .select("id")
-        .ilike("name", `%${projectName}%`)
-        .eq("is_active", true)
-        .limit(1);
-      return data?.[0]?.id || null;
-    },
-    enabled: !!projectName,
-  });
 
   const totals = useMemo(() => {
     const totalBruto = filtered.reduce((s, m) => s + (m.valor_bruto || 0), 0);
@@ -107,60 +82,60 @@ function ProjectMeasurementsTab({
         </div>
       ) : (
         <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Código BM</TableHead>
-            <TableHead>Período</TableHead>
-            <TableHead>Equipe</TableHead>
-            <TableHead className="text-right">Valor NF</TableHead>
-            <TableHead>Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filtered.map((m) => {
-            const st = MEASUREMENT_STATUS[m.status] || { label: m.status, className: "" };
-            return (
-              <TableRow key={m.id}>
-                <TableCell className="font-mono text-xs font-medium">{m.codigo_bm}</TableCell>
-                <TableCell className="text-xs">{m.period_start} a {m.period_end}</TableCell>
-                <TableCell className="text-xs">{m.team_name || "—"}</TableCell>
-                <TableCell className="text-sm font-semibold text-right">{formatCurrency(m.valor_nf)}</TableCell>
-                <TableCell>
-                  <Badge className={st.className}>{st.label}</Badge>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-        <tfoot>
-          <tr className="border-t bg-muted/40">
-            <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-foreground">Total Medido</td>
-            <td className="px-4 py-2 text-sm font-bold text-right text-foreground">{formatCurrency(totals.totalBruto)}</td>
-            <td />
-          </tr>
-          <tr className="bg-muted/40">
-            <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-foreground">Total NF</td>
-            <td className="px-4 py-2 text-sm font-bold text-right text-foreground">{formatCurrency(totals.totalNF)}</td>
-            <td />
-          </tr>
-          {contractValue != null && (
-            <tr className="bg-muted/40 border-t">
-              <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-foreground">
-                Acumulado do Contrato
-                <span className="ml-1 text-muted-foreground font-normal">({formatCurrency(contractValue)})</span>
-              </td>
-              <td className="px-4 py-2 text-sm font-bold text-right text-primary">{pctContrato}%</td>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Código BM</TableHead>
+              <TableHead>Período</TableHead>
+              <TableHead>Equipe</TableHead>
+              <TableHead className="text-right">Valor NF</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((m) => {
+              const st = MEASUREMENT_STATUS[m.status] || { label: m.status, className: "" };
+              return (
+                <TableRow key={m.id}>
+                  <TableCell className="font-mono text-xs font-medium">{m.codigo_bm}</TableCell>
+                  <TableCell className="text-xs">{m.period_start} a {m.period_end}</TableCell>
+                  <TableCell className="text-xs">{m.team_name || "—"}</TableCell>
+                  <TableCell className="text-sm font-semibold text-right">{formatCurrency(m.valor_nf)}</TableCell>
+                  <TableCell>
+                    <Badge className={st.className}>{st.label}</Badge>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+          <tfoot>
+            <tr className="border-t bg-muted/40">
+              <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-foreground">Total Medido</td>
+              <td className="px-4 py-2 text-sm font-bold text-right text-foreground">{formatCurrency(totals.totalBruto)}</td>
               <td />
             </tr>
-          )}
-        </tfoot>
-      </Table>
+            <tr className="bg-muted/40">
+              <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-foreground">Total NF</td>
+              <td className="px-4 py-2 text-sm font-bold text-right text-foreground">{formatCurrency(totals.totalNF)}</td>
+              <td />
+            </tr>
+            {contractValue != null && (
+              <tr className="bg-muted/40 border-t">
+                <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-foreground">
+                  Acumulado do Contrato
+                  <span className="ml-1 text-muted-foreground font-normal">({formatCurrency(contractValue)})</span>
+                </td>
+                <td className="px-4 py-2 text-sm font-bold text-right text-primary">{pctContrato}%</td>
+                <td />
+              </tr>
+            )}
+          </tfoot>
+        </Table>
       )}
 
       <MeasurementFormDialog
         open={showNewMeasurement}
         onOpenChange={setShowNewMeasurement}
-        defaultObraId={matchedObraId || undefined}
+        defaultProjectId={projectId}
       />
     </div>
   );
@@ -174,6 +149,7 @@ function formatCurrency(value: number | null) {
 export default function Projetos() {
   const { data: projects = [], isLoading } = useProjects();
   const { data: employees = [] } = useEmployees();
+  const { data: clients = [] } = useClients();
   const updateProject = useUpdateProject();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [editForm, setEditForm] = useState<Partial<Project>>({});
@@ -216,15 +192,15 @@ export default function Projetos() {
         end_date: editForm.end_date,
         empresa_faturadora: editForm.empresa_faturadora,
         tipo_documento: editForm.tipo_documento,
-        cnpj: (editForm as any).cnpj,
-        empresa_emissora: (editForm as any).empresa_emissora,
-        conta_bancaria: (editForm as any).conta_bancaria,
-        modalidade_faturamento: (editForm as any).modalidade_faturamento,
-        referencia_contrato: (editForm as any).referencia_contrato,
-        instrucao_faturamento_variavel: (editForm as any).instrucao_faturamento_variavel,
-        contato_engenheiro: (editForm as any).contato_engenheiro,
-        contato_financeiro: (editForm as any).contato_financeiro,
-      } as any);
+        cnpj: editForm.cnpj,
+        empresa_emissora: editForm.empresa_emissora,
+        conta_bancaria: editForm.conta_bancaria,
+        modalidade_faturamento: editForm.modalidade_faturamento,
+        referencia_contrato: editForm.referencia_contrato,
+        instrucao_faturamento_variavel: editForm.instrucao_faturamento_variavel,
+        contato_engenheiro: editForm.contato_engenheiro,
+        contato_financeiro: editForm.contato_financeiro,
+      });
       toast.success("Projeto atualizado");
       setSelectedProject(null);
     } catch {
@@ -259,6 +235,13 @@ export default function Projetos() {
     setDraggedId(null);
   };
 
+  // Get client name for display
+  const getClientDisplay = (project: Project) => {
+    if (project.client) return project.client;
+    if (project.client_name) return project.client_name;
+    return project.name;
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -279,7 +262,6 @@ export default function Projetos() {
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, col.key)}
             >
-              {/* Column header */}
               <div className="flex items-center gap-2 mb-3">
                 <div className={`w-2.5 h-2.5 rounded-full ${col.color}`} />
                 <span className="text-sm font-semibold text-foreground">{col.label}</span>
@@ -288,7 +270,6 @@ export default function Projetos() {
                 </Badge>
               </div>
 
-              {/* Cards */}
               <div className="flex-1 space-y-2 min-h-[100px] rounded-lg bg-muted/30 p-2">
                 {grouped[col.key].map((project) => (
                   <Card
@@ -307,7 +288,7 @@ export default function Projetos() {
                       <div className="flex items-start gap-1.5">
                         <GripVertical className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0 cursor-grab" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{project.client || project.name}</p>
+                          <p className="text-sm font-medium text-foreground truncate">{getClientDisplay(project)}</p>
                           {project.service && (
                             <p className="text-xs text-muted-foreground truncate">{project.service}</p>
                           )}
@@ -349,13 +330,14 @@ export default function Projetos() {
               )}
               <TabsList className="w-full">
                 <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
+                <TabsTrigger value="faturamento" className="flex-1">Faturamento</TabsTrigger>
                 <TabsTrigger value="medicoes" className="flex-1">Medições</TabsTrigger>
               </TabsList>
 
               <TabsContent value="dados">
                 <div className="space-y-4 mt-2">
                   <div>
-                    <Label>Nome</Label>
+                    <Label>Nome do Projeto</Label>
                     <Input
                       value={editForm.name || ""}
                       onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
@@ -363,13 +345,29 @@ export default function Projetos() {
                   </div>
                   <div>
                     <Label>Cliente</Label>
-                    <Input
+                    <Select
                       value={editForm.client || ""}
-                      onChange={(e) => setEditForm({ ...editForm, client: e.target.value })}
-                    />
+                      onValueChange={(val) => {
+                        const cl = clients.find((c) => c.name === val);
+                        setEditForm({
+                          ...editForm,
+                          client: val,
+                          client_cnpj: cl?.cnpj || editForm.client_cnpj,
+                        });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecionar cliente" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients.filter(c => c.is_active).map((c) => (
+                          <SelectItem key={c.id} value={c.name}>{c.codigo ? `${c.codigo} — ` : ""}{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
-                    <Label>CNPJ</Label>
+                    <Label>CNPJ do Cliente</Label>
                     <Input
                       value={editForm.client_cnpj || ""}
                       onChange={(e) => setEditForm({ ...editForm, client_cnpj: e.target.value })}
@@ -425,9 +423,7 @@ export default function Projetos() {
                       value={editForm.empresa_faturadora || "ag_topografia"}
                       onValueChange={(val) => setEditForm({ ...editForm, empresa_faturadora: val })}
                     >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ag_topografia">AG Topografia e Construções</SelectItem>
                         <SelectItem value="ag_cartografia">AG Cartografia</SelectItem>
@@ -440,30 +436,30 @@ export default function Projetos() {
                       value={editForm.tipo_documento || "nota_fiscal"}
                       onValueChange={(val) => setEditForm({ ...editForm, tipo_documento: val })}
                     >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="nota_fiscal">Nota Fiscal</SelectItem>
                         <SelectItem value="recibo">Recibo</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label>Data Início</Label>
-                    <Input
-                      type="date"
-                      value={editForm.start_date || ""}
-                      onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value || null })}
-                    />
-                  </div>
-                  <div>
-                    <Label>Data Fim</Label>
-                    <Input
-                      type="date"
-                      value={editForm.end_date || ""}
-                      onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value || null })}
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Data Início</Label>
+                      <Input
+                        type="date"
+                        value={editForm.start_date || ""}
+                        onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value || null })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Data Fim</Label>
+                      <Input
+                        type="date"
+                        value={editForm.end_date || ""}
+                        onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value || null })}
+                      />
+                    </div>
                   </div>
                   <div>
                     <Label>Status</Label>
@@ -471,63 +467,16 @@ export default function Projetos() {
                       {COLUMNS.find((c) => c.key === selectedProject.status)?.label}
                     </Badge>
                   </div>
-                  <Separator className="my-2" />
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Faturamento</p>
-                  <div>
-                    <Label>CNPJ Tomador da NF</Label>
-                    <Input value={(editForm as any).cnpj || ""} onChange={(e) => setEditForm({ ...editForm, cnpj: e.target.value } as any)} />
-                  </div>
-                  <div>
-                    <Label>Empresa Emissora</Label>
-                    <Select value={(editForm as any).empresa_emissora || "AG Topografia"} onValueChange={(v) => setEditForm({ ...editForm, empresa_emissora: v } as any)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="AG Topografia">AG Topografia</SelectItem>
-                        <SelectItem value="AG Cartografia">AG Cartografia</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Conta Bancária</Label>
-                    <Select value={(editForm as any).conta_bancaria || ""} onValueChange={(v) => setEditForm({ ...editForm, conta_bancaria: v } as any)}>
-                      <SelectTrigger><SelectValue placeholder="Selecionar conta" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Bradesco Gonzaga">Bradesco Gonzaga</SelectItem>
-                        <SelectItem value="BB Cartografia">BB Cartografia</SelectItem>
-                        <SelectItem value="BB Gonzaga">BB Gonzaga</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Modalidade</Label>
-                    <Select value={(editForm as any).modalidade_faturamento || ""} onValueChange={(v) => setEditForm({ ...editForm, modalidade_faturamento: v } as any)}>
-                      <SelectTrigger><SelectValue placeholder="Selecionar modalidade" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="equipe_mensal">Equipe mensal</SelectItem>
-                        <SelectItem value="por_medicao">Por medição</SelectItem>
-                        <SelectItem value="diaria">Diária</SelectItem>
-                        <SelectItem value="por_servico">Por serviço</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Referência de Faturamento</Label>
-                    <Input value={(editForm as any).referencia_contrato || ""} onChange={(e) => setEditForm({ ...editForm, referencia_contrato: e.target.value } as any)} placeholder="Contrato, BM, pedido..." />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Label>Instrução variável de faturamento</Label>
-                    <input type="checkbox" checked={(editForm as any).instrucao_faturamento_variavel || false} onChange={(e) => setEditForm({ ...editForm, instrucao_faturamento_variavel: e.target.checked } as any)} />
-                  </div>
 
                   <Separator className="my-2" />
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contatos</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contatos do Cliente</p>
                   <div>
                     <Label>Engenheiro Responsável</Label>
-                    <Input value={(editForm as any).contato_engenheiro || ""} onChange={(e) => setEditForm({ ...editForm, contato_engenheiro: e.target.value } as any)} />
+                    <Input value={editForm.contato_engenheiro || ""} onChange={(e) => setEditForm({ ...editForm, contato_engenheiro: e.target.value })} />
                   </div>
                   <div>
                     <Label>Contato Financeiro</Label>
-                    <Input value={(editForm as any).contato_financeiro || ""} onChange={(e) => setEditForm({ ...editForm, contato_financeiro: e.target.value } as any)} />
+                    <Input value={editForm.contato_financeiro || ""} onChange={(e) => setEditForm({ ...editForm, contato_financeiro: e.target.value })} />
                   </div>
 
                   <Separator className="my-2" />
@@ -550,10 +499,67 @@ export default function Projetos() {
                 </div>
               </TabsContent>
 
+              <TabsContent value="faturamento">
+                <div className="space-y-4 mt-2">
+                  <div>
+                    <Label>CNPJ Tomador da NF</Label>
+                    <Input value={editForm.cnpj || ""} onChange={(e) => setEditForm({ ...editForm, cnpj: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Empresa Emissora</Label>
+                    <Select value={editForm.empresa_emissora || "AG Topografia"} onValueChange={(v) => setEditForm({ ...editForm, empresa_emissora: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AG Topografia">AG Topografia</SelectItem>
+                        <SelectItem value="AG Cartografia">AG Cartografia</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Conta Bancária</Label>
+                    <Select value={editForm.conta_bancaria || ""} onValueChange={(v) => setEditForm({ ...editForm, conta_bancaria: v })}>
+                      <SelectTrigger><SelectValue placeholder="Selecionar conta" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Bradesco Gonzaga">Bradesco Gonzaga</SelectItem>
+                        <SelectItem value="BB Cartografia">BB Cartografia</SelectItem>
+                        <SelectItem value="BB Gonzaga">BB Gonzaga</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Modalidade de Faturamento</Label>
+                    <Select value={editForm.modalidade_faturamento || ""} onValueChange={(v) => setEditForm({ ...editForm, modalidade_faturamento: v })}>
+                      <SelectTrigger><SelectValue placeholder="Selecionar modalidade" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="equipe_mensal">Equipe mensal</SelectItem>
+                        <SelectItem value="por_medicao">Por medição</SelectItem>
+                        <SelectItem value="diaria">Diária</SelectItem>
+                        <SelectItem value="por_servico">Por serviço</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Referência de Faturamento</Label>
+                    <Input value={editForm.referencia_contrato || ""} onChange={(e) => setEditForm({ ...editForm, referencia_contrato: e.target.value })} placeholder="Contrato, BM, pedido..." />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Label>Instrução variável de faturamento</Label>
+                    <input type="checkbox" checked={editForm.instrucao_faturamento_variavel || false} onChange={(e) => setEditForm({ ...editForm, instrucao_faturamento_variavel: e.target.checked })} />
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button onClick={handleSave} disabled={updateProject.isPending} className="flex-1">
+                      {updateProject.isPending ? "Salvando..." : "Salvar"}
+                    </Button>
+                    <Button variant="outline" onClick={() => setSelectedProject(null)}>
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+
               <TabsContent value="medicoes">
                 <ProjectMeasurementsTab
-                  projectName={selectedProject.name}
-                  clientName={selectedProject.client}
+                  projectId={selectedProject.id}
                   contractValue={selectedProject.contract_value}
                 />
               </TabsContent>

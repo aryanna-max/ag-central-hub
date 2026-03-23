@@ -15,7 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultObraId?: string;
+  defaultProjectId?: string;
 }
 
 function useActiveProjects() {
@@ -33,14 +33,14 @@ function useActiveProjects() {
   });
 }
 
-export default function MeasurementFormDialog({ open, onOpenChange, defaultObraId }: Props) {
+export default function MeasurementFormDialog({ open, onOpenChange, defaultProjectId }: Props) {
   const createMeasurement = useCreateMeasurement();
   const { data: teams } = useTeams();
   const { data: projects } = useActiveProjects();
 
   const [form, setForm] = useState({
     codigo_bm: "",
-    obra_id: defaultObraId || "",
+    project_id: defaultProjectId || "",
     team_id: "",
     period_start: "",
     period_end: "",
@@ -56,14 +56,14 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
     responsavel_cobranca: "",
   });
 
-  const selectedProject = (projects || []).find((p: any) => p.id === form.obra_id);
+  const selectedProject = (projects || []).find((p: any) => p.id === form.project_id);
   const needsInstrucao = !!(selectedProject as any)?.instrucao_faturamento_variavel;
 
   useEffect(() => {
-    if (open && defaultObraId) {
-      setForm((p) => ({ ...p, obra_id: defaultObraId }));
+    if (open && defaultProjectId) {
+      setForm((p) => ({ ...p, project_id: defaultProjectId }));
     }
-  }, [open, defaultObraId]);
+  }, [open, defaultProjectId]);
 
   const set = (key: string, value: string) => setForm((p) => ({ ...p, [key]: value }));
 
@@ -80,7 +80,7 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
   }, [form.dias_semana, form.valor_diaria_semana, form.dias_fds, form.valor_diaria_fds, form.retencao_pct]);
 
   const resetForm = () =>
-    setForm({ codigo_bm: "", obra_id: "", team_id: "", period_start: "", period_end: "", dias_semana: "", valor_diaria_semana: "", dias_fds: "", valor_diaria_fds: "", retencao_pct: "5", notes: "", empresa_faturadora: "ag_topografia", tipo_documento: "nota_fiscal", instrucao_faturamento: "", responsavel_cobranca: "" });
+    setForm({ codigo_bm: "", project_id: "", team_id: "", period_start: "", period_end: "", dias_semana: "", valor_diaria_semana: "", dias_fds: "", valor_diaria_fds: "", retencao_pct: "5", notes: "", empresa_faturadora: "ag_topografia", tipo_documento: "nota_fiscal", instrucao_faturamento: "", responsavel_cobranca: "" });
 
   const handleSave = async (notify: boolean) => {
     if (!form.codigo_bm || !form.period_start || !form.period_end) {
@@ -94,7 +94,7 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
     try {
       await createMeasurement.mutateAsync({
         codigo_bm: form.codigo_bm,
-        obra_id: form.obra_id || null,
+        project_id: form.project_id || null,
         team_id: form.team_id || null,
         period_start: form.period_start,
         period_end: form.period_end,
@@ -147,11 +147,11 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
             <Input placeholder="Ex: FSQ-GTR-009" value={form.codigo_bm} onChange={(e) => set("codigo_bm", e.target.value)} />
           </div>
 
-          {/* Obra e Equipe */}
+          {/* Projeto e Equipe */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Projeto</Label>
-              <Select value={form.obra_id} onValueChange={(v) => set("obra_id", v)}>
+              <Select value={form.project_id} onValueChange={(v) => set("project_id", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecionar projeto" /></SelectTrigger>
                 <SelectContent>
                   {(projects || []).map((o: any) => (
@@ -185,7 +185,7 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
             </div>
           </div>
 
-          {/* Empresa Faturadora e Tipo Documento */}
+          {/* Empresa / Tipo */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Empresa Faturadora</Label>
@@ -198,14 +198,10 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
               </Select>
             </div>
             <div>
-              <Label>Tipo de Documento</Label>
+              <Label>Tipo Documento</Label>
               <Select value={form.tipo_documento} onValueChange={(v) => {
                 set("tipo_documento", v);
-                if (v === "recibo") {
-                  set("retencao_pct", "0");
-                } else {
-                  set("retencao_pct", "5");
-                }
+                if (v === "recibo") set("retencao_pct", "0");
               }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -216,83 +212,59 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
             </div>
           </div>
 
-          <Separator />
-
           {/* Diárias */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Dias 2ª–6ª</Label>
-              <Input type="number" min="0" placeholder="0" value={form.dias_semana} onChange={(e) => set("dias_semana", e.target.value)} />
-            </div>
-            <div>
-              <Label>2ª–6ª R$</Label>
-              <Input type="number" min="0" step="0.01" placeholder="0,00" value={form.valor_diaria_semana} onChange={(e) => set("valor_diaria_semana", e.target.value)} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Dias Sáb/Dom/Feriado</Label>
-              <Input type="number" min="0" placeholder="0" value={form.dias_fds} onChange={(e) => set("dias_fds", e.target.value)} />
-            </div>
-            <div>
-              <Label>Sáb/Dom/Feriado R$</Label>
-              <Input type="number" min="0" step="0.01" placeholder="0,00" value={form.valor_diaria_fds} onChange={(e) => set("valor_diaria_fds", e.target.value)} />
-            </div>
-          </div>
-
-          {/* Retenção */}
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <Label>Retenção %</Label>
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                step="0.1"
-                value={form.retencao_pct}
-                onChange={(e) => set("retencao_pct", e.target.value)}
-                disabled={form.tipo_documento === "recibo"}
-              />
-            </div>
-          </div>
-
           <Separator />
-
-          {/* Resumo calculado */}
-          <div className="rounded-lg border bg-muted/30 p-3 space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Valor Bruto</span>
-              <span className="font-medium">{fmt(calc.bruto)}</span>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Dias Semana</Label>
+              <Input type="number" value={form.dias_semana} onChange={(e) => set("dias_semana", e.target.value)} />
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Retenção ({form.retencao_pct || 0}%)</span>
-              <span className="text-destructive">– {fmt(calc.retencao)}</span>
-            </div>
-            <Separator />
-            <div className="flex justify-between font-semibold">
-              <span>Valor NF</span>
-              <span>{fmt(calc.nf)}</span>
+            <div>
+              <Label>Valor Diária Semana</Label>
+              <Input type="number" value={form.valor_diaria_semana} onChange={(e) => set("valor_diaria_semana", e.target.value)} />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Dias FDS</Label>
+              <Input type="number" value={form.dias_fds} onChange={(e) => set("dias_fds", e.target.value)} />
+            </div>
+            <div>
+              <Label>Valor Diária FDS</Label>
+              <Input type="number" value={form.valor_diaria_fds} onChange={(e) => set("valor_diaria_fds", e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <Label>Retenção (%)</Label>
+            <Input type="number" value={form.retencao_pct} onChange={(e) => set("retencao_pct", e.target.value)} disabled={form.tipo_documento === "recibo"} />
+          </div>
 
-          {/* Instrução de faturamento (conditional) */}
+          {/* Resumo */}
+          <div className="bg-muted rounded-lg p-3 space-y-1 text-sm">
+            <div className="flex justify-between"><span>Valor Bruto</span><span className="font-semibold">{fmt(calc.bruto)}</span></div>
+            <div className="flex justify-between"><span>Retenção</span><span className="font-semibold text-destructive">- {fmt(calc.retencao)}</span></div>
+            <Separator />
+            <div className="flex justify-between text-base font-bold"><span>Valor NF</span><span className="text-primary">{fmt(calc.nf)}</span></div>
+          </div>
+
+          {/* Instrução de faturamento (condicional) */}
           {needsInstrucao && (
             <div>
               <Label>Instrução de Faturamento *</Label>
               <Textarea
-                placeholder="Ex: Colorado pediu para faturar pelo Colarrio 4 — R$4.800"
+                placeholder="Ex: Colorado pediu faturar pelo Colarrio 4 — R$4.800"
                 value={form.instrucao_faturamento}
                 onChange={(e) => set("instrucao_faturamento", e.target.value)}
+                rows={3}
               />
             </div>
           )}
 
-          {/* Responsável pela cobrança */}
+          {/* Responsável cobrança */}
           <div>
             <Label>Responsável pela Cobrança</Label>
             <Select value={form.responsavel_cobranca} onValueChange={(v) => set("responsavel_cobranca", v)}>
-              <SelectTrigger><SelectValue placeholder="Selecionar (opcional)" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="Marcelo">Marcelo</SelectItem>
                 <SelectItem value="Sérgio">Sérgio</SelectItem>
@@ -301,21 +273,16 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
             </Select>
           </div>
 
-          {/* Observações */}
           <div>
             <Label>Observações</Label>
-            <Textarea placeholder="Notas adicionais..." value={form.notes} onChange={(e) => set("notes", e.target.value)} />
+            <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} />
           </div>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        <DialogFooter className="flex gap-2 pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button variant="secondary" onClick={() => handleSave(false)} disabled={!form.codigo_bm}>
-            Salvar Rascunho
-          </Button>
-          <Button onClick={() => handleSave(true)} disabled={!form.codigo_bm || !form.period_start || !form.period_end}>
-            Salvar e Notificar Alcione
-          </Button>
+          <Button variant="secondary" onClick={() => handleSave(false)} disabled={createMeasurement.isPending}>Salvar Rascunho</Button>
+          <Button onClick={() => handleSave(true)} disabled={createMeasurement.isPending}>Salvar e Notificar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
