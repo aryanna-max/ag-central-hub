@@ -52,7 +52,12 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultObraI
     notes: "",
     empresa_faturadora: "ag_topografia",
     tipo_documento: "nota_fiscal",
+    instrucao_faturamento: "",
+    responsavel_cobranca: "",
   });
+
+  const selectedProject = (projects || []).find((p: any) => p.id === form.obra_id);
+  const needsInstrucao = !!(selectedProject as any)?.instrucao_faturamento_variavel;
 
   useEffect(() => {
     if (open && defaultObraId) {
