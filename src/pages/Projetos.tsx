@@ -54,7 +54,14 @@ function ProjectMeasurementsTab({
   clientName: string | null;
   contractValue: number | null;
 }) {
-  const { data: filtered = [], isLoading } = useProjectMeasurements(projectName, clientName);
+  const { data: matchedProject } = useQuery({
+    queryKey: ["project-id-by-name", projectName],
+    queryFn: async () => {
+      const { data } = await supabase.from("projects").select("id").eq("name", projectName).maybeSingle();
+      return data?.id ?? null;
+    },
+  });
+  const { data: filtered = [], isLoading } = useProjectMeasurements(matchedProject ?? null);
   const [showNewMeasurement, setShowNewMeasurement] = useState(false);
 
   // Find matching obra_id by project name

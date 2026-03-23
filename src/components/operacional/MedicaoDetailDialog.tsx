@@ -95,7 +95,7 @@ export default function MedicaoDetailDialog({ medicao, open, onOpenChange }: Pro
 
         <div className="space-y-3 text-sm">
           <div className="grid grid-cols-2 gap-2">
-            <div><span className="text-muted-foreground">Obra:</span><p>{medicao.obra_name || "—"}</p></div>
+            <div><span className="text-muted-foreground">Projeto:</span><p>{medicao.project_name || "—"}</p></div>
             <div><span className="text-muted-foreground">Equipe:</span><p>{medicao.team_name || "—"}</p></div>
             <div><span className="text-muted-foreground">Período:</span><p>{medicao.period_start} a {medicao.period_end}</p></div>
             <div><span className="text-muted-foreground">NF Nº:</span><p>{medicao.nf_numero || "—"}</p></div>

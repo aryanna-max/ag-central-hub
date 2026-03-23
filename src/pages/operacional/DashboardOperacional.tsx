@@ -51,7 +51,7 @@ export default function DashboardOperacional() {
   const stats = useMemo(() => {
     const emps = employees || [];
     const disponivel = emps.filter((e) => e.availability === "disponivel").length;
-    const emObra = emps.filter((e) => e.availability === "em_obra").length;
+    const emObra = emps.filter((e) => e.availability === "em_projeto").length;
     const ferias = emps.filter((e) => e.availability === "ferias").length;
     const licenca = emps.filter((e) => e.availability === "licenca").length;
     const afastado = emps.filter((e) => e.availability === "afastado").length;
