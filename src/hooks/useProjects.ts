@@ -3,6 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type ProjectStatus = "planejamento" | "execucao" | "entrega" | "faturamento" | "concluido" | "pausado";
 
+export interface ProjectClient {
+  id: string;
+  name: string;
+  cnpj: string | null;
+}
+
 export interface Project {
   id: string;
   codigo: string | null;
@@ -11,6 +17,7 @@ export interface Project {
   client_id: string | null;
   client_name: string | null;
   client_cnpj: string | null;
+  clients: ProjectClient | null;
   service: string | null;
   contract_value: number | null;
   responsible: string | null;
