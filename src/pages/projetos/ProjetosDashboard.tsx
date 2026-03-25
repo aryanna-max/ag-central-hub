@@ -85,7 +85,7 @@ export default function ProjetosDashboard() {
   }, [measurements]);
 
   const getProjectMeasurements = (p: Project) => {
-    return measurementsByProject[p.id] || (p.obra_id ? measurementsByProject[p.obra_id] : undefined);
+    return measurementsByProject[p.id];
   };
 
   const totalMedido = useMemo(
