@@ -181,6 +181,7 @@ export default function Projetos() {
       await updateProject.mutateAsync({
         id: selectedProject.id,
         name: editForm.name,
+        client_id: editForm.client_id,
         client: editForm.client,
         client_cnpj: editForm.client_cnpj,
         service: editForm.service,
