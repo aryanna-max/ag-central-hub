@@ -148,12 +148,12 @@ export default function EscalaDiaria() {
     setEditAssignment({
       id: assignment.id,
       team_id: assignment.team_id,
-      obra_id: assignment.obra_id || "",
+      project_id: assignment.project_id || "",
       vehicle_id: assignment.vehicle_id || null,
       start_date: selectedDate,
       end_date: selectedDate,
       teams: assignment.teams,
-      obras: assignment.obras,
+      projects: assignment.projects,
       vehicles: assignment.vehicles,
     });
     setEditOpen(true);
