@@ -133,7 +133,7 @@ export default function VehicleDetailDialog({ open, onOpenChange, vehicle }: Veh
     return {
       label: format(m, "MMMM yyyy", { locale: ptBR }),
       dias,
-      obras: obrasSet.size,
+      obras: projSet.size,
       kmRodado: 0,
       calc,
       paga,
