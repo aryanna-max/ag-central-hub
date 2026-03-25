@@ -33,6 +33,7 @@ const PIE_COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "#f59e0b", "
 
 export default function ProjetosDashboard() {
   const { data: projects = [] } = useProjects();
+  const { data: clients = [] } = useClients();
 
   const { data: measurements = [] } = useQuery({
     queryKey: ["all-measurements-dashboard"],
