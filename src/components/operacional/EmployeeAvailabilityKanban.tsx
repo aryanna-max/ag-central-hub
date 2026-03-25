@@ -215,7 +215,7 @@ export default function EmployeeAvailabilityKanban({
           Gestão de Disponibilidade — Funcionários de Campo ({totalCount + rhCount})
         </h3>
 
-        {/* Faixa horizontal: Sem Alocação */}
+        {/* Faixa horizontal: Sem Alocação — dividida por função */}
         <div
           className={`rounded-lg border-2 transition-colors ${
             naoAlocadoIsOver ? "border-primary bg-primary/5" : "border-border"
@@ -231,11 +231,27 @@ export default function EmployeeAvailabilityKanban({
               <Badge variant="secondary" className="ml-auto text-[10px] h-5 px-1.5">{grouped.nao_alocado.length}</Badge>
             </div>
           </div>
-          <div className="p-2 flex flex-wrap gap-1.5 min-h-[40px]">
-            {grouped.nao_alocado.length === 0 && (
-              <p className="text-[10px] text-muted-foreground italic py-1">Todos alocados ou categorizados</p>
-            )}
-            {grouped.nao_alocado.map((emp) => <EmployeeChip key={emp.id} emp={emp} />)}
+          <div className="grid grid-cols-2 gap-3 p-2">
+            {/* Topógrafos */}
+            <div>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Topógrafos ({topografosNaoAlocados.length})</p>
+              <div className="flex flex-wrap gap-1.5 min-h-[40px]">
+                {topografosNaoAlocados.length === 0 && (
+                  <p className="text-[10px] text-muted-foreground italic py-1">Nenhum</p>
+                )}
+                {topografosNaoAlocados.map((emp) => <EmployeeChip key={emp.id} emp={emp} />)}
+              </div>
+            </div>
+            {/* Auxiliares */}
+            <div>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Auxiliares ({auxiliaresNaoAlocados.length})</p>
+              <div className="flex flex-wrap gap-1.5 min-h-[40px]">
+                {auxiliaresNaoAlocados.length === 0 && (
+                  <p className="text-[10px] text-muted-foreground italic py-1">Nenhum</p>
+                )}
+                {auxiliaresNaoAlocados.map((emp) => <EmployeeChip key={emp.id} emp={emp} />)}
+              </div>
+            </div>
           </div>
         </div>
 
