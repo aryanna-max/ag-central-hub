@@ -141,21 +141,20 @@ export default function EmployeeAvailabilityKanban({
   const isTopografo = (role: string) =>
     role?.toLowerCase().includes("topógrafo") || role?.toLowerCase().includes("topografo");
 
+  const isAuxiliar = (role: string) =>
+    role?.toLowerCase().includes("auxiliar") || role?.toLowerCase().includes("ajudante");
+
   const totalCount = unassignedEmployees.length;
   const rhCount = rhAbsentEmployees.length;
   if (totalCount === 0 && rhCount === 0) return null;
 
+  /** "João P." format */
   const formatEmployeeName = (emp: Employee) => {
-    const parts = emp.name.split(" ");
-    if (parts.length <= 2) return emp.name;
-    return `${parts[0]} ${parts[parts.length - 1]}`;
-  };
-
-  const getMatriculaBadge = (matricula?: string | null) => {
-    if (!matricula) return null;
-    if (matricula.startsWith("000")) return <Badge className="text-[8px] h-3.5 px-1 bg-blue-600 text-white shrink-0">CLT</Badge>;
-    if (matricula.toUpperCase().startsWith("PREST")) return <Badge className="text-[8px] h-3.5 px-1 bg-muted text-muted-foreground shrink-0">PREST</Badge>;
-    return null;
+    const parts = emp.name.trim().split(/\s+/);
+    if (parts.length <= 1) return emp.name;
+    const first = parts[0];
+    const lastInitial = parts[parts.length - 1][0]?.toUpperCase() || "";
+    return `${first} ${lastInitial}.`;
   };
 
   const EmployeeChip = ({ emp, draggable: isDraggable = true }: { emp: Employee; draggable?: boolean }) => (
