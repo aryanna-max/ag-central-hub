@@ -149,7 +149,6 @@ export function useAddDailyEntry() {
       daily_team_assignment_id?: string;
     }) => {
       const insertPayload: any = { ...entry };
-      if (entry.project_id) insertPayload.obra_id = entry.project_id;
 
       const { data, error } = await supabase
         .from("daily_schedule_entries")
