@@ -55,11 +55,7 @@ export function useCreateMeasurement() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (values: Record<string, any>) => {
-      // Ensure project_id is set; also set obra_id for legacy compatibility
       const payload = { ...values };
-      if (payload.project_id && !payload.obra_id) {
-        payload.obra_id = payload.project_id;
-      }
       const { data, error } = await supabase
         .from("measurements")
         .insert(payload as any)
