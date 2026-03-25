@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 import { useUpdateVehicle, useCreateVehicle } from "@/hooks/useVehicles";
@@ -41,6 +42,7 @@ export default function VehicleEditDialog({ open, onOpenChange, vehicle }: Vehic
     home_address: "",
     km_current: "",
     daily_rate: "",
+    is_rented: false,
   });
 
   useEffect(() => {
@@ -50,19 +52,20 @@ export default function VehicleEditDialog({ open, onOpenChange, vehicle }: Vehic
         model: vehicle.model || "",
         brand: vehicle.brand || "",
         year: vehicle.year?.toString() || "",
-        color: (vehicle as any).color || "",
+        color: vehicle.color || "",
         status: vehicle.status || "disponivel",
-        owner_name: (vehicle as any).owner_name || "",
-        responsible_employee_id: (vehicle as any).responsible_employee_id || "",
-        home_address: (vehicle as any).home_address || "",
+        owner_name: vehicle.owner_name || "",
+        responsible_employee_id: vehicle.responsible_employee_id || "",
+        home_address: vehicle.home_address || "",
         km_current: vehicle.km_current?.toString() || "",
         daily_rate: vehicle.daily_rate?.toString() || "",
+        is_rented: vehicle.is_rented || false,
       });
     } else {
       setForm({
         plate: "", model: "", brand: "", year: "", color: "",
         status: "disponivel", owner_name: "", responsible_employee_id: "",
-        home_address: "", km_current: "", daily_rate: "",
+        home_address: "", km_current: "", daily_rate: "", is_rented: false,
       });
     }
   }, [vehicle, open]);
@@ -77,10 +80,11 @@ export default function VehicleEditDialog({ open, onOpenChange, vehicle }: Vehic
       color: form.color || null,
       status: form.status,
       owner_name: form.owner_name || null,
-      responsible_employee_id: form.responsible_employee_id || null,
+      responsible_employee_id: form.is_rented ? null : (form.responsible_employee_id || null),
       home_address: form.home_address || null,
       km_current: form.km_current ? parseInt(form.km_current) : null,
       daily_rate: form.daily_rate ? parseFloat(form.daily_rate) : 0,
+      is_rented: form.is_rented,
     };
 
     try {
@@ -97,7 +101,7 @@ export default function VehicleEditDialog({ open, onOpenChange, vehicle }: Vehic
     }
   };
 
-  const set = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }));
+  const set = (field: string, value: string | boolean) => setForm(f => ({ ...f, [field]: value }));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -144,23 +148,36 @@ export default function VehicleEditDialog({ open, onOpenChange, vehicle }: Vehic
             </Select>
           </div>
 
+          {/* Alugado checkbox */}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="is_rented"
+              checked={form.is_rented}
+              onCheckedChange={(checked) => set("is_rented", !!checked)}
+            />
+            <Label htmlFor="is_rented" className="cursor-pointer">Veículo alugado (locadora)</Label>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Proprietário</Label>
               <Input value={form.owner_name} onChange={e => set("owner_name", e.target.value)} placeholder="Nome do proprietário" />
             </div>
-            <div className="space-y-1.5">
-              <Label>Responsável</Label>
-              <Select value={form.responsible_employee_id} onValueChange={v => set("responsible_employee_id", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {employees?.filter(e => e.status === "disponivel").map(e => (
-                    <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Responsável - oculto quando alugado */}
+            {!form.is_rented && (
+              <div className="space-y-1.5">
+                <Label>Motorista Responsável</Label>
+                <Select value={form.responsible_employee_id || "none"} onValueChange={v => set("responsible_employee_id", v === "none" ? "" : v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {employees?.filter(e => e.status === "disponivel").map(e => (
+                      <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="space-y-1.5">

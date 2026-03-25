@@ -1,14 +1,15 @@
 import { useState, useMemo } from "react";
-import { Users, Plus, Trash2, UserPlus, X, Crown, Car, Filter, Printer } from "lucide-react";
+import { Users, Plus, Trash2, UserPlus, X, Crown, Car, Filter, Printer, FolderKanban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useTeams, useCreateTeam, useDeleteTeam, useAddTeamMember, useRemoveTeamMember, useUpdateTeamVehicle } from "@/hooks/useTeams";
+import { useTeams, useCreateTeam, useDeleteTeam, useAddTeamMember, useRemoveTeamMember, useUpdateTeamVehicle, useUpdateTeamProject } from "@/hooks/useTeams";
 import { useEmployeesWithAbsences } from "@/hooks/useEmployees";
 import { useVehicles } from "@/hooks/useVehicles";
+import { useProjects } from "@/hooks/useProjects";
 import EmployeeAvailabilityBadge from "@/components/operacional/EmployeeAvailabilityBadge";
 import { toast } from "sonner";
 
@@ -16,11 +17,13 @@ export default function Equipes() {
   const { data: teams, isLoading } = useTeams();
   const { data: employees } = useEmployeesWithAbsences();
   const { data: vehicles } = useVehicles();
+  const { data: projects } = useProjects();
   const createTeam = useCreateTeam();
   const deleteTeam = useDeleteTeam();
   const addMember = useAddTeamMember();
   const removeMember = useRemoveTeamMember();
   const updateVehicle = useUpdateTeamVehicle();
+  const updateProject = useUpdateTeamProject();
 
   const [showNewTeam, setShowNewTeam] = useState(false);
   const [newTeamName, setNewTeamName] = useState("");
@@ -89,6 +92,16 @@ export default function Equipes() {
     );
   };
 
+  const handleProjectChange = (teamId: string, projectId: string) => {
+    updateProject.mutate(
+      { teamId, projectId: projectId === "none" ? null : projectId },
+      {
+        onSuccess: () => toast.success("Projeto padrão atualizado!"),
+        onError: () => toast.error("Erro ao atualizar projeto"),
+      }
+    );
+  };
+
   const currentTeamMemberIds = addMemberTeamId
     ? (teams?.find((t: any) => t.id === addMemberTeamId) as any)?.team_members?.map((m: any) => m.employee_id) || []
     : [];
@@ -99,6 +112,8 @@ export default function Equipes() {
       !currentTeamMemberIds.includes(e.id) &&
       e.name.toLowerCase().includes(searchEmployee.toLowerCase())
   );
+
+  const activeProjects = (projects || []).filter((p: any) => p.is_active !== false);
 
   const getTopografo = (team: any) =>
     team.team_members?.find((m: any) => m.role === "topografo");
@@ -173,6 +188,7 @@ export default function Equipes() {
             const topografo = getTopografo(team);
             const auxiliares = getAuxiliares(team);
             const currentVehicle = team.vehicles;
+            const currentProject = team.default_project;
             return (
               <Card key={team.id}>
                 <CardHeader className="pb-3">
@@ -259,7 +275,7 @@ export default function Equipes() {
                       <Car className="w-3 h-3" /> VEÍCULO PADRÃO
                     </p>
                     <Select
-                      value={team.default_vehicle_id || "none"}
+                      value={(team as any).default_vehicle_id || "none"}
                       onValueChange={(v) => handleVehicleChange(team.id, v)}
                     >
                       <SelectTrigger className="h-9 text-sm">
@@ -278,6 +294,32 @@ export default function Equipes() {
                     {currentVehicle && (
                       <p className="text-xs text-muted-foreground mt-1">
                         Atual: {currentVehicle.model} — {currentVehicle.plate}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Projeto Padrão */}
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+                      <FolderKanban className="w-3 h-3" /> PROJETO PADRÃO
+                    </p>
+                    <Select
+                      value={(team as any).default_project_id || "none"}
+                      onValueChange={(v) => handleProjectChange(team.id, v)}
+                    >
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue placeholder="Selecionar projeto..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Sem projeto</SelectItem>
+                        {activeProjects.map((p: any) => (
+                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {currentProject && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Atual: {currentProject.name}
                       </p>
                     )}
                   </div>
