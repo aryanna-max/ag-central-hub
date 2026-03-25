@@ -250,7 +250,6 @@ export function usePreFillFromMonthly() {
           .insert({
             daily_schedule_id: scheduleId,
             team_id: ms.team_id,
-            obra_id: projectId,
             project_id: projectId,
             vehicle_id: ms.vehicle_id,
           });
