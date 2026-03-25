@@ -202,6 +202,7 @@ export type Database = {
           address: string | null
           city: string | null
           cnpj: string | null
+          codigo: string | null
           contato_engenheiro: string | null
           contato_financeiro: string | null
           created_at: string
@@ -221,6 +222,7 @@ export type Database = {
           address?: string | null
           city?: string | null
           cnpj?: string | null
+          codigo?: string | null
           contato_engenheiro?: string | null
           contato_financeiro?: string | null
           created_at?: string
@@ -240,6 +242,7 @@ export type Database = {
           address?: string | null
           city?: string | null
           cnpj?: string | null
+          codigo?: string | null
           contato_engenheiro?: string | null
           contato_financeiro?: string | null
           created_at?: string
@@ -1092,6 +1095,7 @@ export type Database = {
           client_id: string | null
           client_name: string | null
           cnpj: string | null
+          codigo: string | null
           conta_bancaria: string | null
           contato_engenheiro: string | null
           contato_financeiro: string | null
@@ -1126,6 +1130,7 @@ export type Database = {
           client_id?: string | null
           client_name?: string | null
           cnpj?: string | null
+          codigo?: string | null
           conta_bancaria?: string | null
           contato_engenheiro?: string | null
           contato_financeiro?: string | null
@@ -1160,6 +1165,7 @@ export type Database = {
           client_id?: string | null
           client_name?: string | null
           cnpj?: string | null
+          codigo?: string | null
           conta_bancaria?: string | null
           contato_engenheiro?: string | null
           contato_financeiro?: string | null
