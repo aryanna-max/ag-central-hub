@@ -279,7 +279,7 @@ export default function EmployeeAvailabilityKanban({
                   <Badge variant="outline" className="text-[9px] h-4 px-1 shrink-0 bg-muted text-muted-foreground">
                     {emp.availability === "ferias" ? "FÉRIAS" : emp.availability === "licenca" ? "LICENÇA" : "AFAST."}
                   </Badge>
-                  <span className="truncate leading-tight">{emp.name.split(" ").slice(0, 2).join(" ")}</span>
+                  <span className="truncate leading-tight">{formatEmployeeName(emp)}</span>
                 </div>
               ))}
             </div>
