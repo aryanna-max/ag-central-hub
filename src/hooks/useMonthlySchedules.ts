@@ -32,7 +32,7 @@ export function useCreateMonthlySchedule() {
       vehicle_id?: string;
       schedule_type?: string;
     }) => {
-      const insertPayload: any = { ...payload, obra_id: payload.project_id };
+      const insertPayload: any = { ...payload };
       const { error } = await supabase.from("monthly_schedules").insert(insertPayload);
       if (error) throw error;
 
