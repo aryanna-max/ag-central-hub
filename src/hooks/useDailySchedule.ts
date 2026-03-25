@@ -102,7 +102,6 @@ export function useUpdateTeamAssignment() {
       teamId?: string;
     }) => {
       const dbUpdates: any = { ...updates };
-      if (updates.project_id) dbUpdates.obra_id = updates.project_id;
 
       const { error } = await supabase
         .from("daily_team_assignments")
