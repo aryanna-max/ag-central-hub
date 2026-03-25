@@ -293,9 +293,11 @@ export default function Projetos() {
                       <div className="flex items-start gap-1.5">
                         <GripVertical className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0 cursor-grab" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{getClientDisplay(project)}</p>
-                          {project.service && (
-                            <p className="text-xs text-muted-foreground truncate">{project.service}</p>
+                          <p className="text-sm font-medium text-foreground truncate">{project.name}</p>
+                          {getClientDisplay(project) ? (
+                            <p className="text-xs text-muted-foreground truncate">{getClientDisplay(project)}</p>
+                          ) : (
+                            <Badge className="bg-amber-100 text-amber-800 text-[10px]">Cliente não vinculado</Badge>
                           )}
                         </div>
                       </div>
