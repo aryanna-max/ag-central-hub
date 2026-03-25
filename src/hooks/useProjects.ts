@@ -8,6 +8,7 @@ export interface Project {
   codigo: string | null;
   name: string;
   client: string | null;
+  client_id: string | null;
   client_name: string | null;
   client_cnpj: string | null;
   service: string | null;
