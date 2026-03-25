@@ -191,9 +191,9 @@ export default function ExpenseSheetDetail({ sheetId, onClose, onEdit }: Props) 
       <TableRow key={item.id} className={isExtra ? "bg-orange-50 dark:bg-orange-950/20" : ""}>
         <TableCell>{natureBadge(item)}</TableCell>
         <TableCell className="font-medium text-sm">
-          {isExtra ? (item.receiver_name ?? "—") : (item.employees?.name ?? "—")}
+          {isExtra ? getReceiverName(item) : getEmployeeName(item)}
         </TableCell>
-        <TableCell className="text-xs">{item.project_name ?? "—"}</TableCell>
+        <TableCell className="text-xs">{getProjectName(item)}</TableCell>
         <TableCell className="text-xs">{item.expense_type}</TableCell>
         <TableCell className="text-xs max-w-[180px]">{item.description}</TableCell>
         <TableCell className="text-right font-semibold text-sm">
