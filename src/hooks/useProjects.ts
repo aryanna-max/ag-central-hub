@@ -39,6 +39,7 @@ export interface Project {
 export interface ProjectInsert {
   name: string;
   client?: string | null;
+  client_id?: string | null;
   client_cnpj?: string | null;
   service?: string | null;
   contract_value?: number | null;
