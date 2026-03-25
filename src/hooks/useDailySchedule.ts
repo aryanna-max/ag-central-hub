@@ -63,7 +63,6 @@ export function useAddTeamAssignment() {
     }) => {
       const { date, ...rest } = assignment;
       const insertPayload: any = { ...rest };
-      if (rest.project_id) insertPayload.obra_id = rest.project_id;
       
       const { data, error } = await supabase
         .from("daily_team_assignments")
