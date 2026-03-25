@@ -18,7 +18,6 @@ interface Schedule {
   start_date: string;
   end_date: string;
   team_id: string;
-  obra_id?: string;
   project_id?: string;
   teams: { id: string; name: string; team_members?: TeamMember[] } | null;
   projects?: { id: string; name: string; client: string | null } | null;
