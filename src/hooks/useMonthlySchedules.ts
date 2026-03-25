@@ -183,7 +183,6 @@ export async function syncDailyToMonthly(
   } else if (updates.project_id) {
     await supabase.from("monthly_schedules").insert({
       team_id: teamId,
-      obra_id: updates.project_id,
       project_id: updates.project_id,
       vehicle_id: updates.vehicle_id || null,
       month,
