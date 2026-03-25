@@ -79,7 +79,7 @@ function useVehicleMonthlySummary(vehicleId: string | undefined, open: boolean) 
       const today = format(endOfMonth(new Date()), "yyyy-MM-dd");
       const { data, error } = await supabase
         .from("daily_team_assignments")
-        .select(`id, obra_id, daily_schedules!inner(schedule_date), obras(name)`)
+        .select(`id, project_id, daily_schedules!inner(schedule_date), projects:project_id(name)`)
         .eq("vehicle_id", vehicleId!)
         .gte("daily_schedules.schedule_date", sixMonthsAgo)
         .lte("daily_schedules.schedule_date", today);

@@ -161,15 +161,15 @@ export default function EscalaDiaria() {
 
   const handleEditSave = async (
     scheduleId: string,
-    updates: { team_id?: string; obra_id?: string; vehicle_id?: string },
+    updates: { team_id?: string; project_id?: string; vehicle_id?: string },
     scope: "period" | "day",
     dayDate?: string,
     memberOverrides?: { additions: string[]; removals: string[] }
   ) => {
     if (updates.vehicle_id === "none") updates.vehicle_id = undefined;
     try {
-      const dailyUpdates: { obra_id?: string; vehicle_id?: string } = {};
-      if (updates.obra_id) dailyUpdates.obra_id = updates.obra_id;
+      const dailyUpdates: { project_id?: string; vehicle_id?: string } = {};
+      if (updates.project_id) dailyUpdates.project_id = updates.project_id;
       if (updates.vehicle_id !== undefined) dailyUpdates.vehicle_id = updates.vehicle_id;
 
       if (Object.keys(dailyUpdates).length > 0) {
@@ -183,7 +183,7 @@ export default function EscalaDiaria() {
 
       if (memberOverrides && schedule) {
         const teamId = updates.team_id || editAssignment?.team_id;
-        const obraId = updates.obra_id || editAssignment?.obra_id;
+        const projectId = updates.project_id || editAssignment?.project_id;
         const vehicleId = updates.vehicle_id || editAssignment?.vehicle_id;
 
         for (const empId of memberOverrides.removals) {
@@ -199,7 +199,7 @@ export default function EscalaDiaria() {
             daily_schedule_id: schedule.id,
             employee_id: empId,
             team_id: teamId,
-            obra_id: obraId,
+            project_id: projectId,
             vehicle_id: vehicleId,
           });
         }
@@ -215,7 +215,7 @@ export default function EscalaDiaria() {
 
         if (monthlySchedules?.length) {
           const monthlyUpdates: Record<string, string> = {};
-          if (updates.obra_id) monthlyUpdates.obra_id = updates.obra_id;
+          if (updates.project_id) monthlyUpdates.project_id = updates.project_id;
           if (updates.vehicle_id) monthlyUpdates.vehicle_id = updates.vehicle_id;
           if (Object.keys(monthlyUpdates).length > 0) {
             await supabase.from("monthly_schedules").update(monthlyUpdates).eq("id", monthlySchedules[0].id);

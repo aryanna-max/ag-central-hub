@@ -242,7 +242,6 @@ async function syncMonthlyToDaily(
       await supabase.from("daily_team_assignments").insert({
         daily_schedule_id: ds.id,
         team_id: teamId,
-        obra_id: projectId,
         project_id: projectId,
         vehicle_id: vehicleId,
       });
