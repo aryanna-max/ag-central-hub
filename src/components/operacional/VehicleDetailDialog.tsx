@@ -55,9 +55,9 @@ function useVehicleHistory(vehicleId: string | undefined, start: Date, end: Date
       const { data: assignments, error } = await supabase
         .from("daily_team_assignments")
         .select(`
-          id, daily_schedule_id, obra_id, vehicle_id, notes,
+          id, daily_schedule_id, project_id, vehicle_id, notes,
           daily_schedules!inner(schedule_date),
-          obras(name, location),
+          projects:project_id(name, location),
           teams(name)
         `)
         .eq("vehicle_id", vehicleId!)
