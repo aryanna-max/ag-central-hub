@@ -90,9 +90,24 @@ export default function EscalaDiaria() {
   const closeSchedule = useCloseDailySchedule();
   const preFill = usePreFillFromMonthly();
   const updateMonthly = useUpdateMonthlySchedule();
+  const { data: confirmation } = useScheduleConfirmation(selectedDate);
+  const confirmSchedule = useConfirmSchedule();
+  const { user, role } = useAuth();
 
   const isClosed = schedule?.is_closed;
   const isToday = selectedDate === today;
+  const isConfirmed = !!confirmation;
+  const isReadOnly = isClosed || isConfirmed;
+
+  const handleConfirmSchedule = async () => {
+    if (!user?.id) return;
+    try {
+      await confirmSchedule.mutateAsync({ date: selectedDate, userId: user.id });
+      toast.success("Escala confirmada!");
+    } catch {
+      toast.error("Erro ao confirmar escala");
+    }
+  };
 
   const handleCreateSchedule = async () => {
     try {
