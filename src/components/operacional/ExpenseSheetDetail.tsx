@@ -72,8 +72,6 @@ export default function ExpenseSheetDetail({ sheetId, onClose, onEdit }: Props) 
     }
     return item.receiver_name || "—";
   };
-  const [returnComment, setReturnComment] = useState("");
-  const [showReturn, setShowReturn] = useState(false);
 
   if (!sheetId) return null;
 
