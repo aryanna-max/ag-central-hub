@@ -32,6 +32,8 @@ import MonthlyDayEditDialog from "@/components/operacional/MonthlyDayEditDialog"
 import EmployeeAvailabilityKanban from "@/components/operacional/EmployeeAvailabilityKanban";
 import DailyReportDialog from "@/components/operacional/DailyReportDialog";
 import { useUpdateMonthlySchedule } from "@/hooks/useMonthlySchedules";
+import { useScheduleConfirmation, useConfirmSchedule } from "@/hooks/useScheduleConfirmations";
+import { useAuth } from "@/contexts/AuthContext";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
 
