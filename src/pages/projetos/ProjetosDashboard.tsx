@@ -68,11 +68,11 @@ export default function ProjetosDashboard() {
     [activeProjects]
   );
 
-  // Aggregate measurements by project_id (primary) and obra_id (legacy fallback)
+  // Aggregate measurements by project_id
   const measurementsByProject = useMemo(() => {
     const map: Record<string, { totalBruto: number; totalNF: number; totalNFAReceber: number; pendentes: number }> = {};
     measurements.forEach((m) => {
-      const key = m.project_id || m.obra_id || "sem_projeto";
+      const key = m.project_id || "sem_projeto";
       if (!map[key]) map[key] = { totalBruto: 0, totalNF: 0, totalNFAReceber: 0, pendentes: 0 };
       map[key].totalBruto += m.valor_bruto || 0;
       map[key].totalNF += m.valor_nf || 0;
