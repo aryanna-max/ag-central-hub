@@ -127,7 +127,7 @@ export default function VehicleDetailDialog({ open, onOpenChange, vehicle }: Veh
       d.daily_schedules?.schedule_date?.startsWith(monthStr)
     );
     const dias = entries.length;
-    const obrasSet = new Set(entries.map((e: any) => e.obras?.name).filter(Boolean));
+    const projSet = new Set(entries.map((e: any) => e.projects?.name).filter(Boolean));
     const calc = dias * dailyRate;
     const paga = calc; // placeholder
     return {
