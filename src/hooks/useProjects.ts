@@ -65,6 +65,8 @@ export function useProjects() {
       if (error) throw error;
       return data as unknown as Project[];
     },
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 }
 

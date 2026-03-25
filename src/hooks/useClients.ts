@@ -81,6 +81,8 @@ export function useClients() {
       if (error) throw error;
       return data as Client[];
     },
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 }
 
