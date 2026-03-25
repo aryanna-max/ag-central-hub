@@ -42,9 +42,7 @@ export default function Clientes() {
 
   const getClientProjects = (client: Client): Project[] =>
     projects.filter(
-      (p) =>
-        p.client?.toLowerCase().trim() === client.name.toLowerCase().trim() ||
-        (client.cnpj && p.client_cnpj === client.cnpj)
+      (p) => p.client_id === client.id
     );
 
   const filtered = useMemo(() => {
