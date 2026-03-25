@@ -3,6 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type ProjectStatus = "planejamento" | "execucao" | "entrega" | "faturamento" | "concluido" | "pausado";
 
+export interface ProjectClient {
+  id: string;
+  name: string;
+  cnpj: string | null;
+}
+
 export interface Project {
   id: string;
   codigo: string | null;
@@ -11,6 +17,7 @@ export interface Project {
   client_id: string | null;
   client_name: string | null;
   client_cnpj: string | null;
+  clients: ProjectClient | null;
   service: string | null;
   contract_value: number | null;
   responsible: string | null;
@@ -60,10 +67,13 @@ export function useProjects() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("*")
+        .select("*,clients(id,name,cnpj)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as unknown as Project[];
+      return (data || []).map((p: any) => ({
+        ...p,
+        clients: Array.isArray(p.clients) ? p.clients[0] || null : p.clients || null,
+      })) as Project[];
     },
     staleTime: 0,
     refetchOnMount: "always",

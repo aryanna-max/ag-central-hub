@@ -141,21 +141,20 @@ export default function EmployeeAvailabilityKanban({
   const isTopografo = (role: string) =>
     role?.toLowerCase().includes("topógrafo") || role?.toLowerCase().includes("topografo");
 
+  const isAuxiliar = (role: string) =>
+    role?.toLowerCase().includes("auxiliar") || role?.toLowerCase().includes("ajudante");
+
   const totalCount = unassignedEmployees.length;
   const rhCount = rhAbsentEmployees.length;
   if (totalCount === 0 && rhCount === 0) return null;
 
+  /** "João P." format */
   const formatEmployeeName = (emp: Employee) => {
-    const parts = emp.name.split(" ");
-    if (parts.length <= 2) return emp.name;
-    return `${parts[0]} ${parts[parts.length - 1]}`;
-  };
-
-  const getMatriculaBadge = (matricula?: string | null) => {
-    if (!matricula) return null;
-    if (matricula.startsWith("000")) return <Badge className="text-[8px] h-3.5 px-1 bg-blue-600 text-white shrink-0">CLT</Badge>;
-    if (matricula.toUpperCase().startsWith("PREST")) return <Badge className="text-[8px] h-3.5 px-1 bg-muted text-muted-foreground shrink-0">PREST</Badge>;
-    return null;
+    const parts = emp.name.trim().split(/\s+/);
+    if (parts.length <= 1) return emp.name;
+    const first = parts[0];
+    const lastInitial = parts[parts.length - 1][0]?.toUpperCase() || "";
+    return `${first} ${lastInitial}.`;
   };
 
   const EmployeeChip = ({ emp, draggable: isDraggable = true }: { emp: Employee; draggable?: boolean }) => (
@@ -167,7 +166,6 @@ export default function EmployeeAvailabilityKanban({
         isDraggable ? "cursor-grab active:cursor-grabbing hover:shadow-sm" : "opacity-70 cursor-default"
       } ${draggedId === emp.id ? "opacity-40" : ""}`}
     >
-      {getMatriculaBadge((emp as any).matricula)}
       <Badge
         variant={isTopografo(emp.role) ? "default" : "secondary"}
         className="text-[9px] h-4 px-1 shrink-0"
@@ -175,7 +173,7 @@ export default function EmployeeAvailabilityKanban({
         {isTopografo(emp.role) ? "TOP" : "AUX"}
       </Badge>
       <span className="truncate leading-tight">
-        {(emp as any).matricula ? `${(emp as any).matricula} — ${formatEmployeeName(emp)}` : formatEmployeeName(emp)}
+        {formatEmployeeName(emp)}
       </span>
     </div>
   );
@@ -209,6 +207,8 @@ export default function EmployeeAvailabilityKanban({
   };
 
   const naoAlocadoIsOver = hoverColumn === "nao_alocado";
+  const topografosNaoAlocados = grouped.nao_alocado.filter((e) => isTopografo(e.role));
+  const auxiliaresNaoAlocados = grouped.nao_alocado.filter((e) => !isTopografo(e.role));
 
   return (
     <Card>
@@ -217,7 +217,7 @@ export default function EmployeeAvailabilityKanban({
           Gestão de Disponibilidade — Funcionários de Campo ({totalCount + rhCount})
         </h3>
 
-        {/* Faixa horizontal: Sem Alocação */}
+        {/* Faixa horizontal: Sem Alocação — dividida por função */}
         <div
           className={`rounded-lg border-2 transition-colors ${
             naoAlocadoIsOver ? "border-primary bg-primary/5" : "border-border"
@@ -233,11 +233,27 @@ export default function EmployeeAvailabilityKanban({
               <Badge variant="secondary" className="ml-auto text-[10px] h-5 px-1.5">{grouped.nao_alocado.length}</Badge>
             </div>
           </div>
-          <div className="p-2 flex flex-wrap gap-1.5 min-h-[40px]">
-            {grouped.nao_alocado.length === 0 && (
-              <p className="text-[10px] text-muted-foreground italic py-1">Todos alocados ou categorizados</p>
-            )}
-            {grouped.nao_alocado.map((emp) => <EmployeeChip key={emp.id} emp={emp} />)}
+          <div className="grid grid-cols-2 gap-3 p-2">
+            {/* Topógrafos */}
+            <div>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Topógrafos ({topografosNaoAlocados.length})</p>
+              <div className="flex flex-wrap gap-1.5 min-h-[40px]">
+                {topografosNaoAlocados.length === 0 && (
+                  <p className="text-[10px] text-muted-foreground italic py-1">Nenhum</p>
+                )}
+                {topografosNaoAlocados.map((emp) => <EmployeeChip key={emp.id} emp={emp} />)}
+              </div>
+            </div>
+            {/* Auxiliares */}
+            <div>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Auxiliares ({auxiliaresNaoAlocados.length})</p>
+              <div className="flex flex-wrap gap-1.5 min-h-[40px]">
+                {auxiliaresNaoAlocados.length === 0 && (
+                  <p className="text-[10px] text-muted-foreground italic py-1">Nenhum</p>
+                )}
+                {auxiliaresNaoAlocados.map((emp) => <EmployeeChip key={emp.id} emp={emp} />)}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -263,7 +279,7 @@ export default function EmployeeAvailabilityKanban({
                   <Badge variant="outline" className="text-[9px] h-4 px-1 shrink-0 bg-muted text-muted-foreground">
                     {emp.availability === "ferias" ? "FÉRIAS" : emp.availability === "licenca" ? "LICENÇA" : "AFAST."}
                   </Badge>
-                  <span className="truncate leading-tight">{emp.name.split(" ").slice(0, 2).join(" ")}</span>
+                  <span className="truncate leading-tight">{formatEmployeeName(emp)}</span>
                 </div>
               ))}
             </div>

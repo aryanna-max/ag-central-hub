@@ -238,6 +238,7 @@ export default function Projetos() {
 
   // Get client name for display — prefer JOIN via client_id
   const getClientDisplay = (project: Project) => {
+    if (project.clients) return project.clients.name;
     if (project.client_id) {
       const cl = clients.find((c) => c.id === project.client_id);
       if (cl) return cl.name;
