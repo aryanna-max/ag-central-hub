@@ -1,0 +1,1 @@
+ALTER TABLE teams ADD COLUMN IF NOT EXISTS default_project_id UUID REFERENCES projects(id) ON DELETE SET NULL;
