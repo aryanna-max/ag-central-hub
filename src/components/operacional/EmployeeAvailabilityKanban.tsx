@@ -207,6 +207,8 @@ export default function EmployeeAvailabilityKanban({
   };
 
   const naoAlocadoIsOver = hoverColumn === "nao_alocado";
+  const topografosNaoAlocados = grouped.nao_alocado.filter((e) => isTopografo(e.role));
+  const auxiliaresNaoAlocados = grouped.nao_alocado.filter((e) => !isTopografo(e.role));
 
   return (
     <Card>
