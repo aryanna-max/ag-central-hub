@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { useProjects, type Project, type ProjectStatus } from "@/hooks/useProjects";
+import { useClients } from "@/hooks/useClients";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
@@ -32,6 +33,7 @@ const PIE_COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "#f59e0b", "
 
 export default function ProjetosDashboard() {
   const { data: projects = [] } = useProjects();
+  const { data: clients = [] } = useClients();
 
   const { data: measurements = [] } = useQuery({
     queryKey: ["all-measurements-dashboard"],
@@ -196,7 +198,15 @@ export default function ProjetosDashboard() {
                   <TableRow key={p.id}>
                     <TableCell className="font-mono text-xs font-bold text-primary">{p.codigo || "—"}</TableCell>
                     <TableCell className="font-medium">{p.name}</TableCell>
-                    <TableCell>{p.client || "—"}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        if (p.client_id) {
+                          const cl = clients.find((c) => c.id === p.client_id);
+                          if (cl) return cl.name;
+                        }
+                        return p.client || p.client_name || <Badge className="bg-amber-100 text-amber-800 text-[10px]">Não vinculado</Badge>;
+                      })()}
+                    </TableCell>
                     <TableCell>{p.service || "—"}</TableCell>
                     <TableCell>
                       <Badge className={STATUS_COLORS[p.status]} variant="secondary">

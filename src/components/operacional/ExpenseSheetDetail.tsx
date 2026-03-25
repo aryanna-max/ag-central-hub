@@ -19,6 +19,8 @@ import { CheckCircle, Undo2, Ban, DollarSign, Pencil, Trash2 } from "lucide-reac
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreateAlerts, type AlertInsert } from "@/hooks/useAlerts";
+import { useProjects } from "@/hooks/useProjects";
+import { useEmployees } from "@/hooks/useEmployees";
 import {
   useExpenseSheetWithItems,
   useUpdateExpenseSheetStatus,
@@ -39,6 +41,8 @@ interface Props {
 
 export default function ExpenseSheetDetail({ sheetId, onClose, onEdit }: Props) {
   const { data, isLoading } = useExpenseSheetWithItems(sheetId);
+  const { data: projects = [] } = useProjects();
+  const { data: allEmployees = [] } = useEmployees();
   const updateStatus = useUpdateExpenseSheetStatus();
   const updateItem = useUpdateExpenseItemStatus();
   const deleteSheet = useDeleteExpenseSheet();
@@ -47,6 +51,27 @@ export default function ExpenseSheetDetail({ sheetId, onClose, onEdit }: Props) 
   const { role, isMaster } = useAuth();
   const [returnComment, setReturnComment] = useState("");
   const [showReturn, setShowReturn] = useState(false);
+
+  const getProjectName = (item: ExpenseItem) => {
+    if (item.project_id) {
+      const p = projects.find((pr) => pr.id === item.project_id);
+      if (p) return p.name;
+    }
+    return item.project_name || "—";
+  };
+
+  const getEmployeeName = (item: ExpenseItem) => {
+    const emp = allEmployees.find((e) => e.id === item.employee_id);
+    return emp?.name || item.employees?.name || "—";
+  };
+
+  const getReceiverName = (item: ExpenseItem) => {
+    if (item.receiver_id) {
+      const emp = allEmployees.find((e) => e.id === item.receiver_id);
+      if (emp) return emp.name;
+    }
+    return item.receiver_name || "—";
+  };
 
   if (!sheetId) return null;
 
@@ -164,9 +189,9 @@ export default function ExpenseSheetDetail({ sheetId, onClose, onEdit }: Props) 
       <TableRow key={item.id} className={isExtra ? "bg-orange-50 dark:bg-orange-950/20" : ""}>
         <TableCell>{natureBadge(item)}</TableCell>
         <TableCell className="font-medium text-sm">
-          {isExtra ? (item.receiver_name ?? "—") : (item.employees?.name ?? "—")}
+          {isExtra ? getReceiverName(item) : getEmployeeName(item)}
         </TableCell>
-        <TableCell className="text-xs">{item.project_name ?? "—"}</TableCell>
+        <TableCell className="text-xs">{getProjectName(item)}</TableCell>
         <TableCell className="text-xs">{item.expense_type}</TableCell>
         <TableCell className="text-xs max-w-[180px]">{item.description}</TableCell>
         <TableCell className="text-right font-semibold text-sm">

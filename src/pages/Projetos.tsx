@@ -181,6 +181,7 @@ export default function Projetos() {
       await updateProject.mutateAsync({
         id: selectedProject.id,
         name: editForm.name,
+        client_id: editForm.client_id,
         client: editForm.client,
         client_cnpj: editForm.client_cnpj,
         service: editForm.service,
@@ -235,11 +236,15 @@ export default function Projetos() {
     setDraggedId(null);
   };
 
-  // Get client name for display
+  // Get client name for display — prefer JOIN via client_id
   const getClientDisplay = (project: Project) => {
+    if (project.client_id) {
+      const cl = clients.find((c) => c.id === project.client_id);
+      if (cl) return cl.name;
+    }
     if (project.client) return project.client;
     if (project.client_name) return project.client_name;
-    return project.name;
+    return null;
   };
 
   return (
@@ -288,9 +293,11 @@ export default function Projetos() {
                       <div className="flex items-start gap-1.5">
                         <GripVertical className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0 cursor-grab" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{getClientDisplay(project)}</p>
-                          {project.service && (
-                            <p className="text-xs text-muted-foreground truncate">{project.service}</p>
+                          <p className="text-sm font-medium text-foreground truncate">{project.name}</p>
+                          {getClientDisplay(project) ? (
+                            <p className="text-xs text-muted-foreground truncate">{getClientDisplay(project)}</p>
+                          ) : (
+                            <Badge className="bg-amber-100 text-amber-800 text-[10px]">Cliente não vinculado</Badge>
                           )}
                         </div>
                       </div>
@@ -346,12 +353,14 @@ export default function Projetos() {
                   <div>
                     <Label>Cliente</Label>
                     <Select
-                      value={editForm.client || ""}
+                      value={editForm.client_id || ""}
                       onValueChange={(val) => {
-                        const cl = clients.find((c) => c.name === val);
+                        const cl = clients.find((c) => c.id === val);
                         setEditForm({
                           ...editForm,
-                          client: val,
+                          client_id: val,
+                          client: cl?.name || null,
+                          client_name: cl?.name || null,
                           client_cnpj: cl?.cnpj || editForm.client_cnpj,
                         });
                       }}
@@ -361,10 +370,13 @@ export default function Projetos() {
                       </SelectTrigger>
                       <SelectContent>
                         {clients.filter(c => c.is_active).map((c) => (
-                          <SelectItem key={c.id} value={c.name}>{c.codigo ? `${c.codigo} — ` : ""}{c.name}</SelectItem>
+                          <SelectItem key={c.id} value={c.id}>{c.name}{c.cnpj ? ` — ${c.cnpj}` : ""}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {!editForm.client_id && (
+                      <Badge className="bg-amber-100 text-amber-800 text-[10px] mt-1">Cliente não vinculado</Badge>
+                    )}
                   </div>
                   <div>
                     <Label>CNPJ do Cliente</Label>
