@@ -41,12 +41,37 @@ interface Props {
 
 export default function ExpenseSheetDetail({ sheetId, onClose, onEdit }: Props) {
   const { data, isLoading } = useExpenseSheetWithItems(sheetId);
+  const { data: projects = [] } = useProjects();
+  const { data: allEmployees = [] } = useEmployees();
   const updateStatus = useUpdateExpenseSheetStatus();
   const updateItem = useUpdateExpenseItemStatus();
   const deleteSheet = useDeleteExpenseSheet();
   const createAlerts = useCreateAlerts();
   const { toast } = useToast();
   const { role, isMaster } = useAuth();
+  const [returnComment, setReturnComment] = useState("");
+  const [showReturn, setShowReturn] = useState(false);
+
+  const getProjectName = (item: ExpenseItem) => {
+    if (item.project_id) {
+      const p = projects.find((pr) => pr.id === item.project_id);
+      if (p) return p.name;
+    }
+    return item.project_name || "—";
+  };
+
+  const getEmployeeName = (item: ExpenseItem) => {
+    const emp = allEmployees.find((e) => e.id === item.employee_id);
+    return emp?.name || item.employees?.name || "—";
+  };
+
+  const getReceiverName = (item: ExpenseItem) => {
+    if (item.receiver_id) {
+      const emp = allEmployees.find((e) => e.id === item.receiver_id);
+      if (emp) return emp.name;
+    }
+    return item.receiver_name || "—";
+  };
   const [returnComment, setReturnComment] = useState("");
   const [showReturn, setShowReturn] = useState(false);
 
