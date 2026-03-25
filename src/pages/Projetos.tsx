@@ -353,12 +353,14 @@ export default function Projetos() {
                   <div>
                     <Label>Cliente</Label>
                     <Select
-                      value={editForm.client || ""}
+                      value={editForm.client_id || ""}
                       onValueChange={(val) => {
-                        const cl = clients.find((c) => c.name === val);
+                        const cl = clients.find((c) => c.id === val);
                         setEditForm({
                           ...editForm,
-                          client: val,
+                          client_id: val,
+                          client: cl?.name || null,
+                          client_name: cl?.name || null,
                           client_cnpj: cl?.cnpj || editForm.client_cnpj,
                         });
                       }}
@@ -368,10 +370,13 @@ export default function Projetos() {
                       </SelectTrigger>
                       <SelectContent>
                         {clients.filter(c => c.is_active).map((c) => (
-                          <SelectItem key={c.id} value={c.name}>{c.codigo ? `${c.codigo} — ` : ""}{c.name}</SelectItem>
+                          <SelectItem key={c.id} value={c.id}>{c.name}{c.cnpj ? ` — ${c.cnpj}` : ""}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {!editForm.client_id && (
+                      <Badge className="bg-amber-100 text-amber-800 text-[10px] mt-1">Cliente não vinculado</Badge>
+                    )}
                   </div>
                   <div>
                     <Label>CNPJ do Cliente</Label>

@@ -246,7 +246,7 @@ export function usePreFillFromMonthly() {
           continue;
         }
 
-        const projectId = ms.project_id || ms.obra_id;
+        const projectId = ms.project_id;
 
         const { error } = await supabase
           .from("daily_team_assignments")

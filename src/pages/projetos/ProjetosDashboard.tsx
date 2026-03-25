@@ -198,7 +198,15 @@ export default function ProjetosDashboard() {
                   <TableRow key={p.id}>
                     <TableCell className="font-mono text-xs font-bold text-primary">{p.codigo || "—"}</TableCell>
                     <TableCell className="font-medium">{p.name}</TableCell>
-                    <TableCell>{p.client || "—"}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        if (p.client_id) {
+                          const cl = clients.find((c) => c.id === p.client_id);
+                          if (cl) return cl.name;
+                        }
+                        return p.client || p.client_name || <Badge className="bg-amber-100 text-amber-800 text-[10px]">Não vinculado</Badge>;
+                      })()}
+                    </TableCell>
                     <TableCell>{p.service || "—"}</TableCell>
                     <TableCell>
                       <Badge className={STATUS_COLORS[p.status]} variant="secondary">
