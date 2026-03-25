@@ -236,11 +236,15 @@ export default function Projetos() {
     setDraggedId(null);
   };
 
-  // Get client name for display
+  // Get client name for display — prefer JOIN via client_id
   const getClientDisplay = (project: Project) => {
+    if (project.client_id) {
+      const cl = clients.find((c) => c.id === project.client_id);
+      if (cl) return cl.name;
+    }
     if (project.client) return project.client;
     if (project.client_name) return project.client_name;
-    return project.name;
+    return null;
   };
 
   return (
