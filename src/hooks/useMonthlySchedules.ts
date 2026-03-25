@@ -64,7 +64,6 @@ export function useUpdateMonthlySchedule() {
         .single();
 
       const dbUpdates: any = { ...updates };
-      if (updates.project_id) dbUpdates.obra_id = updates.project_id;
 
       const { error } = await supabase
         .from("monthly_schedules")
