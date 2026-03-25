@@ -67,10 +67,13 @@ export function useProjects() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("*")
+        .select("*,clients(id,name,cnpj)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as unknown as Project[];
+      return (data || []).map((p: any) => ({
+        ...p,
+        clients: Array.isArray(p.clients) ? p.clients[0] || null : p.clients || null,
+      })) as Project[];
     },
     staleTime: 0,
     refetchOnMount: "always",
