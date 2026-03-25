@@ -19,6 +19,8 @@ import { CheckCircle, Undo2, Ban, DollarSign, Pencil, Trash2 } from "lucide-reac
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreateAlerts, type AlertInsert } from "@/hooks/useAlerts";
+import { useProjects } from "@/hooks/useProjects";
+import { useEmployees } from "@/hooks/useEmployees";
 import {
   useExpenseSheetWithItems,
   useUpdateExpenseSheetStatus,
