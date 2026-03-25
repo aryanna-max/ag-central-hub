@@ -171,7 +171,6 @@ export async function syncDailyToMonthly(
     const updatePayload: Record<string, unknown> = {};
     if (updates.project_id) {
       updatePayload.project_id = updates.project_id;
-      updatePayload.obra_id = updates.project_id;
     }
     if (updates.vehicle_id !== undefined) updatePayload.vehicle_id = updates.vehicle_id;
 
