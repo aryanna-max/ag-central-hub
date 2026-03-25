@@ -51,7 +51,7 @@ export default function MonthlyScheduleReport({ month, year, schedules }: Props)
 
   const getProjectName = (s: any) => s.projects?.name || "—";
   const getProjectClient = (s: any) => s.projects?.client || "";
-  const getProjectId = (s: any) => s.project_id || s.obra_id || "";
+  const getProjectId = (s: any) => s.project_id || "";
 
   // --- Resumo por Equipe ---
   const teamMap = new Map<string, { name: string; days: Set<string>; projects: Set<string>; vehicles: Set<string> }>();
