@@ -18,7 +18,6 @@ interface Schedule {
   start_date: string;
   end_date: string;
   team_id: string;
-  obra_id?: string;
   project_id?: string;
   teams: { id: string; name: string; team_members?: TeamMember[] } | null;
   projects?: { id: string; name: string; client: string | null } | null;
@@ -72,7 +71,7 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
 
   const getProjectName = (s: Schedule) => s.projects?.name || "—";
   const getProjectClient = (s: Schedule) => s.projects?.client || "";
-  const getProjectId = (s: Schedule) => s.project_id || s.obra_id || "";
+  const getProjectId = (s: Schedule) => s.project_id || "";
 
   // Build filter options
   const filterOptions = useMemo(() => {

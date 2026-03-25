@@ -97,7 +97,7 @@ export default function EscalaMensal() {
 
   const handleEditSave = async (
     scheduleId: string,
-    updates: { team_id?: string; obra_id?: string; vehicle_id?: string },
+    updates: { team_id?: string; project_id?: string; vehicle_id?: string },
     scope: "period" | "day",
     dayDate?: string,
     memberOverrides?: { additions: string[]; removals: string[] }
@@ -106,9 +106,7 @@ export default function EscalaMensal() {
     if (updates.vehicle_id === "none") updates.vehicle_id = undefined;
 
     if (scope === "day" && dayDate) {
-      // For day-only changes, update/create the daily schedule for that specific day
       try {
-        // Check if daily schedule exists for this day
         const { data: existing } = await supabase
           .from("daily_schedules")
           .select("id")
@@ -126,10 +124,9 @@ export default function EscalaMensal() {
           dailyId = created.id;
         }
 
-        // Find or create the team assignment for this day
         const schedule = editSchedule;
         const teamIdToUse = updates.team_id || schedule.team_id;
-        const obraIdToUse = updates.obra_id || schedule.obra_id;
+        const projectIdToUse = updates.project_id || schedule.project_id;
         const vehicleIdToUse = updates.vehicle_id || schedule.vehicle_id;
 
         const { data: existingAssignment } = await supabase
@@ -144,7 +141,7 @@ export default function EscalaMensal() {
             .from("daily_team_assignments")
             .update({
               team_id: teamIdToUse,
-              obra_id: obraIdToUse,
+              project_id: projectIdToUse,
               vehicle_id: vehicleIdToUse,
             })
             .eq("id", existingAssignment.id);
@@ -154,14 +151,12 @@ export default function EscalaMensal() {
             .insert({
               daily_schedule_id: dailyId,
               team_id: teamIdToUse,
-              obra_id: obraIdToUse,
+              project_id: projectIdToUse,
               vehicle_id: vehicleIdToUse,
             });
         }
 
-        // Handle member overrides for this day
         if (memberOverrides) {
-          // Remove entries for removed members
           for (const empId of memberOverrides.removals) {
             await supabase
               .from("daily_schedule_entries")
@@ -170,7 +165,6 @@ export default function EscalaMensal() {
               .eq("employee_id", empId)
               .eq("team_id", schedule.team_id);
           }
-          // Add entries for added members
           for (const empId of memberOverrides.additions) {
             await supabase
               .from("daily_schedule_entries")
@@ -178,7 +172,7 @@ export default function EscalaMensal() {
                 daily_schedule_id: dailyId,
                 employee_id: empId,
                 team_id: teamIdToUse,
-                obra_id: obraIdToUse,
+                project_id: projectIdToUse,
                 vehicle_id: vehicleIdToUse,
               });
           }

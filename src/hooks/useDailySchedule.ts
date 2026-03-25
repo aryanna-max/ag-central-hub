@@ -63,7 +63,6 @@ export function useAddTeamAssignment() {
     }) => {
       const { date, ...rest } = assignment;
       const insertPayload: any = { ...rest };
-      if (rest.project_id) insertPayload.obra_id = rest.project_id;
       
       const { data, error } = await supabase
         .from("daily_team_assignments")
@@ -103,7 +102,6 @@ export function useUpdateTeamAssignment() {
       teamId?: string;
     }) => {
       const dbUpdates: any = { ...updates };
-      if (updates.project_id) dbUpdates.obra_id = updates.project_id;
 
       const { error } = await supabase
         .from("daily_team_assignments")
@@ -151,7 +149,6 @@ export function useAddDailyEntry() {
       daily_team_assignment_id?: string;
     }) => {
       const insertPayload: any = { ...entry };
-      if (entry.project_id) insertPayload.obra_id = entry.project_id;
 
       const { data, error } = await supabase
         .from("daily_schedule_entries")
@@ -253,7 +250,6 @@ export function usePreFillFromMonthly() {
           .insert({
             daily_schedule_id: scheduleId,
             team_id: ms.team_id,
-            obra_id: projectId,
             project_id: projectId,
             vehicle_id: ms.vehicle_id,
           });
@@ -267,7 +263,6 @@ export function usePreFillFromMonthly() {
               daily_schedule_id: scheduleId,
               employee_id: member.employee_id,
               team_id: ms.team_id,
-              obra_id: projectId,
               vehicle_id: ms.vehicle_id,
             });
           if (entErr && !entErr.message.includes("duplicate")) {

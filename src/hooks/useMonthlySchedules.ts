@@ -32,7 +32,7 @@ export function useCreateMonthlySchedule() {
       vehicle_id?: string;
       schedule_type?: string;
     }) => {
-      const insertPayload: any = { ...payload, obra_id: payload.project_id };
+      const insertPayload: any = { ...payload };
       const { error } = await supabase.from("monthly_schedules").insert(insertPayload);
       if (error) throw error;
 
@@ -64,7 +64,6 @@ export function useUpdateMonthlySchedule() {
         .single();
 
       const dbUpdates: any = { ...updates };
-      if (updates.project_id) dbUpdates.obra_id = updates.project_id;
 
       const { error } = await supabase
         .from("monthly_schedules")
@@ -85,7 +84,6 @@ export function useUpdateMonthlySchedule() {
             const updatePayload: Record<string, string> = {};
             if (updates.team_id) updatePayload.team_id = updates.team_id;
             if (updates.project_id) {
-              updatePayload.obra_id = updates.project_id;
               (updatePayload as any).project_id = updates.project_id;
             }
             if (updates.vehicle_id) updatePayload.vehicle_id = updates.vehicle_id;
@@ -173,7 +171,6 @@ export async function syncDailyToMonthly(
     const updatePayload: Record<string, unknown> = {};
     if (updates.project_id) {
       updatePayload.project_id = updates.project_id;
-      updatePayload.obra_id = updates.project_id;
     }
     if (updates.vehicle_id !== undefined) updatePayload.vehicle_id = updates.vehicle_id;
 
@@ -186,7 +183,6 @@ export async function syncDailyToMonthly(
   } else if (updates.project_id) {
     await supabase.from("monthly_schedules").insert({
       team_id: teamId,
-      obra_id: updates.project_id,
       project_id: updates.project_id,
       vehicle_id: updates.vehicle_id || null,
       month,
@@ -246,7 +242,6 @@ async function syncMonthlyToDaily(
       await supabase.from("daily_team_assignments").insert({
         daily_schedule_id: ds.id,
         team_id: teamId,
-        obra_id: projectId,
         project_id: projectId,
         vehicle_id: vehicleId,
       });

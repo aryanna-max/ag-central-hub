@@ -55,9 +55,9 @@ function useVehicleHistory(vehicleId: string | undefined, start: Date, end: Date
       const { data: assignments, error } = await supabase
         .from("daily_team_assignments")
         .select(`
-          id, daily_schedule_id, obra_id, vehicle_id, notes,
+          id, daily_schedule_id, project_id, vehicle_id, notes,
           daily_schedules!inner(schedule_date),
-          obras(name, location),
+          projects:project_id(name, location),
           teams(name)
         `)
         .eq("vehicle_id", vehicleId!)
@@ -79,7 +79,7 @@ function useVehicleMonthlySummary(vehicleId: string | undefined, open: boolean) 
       const today = format(endOfMonth(new Date()), "yyyy-MM-dd");
       const { data, error } = await supabase
         .from("daily_team_assignments")
-        .select(`id, obra_id, daily_schedules!inner(schedule_date), obras(name)`)
+        .select(`id, project_id, daily_schedules!inner(schedule_date), projects:project_id(name)`)
         .eq("vehicle_id", vehicleId!)
         .gte("daily_schedules.schedule_date", sixMonthsAgo)
         .lte("daily_schedules.schedule_date", today);
@@ -127,13 +127,13 @@ export default function VehicleDetailDialog({ open, onOpenChange, vehicle }: Veh
       d.daily_schedules?.schedule_date?.startsWith(monthStr)
     );
     const dias = entries.length;
-    const obrasSet = new Set(entries.map((e: any) => e.obras?.name).filter(Boolean));
+    const projSet = new Set(entries.map((e: any) => e.projects?.name).filter(Boolean));
     const calc = dias * dailyRate;
     const paga = calc; // placeholder
     return {
       label: format(m, "MMMM yyyy", { locale: ptBR }),
       dias,
-      obras: obrasSet.size,
+      obras: projSet.size,
       kmRodado: 0,
       calc,
       paga,

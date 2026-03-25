@@ -51,7 +51,7 @@ export default function MonthlyScheduleReport({ month, year, schedules }: Props)
 
   const getProjectName = (s: any) => s.projects?.name || "—";
   const getProjectClient = (s: any) => s.projects?.client || "";
-  const getProjectId = (s: any) => s.project_id || s.obra_id || "";
+  const getProjectId = (s: any) => s.project_id || "";
 
   // --- Resumo por Equipe ---
   const teamMap = new Map<string, { name: string; days: Set<string>; projects: Set<string>; vehicles: Set<string> }>();
@@ -104,9 +104,9 @@ export default function MonthlyScheduleReport({ month, year, schedules }: Props)
       if (e.attendance === "presente" || e.attendance === "atrasado") emp.daysWorked++;
       if (e.attendance === "falta") emp.absences++;
       if (e.attendance === "atrasado") emp.late++;
-      if (e.project_id || e.obra_id) {
-        const projId = e.project_id || e.obra_id;
-        const assignment = dailyData.assignments?.find((a: any) => (a.project_id || a.obra_id) === projId);
+      if (e.project_id) {
+        const projId = e.project_id;
+        const assignment = dailyData.assignments?.find((a: any) => a.project_id === projId);
         if (assignment?.projects?.name) emp.projects.add(assignment.projects.name);
       }
       employeeMap.set(e.employee_id, emp);

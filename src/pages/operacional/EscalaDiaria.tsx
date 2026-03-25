@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CalendarDays, Plus, Lock, Printer, Trash2, Pencil } from "lucide-react";
+import { CalendarDays, Plus, Lock, Printer, Trash2, Pencil, CheckCircle, AlertTriangle } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,8 @@ import MonthlyDayEditDialog from "@/components/operacional/MonthlyDayEditDialog"
 import EmployeeAvailabilityKanban from "@/components/operacional/EmployeeAvailabilityKanban";
 import DailyReportDialog from "@/components/operacional/DailyReportDialog";
 import { useUpdateMonthlySchedule } from "@/hooks/useMonthlySchedules";
+import { useScheduleConfirmation, useConfirmSchedule } from "@/hooks/useScheduleConfirmations";
+import { useAuth } from "@/contexts/AuthContext";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
 
@@ -88,9 +90,24 @@ export default function EscalaDiaria() {
   const closeSchedule = useCloseDailySchedule();
   const preFill = usePreFillFromMonthly();
   const updateMonthly = useUpdateMonthlySchedule();
+  const { data: confirmation } = useScheduleConfirmation(selectedDate);
+  const confirmSchedule = useConfirmSchedule();
+  const { user, role } = useAuth();
 
   const isClosed = schedule?.is_closed;
   const isToday = selectedDate === today;
+  const isConfirmed = !!confirmation;
+  const isReadOnly = isClosed || isConfirmed;
+
+  const handleConfirmSchedule = async () => {
+    if (!user?.id) return;
+    try {
+      await confirmSchedule.mutateAsync({ date: selectedDate, userId: user.id });
+      toast.success("Escala confirmada!");
+    } catch {
+      toast.error("Erro ao confirmar escala");
+    }
+  };
 
   const handleCreateSchedule = async () => {
     try {
@@ -148,12 +165,12 @@ export default function EscalaDiaria() {
     setEditAssignment({
       id: assignment.id,
       team_id: assignment.team_id,
-      obra_id: assignment.obra_id || "",
+      project_id: assignment.project_id || "",
       vehicle_id: assignment.vehicle_id || null,
       start_date: selectedDate,
       end_date: selectedDate,
       teams: assignment.teams,
-      obras: assignment.obras,
+      projects: assignment.projects,
       vehicles: assignment.vehicles,
     });
     setEditOpen(true);
@@ -161,15 +178,15 @@ export default function EscalaDiaria() {
 
   const handleEditSave = async (
     scheduleId: string,
-    updates: { team_id?: string; obra_id?: string; vehicle_id?: string },
+    updates: { team_id?: string; project_id?: string; vehicle_id?: string },
     scope: "period" | "day",
     dayDate?: string,
     memberOverrides?: { additions: string[]; removals: string[] }
   ) => {
     if (updates.vehicle_id === "none") updates.vehicle_id = undefined;
     try {
-      const dailyUpdates: { obra_id?: string; vehicle_id?: string } = {};
-      if (updates.obra_id) dailyUpdates.obra_id = updates.obra_id;
+      const dailyUpdates: { project_id?: string; vehicle_id?: string } = {};
+      if (updates.project_id) dailyUpdates.project_id = updates.project_id;
       if (updates.vehicle_id !== undefined) dailyUpdates.vehicle_id = updates.vehicle_id;
 
       if (Object.keys(dailyUpdates).length > 0) {
@@ -183,7 +200,7 @@ export default function EscalaDiaria() {
 
       if (memberOverrides && schedule) {
         const teamId = updates.team_id || editAssignment?.team_id;
-        const obraId = updates.obra_id || editAssignment?.obra_id;
+        const projectId = updates.project_id || editAssignment?.project_id;
         const vehicleId = updates.vehicle_id || editAssignment?.vehicle_id;
 
         for (const empId of memberOverrides.removals) {
@@ -199,7 +216,7 @@ export default function EscalaDiaria() {
             daily_schedule_id: schedule.id,
             employee_id: empId,
             team_id: teamId,
-            obra_id: obraId,
+            project_id: projectId,
             vehicle_id: vehicleId,
           });
         }
@@ -215,7 +232,7 @@ export default function EscalaDiaria() {
 
         if (monthlySchedules?.length) {
           const monthlyUpdates: Record<string, string> = {};
-          if (updates.obra_id) monthlyUpdates.obra_id = updates.obra_id;
+          if (updates.project_id) monthlyUpdates.project_id = updates.project_id;
           if (updates.vehicle_id) monthlyUpdates.vehicle_id = updates.vehicle_id;
           if (Object.keys(monthlyUpdates).length > 0) {
             await supabase.from("monthly_schedules").update(monthlyUpdates).eq("id", monthlySchedules[0].id);
@@ -323,6 +340,16 @@ export default function EscalaDiaria() {
             <Badge variant="outline" className="text-sm py-1 px-3">
               {assignments.length} equipes escaladas
             </Badge>
+            {isConfirmed && confirmation && (
+              <Badge className="bg-emerald-600 text-white gap-1">
+                <CheckCircle className="w-3 h-3" /> Confirmado por {confirmation.profiles?.full_name || "—"} — {format(new Date(confirmation.confirmed_at!), "dd/MM HH:mm")}
+              </Badge>
+            )}
+            {!isConfirmed && schedule && (
+              <Badge variant="destructive" className="gap-1 animate-pulse">
+                <AlertTriangle className="w-3 h-3" /> Escala não confirmada
+              </Badge>
+            )}
             {isClosed && (
               <Badge className="bg-destructive text-destructive-foreground gap-1">
                 <Lock className="w-3 h-3" /> Escala Fechada
@@ -337,7 +364,12 @@ export default function EscalaDiaria() {
               <Button variant="outline" className="gap-2" onClick={() => setShowReport(true)}>
                 <Printer className="w-4 h-4" /> Relatório
               </Button>
-              {!isClosed && (
+              {!isConfirmed && !isClosed && (role === "operacional" || role === "master" || role === "diretor") && assignments.length > 0 && (
+                <Button onClick={handleConfirmSchedule} className="gap-2 bg-emerald-700 hover:bg-emerald-800 text-white" disabled={confirmSchedule.isPending}>
+                  <CheckCircle className="w-4 h-4" /> Confirmar Escala
+                </Button>
+              )}
+              {!isReadOnly && (
                 <>
                   <Button onClick={() => setShowAddTeam(true)} variant="outline" className="gap-2">
                     <Plus className="w-4 h-4" /> Adicionar Equipe
