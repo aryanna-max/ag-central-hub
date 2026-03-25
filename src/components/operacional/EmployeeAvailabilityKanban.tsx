@@ -166,7 +166,6 @@ export default function EmployeeAvailabilityKanban({
         isDraggable ? "cursor-grab active:cursor-grabbing hover:shadow-sm" : "opacity-70 cursor-default"
       } ${draggedId === emp.id ? "opacity-40" : ""}`}
     >
-      {getMatriculaBadge((emp as any).matricula)}
       <Badge
         variant={isTopografo(emp.role) ? "default" : "secondary"}
         className="text-[9px] h-4 px-1 shrink-0"
@@ -174,7 +173,7 @@ export default function EmployeeAvailabilityKanban({
         {isTopografo(emp.role) ? "TOP" : "AUX"}
       </Badge>
       <span className="truncate leading-tight">
-        {(emp as any).matricula ? `${(emp as any).matricula} — ${formatEmployeeName(emp)}` : formatEmployeeName(emp)}
+        {formatEmployeeName(emp)}
       </span>
     </div>
   );
