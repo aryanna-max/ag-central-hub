@@ -275,7 +275,7 @@ function ClientProjectsDialog({ client, open, onOpenChange, projects }: { client
   if (!client) return null;
 
   const clientProjects = projects.filter(
-    (p) => p.client?.toLowerCase().trim() === client.name.toLowerCase().trim() || (client.cnpj && p.client_cnpj === client.cnpj)
+    (p) => p.client_id === client.id
   );
   const totalContracted = clientProjects.reduce((s, p) => s + (p.contract_value || 0), 0);
   const fmt = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
