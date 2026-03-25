@@ -277,7 +277,6 @@ export type Database = {
           employee_id: string
           id: string
           notes: string | null
-          obra_id: string | null
           project_id: string | null
           team_id: string | null
           vehicle_id: string | null
@@ -293,7 +292,6 @@ export type Database = {
           employee_id: string
           id?: string
           notes?: string | null
-          obra_id?: string | null
           project_id?: string | null
           team_id?: string | null
           vehicle_id?: string | null
@@ -309,7 +307,6 @@ export type Database = {
           employee_id?: string
           id?: string
           notes?: string | null
-          obra_id?: string | null
           project_id?: string | null
           team_id?: string | null
           vehicle_id?: string | null
@@ -368,6 +365,7 @@ export type Database = {
           id: string
           is_closed: boolean
           kanban_filled: boolean
+          monthly_schedule_id: string | null
           notes: string | null
           project_id: string | null
           schedule_date: string
@@ -381,6 +379,7 @@ export type Database = {
           id?: string
           is_closed?: boolean
           kanban_filled?: boolean
+          monthly_schedule_id?: string | null
           notes?: string | null
           project_id?: string | null
           schedule_date: string
@@ -394,6 +393,7 @@ export type Database = {
           id?: string
           is_closed?: boolean
           kanban_filled?: boolean
+          monthly_schedule_id?: string | null
           notes?: string | null
           project_id?: string | null
           schedule_date?: string
@@ -405,6 +405,13 @@ export type Database = {
             columns: ["created_by_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_schedules_monthly_schedule_id_fkey"
+            columns: ["monthly_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_schedules"
             referencedColumns: ["id"]
           },
           {
@@ -477,6 +484,64 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_project_authorizations: {
+        Row: {
+          created_at: string | null
+          docs: Json | null
+          employee_id: string
+          expiry_date: string | null
+          id: string
+          integration_date: string | null
+          project_id: string
+          registered_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          docs?: Json | null
+          employee_id: string
+          expiry_date?: string | null
+          id?: string
+          integration_date?: string | null
+          project_id: string
+          registered_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string | null
+          docs?: Json | null
+          employee_id?: string
+          expiry_date?: string | null
+          id?: string
+          integration_date?: string | null
+          project_id?: string
+          registered_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_project_authorizations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_project_authorizations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_project_authorizations_registered_by_fkey"
+            columns: ["registered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -874,7 +939,6 @@ export type Database = {
           id: string
           month: number
           notes: string | null
-          obra_id: string
           project_id: string | null
           schedule_type: string
           start_date: string
@@ -888,7 +952,6 @@ export type Database = {
           id?: string
           month: number
           notes?: string | null
-          obra_id: string
           project_id?: string | null
           schedule_type?: string
           start_date: string
@@ -902,7 +965,6 @@ export type Database = {
           id?: string
           month?: number
           notes?: string | null
-          obra_id?: string
           project_id?: string | null
           schedule_type?: string
           start_date?: string
@@ -1027,6 +1089,7 @@ export type Database = {
         Row: {
           client: string | null
           client_cnpj: string | null
+          client_id: string | null
           client_name: string | null
           cnpj: string | null
           conta_bancaria: string | null
@@ -1060,6 +1123,7 @@ export type Database = {
         Insert: {
           client?: string | null
           client_cnpj?: string | null
+          client_id?: string | null
           client_name?: string | null
           cnpj?: string | null
           conta_bancaria?: string | null
@@ -1093,6 +1157,7 @@ export type Database = {
         Update: {
           client?: string | null
           client_cnpj?: string | null
+          client_id?: string | null
           client_name?: string | null
           cnpj?: string | null
           conta_bancaria?: string | null
@@ -1124,6 +1189,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_lead_id_fkey"
             columns: ["lead_id"]
@@ -1282,6 +1354,38 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedule_confirmations: {
+        Row: {
+          confirmed_at: string | null
+          confirmed_by: string | null
+          id: string
+          notes: string | null
+          schedule_date: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          id?: string
+          notes?: string | null
+          schedule_date: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          id?: string
+          notes?: string | null
+          schedule_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_confirmations_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
