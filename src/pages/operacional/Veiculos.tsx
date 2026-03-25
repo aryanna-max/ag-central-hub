@@ -144,9 +144,16 @@ export default function Veiculos() {
                     <TableCell>{v.km_current ? Number(v.km_current).toLocaleString() : "—"}</TableCell>
                     <TableCell>{v.responsible_employee?.name || "—"}</TableCell>
                     <TableCell>
-                      <Badge className={statusColors[v.status] || ""}>
-                        {statusLabels[v.status] || v.status}
-                      </Badge>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Badge className={statusColors[v.status] || ""}>
+                          {statusLabels[v.status] || v.status}
+                        </Badge>
+                        {v.is_rented && (
+                          <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700 bg-amber-50">
+                            Alugado
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">

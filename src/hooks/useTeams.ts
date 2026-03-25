@@ -11,7 +11,7 @@ export function useTeams() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teams")
-        .select("*, team_members(*, employees(*)), vehicles:default_vehicle_id(id, model, plate, status)")
+        .select("*, team_members(*, employees(*)), vehicles:default_vehicle_id(id, model, plate, status), default_project:default_project_id(id, name)")
         .eq("is_active", true)
         .order("name");
       if (error) throw error;
@@ -27,6 +27,20 @@ export function useUpdateTeamVehicle() {
       const { error } = await supabase
         .from("teams")
         .update({ default_vehicle_id: vehicleId } as any)
+        .eq("id", teamId);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["teams"] }),
+  });
+}
+
+export function useUpdateTeamProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ teamId, projectId }: { teamId: string; projectId: string | null }) => {
+      const { error } = await supabase
+        .from("teams")
+        .update({ default_project_id: projectId } as any)
         .eq("id", teamId);
       if (error) throw error;
     },
