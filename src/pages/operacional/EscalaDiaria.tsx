@@ -340,6 +340,16 @@ export default function EscalaDiaria() {
             <Badge variant="outline" className="text-sm py-1 px-3">
               {assignments.length} equipes escaladas
             </Badge>
+            {isConfirmed && confirmation && (
+              <Badge className="bg-emerald-600 text-white gap-1">
+                <CheckCircle className="w-3 h-3" /> Confirmado por {confirmation.profiles?.full_name || "—"} — {format(new Date(confirmation.confirmed_at!), "dd/MM HH:mm")}
+              </Badge>
+            )}
+            {!isConfirmed && schedule && (
+              <Badge variant="destructive" className="gap-1 animate-pulse">
+                <AlertTriangle className="w-3 h-3" /> Escala não confirmada
+              </Badge>
+            )}
             {isClosed && (
               <Badge className="bg-destructive text-destructive-foreground gap-1">
                 <Lock className="w-3 h-3" /> Escala Fechada
@@ -354,7 +364,12 @@ export default function EscalaDiaria() {
               <Button variant="outline" className="gap-2" onClick={() => setShowReport(true)}>
                 <Printer className="w-4 h-4" /> Relatório
               </Button>
-              {!isClosed && (
+              {!isConfirmed && !isClosed && (role === "operacional" || role === "master" || role === "diretor") && assignments.length > 0 && (
+                <Button onClick={handleConfirmSchedule} className="gap-2 bg-emerald-700 hover:bg-emerald-800 text-white" disabled={confirmSchedule.isPending}>
+                  <CheckCircle className="w-4 h-4" /> Confirmar Escala
+                </Button>
+              )}
+              {!isReadOnly && (
                 <>
                   <Button onClick={() => setShowAddTeam(true)} variant="outline" className="gap-2">
                     <Plus className="w-4 h-4" /> Adicionar Equipe
