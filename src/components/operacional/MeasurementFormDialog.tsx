@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { useCreateMeasurement } from "@/hooks/useMeasurements";
-import { useTeams } from "@/hooks/useTeams";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -35,13 +34,11 @@ function useActiveProjects() {
 
 export default function MeasurementFormDialog({ open, onOpenChange, defaultProjectId }: Props) {
   const createMeasurement = useCreateMeasurement();
-  const { data: teams } = useTeams();
   const { data: projects } = useActiveProjects();
 
   const [form, setForm] = useState({
     codigo_bm: "",
     project_id: defaultProjectId || "",
-    team_id: "",
     period_start: "",
     period_end: "",
     dias_semana: "",
@@ -80,7 +77,7 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultProje
   }, [form.dias_semana, form.valor_diaria_semana, form.dias_fds, form.valor_diaria_fds, form.retencao_pct]);
 
   const resetForm = () =>
-    setForm({ codigo_bm: "", project_id: "", team_id: "", period_start: "", period_end: "", dias_semana: "", valor_diaria_semana: "", dias_fds: "", valor_diaria_fds: "", retencao_pct: "5", notes: "", empresa_faturadora: "ag_topografia", tipo_documento: "nota_fiscal", instrucao_faturamento: "", responsavel_cobranca: "" });
+    setForm({ codigo_bm: "", project_id: "", period_start: "", period_end: "", dias_semana: "", valor_diaria_semana: "", dias_fds: "", valor_diaria_fds: "", retencao_pct: "5", notes: "", empresa_faturadora: "ag_topografia", tipo_documento: "nota_fiscal", instrucao_faturamento: "", responsavel_cobranca: "" });
 
   const handleSave = async (notify: boolean) => {
     if (!form.codigo_bm || !form.period_start || !form.period_end) {
@@ -95,7 +92,6 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultProje
       await createMeasurement.mutateAsync({
         codigo_bm: form.codigo_bm,
         project_id: form.project_id || null,
-        team_id: form.team_id || null,
         period_start: form.period_start,
         period_end: form.period_end,
         dias_semana: Number(form.dias_semana) || 0,
@@ -141,39 +137,23 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultProje
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Código BM */}
           <div>
             <Label>Código BM *</Label>
             <Input placeholder="Ex: FSQ-GTR-009" value={form.codigo_bm} onChange={(e) => set("codigo_bm", e.target.value)} />
           </div>
 
-          {/* Projeto e Equipe */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Projeto</Label>
-              <Select value={form.project_id} onValueChange={(v) => set("project_id", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecionar projeto" /></SelectTrigger>
-                <SelectContent>
-                  {(projects || []).map((o: any) => (
-                    <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Equipe</Label>
-              <Select value={form.team_id} onValueChange={(v) => set("team_id", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecionar equipe" /></SelectTrigger>
-                <SelectContent>
-                  {teams?.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div>
+            <Label>Projeto</Label>
+            <Select value={form.project_id} onValueChange={(v) => set("project_id", v)}>
+              <SelectTrigger><SelectValue placeholder="Selecionar projeto" /></SelectTrigger>
+              <SelectContent>
+                {(projects || []).map((o: any) => (
+                  <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Período */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Período de *</Label>
@@ -185,7 +165,6 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultProje
             </div>
           </div>
 
-          {/* Empresa / Tipo */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Empresa Faturadora</Label>
@@ -212,7 +191,6 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultProje
             </div>
           </div>
 
-          {/* Diárias */}
           <Separator />
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -239,7 +217,6 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultProje
             <Input type="number" value={form.retencao_pct} onChange={(e) => set("retencao_pct", e.target.value)} disabled={form.tipo_documento === "recibo"} />
           </div>
 
-          {/* Resumo */}
           <div className="bg-muted rounded-lg p-3 space-y-1 text-sm">
             <div className="flex justify-between"><span>Valor Bruto</span><span className="font-semibold">{fmt(calc.bruto)}</span></div>
             <div className="flex justify-between"><span>Retenção</span><span className="font-semibold text-destructive">- {fmt(calc.retencao)}</span></div>
@@ -247,7 +224,6 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultProje
             <div className="flex justify-between text-base font-bold"><span>Valor NF</span><span className="text-primary">{fmt(calc.nf)}</span></div>
           </div>
 
-          {/* Instrução de faturamento (condicional) */}
           {needsInstrucao && (
             <div>
               <Label>Instrução de Faturamento *</Label>
@@ -260,7 +236,6 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultProje
             </div>
           )}
 
-          {/* Responsável cobrança */}
           <div>
             <Label>Responsável pela Cobrança</Label>
             <Select value={form.responsavel_cobranca} onValueChange={(v) => set("responsavel_cobranca", v)}>

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { FileText, Plus, Trash2, AlertTriangle, Eye, Printer, Filter, Download } from "lucide-react";
+import { FileText, Plus, Trash2, AlertTriangle, Eye, Printer, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table";
-import { toast } from "sonner";
 import { useMeasurements, useDeleteMeasurement, type Measurement } from "@/hooks/useMeasurements";
 import MeasurementFormDialog from "@/components/operacional/MeasurementFormDialog";
 import MedicaoDetailDialog from "@/components/operacional/MedicaoDetailDialog";
@@ -40,7 +39,6 @@ export default function Medicoes() {
   const [showNew, setShowNew] = useState(false);
   const [selected, setSelected] = useState<Measurement | null>(null);
 
-  // Filters
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterSearch, setFilterSearch] = useState("");
   const [filterStart, setFilterStart] = useState("");
@@ -54,8 +52,7 @@ export default function Medicoes() {
         const q = filterSearch.toLowerCase();
         if (
           !m.codigo_bm.toLowerCase().includes(q) &&
-          !(m.project_name || "").toLowerCase().includes(q) &&
-          !(m.team_name || "").toLowerCase().includes(q)
+          !(m.project_name || "").toLowerCase().includes(q)
         )
           return false;
       }
@@ -67,10 +64,6 @@ export default function Medicoes() {
 
   const aguardando = filtered.filter((m) => m.status === "aguardando_nf");
   const totalNF = filtered.reduce((s, m) => s + (Number(m.valor_nf) || 0), 0);
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   return (
     <div className="p-6 space-y-6">
@@ -85,7 +78,7 @@ export default function Medicoes() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handlePrint} className="gap-2">
+          <Button variant="outline" onClick={() => window.print()} className="gap-2">
             <Printer className="w-4 h-4" /> Imprimir
           </Button>
           <Button onClick={() => setShowNew(true)} className="gap-2">
@@ -94,13 +87,12 @@ export default function Medicoes() {
         </div>
       </div>
 
-      {/* Filters */}
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center gap-2 flex-wrap">
             <Filter className="w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar código, obra ou equipe..."
+              placeholder="Buscar código ou projeto..."
               value={filterSearch}
               onChange={(e) => setFilterSearch(e.target.value)}
               className="w-56"
@@ -116,8 +108,8 @@ export default function Medicoes() {
                 <SelectItem value="cancelado">Cancelado</SelectItem>
               </SelectContent>
             </Select>
-            <Input type="date" placeholder="De" value={filterStart} onChange={(e) => setFilterStart(e.target.value)} className="w-40" />
-            <Input type="date" placeholder="Até" value={filterEnd} onChange={(e) => setFilterEnd(e.target.value)} className="w-40" />
+            <Input type="date" value={filterStart} onChange={(e) => setFilterStart(e.target.value)} className="w-40" />
+            <Input type="date" value={filterEnd} onChange={(e) => setFilterEnd(e.target.value)} className="w-40" />
             {(filterStatus !== "all" || filterSearch || filterStart || filterEnd) && (
               <Button variant="ghost" size="sm" onClick={() => { setFilterStatus("all"); setFilterSearch(""); setFilterStart(""); setFilterEnd(""); }}>
                 Limpar
@@ -157,9 +149,8 @@ export default function Medicoes() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Código BM</TableHead>
-                  <TableHead>Obra</TableHead>
+                  <TableHead>Projeto</TableHead>
                   <TableHead>Período</TableHead>
-                  <TableHead>Equipe</TableHead>
                   <TableHead>Valor NF</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -170,10 +161,7 @@ export default function Medicoes() {
                   <TableRow key={m.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelected(m)}>
                     <TableCell className="font-mono font-medium">{m.codigo_bm}</TableCell>
                     <TableCell>{m.project_name || "—"}</TableCell>
-                    <TableCell className="text-sm">
-                      {m.period_start} a {m.period_end}
-                    </TableCell>
-                    <TableCell>{m.team_name || "—"}</TableCell>
+                    <TableCell className="text-sm">{m.period_start} a {m.period_end}</TableCell>
                     <TableCell className="font-semibold">{formatCurrency(m.valor_nf)}</TableCell>
                     <TableCell>
                       <Badge className={statusColors[m.status] || ""}>

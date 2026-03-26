@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CalendarDays, Plus, Lock, Printer, Trash2, Pencil, CheckCircle, AlertTriangle } from "lucide-react";
+import { CalendarDays, Plus, Lock, Printer, Trash2, Pencil, CheckCircle, AlertTriangle, X, Users, Save } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import {
   useDailySchedule,
@@ -56,11 +58,21 @@ export default function EscalaDiaria() {
   const tomorrow = format(addDays(new Date(), 1), "yyyy-MM-dd");
   const today = format(new Date(), "yyyy-MM-dd");
   const [selectedDate, setSelectedDate] = useState(tomorrow);
-  const [showAddTeam, setShowAddTeam] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [showReport, setShowReport] = useState(false);
-  const [assignForm, setAssignForm] = useState({ team_id: "", project_id: "", vehicle_id: "" });
   const [editOpen, setEditOpen] = useState(false);
   const [editAssignment, setEditAssignment] = useState<any>(null);
+
+  // Add modal state
+  const [addForm, setAddForm] = useState({
+    project_id: "",
+    employee_ids: [] as string[],
+    vehicle_id: "",
+    benefits: { cafe: false, almoco: false, janta: false, vt: false },
+  });
+  const [empSearch, setEmpSearch] = useState("");
+  const [showSaveGroup, setShowSaveGroup] = useState(false);
+  const [groupName, setGroupName] = useState("");
 
   const qc = useQueryClient();
   const { data: schedule, isLoading } = useDailySchedule(selectedDate);
@@ -99,6 +111,26 @@ export default function EscalaDiaria() {
   const isConfirmed = !!confirmation;
   const isReadOnly = isClosed || isConfirmed;
 
+  // Active employees for the add modal
+  const activeEmployees = useMemo(() => {
+    return (allEmployees || []).filter(
+      (e) =>
+        e.status !== "desligado" &&
+        (e.role?.toLowerCase().includes("topógrafo") ||
+          e.role?.toLowerCase().includes("topografo") ||
+          e.role?.toLowerCase().includes("auxiliar") ||
+          e.role?.toLowerCase().includes("ajudante"))
+    );
+  }, [allEmployees]);
+
+  const filteredModalEmployees = useMemo(() => {
+    if (!empSearch) return activeEmployees;
+    const q = empSearch.toLowerCase();
+    return activeEmployees.filter(
+      (e) => e.name.toLowerCase().includes(q) || (e.matricula || "").toLowerCase().includes(q)
+    );
+  }, [activeEmployees, empSearch]);
+
   const handleConfirmSchedule = async () => {
     if (!user?.id) return;
     try {
@@ -119,22 +151,82 @@ export default function EscalaDiaria() {
     }
   };
 
-  const handleAddAssignment = async () => {
-    if (!assignForm.team_id || !schedule) return;
-    try {
-      await addAssignment.mutateAsync({
-        daily_schedule_id: schedule.id,
-        team_id: assignForm.team_id,
-        project_id: assignForm.project_id || undefined,
-        vehicle_id: assignForm.vehicle_id || undefined,
-        date: selectedDate,
-      });
-      setShowAddTeam(false);
-      setAssignForm({ team_id: "", project_id: "", vehicle_id: "" });
-      toast.success("Equipe adicionada à escala!");
-    } catch {
-      toast.error("Erro ao adicionar equipe");
+  const handleAddEmployees = async () => {
+    if (!addForm.project_id || addForm.employee_ids.length === 0 || !schedule) {
+      toast.error("Selecione projeto e pelo menos um funcionário");
+      return;
     }
+    try {
+      // Insert one daily_schedule_entry per employee
+      for (let i = 0; i < addForm.employee_ids.length; i++) {
+        const empId = addForm.employee_ids[i];
+        await supabase.from("daily_schedule_entries").insert({
+          daily_schedule_id: schedule.id,
+          employee_id: empId,
+          project_id: addForm.project_id,
+          vehicle_id: i === 0 && addForm.vehicle_id ? addForm.vehicle_id : null,
+        });
+      }
+
+      qc.invalidateQueries({ queryKey: ["daily-schedule"] });
+      setShowAddModal(false);
+      setAddForm({ project_id: "", employee_ids: [], vehicle_id: "", benefits: { cafe: false, almoco: false, janta: false, vt: false } });
+      setEmpSearch("");
+      toast.success(`${addForm.employee_ids.length} funcionário(s) adicionado(s) à escala!`);
+    } catch {
+      toast.error("Erro ao adicionar funcionários");
+    }
+  };
+
+  const handleLoadGroup = (teamId: string) => {
+    const team = (teams || []).find((t: any) => t.id === teamId);
+    if (!team) return;
+    const memberIds = ((team as any).team_members || []).map((m: any) => m.employee_id);
+    setAddForm((prev) => ({ ...prev, employee_ids: memberIds }));
+    // Also pre-fill project and vehicle from team defaults
+    if ((team as any).default_project_id) {
+      setAddForm((prev) => ({ ...prev, project_id: (team as any).default_project_id }));
+    }
+    if ((team as any).default_vehicle_id) {
+      setAddForm((prev) => ({ ...prev, vehicle_id: (team as any).default_vehicle_id }));
+    }
+    toast.success(`Grupo "${team.name}" carregado`);
+  };
+
+  const handleSaveGroup = async () => {
+    if (!groupName.trim() || addForm.employee_ids.length === 0) return;
+    try {
+      const { data: newTeam, error } = await supabase
+        .from("teams")
+        .insert({ name: groupName.trim() })
+        .select()
+        .single();
+      if (error) throw error;
+
+      for (const empId of addForm.employee_ids) {
+        await supabase.from("team_members").insert({
+          team_id: newTeam.id,
+          employee_id: empId,
+          role: activeEmployees.find((e) => e.id === empId)?.role?.toLowerCase().includes("topógrafo") || activeEmployees.find((e) => e.id === empId)?.role?.toLowerCase().includes("topografo") ? "topografo" : "auxiliar",
+        });
+      }
+
+      qc.invalidateQueries({ queryKey: ["teams"] });
+      setShowSaveGroup(false);
+      setGroupName("");
+      toast.success(`Grupo "${groupName}" salvo!`);
+    } catch {
+      toast.error("Erro ao salvar grupo");
+    }
+  };
+
+  const toggleEmployee = (id: string) => {
+    setAddForm((prev) => ({
+      ...prev,
+      employee_ids: prev.employee_ids.includes(id)
+        ? prev.employee_ids.filter((eid) => eid !== id)
+        : [...prev.employee_ids, id],
+    }));
   };
 
   const handleAttendance = async (entryId: string, attendance: AttendanceStatus) => {
@@ -264,9 +356,6 @@ export default function EscalaDiaria() {
     (e) => e.availability === "ferias" || e.availability === "licenca" || e.availability === "afastado"
   );
 
-  const assignedTeamIds = assignments.map((a: any) => a.team_id);
-  const availableTeams = (teams || []).filter((t: any) => !assignedTeamIds.includes(t.id));
-
   const dateFormatted = format(new Date(selectedDate + "T12:00:00"), "dd/MM/yyyy (EEEE)", { locale: ptBR });
   const d = new Date(selectedDate + "T12:00:00");
 
@@ -284,15 +373,14 @@ export default function EscalaDiaria() {
       e.status !== "desligado" &&
       !assignedIds.has(e.id) &&
       (e.role?.toLowerCase().includes("topógrafo") ||
-       e.role?.toLowerCase().includes("topografo") ||
-       e.role?.toLowerCase().includes("auxiliar") ||
-       e.role?.toLowerCase().includes("ajudante"))
+        e.role?.toLowerCase().includes("topografo") ||
+        e.role?.toLowerCase().includes("auxiliar") ||
+        e.role?.toLowerCase().includes("ajudante"))
   );
 
   const absentIds = new Set(absentEmployees.map((e) => e.id));
   const kanbanEmployees = fieldEmployees.filter((e) => !absentIds.has(e.id));
 
-  // RH absent employees that are field workers (for kanban read-only section)
   const rhAbsentFieldEmployees = absentEmployees.filter(
     (e) =>
       e.role?.toLowerCase().includes("topógrafo") ||
@@ -300,6 +388,12 @@ export default function EscalaDiaria() {
       e.role?.toLowerCase().includes("auxiliar") ||
       e.role?.toLowerCase().includes("ajudante")
   );
+
+  const formatName = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length <= 1) return name;
+    return `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase() || ""}.`;
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -371,8 +465,8 @@ export default function EscalaDiaria() {
               )}
               {!isReadOnly && (
                 <>
-                  <Button onClick={() => setShowAddTeam(true)} variant="outline" className="gap-2">
-                    <Plus className="w-4 h-4" /> Adicionar Equipe
+                  <Button onClick={() => setShowAddModal(true)} variant="outline" className="gap-2">
+                    <Plus className="w-4 h-4" /> Adicionar à Escala
                   </Button>
                   {isToday && assignments.length > 0 && (
                     <Button onClick={handleClose} variant="destructive" className="gap-2">
@@ -384,7 +478,7 @@ export default function EscalaDiaria() {
             </div>
           </div>
 
-          {/* KANBAN — ABOVE teams table */}
+          {/* KANBAN */}
           <EmployeeAvailabilityKanban
             unassignedEmployees={kanbanEmployees}
             attendanceMap={attendanceMap}
@@ -397,7 +491,7 @@ export default function EscalaDiaria() {
           {assignments.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">
-                Nenhuma equipe escalada. Adicione equipes ou crie a escala mensal primeiro.
+                Nenhuma equipe escalada. Adicione funcionários ou crie a escala mensal primeiro.
               </CardContent>
             </Card>
           ) : (
@@ -509,28 +603,15 @@ export default function EscalaDiaria() {
         </>
       )}
 
-      {/* Add Team Assignment Dialog */}
-      <Dialog open={showAddTeam} onOpenChange={setShowAddTeam}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Adicionar Equipe à Escala</DialogTitle></DialogHeader>
-          <div className="space-y-4">
+      {/* ═══ ADD TO SCHEDULE MODAL ═══ */}
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Adicionar à Escala</DialogTitle></DialogHeader>
+          <div className="space-y-5">
+            {/* Project (required) */}
             <div>
-              <label className="text-sm font-medium mb-1 block">Equipe</label>
-              <Select value={assignForm.team_id} onValueChange={(v) => {
-                const team = availableTeams.find((t: any) => t.id === v);
-                setAssignForm({ ...assignForm, team_id: v, vehicle_id: team?.default_vehicle_id || "" });
-              }}>
-                <SelectTrigger><SelectValue placeholder="Selecionar equipe..." /></SelectTrigger>
-                <SelectContent>
-                  {availableTeams.map((t: any) => (
-                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Projeto</label>
-              <Select value={assignForm.project_id} onValueChange={(v) => setAssignForm({ ...assignForm, project_id: v })}>
+              <Label className="font-semibold">Projeto *</Label>
+              <Select value={addForm.project_id} onValueChange={(v) => setAddForm((prev) => ({ ...prev, project_id: v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecionar projeto..." /></SelectTrigger>
                 <SelectContent>
                   {(obrasData || []).map((o: any) => (
@@ -539,9 +620,98 @@ export default function EscalaDiaria() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Favorite group shortcut */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Label className="text-sm text-muted-foreground">Grupo favorito (atalho):</Label>
+              <Select onValueChange={handleLoadGroup}>
+                <SelectTrigger className="w-52"><SelectValue placeholder="Carregar grupo..." /></SelectTrigger>
+                <SelectContent>
+                  {(teams || []).map((t: any) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      <Users className="w-3 h-3 inline mr-1" />{t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" onClick={() => setShowSaveGroup(true)} disabled={addForm.employee_ids.length === 0}>
+                <Save className="w-3 h-3 mr-1" /> Salvar seleção como grupo
+              </Button>
+            </div>
+
+            {showSaveGroup && (
+              <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/30">
+                <Input
+                  placeholder="Nome do grupo..."
+                  value={groupName}
+                  onChange={(e) => setGroupName(e.target.value)}
+                  className="flex-1"
+                />
+                <Button size="sm" onClick={handleSaveGroup} disabled={!groupName.trim()}>Salvar</Button>
+                <Button size="sm" variant="ghost" onClick={() => setShowSaveGroup(false)}><X className="w-4 h-4" /></Button>
+              </div>
+            )}
+
+            {/* Employee multi-select */}
             <div>
-              <label className="text-sm font-medium mb-1 block">Veículo</label>
-              <Select value={assignForm.vehicle_id} onValueChange={(v) => setAssignForm({ ...assignForm, vehicle_id: v })}>
+              <Label className="font-semibold">Funcionários *</Label>
+              <Input
+                placeholder="Buscar por nome ou matrícula..."
+                value={empSearch}
+                onChange={(e) => setEmpSearch(e.target.value)}
+                className="mt-1"
+              />
+
+              {/* Selected chips */}
+              {addForm.employee_ids.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {addForm.employee_ids.map((eid) => {
+                    const emp = activeEmployees.find((e) => e.id === eid);
+                    if (!emp) return null;
+                    const isTop = emp.role?.toLowerCase().includes("topógrafo") || emp.role?.toLowerCase().includes("topografo");
+                    return (
+                      <Badge
+                        key={eid}
+                        className={`gap-1 cursor-pointer ${isTop ? "bg-green-700 text-white hover:bg-green-800" : "bg-blue-600 text-white hover:bg-blue-700"}`}
+                        onClick={() => toggleEmployee(eid)}
+                      >
+                        {formatName(emp.name)}
+                        <X className="w-3 h-3" />
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Employee list */}
+              <div className="border rounded-lg mt-2 max-h-60 overflow-y-auto divide-y">
+                {filteredModalEmployees.map((emp) => {
+                  const isSelected = addForm.employee_ids.includes(emp.id);
+                  const isTop = emp.role?.toLowerCase().includes("topógrafo") || emp.role?.toLowerCase().includes("topografo");
+                  return (
+                    <div
+                      key={emp.id}
+                      className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/50 transition-colors ${isSelected ? "bg-primary/5" : ""}`}
+                      onClick={() => toggleEmployee(emp.id)}
+                    >
+                      <Checkbox checked={isSelected} className="pointer-events-none" />
+                      <span className="flex-1 text-sm">{emp.name}</span>
+                      <Badge variant="outline" className={`text-xs ${isTop ? "border-green-600 text-green-700" : "border-blue-600 text-blue-700"}`}>
+                        {isTop ? "TOP" : "AUX"}
+                      </Badge>
+                    </div>
+                  );
+                })}
+                {filteredModalEmployees.length === 0 && (
+                  <p className="p-3 text-sm text-muted-foreground text-center">Nenhum funcionário encontrado</p>
+                )}
+              </div>
+            </div>
+
+            {/* Vehicle */}
+            <div>
+              <Label>Veículo do dia (opcional)</Label>
+              <Select value={addForm.vehicle_id} onValueChange={(v) => setAddForm((prev) => ({ ...prev, vehicle_id: v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecionar veículo..." /></SelectTrigger>
                 <SelectContent>
                   {(vehicles || []).filter((v) => v.status === "disponivel").map((v) => (
@@ -550,10 +720,30 @@ export default function EscalaDiaria() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Benefits */}
+            <div>
+              <Label>Benefícios (aplicados a todos)</Label>
+              <div className="flex items-center gap-4 mt-2">
+                {(["cafe", "almoco", "janta", "vt"] as const).map((b) => (
+                  <label key={b} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                    <Checkbox
+                      checked={addForm.benefits[b]}
+                      onCheckedChange={(checked) =>
+                        setAddForm((prev) => ({ ...prev, benefits: { ...prev.benefits, [b]: !!checked } }))
+                      }
+                    />
+                    {b === "cafe" ? "Café" : b === "almoco" ? "Almoço" : b === "janta" ? "Janta" : "VT"}
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddTeam(false)}>Cancelar</Button>
-            <Button onClick={handleAddAssignment} disabled={!assignForm.team_id}>Adicionar</Button>
+            <Button variant="outline" onClick={() => setShowAddModal(false)}>Cancelar</Button>
+            <Button onClick={handleAddEmployees} disabled={!addForm.project_id || addForm.employee_ids.length === 0}>
+              Adicionar {addForm.employee_ids.length} funcionário(s)
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
