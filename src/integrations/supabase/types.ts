@@ -853,7 +853,6 @@ export type Database = {
           responsavel_cobranca: string | null
           retencao_pct: number
           status: string
-          team_id: string | null
           tipo_documento: string
           updated_at: string | null
           valor_bruto: number | null
@@ -881,7 +880,6 @@ export type Database = {
           responsavel_cobranca?: string | null
           retencao_pct?: number
           status?: string
-          team_id?: string | null
           tipo_documento?: string
           updated_at?: string | null
           valor_bruto?: number | null
@@ -909,7 +907,6 @@ export type Database = {
           responsavel_cobranca?: string | null
           retencao_pct?: number
           status?: string
-          team_id?: string | null
           tipo_documento?: string
           updated_at?: string | null
           valor_bruto?: number | null
@@ -924,13 +921,6 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "measurements_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -1396,6 +1386,21 @@ export type Database = {
           },
         ]
       }
+      system_settings: {
+        Row: {
+          key: string
+          value: string
+        }
+        Insert: {
+          key: string
+          value: string
+        }
+        Update: {
+          key?: string
+          value?: string
+        }
+        Relationships: []
+      }
       team_members: {
         Row: {
           employee_id: string
@@ -1510,6 +1515,70 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vehicle_payment_history: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          daily_rate: number
+          days_count: number
+          employee_id: string | null
+          id: string
+          month: number
+          notes: string | null
+          total_value: number
+          vehicle_id: string
+          year: number
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          daily_rate: number
+          days_count: number
+          employee_id?: string | null
+          id?: string
+          month: number
+          notes?: string | null
+          total_value: number
+          vehicle_id: string
+          year: number
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          daily_rate?: number
+          days_count?: number
+          employee_id?: string | null
+          id?: string
+          month?: number
+          notes?: string | null
+          total_value?: number
+          vehicle_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_payment_history_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_payment_history_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_payment_history_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicles: {
         Row: {
