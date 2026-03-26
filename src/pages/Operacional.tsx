@@ -6,6 +6,7 @@ import EscalaMensal from "./operacional/EscalaMensal";
 import Medicoes from "./operacional/Medicoes";
 import DespesasDeCampo from "./operacional/DespesasDeCampo";
 import Veiculos from "./operacional/Veiculos";
+import DiariasVeiculos from "./operacional/DiariasVeiculos";
 
 export default function Operacional() {
   return (
@@ -18,6 +19,7 @@ export default function Operacional() {
       <Route path="medicoes" element={<Medicoes />} />
       <Route path="despesas-de-campo" element={<DespesasDeCampo />} />
       <Route path="veiculos" element={<Veiculos />} />
+      <Route path="diarias-veiculos" element={<DiariasVeiculos />} />
       <Route path="*" element={<Navigate to="dashboard" replace />} />
     </Routes>
   );
