@@ -26,10 +26,15 @@ export function useEmployeesWithAbsences(date?: string) {
   return useQuery({
     queryKey: ["employees-with-absences", targetDate],
     queryFn: async () => {
+      const fieldRoles = [
+        "Topógrafo", "Topógrafo I", "Topógrafo II", "Topógrafo III",
+        "Topógrafo III A", "Topógrafo IV", "Ajudante de Topografia",
+      ];
       const { data: employees, error: empError } = await supabase
         .from("employees")
         .select("*")
         .neq("status", "desligado")
+        .in("role", fieldRoles)
         .order("name");
       if (empError) throw empError;
 
