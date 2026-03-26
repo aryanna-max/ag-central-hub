@@ -6,7 +6,6 @@ export interface Measurement {
   codigo_bm: string;
   obra_id: string | null;
   project_id: string | null;
-  team_id: string | null;
   period_start: string;
   period_end: string;
   dias_semana: number;
@@ -30,7 +29,6 @@ export interface Measurement {
   updated_at: string;
   // joined
   project_name?: string;
-  team_name?: string;
 }
 
 export function useMeasurements() {
@@ -39,13 +37,12 @@ export function useMeasurements() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("measurements")
-        .select("*, projects:project_id(name), teams:team_id(name)")
+        .select("*, projects:project_id(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data as any[]).map((r) => ({
         ...r,
         project_name: r.projects?.name ?? null,
-        team_name: r.teams?.name ?? null,
       })) as Measurement[];
     },
   });
@@ -106,14 +103,13 @@ export function useProjectMeasurements(projectId: string | null) {
       if (!projectId) return [];
       const { data, error } = await supabase
         .from("measurements")
-        .select("*, projects:project_id(name), teams:team_id(name)")
+        .select("*, projects:project_id(name)")
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data as any[]).map((r) => ({
         ...r,
         project_name: r.projects?.name ?? null,
-        team_name: r.teams?.name ?? null,
       })) as Measurement[];
     },
     enabled: !!projectId,

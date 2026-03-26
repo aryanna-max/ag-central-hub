@@ -98,7 +98,7 @@ function ProjectMeasurementsTab({
                 <TableRow key={m.id}>
                   <TableCell className="font-mono text-xs font-medium">{m.codigo_bm}</TableCell>
                   <TableCell className="text-xs">{m.period_start} a {m.period_end}</TableCell>
-                  <TableCell className="text-xs">{m.team_name || "—"}</TableCell>
+                  <TableCell className="text-xs">{m.project_name || "—"}</TableCell>
                   <TableCell className="text-sm font-semibold text-right">{formatCurrency(m.valor_nf)}</TableCell>
                   <TableCell>
                     <Badge className={st.className}>{st.label}</Badge>

@@ -45,6 +45,7 @@ const navigation: SidebarItem[] = [
       { label: "Medições", path: "/operacional/medicoes", icon: FileText },
       { label: "Despesas de Campo", path: "/operacional/despesas-de-campo", icon: Banknote },
       { label: "Veículos", path: "/operacional/veiculos", icon: Car },
+      { label: "Diárias de Veículos", path: "/operacional/diarias-veiculos", icon: Wallet },
     ],
   },
   {
