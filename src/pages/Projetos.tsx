@@ -587,6 +587,8 @@ export default function Projetos() {
           )}
         </SheetContent>
       </Sheet>
+
+      <ProjectFormDialog open={newProjectOpen} onOpenChange={setNewProjectOpen} />
     </div>
   );
 }
