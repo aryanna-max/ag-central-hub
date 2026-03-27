@@ -63,6 +63,7 @@ export default function Leads() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [lossDialog, setLossDialog] = useState<Lead | null>(null);
   const [lossReason, setLossReason] = useState("");
+  const [conversionLead, setConversionLead] = useState<Lead | null>(null);
 
   const responsaveis = useMemo(() => {
     const set = new Set(leads.map((l) => l.responsible).filter(Boolean) as string[]);
