@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { isTopografo } from "@/lib/fieldRoles";
 
 type KanbanColumn = "nao_alocado" | "folga" | "falta" | "atestado" | "reserva_ag";
 
