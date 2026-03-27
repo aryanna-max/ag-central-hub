@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FolderKanban, GripVertical, FileText, Plus } from "lucide-react";
+import ProjectFormDialog from "./projetos/ProjectFormDialog";
 import { useProjects, useUpdateProject, type Project, type ProjectStatus } from "@/hooks/useProjects";
 import { useProjectMeasurements } from "@/hooks/useMeasurements";
 import { useEmployees } from "@/hooks/useEmployees";
@@ -154,6 +155,7 @@ export default function Projetos() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [editForm, setEditForm] = useState<Partial<Project>>({});
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [newProjectOpen, setNewProjectOpen] = useState(false);
 
   const grouped = useMemo(() => {
     const map: Record<ProjectStatus, Project[]> = {
@@ -250,11 +252,16 @@ export default function Projetos() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <FolderKanban className="w-6 h-6 text-primary" /> Projetos
-        </h1>
-        <p className="text-muted-foreground text-sm">Gestão de projetos criados a partir de leads convertidos</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <FolderKanban className="w-6 h-6 text-primary" /> Projetos
+          </h1>
+          <p className="text-muted-foreground text-sm">Gestão de projetos criados a partir de leads convertidos</p>
+        </div>
+        <Button onClick={() => setNewProjectOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" /> Novo Projeto
+        </Button>
       </div>
 
       {isLoading ? (
@@ -580,6 +587,8 @@ export default function Projetos() {
           )}
         </SheetContent>
       </Sheet>
+
+      <ProjectFormDialog open={newProjectOpen} onOpenChange={setNewProjectOpen} />
     </div>
   );
 }

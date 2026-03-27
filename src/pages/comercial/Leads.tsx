@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, ArrowRightLeft, Target, LayoutGrid, List, FolderKanban } from "lucide-react";
+import LeadConversionDialog from "./LeadConversionDialog";
 import {
   useLeads, useDeleteLead, useUpdateLead,
   LEAD_STATUSES, STATUS_LABELS, STATUS_COLORS, ORIGIN_LABELS, ORIGIN_COLORS,
@@ -62,6 +63,7 @@ export default function Leads() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [lossDialog, setLossDialog] = useState<Lead | null>(null);
   const [lossReason, setLossReason] = useState("");
+  const [conversionLead, setConversionLead] = useState<Lead | null>(null);
 
   const responsaveis = useMemo(() => {
     const set = new Set(leads.map((l) => l.responsible).filter(Boolean) as string[]);
@@ -104,6 +106,10 @@ export default function Leads() {
     if (newStatus === lead.status) return;
     if (newStatus === "perdido") {
       setLossDialog(lead);
+      return;
+    }
+    if (newStatus === "convertido") {
+      setConversionLead(lead);
       return;
     }
     const allowed = ALLOWED_TRANSITIONS[lead.status];
@@ -358,6 +364,12 @@ export default function Leads() {
       {/* Dialogs */}
       <LeadFormDialog open={formOpen} onOpenChange={setFormOpen} lead={editingLead} />
       <LeadDetailDialog open={!!detailLead} onOpenChange={(o) => !o && setDetailLead(null)} lead={detailLead} />
+      <LeadConversionDialog
+        open={!!conversionLead}
+        onOpenChange={(o) => { if (!o) setConversionLead(null); }}
+        lead={conversionLead}
+        onConverted={() => navigate("/projetos")}
+      />
 
       {/* Loss reason dialog */}
       <Dialog open={!!lossDialog} onOpenChange={(o) => { if (!o) { setLossDialog(null); setLossReason(""); } }}>
