@@ -48,6 +48,7 @@ export interface ProjectInsert {
   client?: string | null;
   client_id?: string | null;
   client_cnpj?: string | null;
+  cnpj_tomador?: string | null;
   service?: string | null;
   contract_value?: number | null;
   responsible?: string | null;
@@ -59,6 +60,8 @@ export interface ProjectInsert {
   end_date?: string | null;
   empresa_faturadora?: string;
   tipo_documento?: string;
+  is_active?: boolean;
+  codigo?: string;
 }
 
 export function useProjects() {
