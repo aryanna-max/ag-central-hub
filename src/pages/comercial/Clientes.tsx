@@ -53,7 +53,8 @@ export default function Clientes() {
         c.cnpj?.toLowerCase().includes(q) ||
         c.email?.toLowerCase().includes(q) ||
         c.city?.toLowerCase().includes(q) ||
-        c.segmento?.toLowerCase().includes(q)
+        c.segmento?.toLowerCase().includes(q) ||
+        c.codigo?.toLowerCase().includes(q)
     );
   }, [clients, search]);
 
