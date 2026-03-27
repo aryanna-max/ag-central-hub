@@ -138,8 +138,9 @@ export default function Clientes() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-16">Código</TableHead>
                       <TableHead>Nome / Razão Social</TableHead>
-                      <TableHead>CNPJ</TableHead>
+                      <TableHead>CNPJ/CPF</TableHead>
                       <TableHead>Cidade/UF</TableHead>
                       <TableHead>Contato</TableHead>
                       <TableHead>Segmento</TableHead>
