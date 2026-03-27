@@ -153,15 +153,42 @@ export default function EscalaDiaria() {
       return;
     }
     try {
-      // Insert one daily_schedule_entry per employee
-      for (let i = 0; i < addForm.employee_ids.length; i++) {
-        const empId = addForm.employee_ids[i];
-        await supabase.from("daily_schedule_entries").insert({
+      // Create a team assignment so it shows in the table
+      const { data: assignment, error: assErr } = await supabase
+        .from("daily_team_assignments")
+        .insert({
           daily_schedule_id: schedule.id,
-          employee_id: empId,
+          team_id: (teams || [])[0]?.id || schedule.id, // fallback
           project_id: addForm.project_id,
-          vehicle_id: i === 0 && addForm.vehicle_id ? addForm.vehicle_id : null,
-        });
+          vehicle_id: addForm.vehicle_id || null,
+        })
+        .select()
+        .single();
+
+      if (assErr) {
+        // If no team available, insert entries directly
+        for (let i = 0; i < addForm.employee_ids.length; i++) {
+          const empId = addForm.employee_ids[i];
+          await supabase.from("daily_schedule_entries").insert({
+            daily_schedule_id: schedule.id,
+            employee_id: empId,
+            project_id: addForm.project_id,
+            vehicle_id: i === 0 && addForm.vehicle_id ? addForm.vehicle_id : null,
+          });
+        }
+      } else {
+        // Insert entries linked to the assignment
+        for (let i = 0; i < addForm.employee_ids.length; i++) {
+          const empId = addForm.employee_ids[i];
+          await supabase.from("daily_schedule_entries").insert({
+            daily_schedule_id: schedule.id,
+            employee_id: empId,
+            project_id: addForm.project_id,
+            vehicle_id: i === 0 && addForm.vehicle_id ? addForm.vehicle_id : null,
+            team_id: assignment.team_id,
+            daily_team_assignment_id: assignment.id,
+          });
+        }
       }
 
       qc.invalidateQueries({ queryKey: ["daily-schedule"] });
