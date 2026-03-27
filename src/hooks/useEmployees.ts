@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { FIELD_ROLES } from "@/lib/fieldRoles";
 
 export type Employee = Tables<"employees">;
 export type EmployeeInsert = TablesInsert<"employees">;
@@ -26,15 +27,11 @@ export function useEmployeesWithAbsences(date?: string) {
   return useQuery({
     queryKey: ["employees-with-absences", targetDate],
     queryFn: async () => {
-      const fieldRoles = [
-        "Topógrafo", "Topógrafo I", "Topógrafo II", "Topógrafo III",
-        "Topógrafo III A", "Topógrafo IV", "Ajudante de Topografia",
-      ];
       const { data: employees, error: empError } = await supabase
         .from("employees")
         .select("*")
         .neq("status", "desligado")
-        .in("role", fieldRoles)
+        .in("role", [...FIELD_ROLES])
         .order("name");
       if (empError) throw empError;
 

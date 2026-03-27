@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { isTopografo } from "@/lib/fieldRoles";
 
 type KanbanColumn = "nao_alocado" | "folga" | "falta" | "atestado" | "reserva_ag";
 
@@ -138,11 +139,10 @@ export default function EmployeeAvailabilityKanban({
     }
   };
 
-  const isTopografo = (role: string) =>
-    role?.toLowerCase().includes("topógrafo") || role?.toLowerCase().includes("topografo");
+  const isTopografoRole = (role: string) => isTopografo(role);
 
   const isAuxiliar = (role: string) =>
-    role?.toLowerCase().includes("auxiliar") || role?.toLowerCase().includes("ajudante");
+    role?.toLowerCase().includes("ajudante");
 
   const totalCount = unassignedEmployees.length;
   const rhCount = rhAbsentEmployees.length;
@@ -167,10 +167,10 @@ export default function EmployeeAvailabilityKanban({
       } ${draggedId === emp.id ? "opacity-40" : ""}`}
     >
       <Badge
-        variant={isTopografo(emp.role) ? "default" : "secondary"}
+        variant={isTopografoRole(emp.role) ? "default" : "secondary"}
         className="text-[9px] h-4 px-1 shrink-0"
       >
-        {isTopografo(emp.role) ? "TOP" : "AUX"}
+        {isTopografoRole(emp.role) ? "TOP" : "AUX"}
       </Badge>
       <span className="truncate leading-tight">
         {formatEmployeeName(emp)}
@@ -207,8 +207,8 @@ export default function EmployeeAvailabilityKanban({
   };
 
   const naoAlocadoIsOver = hoverColumn === "nao_alocado";
-  const topografosNaoAlocados = grouped.nao_alocado.filter((e) => isTopografo(e.role));
-  const auxiliaresNaoAlocados = grouped.nao_alocado.filter((e) => !isTopografo(e.role));
+  const topografosNaoAlocados = grouped.nao_alocado.filter((e) => isTopografoRole(e.role));
+  const auxiliaresNaoAlocados = grouped.nao_alocado.filter((e) => !isTopografoRole(e.role));
 
   return (
     <Card>

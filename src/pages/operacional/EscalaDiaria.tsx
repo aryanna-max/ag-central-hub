@@ -28,6 +28,7 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useEmployees, useEmployeesWithAbsences } from "@/hooks/useEmployees";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
+import { isFieldRole, isTopografo } from "@/lib/fieldRoles";
 import AbsencesSection from "@/components/operacional/AbsencesSection";
 import TeamLocationMap from "@/components/operacional/TeamLocationMap";
 import MonthlyDayEditDialog from "@/components/operacional/MonthlyDayEditDialog";
@@ -114,12 +115,7 @@ export default function EscalaDiaria() {
   // Active employees for the add modal
   const activeEmployees = useMemo(() => {
     return (allEmployees || []).filter(
-      (e) =>
-        e.status !== "desligado" &&
-        (e.role?.toLowerCase().includes("topógrafo") ||
-          e.role?.toLowerCase().includes("topografo") ||
-          e.role?.toLowerCase().includes("auxiliar") ||
-          e.role?.toLowerCase().includes("ajudante"))
+      (e) => e.status !== "desligado" && isFieldRole(e.role)
     );
   }, [allEmployees]);
 
@@ -157,15 +153,42 @@ export default function EscalaDiaria() {
       return;
     }
     try {
-      // Insert one daily_schedule_entry per employee
-      for (let i = 0; i < addForm.employee_ids.length; i++) {
-        const empId = addForm.employee_ids[i];
-        await supabase.from("daily_schedule_entries").insert({
+      // Create a team assignment so it shows in the table
+      const { data: assignment, error: assErr } = await supabase
+        .from("daily_team_assignments")
+        .insert({
           daily_schedule_id: schedule.id,
-          employee_id: empId,
+          team_id: (teams || [])[0]?.id || schedule.id, // fallback
           project_id: addForm.project_id,
-          vehicle_id: i === 0 && addForm.vehicle_id ? addForm.vehicle_id : null,
-        });
+          vehicle_id: addForm.vehicle_id || null,
+        })
+        .select()
+        .single();
+
+      if (assErr) {
+        // If no team available, insert entries directly
+        for (let i = 0; i < addForm.employee_ids.length; i++) {
+          const empId = addForm.employee_ids[i];
+          await supabase.from("daily_schedule_entries").insert({
+            daily_schedule_id: schedule.id,
+            employee_id: empId,
+            project_id: addForm.project_id,
+            vehicle_id: i === 0 && addForm.vehicle_id ? addForm.vehicle_id : null,
+          });
+        }
+      } else {
+        // Insert entries linked to the assignment
+        for (let i = 0; i < addForm.employee_ids.length; i++) {
+          const empId = addForm.employee_ids[i];
+          await supabase.from("daily_schedule_entries").insert({
+            daily_schedule_id: schedule.id,
+            employee_id: empId,
+            project_id: addForm.project_id,
+            vehicle_id: i === 0 && addForm.vehicle_id ? addForm.vehicle_id : null,
+            team_id: assignment.team_id,
+            daily_team_assignment_id: assignment.id,
+          });
+        }
       }
 
       qc.invalidateQueries({ queryKey: ["daily-schedule"] });
@@ -207,7 +230,7 @@ export default function EscalaDiaria() {
         await supabase.from("team_members").insert({
           team_id: newTeam.id,
           employee_id: empId,
-          role: activeEmployees.find((e) => e.id === empId)?.role?.toLowerCase().includes("topógrafo") || activeEmployees.find((e) => e.id === empId)?.role?.toLowerCase().includes("topografo") ? "topografo" : "auxiliar",
+          role: isTopografo(activeEmployees.find((e) => e.id === empId)?.role) ? "topografo" : "auxiliar",
         });
       }
 
@@ -369,24 +392,14 @@ export default function EscalaDiaria() {
   });
 
   const fieldEmployees = (allEmployees || []).filter(
-    (e) =>
-      e.status !== "desligado" &&
-      !assignedIds.has(e.id) &&
-      (e.role?.toLowerCase().includes("topógrafo") ||
-        e.role?.toLowerCase().includes("topografo") ||
-        e.role?.toLowerCase().includes("auxiliar") ||
-        e.role?.toLowerCase().includes("ajudante"))
+    (e) => e.status !== "desligado" && !assignedIds.has(e.id) && isFieldRole(e.role)
   );
 
   const absentIds = new Set(absentEmployees.map((e) => e.id));
   const kanbanEmployees = fieldEmployees.filter((e) => !absentIds.has(e.id));
 
   const rhAbsentFieldEmployees = absentEmployees.filter(
-    (e) =>
-      e.role?.toLowerCase().includes("topógrafo") ||
-      e.role?.toLowerCase().includes("topografo") ||
-      e.role?.toLowerCase().includes("auxiliar") ||
-      e.role?.toLowerCase().includes("ajudante")
+    (e) => isFieldRole(e.role)
   );
 
   const formatName = (name: string) => {
@@ -668,7 +681,7 @@ export default function EscalaDiaria() {
                   {addForm.employee_ids.map((eid) => {
                     const emp = activeEmployees.find((e) => e.id === eid);
                     if (!emp) return null;
-                    const isTop = emp.role?.toLowerCase().includes("topógrafo") || emp.role?.toLowerCase().includes("topografo");
+                    const isTop = isTopografo(emp.role);
                     return (
                       <Badge
                         key={eid}
@@ -687,7 +700,7 @@ export default function EscalaDiaria() {
               <div className="border rounded-lg mt-2 max-h-60 overflow-y-auto divide-y">
                 {filteredModalEmployees.map((emp) => {
                   const isSelected = addForm.employee_ids.includes(emp.id);
-                  const isTop = emp.role?.toLowerCase().includes("topógrafo") || emp.role?.toLowerCase().includes("topografo");
+                  const isTop = isTopografo(emp.role);
                   return (
                     <div
                       key={emp.id}
