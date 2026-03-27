@@ -399,11 +399,7 @@ export default function EscalaDiaria() {
   const kanbanEmployees = fieldEmployees.filter((e) => !absentIds.has(e.id));
 
   const rhAbsentFieldEmployees = absentEmployees.filter(
-    (e) =>
-      e.role?.toLowerCase().includes("topógrafo") ||
-      e.role?.toLowerCase().includes("topografo") ||
-      e.role?.toLowerCase().includes("auxiliar") ||
-      e.role?.toLowerCase().includes("ajudante")
+    (e) => isFieldRole(e.role)
   );
 
   const formatName = (name: string) => {
