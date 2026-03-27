@@ -28,6 +28,7 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useEmployees, useEmployeesWithAbsences } from "@/hooks/useEmployees";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
+import { isFieldRole, isTopografo } from "@/lib/fieldRoles";
 import AbsencesSection from "@/components/operacional/AbsencesSection";
 import TeamLocationMap from "@/components/operacional/TeamLocationMap";
 import MonthlyDayEditDialog from "@/components/operacional/MonthlyDayEditDialog";
