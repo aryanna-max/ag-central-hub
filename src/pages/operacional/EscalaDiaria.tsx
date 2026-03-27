@@ -115,12 +115,7 @@ export default function EscalaDiaria() {
   // Active employees for the add modal
   const activeEmployees = useMemo(() => {
     return (allEmployees || []).filter(
-      (e) =>
-        e.status !== "desligado" &&
-        (e.role?.toLowerCase().includes("topógrafo") ||
-          e.role?.toLowerCase().includes("topografo") ||
-          e.role?.toLowerCase().includes("auxiliar") ||
-          e.role?.toLowerCase().includes("ajudante"))
+      (e) => e.status !== "desligado" && isFieldRole(e.role)
     );
   }, [allEmployees]);
 
