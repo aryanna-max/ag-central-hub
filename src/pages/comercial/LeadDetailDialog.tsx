@@ -7,36 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Phone, Mail, Building2, User, MessageSquare, PhoneCall, Video, MapPin, Send, FileText, DollarSign } from "lucide-react";
-import { useLeadInteractions, useAddLeadInteraction, useUpdateLead, type Lead, type LeadInteractionType, type LeadStatus } from "@/hooks/useLeads";
-import { useLeadConversion } from "@/hooks/useLeadConversion";
+import {
+  useLeadInteractions, useAddLeadInteraction, useUpdateLead,
+  STATUS_LABELS, STATUS_COLORS, ORIGIN_LABELS,
+  type Lead, type LeadInteractionType, type LeadStatus,
+} from "@/hooks/useLeads";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-
-const STATUS_COLORS: Record<string, string> = {
-  novo: "bg-blue-100 text-blue-800",
-  em_contato: "bg-yellow-100 text-yellow-800",
-  qualificado: "bg-emerald-100 text-emerald-800",
-  convertido: "bg-green-100 text-green-800",
-  descartado: "bg-red-100 text-red-800",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  novo: "Novo",
-  em_contato: "Em Contato",
-  qualificado: "Qualificado",
-  convertido: "Convertido",
-  descartado: "Descartado",
-};
-
-const SOURCE_LABELS: Record<string, string> = {
-  whatsapp: "WhatsApp",
-  telefone: "Telefone",
-  email: "E-mail",
-  site: "Site",
-  indicacao: "Indicação",
-  outros: "Outros",
-};
 
 const INTERACTION_LABELS: Record<LeadInteractionType, { label: string; icon: React.ElementType }> = {
   nota: { label: "Nota", icon: MessageSquare },
@@ -57,7 +35,6 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
   const { data: interactions = [] } = useLeadInteractions(lead?.id);
   const addInteraction = useAddLeadInteraction();
   const updateLead = useUpdateLead();
-  const { convertLead, isPending: isConverting } = useLeadConversion();
   const [newContent, setNewContent] = useState("");
   const [newType, setNewType] = useState<LeadInteractionType>("nota");
 
@@ -68,12 +45,7 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
     if (status === lead.status) return;
     try {
       await updateLead.mutateAsync({ id: lead.id, status });
-      if (status === "convertido") {
-        await convertLead(lead);
-        toast.success("Lead convertido — projeto e alertas criados");
-      } else {
-        toast.success(`Status alterado para ${STATUS_LABELS[status]}`);
-      }
+      toast.success(`Status alterado para ${STATUS_LABELS[status]}`);
       onOpenChange(false);
     } catch {
       toast.error("Erro ao alterar status");
@@ -96,14 +68,16 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
     }
   };
 
+  const originLabel = lead.origin ? (ORIGIN_LABELS as any)[lead.origin] || lead.origin : "—";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
-            <span>{lead.name}</span>
-            <Select value={lead.status} onValueChange={handleStatusChange} disabled={updateLead.isPending || isConverting}>
-              <SelectTrigger className={`w-auto h-6 text-xs border-0 px-2.5 py-0 rounded-full ${STATUS_COLORS[lead.status]}`}>
+            <span>{lead.company || lead.name}</span>
+            <Select value={lead.status} onValueChange={handleStatusChange} disabled={updateLead.isPending}>
+              <SelectTrigger className={`w-auto h-6 text-xs border-0 px-2.5 py-0 rounded-full ${STATUS_COLORS[lead.status] || ""}`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -138,7 +112,7 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
           )}
           {lead.cnpj && (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <FileText className="w-4 h-4" /> CNPJ: <span className="font-medium text-foreground">{lead.cnpj}</span>
+              <FileText className="w-4 h-4" /> {lead.client_type === "pf" ? "CPF" : "CNPJ"}: <span className="font-medium text-foreground">{lead.cnpj}</span>
             </div>
           )}
           {lead.servico && (
@@ -146,9 +120,9 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
               <Building2 className="w-4 h-4" /> Serviço: <span className="font-medium text-foreground">{lead.servico}</span>
             </div>
           )}
-          {lead.endereco && (
+          {(lead.location || lead.endereco) && (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <MapPin className="w-4 h-4" /> {lead.endereco}
+              <MapPin className="w-4 h-4" /> {lead.location || lead.endereco}
             </div>
           )}
           {lead.valor != null && (
@@ -157,40 +131,29 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
             </div>
           )}
           <div className="text-muted-foreground">
-            Origem: <span className="font-medium text-foreground">{SOURCE_LABELS[lead.source]}</span>
+            Origem: <span className="font-medium text-foreground">{originLabel}</span>
           </div>
           <div className="text-muted-foreground">
             Criado em: <span className="font-medium text-foreground">{format(new Date(lead.created_at), "dd/MM/yyyy", { locale: ptBR })}</span>
           </div>
         </div>
 
-        {lead.notes && (
-          <p className="text-sm bg-muted/50 rounded-md p-3">{lead.notes}</p>
-        )}
+        {lead.notes && <p className="text-sm bg-muted/50 rounded-md p-3">{lead.notes}</p>}
 
         <Separator />
 
-        {/* Add interaction */}
         <div className="space-y-2">
           <p className="text-sm font-medium">Nova Interação</p>
           <div className="flex gap-2">
             <Select value={newType} onValueChange={(v) => setNewType(v as LeadInteractionType)}>
-              <SelectTrigger className="w-36">
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {Object.entries(INTERACTION_LABELS).map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Textarea
-              value={newContent}
-              onChange={(e) => setNewContent(e.target.value)}
-              placeholder="Descreva a interação..."
-              rows={2}
-              className="flex-1"
-            />
+            <Textarea value={newContent} onChange={(e) => setNewContent(e.target.value)} placeholder="Descreva a interação..." rows={2} className="flex-1" />
             <Button size="icon" onClick={handleAddInteraction} disabled={addInteraction.isPending || !newContent.trim()}>
               <Send className="w-4 h-4" />
             </Button>
@@ -199,7 +162,6 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
 
         <Separator />
 
-        {/* Interaction history */}
         <p className="text-sm font-medium">Histórico ({interactions.length})</p>
         <ScrollArea className="flex-1 max-h-48">
           {interactions.length === 0 ? (
