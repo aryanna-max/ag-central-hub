@@ -139,11 +139,10 @@ export default function EmployeeAvailabilityKanban({
     }
   };
 
-  const isTopografo = (role: string) =>
-    role?.toLowerCase().includes("topógrafo") || role?.toLowerCase().includes("topografo");
+  const isTopografoRole = (role: string) => isTopografo(role);
 
   const isAuxiliar = (role: string) =>
-    role?.toLowerCase().includes("auxiliar") || role?.toLowerCase().includes("ajudante");
+    role?.toLowerCase().includes("ajudante");
 
   const totalCount = unassignedEmployees.length;
   const rhCount = rhAbsentEmployees.length;
