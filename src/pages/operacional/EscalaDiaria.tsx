@@ -681,7 +681,7 @@ export default function EscalaDiaria() {
                   {addForm.employee_ids.map((eid) => {
                     const emp = activeEmployees.find((e) => e.id === eid);
                     if (!emp) return null;
-                    const isTop = emp.role?.toLowerCase().includes("topógrafo") || emp.role?.toLowerCase().includes("topografo");
+                    const isTop = isTopografo(emp.role);
                     return (
                       <Badge
                         key={eid}
