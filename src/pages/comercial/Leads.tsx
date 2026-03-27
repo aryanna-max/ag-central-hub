@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, ArrowRightLeft, Target, LayoutGrid, List, FolderKanban } from "lucide-react";
+import LeadConversionDialog from "./LeadConversionDialog";
 import {
   useLeads, useDeleteLead, useUpdateLead,
   LEAD_STATUSES, STATUS_LABELS, STATUS_COLORS, ORIGIN_LABELS, ORIGIN_COLORS,
