@@ -53,7 +53,8 @@ export default function Clientes() {
         c.cnpj?.toLowerCase().includes(q) ||
         c.email?.toLowerCase().includes(q) ||
         c.city?.toLowerCase().includes(q) ||
-        c.segmento?.toLowerCase().includes(q)
+        c.segmento?.toLowerCase().includes(q) ||
+        c.codigo?.toLowerCase().includes(q)
     );
   }, [clients, search]);
 
@@ -137,8 +138,9 @@ export default function Clientes() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-16">Código</TableHead>
                       <TableHead>Nome / Razão Social</TableHead>
-                      <TableHead>CNPJ</TableHead>
+                      <TableHead>CNPJ/CPF</TableHead>
                       <TableHead>Cidade/UF</TableHead>
                       <TableHead>Contato</TableHead>
                       <TableHead>Segmento</TableHead>
@@ -152,6 +154,7 @@ export default function Clientes() {
                       const projCount = getClientProjects(client).length;
                       return (
                         <TableRow key={client.id} className="cursor-pointer hover:bg-muted/50">
+                          <TableCell className="font-mono text-xs text-muted-foreground">{client.codigo || "—"}</TableCell>
                           <TableCell className="font-medium" onClick={() => setSelectedClient(client)}>{client.name}</TableCell>
                           <TableCell className="text-muted-foreground text-xs font-mono">{client.cnpj || "—"}</TableCell>
                           <TableCell className="text-muted-foreground">

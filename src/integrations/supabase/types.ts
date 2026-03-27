@@ -775,15 +775,20 @@ export type Database = {
       }
       leads: {
         Row: {
+          client_id: string | null
+          client_type: string | null
           cnpj: string | null
           company: string | null
+          converted_project_id: string | null
           created_at: string
           email: string | null
           endereco: string | null
           id: string
+          location: string | null
           name: string
           notes: string | null
           obra_id: string | null
+          origin: string | null
           phone: string | null
           responsible: string | null
           servico: string | null
@@ -794,15 +799,20 @@ export type Database = {
           valor: number | null
         }
         Insert: {
+          client_id?: string | null
+          client_type?: string | null
           cnpj?: string | null
           company?: string | null
+          converted_project_id?: string | null
           created_at?: string
           email?: string | null
           endereco?: string | null
           id?: string
+          location?: string | null
           name: string
           notes?: string | null
           obra_id?: string | null
+          origin?: string | null
           phone?: string | null
           responsible?: string | null
           servico?: string | null
@@ -813,15 +823,20 @@ export type Database = {
           valor?: number | null
         }
         Update: {
+          client_id?: string | null
+          client_type?: string | null
           cnpj?: string | null
           company?: string | null
+          converted_project_id?: string | null
           created_at?: string
           email?: string | null
           endereco?: string | null
           id?: string
+          location?: string | null
           name?: string
           notes?: string | null
           obra_id?: string | null
+          origin?: string | null
           phone?: string | null
           responsible?: string | null
           servico?: string | null
@@ -1085,6 +1100,7 @@ export type Database = {
           client_id: string | null
           client_name: string | null
           cnpj: string | null
+          cnpj_tomador: string | null
           codigo: string | null
           conta_bancaria: string | null
           contato_engenheiro: string | null
@@ -1120,6 +1136,7 @@ export type Database = {
           client_id?: string | null
           client_name?: string | null
           cnpj?: string | null
+          cnpj_tomador?: string | null
           codigo?: string | null
           conta_bancaria?: string | null
           contato_engenheiro?: string | null
@@ -1155,6 +1172,7 @@ export type Database = {
           client_id?: string | null
           client_name?: string | null
           cnpj?: string | null
+          cnpj_tomador?: string | null
           codigo?: string | null
           conta_bancaria?: string | null
           contato_engenheiro?: string | null

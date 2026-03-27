@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, FileText, FolderKanban, Truck, Monitor,
-  DollarSign, UserCog, ChevronLeft, ChevronRight, Target, UserCheck,
+  DollarSign, UserCog, ChevronLeft, ChevronRight, Target,
   Building2, CalendarDays, Car, FolderOpen, PackageCheck, Receipt,
   CreditCard, Wallet, UserPlus, FileCheck, HeartPulse, Banknote, Shield,
   Database,
@@ -23,7 +23,6 @@ const navigation: SidebarItem[] = [
     label: "Comercial", path: "/comercial", icon: Users,
     children: [
       { label: "Leads", path: "/comercial/leads", icon: Target },
-      { label: "Oportunidades", path: "/comercial/oportunidades", icon: UserCheck },
       { label: "Clientes", path: "/comercial/clientes", icon: Building2 },
     ],
   },
