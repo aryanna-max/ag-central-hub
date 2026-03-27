@@ -252,11 +252,16 @@ export default function Projetos() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <FolderKanban className="w-6 h-6 text-primary" /> Projetos
-        </h1>
-        <p className="text-muted-foreground text-sm">Gestão de projetos criados a partir de leads convertidos</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <FolderKanban className="w-6 h-6 text-primary" /> Projetos
+          </h1>
+          <p className="text-muted-foreground text-sm">Gestão de projetos criados a partir de leads convertidos</p>
+        </div>
+        <Button onClick={() => setNewProjectOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" /> Novo Projeto
+        </Button>
       </div>
 
       {isLoading ? (
