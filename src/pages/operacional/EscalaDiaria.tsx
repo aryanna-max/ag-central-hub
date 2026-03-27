@@ -392,13 +392,7 @@ export default function EscalaDiaria() {
   });
 
   const fieldEmployees = (allEmployees || []).filter(
-    (e) =>
-      e.status !== "desligado" &&
-      !assignedIds.has(e.id) &&
-      (e.role?.toLowerCase().includes("topógrafo") ||
-        e.role?.toLowerCase().includes("topografo") ||
-        e.role?.toLowerCase().includes("auxiliar") ||
-        e.role?.toLowerCase().includes("ajudante"))
+    (e) => e.status !== "desligado" && !assignedIds.has(e.id) && isFieldRole(e.role)
   );
 
   const absentIds = new Set(absentEmployees.map((e) => e.id));
