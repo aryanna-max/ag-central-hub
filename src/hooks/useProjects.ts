@@ -31,6 +31,7 @@ export interface Project {
   empresa_faturadora: string;
   tipo_documento: string;
   cnpj: string | null;
+  cnpj_tomador: string | null;
   empresa_emissora: string | null;
   conta_bancaria: string | null;
   contato_engenheiro: string | null;
