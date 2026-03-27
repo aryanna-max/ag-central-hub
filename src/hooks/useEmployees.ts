@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { FIELD_ROLES } from "@/lib/fieldRoles";
 
 export type Employee = Tables<"employees">;
 export type EmployeeInsert = TablesInsert<"employees">;
