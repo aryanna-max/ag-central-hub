@@ -155,6 +155,7 @@ export default function Projetos() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [editForm, setEditForm] = useState<Partial<Project>>({});
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [newProjectOpen, setNewProjectOpen] = useState(false);
 
   const grouped = useMemo(() => {
     const map: Record<ProjectStatus, Project[]> = {
