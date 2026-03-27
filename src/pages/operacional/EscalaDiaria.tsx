@@ -700,7 +700,7 @@ export default function EscalaDiaria() {
               <div className="border rounded-lg mt-2 max-h-60 overflow-y-auto divide-y">
                 {filteredModalEmployees.map((emp) => {
                   const isSelected = addForm.employee_ids.includes(emp.id);
-                  const isTop = emp.role?.toLowerCase().includes("topógrafo") || emp.role?.toLowerCase().includes("topografo");
+                  const isTop = isTopografo(emp.role);
                   return (
                     <div
                       key={emp.id}
