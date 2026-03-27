@@ -108,6 +108,10 @@ export default function Leads() {
       setLossDialog(lead);
       return;
     }
+    if (newStatus === "convertido") {
+      setConversionLead(lead);
+      return;
+    }
     const allowed = ALLOWED_TRANSITIONS[lead.status];
     if (!allowed?.includes(newStatus)) {
       toast.error(`Transição não permitida: ${STATUS_LABELS[lead.status]} → ${STATUS_LABELS[newStatus]}`);
