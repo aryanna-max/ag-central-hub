@@ -5,68 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateLead, useUpdateLead, type Lead, type LeadInsert, type LeadSource, type LeadStatus } from "@/hooks/useLeads";
-import { useLeadConversion } from "@/hooks/useLeadConversion";
+import {
+  useCreateLead, useUpdateLead,
+  ORIGIN_LABELS,
+  type Lead, type LeadInsert, type LeadOrigin,
+} from "@/hooks/useLeads";
+import { useClients } from "@/hooks/useClients";
+import { useEmployees } from "@/hooks/useEmployees";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
-const SOURCE_LABELS: Record<LeadSource, string> = {
-  whatsapp: "WhatsApp",
-  telefone: "Telefone",
-  email: "E-mail",
-  site: "Site",
-  indicacao: "Indicação",
-  rede_social: "Rede Social",
-  licitacao: "Licitação",
-  outros: "Outros",
-};
-
-const STATUS_LABELS: Record<LeadStatus, string> = {
-  novo: "Novo",
-  em_contato: "Em Contato",
-  qualificado: "Qualificado",
-  convertido: "Convertido",
-  descartado: "Descartado",
-};
-
-const RESPONSAVEIS = ["Aryanna", "Sérgio", "Ciro"];
-
-const SERVICOS = [
-  "Levantamento Planimétrico",
-  "Levantamento Altimétrico",
-  "Levantamento Planialtimétrico",
-  "Levantamento Cadastral Urbano",
-  "Levantamento Cadastral Rural",
-  "Levantamento para Projeto de Engenharia",
-  "Levantamento Batimétrico",
-  "Levantamento com Drone/VANT",
-  "Escaneamento Laser 3D",
-  "Georreferenciamento INCRA",
-  "Desmembramento de Área",
-  "Remembramento de Área",
-  "Usucapião",
-  "Retificação em Cartório",
-  "Locação de Obra",
-  "Controle de Terraplenagem",
-  "As-built",
-  "Acompanhamento de Obras",
-  "Topografia Industrial",
-  "Supervisão Técnica",
-  "Projeto de Loteamento",
-];
-
-function formatCnpj(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 14);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
-  if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
-  if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
-  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
-}
-
-function extractCnpjDigits(value: string): string {
-  return value.replace(/\D/g, "");
-}
+const RESPONSIBLE_ROLES = ["Diretor", "Diretora Administrativa", "Gerente Operacional"];
 
 interface Props {
   open: boolean;
@@ -77,102 +26,85 @@ interface Props {
 export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
   const createLead = useCreateLead();
   const updateLead = useUpdateLead();
-  const { convertLead, isPending: conversionPending } = useLeadConversion();
+  const { data: clients = [] } = useClients();
+  const { data: employees = [] } = useEmployees();
   const isEditing = !!lead;
+
+  const responsaveis = employees.filter((e) =>
+    RESPONSIBLE_ROLES.some((r) => e.role?.toLowerCase() === r.toLowerCase())
+  );
 
   const [form, setForm] = useState<LeadInsert>({
     name: "",
-    email: "",
-    phone: "",
-    company: "",
-    source: "outros",
+    origin: "outro",
+    client_type: "pj",
     status: "novo",
-    responsible: "",
-    notes: "",
-    servico: "",
-    endereco: "",
-    valor: null,
-    cnpj: "",
   });
 
-  const [cnpjDisplay, setCnpjDisplay] = useState("");
-  const [cnpjLoading, setCnpjLoading] = useState(false);
-  const [cnpjError, setCnpjError] = useState("");
-
   useEffect(() => {
+    if (!open) return;
     if (lead) {
       setForm({
         name: lead.name,
         email: lead.email || "",
         phone: lead.phone || "",
         company: lead.company || "",
-        source: lead.source,
-        status: lead.status,
+        origin: (lead.origin as LeadOrigin) || "outro",
+        status: lead.status as any,
         responsible: lead.responsible || "",
         notes: lead.notes || "",
         servico: lead.servico || "",
-        endereco: lead.endereco || "",
+        location: lead.location || lead.endereco || "",
         valor: lead.valor,
         cnpj: lead.cnpj || "",
+        client_id: lead.client_id || null,
+        client_type: lead.client_type || "pj",
       });
-      setCnpjDisplay(lead.cnpj ? formatCnpj(lead.cnpj) : "");
     } else {
-      setForm({ name: "", email: "", phone: "", company: "", source: "outros", status: "novo", responsible: "", notes: "", servico: "", endereco: "", valor: null, cnpj: "" });
-      setCnpjDisplay("");
+      setForm({
+        name: "",
+        origin: "outro",
+        client_type: "pj",
+        status: "novo",
+      });
     }
-    setCnpjError("");
   }, [lead, open]);
 
-  const fetchCnpj = useCallback(async (digits: string) => {
-    setCnpjLoading(true);
-    setCnpjError("");
-    try {
-      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
-      if (!res.ok) throw new Error("not found");
-      const data = await res.json();
+  const isExistingClient = form.origin === "cliente_recorrente" || form.origin === "contrato_ativo";
+
+  const selectedClient = clients.find((c) => c.id === form.client_id);
+
+  const handleClientChange = (clientId: string) => {
+    const c = clients.find((cl) => cl.id === clientId);
+    if (c) {
       setForm((prev) => ({
         ...prev,
-        company: data.razao_social || prev.company,
-        endereco: data.municipio && data.uf ? `${data.municipio} - ${data.uf}` : prev.endereco,
+        client_id: c.id,
+        company: c.name,
+        cnpj: c.cnpj || "",
+        name: c.name,
+        client_type: c.tipo === "pf" ? "pf" : "pj",
       }));
-    } catch {
-      setCnpjError("CNPJ não encontrado");
-    } finally {
-      setCnpjLoading(false);
-    }
-  }, []);
-
-  const handleCnpjChange = (value: string) => {
-    const formatted = formatCnpj(value);
-    setCnpjDisplay(formatted);
-    const digits = extractCnpjDigits(value);
-    setForm((prev) => ({ ...prev, cnpj: digits }));
-    setCnpjError("");
-    if (digits.length === 14) {
-      fetchCnpj(digits);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) {
+    if (isExistingClient && !form.client_id) {
+      toast.error("Selecione um cliente");
+      return;
+    }
+    if (!isExistingClient && !form.name?.trim()) {
       toast.error("Nome é obrigatório");
       return;
     }
     try {
+      const payload = { ...form, endereco: form.location };
       if (isEditing) {
-        const updated = await updateLead.mutateAsync({ id: lead.id, ...form });
-        // If status changed to 'convertido', auto-create project + alerts
-        const wasConverted = lead.status !== "convertido" && form.status === "convertido";
-        if (wasConverted) {
-          const fullLead = { ...lead, ...form, id: lead.id } as Lead;
-          await convertLead(fullLead);
-          toast.success("Lead convertido — projeto criado e alertas enviados");
-        } else {
-          toast.success("Lead atualizado");
-        }
+        await updateLead.mutateAsync({ id: lead!.id, ...payload } as any);
+        toast.success("Lead atualizado");
       } else {
-        await createLead.mutateAsync(form);
+        await createLead.mutateAsync(payload);
         toast.success("Lead criado");
       }
       onOpenChange(false);
@@ -181,7 +113,10 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
     }
   };
 
-  const isPending = createLead.isPending || updateLead.isPending || conversionPending;
+  const isPending = createLead.isPending || updateLead.isPending;
+
+  const clientLabel = (c: { codigo: string | null; name: string }) =>
+    c.codigo ? `${c.codigo} — ${c.name}` : c.name;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -190,102 +125,207 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
           <DialogTitle>{isEditing ? "Editar Lead" : "Novo Lead"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <Label>Nome *</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nome do contato" />
+          {/* Origem */}
+          <div className="space-y-2">
+            <Label>Origem *</Label>
+            <Select
+              value={form.origin || "outro"}
+              onValueChange={(v) => {
+                const newOrigin = v as LeadOrigin;
+                setForm((prev) => ({
+                  ...prev,
+                  origin: newOrigin,
+                  client_id: null,
+                  company: "",
+                  cnpj: "",
+                }));
+              }}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Object.entries(ORIGIN_LABELS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Tipo de cliente — only for non-existing client origins */}
+          {!isExistingClient && (
+            <div className="space-y-2">
+              <Label>Tipo de Cliente</Label>
+              <Select
+                value={form.client_type || "pj"}
+                onValueChange={(v) => setForm((prev) => ({ ...prev, client_type: v }))}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pj">Empresa (PJ)</SelectItem>
+                  <SelectItem value="pf">Pessoa Física (PF)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div>
-              <Label>Telefone</Label>
-              <Input value={form.phone || ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="(00) 00000-0000" />
-            </div>
-            <div>
-              <Label>E-mail</Label>
-              <Input type="email" value={form.email || ""} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@exemplo.com" />
-            </div>
-            <div className="col-span-2">
-              <Label>CNPJ</Label>
-              <div className="relative">
-                <Input
-                  value={cnpjDisplay}
-                  onChange={(e) => handleCnpjChange(e.target.value)}
-                  placeholder="XX.XXX.XXX/XXXX-XX"
-                  maxLength={18}
-                />
-                {cnpjLoading && (
-                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-                )}
+          )}
+
+          {/* Existing client selector */}
+          {isExistingClient && (
+            <>
+              <div className="space-y-2">
+                <Label>Cliente *</Label>
+                <Select value={form.client_id || ""} onValueChange={handleClientChange}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+                  <SelectContent>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{clientLabel(c)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              {cnpjError && <p className="text-xs text-destructive mt-1">{cnpjError}</p>}
+              {selectedClient && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Empresa</Label>
+                    <Input value={selectedClient.name} readOnly className="bg-muted" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">
+                      {selectedClient.tipo === "pf" ? "CPF" : "CNPJ"}
+                    </Label>
+                    <Input value={selectedClient.cnpj || "—"} readOnly className="bg-muted" />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Non-existing client fields */}
+          {!isExistingClient && (
+            <div className="grid grid-cols-2 gap-4">
+              {form.client_type === "pf" ? (
+                <>
+                  <div className="col-span-2 space-y-2">
+                    <Label>Nome completo *</Label>
+                    <Input
+                      value={form.name || ""}
+                      onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                      placeholder="Nome completo"
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label>CPF</Label>
+                    <Input
+                      value={form.cnpj || ""}
+                      onChange={(e) => setForm((prev) => ({ ...prev, cnpj: e.target.value }))}
+                      placeholder="000.000.000-00"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label>Nome do contato *</Label>
+                    <Input
+                      value={form.name || ""}
+                      onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                      placeholder="Nome do contato"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Empresa</Label>
+                    <Input
+                      value={form.company || ""}
+                      onChange={(e) => setForm((prev) => ({ ...prev, company: e.target.value }))}
+                      placeholder="Nome da empresa"
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label>CNPJ</Label>
+                    <Input
+                      value={form.cnpj || ""}
+                      onChange={(e) => setForm((prev) => ({ ...prev, cnpj: e.target.value }))}
+                      placeholder="XX.XXX.XXX/XXXX-XX"
+                    />
+                  </div>
+                </>
+              )}
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={form.email || ""}
+                  onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+                  placeholder="email@exemplo.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Telefone</Label>
+                <Input
+                  value={form.phone || ""}
+                  onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
             </div>
-            <div>
-              <Label>Cliente / Empresa</Label>
-              <Input value={form.company || ""} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Nome da empresa" />
+          )}
+
+          {/* Common fields */}
+          <div className="space-y-2">
+            <Label>Serviço / Descrição</Label>
+            <Input
+              value={form.servico || ""}
+              onChange={(e) => setForm((prev) => ({ ...prev, servico: e.target.value }))}
+              placeholder="Tipo de serviço solicitado"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Localização</Label>
+              <Input
+                value={form.location || ""}
+                onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))}
+                placeholder="Cidade / Local"
+              />
             </div>
-            <div>
-              <Label>Responsável</Label>
-              <Select value={form.responsible || ""} onValueChange={(v) => setForm({ ...form, responsible: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>
-                  {RESPONSAVEIS.map((r) => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Origem</Label>
-              <Select value={form.source} onValueChange={(v) => setForm({ ...form, source: v as LeadSource })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(SOURCE_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Status</Label>
-              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as LeadStatus })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="col-span-2">
-              <Label>Serviço</Label>
-              <Select value={form.servico || ""} onValueChange={(v) => setForm({ ...form, servico: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecione o serviço" /></SelectTrigger>
-                <SelectContent>
-                  {SERVICOS.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="col-span-2">
-              <Label>Endereço</Label>
-              <Input value={form.endereco || ""} onChange={(e) => setForm({ ...form, endereco: e.target.value })} placeholder="Endereço do serviço" />
-            </div>
-            <div>
-              <Label>Valor (R$)</Label>
+            <div className="space-y-2">
+              <Label>Valor estimado (R$)</Label>
               <Input
                 type="number"
                 min={0}
                 step="0.01"
                 value={form.valor ?? ""}
-                onChange={(e) => setForm({ ...form, valor: e.target.value ? Number(e.target.value) : null })}
+                onChange={(e) => setForm((prev) => ({ ...prev, valor: e.target.value ? Number(e.target.value) : null }))}
                 placeholder="0,00"
               />
             </div>
-            <div className="col-span-2">
-              <Label>Observações</Label>
-              <Textarea value={form.notes || ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} placeholder="Anotações sobre o lead..." />
-            </div>
           </div>
+
+          <div className="space-y-2">
+            <Label>Responsável</Label>
+            <Select
+              value={form.responsible || "none"}
+              onValueChange={(v) => setForm((prev) => ({ ...prev, responsible: v === "none" ? null : v }))}
+            >
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhum</SelectItem>
+                {responsaveis.map((e) => (
+                  <SelectItem key={e.id} value={e.name}>{e.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Observações</Label>
+            <Textarea
+              value={form.notes || ""}
+              onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
+              rows={3}
+              placeholder="Anotações sobre o lead..."
+            />
+          </div>
+
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" disabled={isPending}>{isPending ? "Salvando..." : "Salvar"}</Button>

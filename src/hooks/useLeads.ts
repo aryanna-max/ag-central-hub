@@ -1,9 +1,49 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type LeadSource = "whatsapp" | "telefone" | "email" | "site" | "indicacao" | "rede_social" | "licitacao" | "outros";
-export type LeadStatus = "novo" | "em_contato" | "qualificado" | "convertido" | "descartado";
+export type LeadOrigin = "indicacao" | "whatsapp" | "site_instagram" | "licitacao" | "cliente_recorrente" | "contrato_ativo" | "outro";
+export type LeadStatus = "novo" | "qualificado" | "proposta_enviada" | "aprovado" | "convertido" | "perdido";
 export type LeadInteractionType = "nota" | "ligacao" | "email" | "whatsapp" | "reuniao" | "visita";
+
+export const ORIGIN_LABELS: Record<LeadOrigin, string> = {
+  indicacao: "Indicação",
+  whatsapp: "WhatsApp",
+  site_instagram: "Site / Instagram",
+  licitacao: "Licitação",
+  cliente_recorrente: "Cliente recorrente",
+  contrato_ativo: "Contrato ativo — novo serviço",
+  outro: "Outro",
+};
+
+export const STATUS_LABELS: Record<LeadStatus, string> = {
+  novo: "Novo",
+  qualificado: "Qualificado",
+  proposta_enviada: "Proposta Enviada",
+  aprovado: "Aprovado",
+  convertido: "Convertido",
+  perdido: "Perdido",
+};
+
+export const STATUS_COLORS: Record<LeadStatus, string> = {
+  novo: "bg-gray-100 text-gray-800",
+  qualificado: "bg-blue-100 text-blue-800",
+  proposta_enviada: "bg-yellow-100 text-yellow-800",
+  aprovado: "bg-green-100 text-green-800",
+  convertido: "bg-emerald-200 text-emerald-900",
+  perdido: "bg-red-100 text-red-800",
+};
+
+export const ORIGIN_COLORS: Record<LeadOrigin, string> = {
+  cliente_recorrente: "bg-green-100 text-green-800",
+  contrato_ativo: "bg-green-100 text-green-800",
+  indicacao: "bg-blue-100 text-blue-800",
+  whatsapp: "bg-blue-100 text-blue-800",
+  site_instagram: "bg-blue-100 text-blue-800",
+  licitacao: "bg-purple-100 text-purple-800",
+  outro: "bg-gray-100 text-gray-800",
+};
+
+export const LEAD_STATUSES: LeadStatus[] = ["novo", "qualificado", "proposta_enviada", "aprovado", "convertido", "perdido"];
 
 export interface Lead {
   id: string;
@@ -11,7 +51,8 @@ export interface Lead {
   email: string | null;
   phone: string | null;
   company: string | null;
-  source: LeadSource;
+  source: string;
+  origin: LeadOrigin | null;
   status: LeadStatus;
   responsible: string | null;
   notes: string | null;
@@ -20,7 +61,11 @@ export interface Lead {
   obra_id: string | null;
   servico: string | null;
   endereco: string | null;
+  location: string | null;
   valor: number | null;
+  client_id: string | null;
+  client_type: string | null;
+  converted_project_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -39,16 +84,18 @@ export interface LeadInsert {
   email?: string | null;
   phone?: string | null;
   company?: string | null;
-  source?: LeadSource;
+  origin?: LeadOrigin;
   status?: LeadStatus;
   responsible?: string | null;
   notes?: string | null;
   tags?: string[];
   cnpj?: string | null;
-  obra_id?: string | null;
   servico?: string | null;
   endereco?: string | null;
+  location?: string | null;
   valor?: number | null;
+  client_id?: string | null;
+  client_type?: string | null;
 }
 
 export function useLeads() {
@@ -60,7 +107,7 @@ export function useLeads() {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Lead[];
+      return data as unknown as Lead[];
     },
   });
 }
@@ -76,7 +123,7 @@ export function useLeadById(id: string | undefined) {
         .eq("id", id!)
         .single();
       if (error) throw error;
-      return data as Lead;
+      return data as unknown as Lead;
     },
   });
 }
@@ -101,7 +148,8 @@ export function useCreateLead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (lead: LeadInsert) => {
-      const { data, error } = await supabase.from("leads").insert(lead).select().single();
+      const payload = { ...lead, source: (lead.origin || "outros") as any };
+      const { data, error } = await supabase.from("leads").insert(payload as any).select().single();
       if (error) throw error;
       return data;
     },
@@ -113,7 +161,7 @@ export function useUpdateLead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Lead> & { id: string }) => {
-      const { data, error } = await supabase.from("leads").update(updates).eq("id", id).select().single();
+      const { data, error } = await supabase.from("leads").update(updates as any).eq("id", id).select().single();
       if (error) throw error;
       return data;
     },
