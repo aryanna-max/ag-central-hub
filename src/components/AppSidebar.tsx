@@ -23,7 +23,6 @@ const navigation: SidebarItem[] = [
     label: "Comercial", path: "/comercial", icon: Users,
     children: [
       { label: "Leads", path: "/comercial/leads", icon: Target },
-      { label: "Oportunidades", path: "/comercial/oportunidades", icon: UserCheck },
       { label: "Clientes", path: "/comercial/clientes", icon: Building2 },
     ],
   },
