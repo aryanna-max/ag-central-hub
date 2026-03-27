@@ -154,6 +154,7 @@ export default function Clientes() {
                       const projCount = getClientProjects(client).length;
                       return (
                         <TableRow key={client.id} className="cursor-pointer hover:bg-muted/50">
+                          <TableCell className="font-mono text-xs text-muted-foreground">{client.codigo || "—"}</TableCell>
                           <TableCell className="font-medium" onClick={() => setSelectedClient(client)}>{client.name}</TableCell>
                           <TableCell className="text-muted-foreground text-xs font-mono">{client.cnpj || "—"}</TableCell>
                           <TableCell className="text-muted-foreground">
