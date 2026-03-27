@@ -167,10 +167,10 @@ export default function EmployeeAvailabilityKanban({
       } ${draggedId === emp.id ? "opacity-40" : ""}`}
     >
       <Badge
-        variant={isTopografo(emp.role) ? "default" : "secondary"}
+        variant={isTopografoRole(emp.role) ? "default" : "secondary"}
         className="text-[9px] h-4 px-1 shrink-0"
       >
-        {isTopografo(emp.role) ? "TOP" : "AUX"}
+        {isTopografoRole(emp.role) ? "TOP" : "AUX"}
       </Badge>
       <span className="truncate leading-tight">
         {formatEmployeeName(emp)}
