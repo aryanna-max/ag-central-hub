@@ -1,0 +1,183 @@
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertTriangle } from "lucide-react";
+import { useClients, type Client } from "@/hooks/useClients";
+import { useCreateProject } from "@/hooks/useProjects";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+async function generateProjectCode(clientCodigo: string): Promise<string> {
+  const year = new Date().getFullYear();
+  const prefix = `${year}-${clientCodigo}-`;
+  const { data: existing } = await supabase
+    .from("projects")
+    .select("codigo")
+    .like("codigo" as any, `${prefix}%`);
+  const seq = (existing?.length || 0) + 1;
+  return `${prefix}${String(seq).padStart(3, "0")}`;
+}
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export default function ProjectFormDialog({ open, onOpenChange }: Props) {
+  const { data: clients = [] } = useClients();
+  const createProject = useCreateProject();
+
+  const [clientId, setClientId] = useState("");
+  const [projectName, setProjectName] = useState("");
+  const [cnpjTomador, setCnpjTomador] = useState("");
+  const [contractValue, setContractValue] = useState<number | null>(null);
+  const [empresaFaturadora, setEmpresaFaturadora] = useState("ag_topografia");
+  const [projectCode, setProjectCode] = useState("");
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+
+  const selectedClient = clients.find((c) => c.id === clientId);
+  const clientMissingCode = selectedClient && !selectedClient.codigo;
+
+  useEffect(() => {
+    if (!open) {
+      setClientId("");
+      setProjectName("");
+      setCnpjTomador("");
+      setContractValue(null);
+      setEmpresaFaturadora("ag_topografia");
+      setProjectCode("");
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!selectedClient?.codigo) {
+      setProjectCode("");
+      return;
+    }
+    setCodeLoading(true);
+    generateProjectCode(selectedClient.codigo)
+      .then(setProjectCode)
+      .catch(() => setProjectCode(""))
+      .finally(() => setCodeLoading(false));
+    setCnpjTomador(selectedClient.cnpj || "");
+  }, [selectedClient]);
+
+  const handleSubmit = async () => {
+    if (!clientId) { toast.error("Selecione um cliente"); return; }
+    if (clientMissingCode) { toast.error("O cliente selecionado não possui código"); return; }
+    if (!projectName.trim()) { toast.error("Nome do projeto é obrigatório"); return; }
+
+    setIsPending(true);
+    try {
+      await createProject.mutateAsync({
+        name: projectName,
+        client_id: clientId,
+        client: selectedClient?.name || null,
+        client_cnpj: cnpjTomador || null,
+        contract_value: contractValue,
+        empresa_faturadora: empresaFaturadora,
+        status: "planejamento",
+        start_date: new Date().toISOString().split("T")[0],
+        is_active: true,
+        client_codigo: selectedClient!.codigo!,
+      } as any);
+      toast.success(`Projeto ${projectCode} criado`);
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao criar projeto");
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  const clientLabel = (c: Client) =>
+    c.codigo ? `${c.codigo} — ${c.name}` : c.name;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Novo Projeto</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <Label>Cliente *</Label>
+            <Select value={clientId} onValueChange={setClientId}>
+              <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+              <SelectContent>
+                {clients.filter((c) => c.is_active).map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{clientLabel(c)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {clientMissingCode && (
+              <div className="flex items-center gap-2 text-amber-600 text-xs mt-1">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                O cliente <strong>{selectedClient?.name}</strong> não possui código de 3 letras. Defina-o em Comercial → Clientes.
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <Label>Nome do projeto *</Label>
+            <Input value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="Nome do projeto" />
+          </div>
+
+          <div className="space-y-1">
+            <Label>CNPJ Tomador</Label>
+            <Input value={cnpjTomador} onChange={(e) => setCnpjTomador(e.target.value)} placeholder="CNPJ da SPE, filial ou unidade" />
+            <p className="text-xs text-muted-foreground">Pode ser diferente do CNPJ do cliente</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Valor do contrato (R$)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={contractValue ?? ""}
+                onChange={(e) => setContractValue(e.target.value ? Number(e.target.value) : null)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Empresa faturadora</Label>
+              <Select value={empresaFaturadora} onValueChange={setEmpresaFaturadora}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ag_topografia">AG Topografia</SelectItem>
+                  <SelectItem value="ag_cartografia">AG Cartografia</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Código do projeto</Label>
+              <Input
+                value={codeLoading ? "Gerando..." : projectCode || "—"}
+                readOnly
+                className="bg-muted font-mono font-bold text-primary"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Status inicial</Label>
+              <Input value="Planejamento" readOnly className="bg-muted" />
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2 pt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={handleSubmit} disabled={isPending || codeLoading || !!clientMissingCode}>
+            {isPending ? "Criando..." : "Criar Projeto"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
