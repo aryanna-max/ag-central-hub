@@ -364,6 +364,12 @@ export default function Leads() {
       {/* Dialogs */}
       <LeadFormDialog open={formOpen} onOpenChange={setFormOpen} lead={editingLead} />
       <LeadDetailDialog open={!!detailLead} onOpenChange={(o) => !o && setDetailLead(null)} lead={detailLead} />
+      <LeadConversionDialog
+        open={!!conversionLead}
+        onOpenChange={(o) => { if (!o) setConversionLead(null); }}
+        lead={conversionLead}
+        onConverted={() => navigate("/projetos")}
+      />
 
       {/* Loss reason dialog */}
       <Dialog open={!!lossDialog} onOpenChange={(o) => { if (!o) { setLossDialog(null); setLossReason(""); } }}>
