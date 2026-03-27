@@ -230,7 +230,7 @@ export default function EscalaDiaria() {
         await supabase.from("team_members").insert({
           team_id: newTeam.id,
           employee_id: empId,
-          role: activeEmployees.find((e) => e.id === empId)?.role?.toLowerCase().includes("topógrafo") || activeEmployees.find((e) => e.id === empId)?.role?.toLowerCase().includes("topografo") ? "topografo" : "auxiliar",
+          role: isTopografo(activeEmployees.find((e) => e.id === empId)?.role) ? "topografo" : "auxiliar",
         });
       }
 
