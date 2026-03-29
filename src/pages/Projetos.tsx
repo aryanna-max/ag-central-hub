@@ -522,7 +522,11 @@ export default function Projetos() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="faturamento">
+              <TabsContent value="servicos">
+                <ProjectServicesSection projectId={selectedProject.id} />
+              </TabsContent>
+
+
                 <div className="space-y-4 mt-2">
                   <div>
                     <Label>CNPJ Tomador da NF</Label>
