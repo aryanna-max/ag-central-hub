@@ -527,6 +527,7 @@ export default function Projetos() {
               </TabsContent>
 
 
+              <TabsContent value="faturamento">
                 <div className="space-y-4 mt-2">
                   <div>
                     <Label>CNPJ Tomador da NF</Label>
