@@ -347,6 +347,7 @@ export default function Projetos() {
               )}
               <TabsList className="w-full">
                 <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
+                <TabsTrigger value="servicos" className="flex-1">Serviços</TabsTrigger>
                 <TabsTrigger value="faturamento" className="flex-1">Faturamento</TabsTrigger>
                 <TabsTrigger value="medicoes" className="flex-1">Medições</TabsTrigger>
               </TabsList>
