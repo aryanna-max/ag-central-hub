@@ -39,6 +39,7 @@ export interface Project {
   modalidade_faturamento: string | null;
   referencia_contrato: string | null;
   instrucao_faturamento_variavel: boolean | null;
+  has_multiple_services: boolean | null;
   is_active: boolean | null;
   created_at: string;
   updated_at: string;

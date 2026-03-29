@@ -10,13 +10,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FolderKanban, GripVertical, FileText, Plus } from "lucide-react";
+import { FolderKanban, GripVertical, FileText, Plus, Wrench } from "lucide-react";
 import ProjectFormDialog from "./projetos/ProjectFormDialog";
 import { useProjects, useUpdateProject, type Project, type ProjectStatus } from "@/hooks/useProjects";
 import { useProjectMeasurements } from "@/hooks/useMeasurements";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useClients } from "@/hooks/useClients";
+import { useProjectServices } from "@/hooks/useProjectServices";
 import MeasurementFormDialog from "@/components/operacional/MeasurementFormDialog";
+import ProjectServicesSection from "@/components/projetos/ProjectServicesSection";
 import { toast } from "sonner";
 
 const COLUMNS: { key: ProjectStatus; label: string; color: string }[] = [
@@ -319,6 +321,12 @@ export default function Projetos() {
                           </Badge>
                         )}
                       </div>
+                      {project.has_multiple_services && (
+                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                          <Wrench className="w-3 h-3" />
+                          <span>Múltiplos serviços</span>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -345,6 +353,7 @@ export default function Projetos() {
               )}
               <TabsList className="w-full">
                 <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
+                <TabsTrigger value="servicos" className="flex-1">Serviços</TabsTrigger>
                 <TabsTrigger value="faturamento" className="flex-1">Faturamento</TabsTrigger>
                 <TabsTrigger value="medicoes" className="flex-1">Medições</TabsTrigger>
               </TabsList>
@@ -518,6 +527,11 @@ export default function Projetos() {
                   </div>
                 </div>
               </TabsContent>
+
+              <TabsContent value="servicos">
+                <ProjectServicesSection projectId={selectedProject.id} />
+              </TabsContent>
+
 
               <TabsContent value="faturamento">
                 <div className="space-y-4 mt-2">
