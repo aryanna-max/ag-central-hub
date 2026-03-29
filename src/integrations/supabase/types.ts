@@ -1093,6 +1093,65 @@ export type Database = {
           },
         ]
       }
+      project_services: {
+        Row: {
+          billing_mode: Database["public"]["Enums"]["billing_mode"]
+          cnpj_tomador: string | null
+          contract_value: number | null
+          created_at: string | null
+          end_date: string | null
+          id: string
+          nf_date: string | null
+          nf_number: string | null
+          notes: string | null
+          project_id: string
+          service_type: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["service_status"]
+          updated_at: string | null
+        }
+        Insert: {
+          billing_mode?: Database["public"]["Enums"]["billing_mode"]
+          cnpj_tomador?: string | null
+          contract_value?: number | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          nf_date?: string | null
+          nf_number?: string | null
+          notes?: string | null
+          project_id: string
+          service_type: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["service_status"]
+          updated_at?: string | null
+        }
+        Update: {
+          billing_mode?: Database["public"]["Enums"]["billing_mode"]
+          cnpj_tomador?: string | null
+          contract_value?: number | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          nf_date?: string | null
+          nf_number?: string | null
+          notes?: string | null
+          project_id?: string
+          service_type?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["service_status"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_services_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           client: string | null
@@ -1110,6 +1169,7 @@ export type Database = {
           empresa_emissora: string | null
           empresa_faturadora: string
           end_date: string | null
+          has_multiple_services: boolean | null
           id: string
           instrucao_faturamento_variavel: boolean | null
           is_active: boolean | null
@@ -1146,6 +1206,7 @@ export type Database = {
           empresa_emissora?: string | null
           empresa_faturadora?: string
           end_date?: string | null
+          has_multiple_services?: boolean | null
           id?: string
           instrucao_faturamento_variavel?: boolean | null
           is_active?: boolean | null
@@ -1182,6 +1243,7 @@ export type Database = {
           empresa_emissora?: string | null
           empresa_faturadora?: string
           end_date?: string | null
+          has_multiple_services?: boolean | null
           id?: string
           instrucao_faturamento_variavel?: boolean | null
           is_active?: boolean | null
@@ -1712,6 +1774,7 @@ export type Database = {
         | "comercial"
         | "financeiro"
       attendance_status: "presente" | "falta" | "justificado" | "atrasado"
+      billing_mode: "fixo_mensal" | "diarias" | "esporadico"
       employee_status:
         | "disponivel"
         | "ferias"
@@ -1762,6 +1825,13 @@ export type Database = {
         | "faturamento"
         | "concluido"
         | "pausado"
+      service_status:
+        | "planejamento"
+        | "execucao"
+        | "medicao"
+        | "faturamento"
+        | "concluido"
+        | "cancelado"
       vehicle_status: "disponivel" | "em_uso" | "manutencao" | "indisponivel"
     }
     CompositeTypes: {
@@ -1918,6 +1988,7 @@ export const Constants = {
         "financeiro",
       ],
       attendance_status: ["presente", "falta", "justificado", "atrasado"],
+      billing_mode: ["fixo_mensal", "diarias", "esporadico"],
       employee_status: [
         "disponivel",
         "ferias",
@@ -1974,6 +2045,14 @@ export const Constants = {
         "faturamento",
         "concluido",
         "pausado",
+      ],
+      service_status: [
+        "planejamento",
+        "execucao",
+        "medicao",
+        "faturamento",
+        "concluido",
+        "cancelado",
       ],
       vehicle_status: ["disponivel", "em_uso", "manutencao", "indisponivel"],
     },
