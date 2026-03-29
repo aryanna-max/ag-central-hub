@@ -321,6 +321,12 @@ export default function Projetos() {
                           </Badge>
                         )}
                       </div>
+                      {project.has_multiple_services && (
+                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                          <Wrench className="w-3 h-3" />
+                          <span>Múltiplos serviços</span>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
