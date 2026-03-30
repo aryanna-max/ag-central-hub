@@ -48,6 +48,7 @@ function useProjectsList() {
         .from("projects")
         .select("*")
         .eq("is_active", true)
+        .neq("status", "concluido")
         .order("name");
       if (error) throw error;
       return data;

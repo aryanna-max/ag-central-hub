@@ -25,6 +25,7 @@ function useActiveProjects() {
         .from("projects")
         .select("id, name, instrucao_faturamento_variavel")
         .eq("is_active", true)
+        .neq("status", "concluido")
         .order("name");
       if (error) throw error;
       return data;

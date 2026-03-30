@@ -141,7 +141,7 @@ export default function ExpenseSheetDrawer({ open, onOpenChange, editSheetId }: 
   const [loaded, setLoaded] = useState<string | null>(null);
 
   const { data: employees = [] } = useEmployees();
-  const { data: projects = [] } = useProjects();
+  const { data: projects = [] } = useActiveProjects();
   const { toast } = useToast();
   const createSheet = useCreateExpenseSheet();
   const updateSheet = useUpdateExpenseSheet();

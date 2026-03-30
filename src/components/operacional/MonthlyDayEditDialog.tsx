@@ -62,7 +62,7 @@ export default function MonthlyDayEditDialog({
   const { data: projectsList } = useQuery({
     queryKey: ["projects-active"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("projects").select("*").eq("is_active", true).order("name");
+      const { data, error } = await supabase.from("projects").select("*").eq("is_active", true).neq("status", "concluido").order("name");
       if (error) throw error;
       return data;
     },

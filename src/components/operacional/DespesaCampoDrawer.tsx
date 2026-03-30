@@ -61,7 +61,7 @@ export default function DespesaCampoDrawer({ open, onOpenChange }: Props) {
   const [nextKey, setNextKey] = useState(2);
 
   const { data: employees = [] } = useEmployees();
-  const { data: projects = [] } = useProjects();
+  const { data: projects = [] } = useActiveProjects();
   const { toast } = useToast();
 
   const createPayment = useCreateFieldPayment();
