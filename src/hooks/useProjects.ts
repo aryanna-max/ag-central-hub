@@ -111,6 +111,25 @@ export function useCreateProject() {
   });
 }
 
+export function useActiveProjects() {
+  return useQuery({
+    queryKey: ["projects-active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*,clients(id,name,cnpj)")
+        .eq("is_active", true)
+        .neq("status", "concluido")
+        .order("name");
+      if (error) throw error;
+      return (data || []).map((p: any) => ({
+        ...p,
+        clients: Array.isArray(p.clients) ? p.clients[0] || null : p.clients || null,
+      })) as Project[];
+    },
+  });
+}
+
 export function useUpdateProject() {
   const qc = useQueryClient();
   return useMutation({

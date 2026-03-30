@@ -101,7 +101,7 @@ function useProjects() {
   return useQuery({
     queryKey: ["projects-all-names"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("projects").select("id, name");
+      const { data, error } = await supabase.from("projects").select("id, name").eq("is_active", true).neq("status", "concluido");
       if (error) throw error;
       return data;
     },
