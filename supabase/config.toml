@@ -1,7 +1,9 @@
 project_id = "bphgtvwgsgaqaxmkrtqj"
 
-[functions.generate-proposal]
-verify_jwt = false
-
-[functions.process-email-queue]
-verify_jwt = true
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.generate-proposal]
+    verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
