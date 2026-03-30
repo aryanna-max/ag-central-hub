@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff, LogIn } from "lucide-react";
-import loginBg from "@/assets/login-bg.jpg";
-import logoAg from "@/assets/logo-ag.png";
+import loginBg from "@/assets/login-bg.webp";
+import logoAg from "@/assets/logo-ag.webp";
 
 export default function Login() {
   const { signIn } = useAuth();
