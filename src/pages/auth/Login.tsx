@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff, LogIn } from "lucide-react";
-import loginBg from "@/assets/login-bg.jpg";
-import logoAg from "@/assets/logo-ag.png";
+import loginBg from "@/assets/login-bg.webp";
+import logoAg from "@/assets/logo-ag.webp";
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -60,7 +60,7 @@ export default function Login() {
         <div className="bg-card/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 p-8 space-y-6">
           {/* Logo */}
           <div className="flex flex-col items-center gap-3">
-            <img src={logoAg} alt="AG Topografia e Construções" className="h-24 w-auto" />
+            <img src={logoAg} alt="AG Topografia e Construções" className="h-24 w-auto" width="126" height="96" />
             <p className="text-muted-foreground text-sm">Sistema de Gestão</p>
           </div>
 
