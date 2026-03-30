@@ -16,7 +16,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useEmployees } from "@/hooks/useEmployees";
-import { useProjects } from "@/hooks/useProjects";
+import { useActiveProjects } from "@/hooks/useProjects";
 import { useCreateAlerts, type AlertInsert } from "@/hooks/useAlerts";
 import {
   useCreateExpenseSheet,
