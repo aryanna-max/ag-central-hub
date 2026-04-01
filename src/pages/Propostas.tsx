@@ -193,7 +193,7 @@ export default function Propostas() {
                   >
                     <TableCell className="font-mono text-xs">{p.code}</TableCell>
                     <TableCell className="font-medium">{p.title}</TableCell>
-                    <TableCell>{p.client_name || "—"}</TableCell>
+                    <TableCell>{"—"}</TableCell>
                     <TableCell className="text-xs">{p.service || "—"}</TableCell>
                     <TableCell className="text-right font-mono">
                       {formatCurrency(p.final_value || p.estimated_value || 0)}

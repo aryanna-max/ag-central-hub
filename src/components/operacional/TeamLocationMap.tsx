@@ -7,10 +7,10 @@ import { MapPin, Filter } from "lucide-react";
 interface Assignment {
   id: string;
   team_id: string;
-  obra_id: string | null;
+  project_id: string | null;
   vehicle_id: string | null;
   teams?: any;
-  obras?: any;
+  projects?: any;
   vehicles?: any;
 }
 

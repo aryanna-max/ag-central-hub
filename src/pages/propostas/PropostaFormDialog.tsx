@@ -94,7 +94,7 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
           estimated_duration: prefill.estimated_duration || "",
           payment_conditions: prefill.payment_conditions || "",
           technical_notes: prefill.technical_notes || "",
-          responsible: prefill.responsible || "",
+          responsible_id: prefill.responsible_id || "",
         }));
         if (prefill.items && prefill.items.length > 0) {
           setItems(prefill.items);
