@@ -991,6 +991,41 @@ export type Database = {
           },
         ]
       }
+      lead_interactions: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          interaction_type: string
+          lead_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          interaction_type?: string
+          lead_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          interaction_type?: string
+          lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_interactions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           client_id: string | null
