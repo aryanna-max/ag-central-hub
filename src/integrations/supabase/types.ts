@@ -19,11 +19,13 @@ export type Database = {
           action_label: string | null
           action_type: string | null
           action_url: string | null
+          alert_status: string | null
           alert_type: string
           assigned_to: string | null
           created_at: string
           id: string
           message: string | null
+          origem_modulo: string | null
           priority: Database["public"]["Enums"]["alert_priority"]
           read: boolean
           recipient: Database["public"]["Enums"]["alert_recipient"]
@@ -32,17 +34,21 @@ export type Database = {
           resolved: boolean
           resolved_at: string | null
           resolved_by: string | null
+          scheduled_at: string | null
+          tipo: string | null
           title: string
         }
         Insert: {
           action_label?: string | null
           action_type?: string | null
           action_url?: string | null
+          alert_status?: string | null
           alert_type: string
           assigned_to?: string | null
           created_at?: string
           id?: string
           message?: string | null
+          origem_modulo?: string | null
           priority?: Database["public"]["Enums"]["alert_priority"]
           read?: boolean
           recipient: Database["public"]["Enums"]["alert_recipient"]
@@ -51,17 +57,21 @@ export type Database = {
           resolved?: boolean
           resolved_at?: string | null
           resolved_by?: string | null
+          scheduled_at?: string | null
+          tipo?: string | null
           title: string
         }
         Update: {
           action_label?: string | null
           action_type?: string | null
           action_url?: string | null
+          alert_status?: string | null
           alert_type?: string
           assigned_to?: string | null
           created_at?: string
           id?: string
           message?: string | null
+          origem_modulo?: string | null
           priority?: Database["public"]["Enums"]["alert_priority"]
           read?: boolean
           recipient?: Database["public"]["Enums"]["alert_recipient"]
@@ -70,6 +80,8 @@ export type Database = {
           resolved?: boolean
           resolved_at?: string | null
           resolved_by?: string | null
+          scheduled_at?: string | null
+          tipo?: string | null
           title?: string
         }
         Relationships: [
@@ -85,61 +97,6 @@ export type Database = {
             columns: ["resolved_by"]
             isOneToOne: false
             referencedRelation: "employees"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      attendance: {
-        Row: {
-          created_at: string
-          created_by_id: string | null
-          date: string
-          employee_id: string
-          id: string
-          notes: string | null
-          project_id: string | null
-          status: string
-        }
-        Insert: {
-          created_at?: string
-          created_by_id?: string | null
-          date?: string
-          employee_id: string
-          id?: string
-          notes?: string | null
-          project_id?: string | null
-          status?: string
-        }
-        Update: {
-          created_at?: string
-          created_by_id?: string | null
-          date?: string
-          employee_id?: string
-          id?: string
-          notes?: string | null
-          project_id?: string | null
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "attendance_created_by_id_fkey"
-            columns: ["created_by_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "attendance_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "employees"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "attendance_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -200,19 +157,28 @@ export type Database = {
       clients: {
         Row: {
           address: string | null
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
           city: string | null
           cnpj: string | null
           codigo: string | null
           contato_engenheiro: string | null
           contato_financeiro: string | null
           created_at: string
+          default_payment_days: number | null
           email: string | null
+          estado: string | null
+          financial_notes: string | null
           id: string
           is_active: boolean
           lead_id: string | null
           name: string
           notes: string | null
+          numero: string | null
           phone: string | null
+          requires_nf: boolean | null
+          rua: string | null
           segmento: string | null
           state: string | null
           tipo: string | null
@@ -220,19 +186,28 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
           city?: string | null
           cnpj?: string | null
           codigo?: string | null
           contato_engenheiro?: string | null
           contato_financeiro?: string | null
           created_at?: string
+          default_payment_days?: number | null
           email?: string | null
+          estado?: string | null
+          financial_notes?: string | null
           id?: string
           is_active?: boolean
           lead_id?: string | null
           name: string
           notes?: string | null
+          numero?: string | null
           phone?: string | null
+          requires_nf?: boolean | null
+          rua?: string | null
           segmento?: string | null
           state?: string | null
           tipo?: string | null
@@ -240,19 +215,28 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
           city?: string | null
           cnpj?: string | null
           codigo?: string | null
           contato_engenheiro?: string | null
           contato_financeiro?: string | null
           created_at?: string
+          default_payment_days?: number | null
           email?: string | null
+          estado?: string | null
+          financial_notes?: string | null
           id?: string
           is_active?: boolean
           lead_id?: string | null
           name?: string
           notes?: string | null
+          numero?: string | null
           phone?: string | null
+          requires_nf?: boolean | null
+          rua?: string | null
           segmento?: string | null
           state?: string | null
           tipo?: string | null
@@ -281,6 +265,8 @@ export type Database = {
           id: string
           notes: string | null
           project_id: string | null
+          removal_reason: Database["public"]["Enums"]["removal_reason"] | null
+          removed_at: string | null
           team_id: string | null
           vehicle_id: string | null
         }
@@ -296,6 +282,8 @@ export type Database = {
           id?: string
           notes?: string | null
           project_id?: string | null
+          removal_reason?: Database["public"]["Enums"]["removal_reason"] | null
+          removed_at?: string | null
           team_id?: string | null
           vehicle_id?: string | null
         }
@@ -311,6 +299,8 @@ export type Database = {
           id?: string
           notes?: string | null
           project_id?: string | null
+          removal_reason?: Database["public"]["Enums"]["removal_reason"] | null
+          removed_at?: string | null
           team_id?: string | null
           vehicle_id?: string | null
         }
@@ -363,10 +353,10 @@ export type Database = {
         Row: {
           closed_at: string | null
           created_at: string
-          created_by: string | null
           created_by_id: string | null
           id: string
           is_closed: boolean
+          is_legacy: boolean | null
           kanban_filled: boolean
           monthly_schedule_id: string | null
           notes: string | null
@@ -377,10 +367,10 @@ export type Database = {
         Insert: {
           closed_at?: string | null
           created_at?: string
-          created_by?: string | null
           created_by_id?: string | null
           id?: string
           is_closed?: boolean
+          is_legacy?: boolean | null
           kanban_filled?: boolean
           monthly_schedule_id?: string | null
           notes?: string | null
@@ -391,10 +381,10 @@ export type Database = {
         Update: {
           closed_at?: string | null
           created_at?: string
-          created_by?: string | null
           created_by_id?: string | null
           id?: string
           is_closed?: boolean
+          is_legacy?: boolean | null
           kanban_filled?: boolean
           monthly_schedule_id?: string | null
           notes?: string | null
@@ -433,7 +423,6 @@ export type Database = {
           id: string
           location_override: string | null
           notes: string | null
-          obra_id: string | null
           project_id: string | null
           team_id: string
           vehicle_id: string | null
@@ -444,7 +433,6 @@ export type Database = {
           id?: string
           location_override?: string | null
           notes?: string | null
-          obra_id?: string | null
           project_id?: string | null
           team_id: string
           vehicle_id?: string | null
@@ -455,7 +443,6 @@ export type Database = {
           id?: string
           location_override?: string | null
           notes?: string | null
-          obra_id?: string | null
           project_id?: string | null
           team_id?: string
           vehicle_id?: string | null
@@ -554,30 +541,6 @@ export type Database = {
         }
         Relationships: []
       }
-      email_unsubscribe_tokens: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          token: string
-          used_at: string | null
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          token: string
-          used_at?: string | null
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          token?: string
-          used_at?: string | null
-        }
-        Relationships: []
-      }
       employee_project_authorizations: {
         Row: {
           created_at: string | null
@@ -632,6 +595,60 @@ export type Database = {
             columns: ["registered_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_vacations: {
+        Row: {
+          created_at: string | null
+          created_by_id: string | null
+          daily_rate: number | null
+          employee_id: string
+          end_date: string
+          id: string
+          notes: string | null
+          payment_method: string | null
+          start_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by_id?: string | null
+          daily_rate?: number | null
+          employee_id: string
+          end_date: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          start_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by_id?: string | null
+          daily_rate?: number | null
+          employee_id?: string
+          end_date?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          start_date?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_vacations_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_vacations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
@@ -705,10 +722,7 @@ export type Database = {
           payment_method: string
           payment_status: string
           project_id: string | null
-          project_name: string | null
-          receiver_document: string | null
           receiver_id: string | null
-          receiver_name: string | null
           receiver_type: string | null
           sheet_id: string
           total_value: number | null
@@ -728,10 +742,7 @@ export type Database = {
           payment_method?: string
           payment_status?: string
           project_id?: string | null
-          project_name?: string | null
-          receiver_document?: string | null
           receiver_id?: string | null
-          receiver_name?: string | null
           receiver_type?: string | null
           sheet_id: string
           total_value?: number | null
@@ -751,10 +762,7 @@ export type Database = {
           payment_method?: string
           payment_status?: string
           project_id?: string | null
-          project_name?: string | null
-          receiver_document?: string | null
           receiver_id?: string | null
-          receiver_name?: string | null
           receiver_type?: string | null
           sheet_id?: string
           total_value?: number | null
@@ -794,10 +802,11 @@ export type Database = {
       field_expense_sheets: {
         Row: {
           approved_at: string | null
-          approved_by: string | null
           approved_by_id: string | null
+          codigo: string | null
           created_at: string
           id: string
+          is_legacy: boolean | null
           period_end: string
           period_start: string
           project_id: string | null
@@ -811,10 +820,11 @@ export type Database = {
         }
         Insert: {
           approved_at?: string | null
-          approved_by?: string | null
           approved_by_id?: string | null
+          codigo?: string | null
           created_at?: string
           id?: string
+          is_legacy?: boolean | null
           period_end: string
           period_start: string
           project_id?: string | null
@@ -828,10 +838,11 @@ export type Database = {
         }
         Update: {
           approved_at?: string | null
-          approved_by?: string | null
           approved_by_id?: string | null
+          codigo?: string | null
           created_at?: string
           id?: string
+          is_legacy?: boolean | null
           period_end?: string
           period_start?: string
           project_id?: string | null
@@ -860,11 +871,132 @@ export type Database = {
           },
         ]
       }
+      invoice_items: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          invoice_id: string
+          project_service_id: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          invoice_id: string
+          project_service_id?: string | null
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          invoice_id?: string
+          project_service_id?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_items_project_service_id_fkey"
+            columns: ["project_service_id"]
+            isOneToOne: false
+            referencedRelation: "project_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          cnpj_tomador: string | null
+          codigo: string | null
+          created_at: string | null
+          created_by_id: string | null
+          empresa_faturadora:
+            | Database["public"]["Enums"]["empresa_faturadora_enum"]
+            | null
+          id: string
+          nf_data: string | null
+          nf_numero: string | null
+          notes: string | null
+          project_id: string
+          retencao: number | null
+          status: string | null
+          tipo: Database["public"]["Enums"]["tipo_documento"]
+          updated_at: string | null
+          valor_bruto: number | null
+          valor_liquido: number | null
+        }
+        Insert: {
+          cnpj_tomador?: string | null
+          codigo?: string | null
+          created_at?: string | null
+          created_by_id?: string | null
+          empresa_faturadora?:
+            | Database["public"]["Enums"]["empresa_faturadora_enum"]
+            | null
+          id?: string
+          nf_data?: string | null
+          nf_numero?: string | null
+          notes?: string | null
+          project_id: string
+          retencao?: number | null
+          status?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_documento"]
+          updated_at?: string | null
+          valor_bruto?: number | null
+          valor_liquido?: number | null
+        }
+        Update: {
+          cnpj_tomador?: string | null
+          codigo?: string | null
+          created_at?: string | null
+          created_by_id?: string | null
+          empresa_faturadora?:
+            | Database["public"]["Enums"]["empresa_faturadora_enum"]
+            | null
+          id?: string
+          nf_data?: string | null
+          nf_numero?: string | null
+          notes?: string | null
+          project_id?: string
+          retencao?: number | null
+          status?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_documento"]
+          updated_at?: string | null
+          valor_bruto?: number | null
+          valor_liquido?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           client_id: string | null
           client_type: string | null
           cnpj: string | null
+          codigo: string | null
           company: string | null
           converted_project_id: string | null
           created_at: string
@@ -874,10 +1006,9 @@ export type Database = {
           location: string | null
           name: string
           notes: string | null
-          obra_id: string | null
           origin: string | null
           phone: string | null
-          responsible: string | null
+          responsible_id: string | null
           servico: string | null
           source: Database["public"]["Enums"]["lead_source"]
           status: Database["public"]["Enums"]["lead_status"]
@@ -889,6 +1020,7 @@ export type Database = {
           client_id?: string | null
           client_type?: string | null
           cnpj?: string | null
+          codigo?: string | null
           company?: string | null
           converted_project_id?: string | null
           created_at?: string
@@ -898,10 +1030,9 @@ export type Database = {
           location?: string | null
           name: string
           notes?: string | null
-          obra_id?: string | null
           origin?: string | null
           phone?: string | null
-          responsible?: string | null
+          responsible_id?: string | null
           servico?: string | null
           source?: Database["public"]["Enums"]["lead_source"]
           status?: Database["public"]["Enums"]["lead_status"]
@@ -913,6 +1044,7 @@ export type Database = {
           client_id?: string | null
           client_type?: string | null
           cnpj?: string | null
+          codigo?: string | null
           company?: string | null
           converted_project_id?: string | null
           created_at?: string
@@ -922,10 +1054,9 @@ export type Database = {
           location?: string | null
           name?: string
           notes?: string | null
-          obra_id?: string | null
           origin?: string | null
           phone?: string | null
-          responsible?: string | null
+          responsible_id?: string | null
           servico?: string | null
           source?: Database["public"]["Enums"]["lead_source"]
           status?: Database["public"]["Enums"]["lead_status"]
@@ -933,7 +1064,15 @@ export type Database = {
           updated_at?: string
           valor?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_responsible_id_fkey"
+            columns: ["responsible_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       measurements: {
         Row: {
@@ -947,12 +1086,12 @@ export type Database = {
           nf_data: string | null
           nf_numero: string | null
           notes: string | null
-          obra_id: string | null
           pdf_signed_url: string | null
           period_end: string
           period_start: string
           project_id: string | null
-          responsavel_cobranca: string | null
+          project_service_id: string | null
+          responsavel_cobranca_id: string | null
           retencao_pct: number
           status: string
           tipo_documento: string
@@ -974,12 +1113,12 @@ export type Database = {
           nf_data?: string | null
           nf_numero?: string | null
           notes?: string | null
-          obra_id?: string | null
           pdf_signed_url?: string | null
           period_end: string
           period_start: string
           project_id?: string | null
-          responsavel_cobranca?: string | null
+          project_service_id?: string | null
+          responsavel_cobranca_id?: string | null
           retencao_pct?: number
           status?: string
           tipo_documento?: string
@@ -1001,12 +1140,12 @@ export type Database = {
           nf_data?: string | null
           nf_numero?: string | null
           notes?: string | null
-          obra_id?: string | null
           pdf_signed_url?: string | null
           period_end?: string
           period_start?: string
           project_id?: string | null
-          responsavel_cobranca?: string | null
+          project_service_id?: string | null
+          responsavel_cobranca_id?: string | null
           retencao_pct?: number
           status?: string
           tipo_documento?: string
@@ -1025,6 +1164,20 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "measurements_project_service_id_fkey"
+            columns: ["project_service_id"]
+            isOneToOne: false
+            referencedRelation: "project_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "measurements_responsavel_cobranca_id_fkey"
+            columns: ["responsavel_cobranca_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
         ]
       }
       monthly_schedules: {
@@ -1032,6 +1185,7 @@ export type Database = {
           created_at: string
           end_date: string
           id: string
+          is_legacy: boolean | null
           month: number
           notes: string | null
           project_id: string | null
@@ -1045,6 +1199,7 @@ export type Database = {
           created_at?: string
           end_date: string
           id?: string
+          is_legacy?: boolean | null
           month: number
           notes?: string | null
           project_id?: string | null
@@ -1058,6 +1213,7 @@ export type Database = {
           created_at?: string
           end_date?: string
           id?: string
+          is_legacy?: boolean | null
           month?: number
           notes?: string | null
           project_id?: string | null
@@ -1180,18 +1336,73 @@ export type Database = {
           },
         ]
       }
+      project_scope_items: {
+        Row: {
+          completed_at: string | null
+          completed_by_id: string | null
+          created_at: string | null
+          description: string
+          id: string
+          is_completed: boolean | null
+          order_index: number
+          project_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by_id?: string | null
+          created_at?: string | null
+          description: string
+          id?: string
+          is_completed?: boolean | null
+          order_index?: number
+          project_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by_id?: string | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          is_completed?: boolean | null
+          order_index?: number
+          project_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_scope_items_completed_by_id_fkey"
+            columns: ["completed_by_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_scope_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_services: {
         Row: {
           billing_mode: Database["public"]["Enums"]["billing_mode"]
           cnpj_tomador: string | null
           contract_value: number | null
           created_at: string | null
+          daily_rate: number | null
           end_date: string | null
           id: string
+          monthly_rate: number | null
           nf_date: string | null
           nf_number: string | null
           notes: string | null
           project_id: string
+          proposal_id: string | null
+          scope_description: string | null
           service_type: string
           start_date: string | null
           status: Database["public"]["Enums"]["service_status"]
@@ -1202,12 +1413,16 @@ export type Database = {
           cnpj_tomador?: string | null
           contract_value?: number | null
           created_at?: string | null
+          daily_rate?: number | null
           end_date?: string | null
           id?: string
+          monthly_rate?: number | null
           nf_date?: string | null
           nf_number?: string | null
           notes?: string | null
           project_id: string
+          proposal_id?: string | null
+          scope_description?: string | null
           service_type: string
           start_date?: string | null
           status?: Database["public"]["Enums"]["service_status"]
@@ -1218,12 +1433,16 @@ export type Database = {
           cnpj_tomador?: string | null
           contract_value?: number | null
           created_at?: string | null
+          daily_rate?: number | null
           end_date?: string | null
           id?: string
+          monthly_rate?: number | null
           nf_date?: string | null
           nf_number?: string | null
           notes?: string | null
           project_id?: string
+          proposal_id?: string | null
+          scope_description?: string | null
           service_type?: string
           start_date?: string | null
           status?: Database["public"]["Enums"]["service_status"]
@@ -1237,15 +1456,69 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "project_services_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_status_history: {
+        Row: {
+          changed_by_id: string | null
+          created_at: string | null
+          from_status: string | null
+          id: string
+          modulo: string | null
+          notes: string | null
+          project_id: string
+          to_status: string
+        }
+        Insert: {
+          changed_by_id?: string | null
+          created_at?: string | null
+          from_status?: string | null
+          id?: string
+          modulo?: string | null
+          notes?: string | null
+          project_id: string
+          to_status: string
+        }
+        Update: {
+          changed_by_id?: string | null
+          created_at?: string | null
+          from_status?: string | null
+          id?: string
+          modulo?: string | null
+          notes?: string | null
+          project_id?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_status_history_changed_by_id_fkey"
+            columns: ["changed_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_status_history_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
         ]
       }
       projects: {
         Row: {
-          client: string | null
-          client_cnpj: string | null
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
           client_id: string | null
-          client_name: string | null
-          cnpj: string | null
           cnpj_tomador: string | null
           codigo: string | null
           conta_bancaria: string | null
@@ -1253,10 +1526,19 @@ export type Database = {
           contato_financeiro: string | null
           contract_value: number | null
           created_at: string
-          empresa_emissora: string | null
+          delivered_at: string | null
+          delivery_days_estimated: number | null
+          delivery_deadline: string | null
           empresa_faturadora: string
           end_date: string | null
-          has_multiple_services: boolean | null
+          estado: string | null
+          execution_status:
+            | Database["public"]["Enums"]["execution_status"]
+            | null
+          field_completed_at: string | null
+          field_days_estimated: number | null
+          field_deadline: string | null
+          field_started_at: string | null
           id: string
           instrucao_faturamento_variavel: boolean | null
           is_active: boolean | null
@@ -1264,13 +1546,15 @@ export type Database = {
           lead_id: string | null
           location: string | null
           longitude: number | null
-          modalidade_faturamento: string | null
           name: string
+          needs_tech_prep: boolean | null
           notes: string | null
-          obra_id: string | null
+          numero: string | null
+          parent_project_id: string | null
           referencia_contrato: string | null
-          responsible: string | null
           responsible_id: string | null
+          rua: string | null
+          scope_description: string | null
           service: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["project_status"]
@@ -1278,11 +1562,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          client?: string | null
-          client_cnpj?: string | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
           client_id?: string | null
-          client_name?: string | null
-          cnpj?: string | null
           cnpj_tomador?: string | null
           codigo?: string | null
           conta_bancaria?: string | null
@@ -1290,10 +1573,19 @@ export type Database = {
           contato_financeiro?: string | null
           contract_value?: number | null
           created_at?: string
-          empresa_emissora?: string | null
+          delivered_at?: string | null
+          delivery_days_estimated?: number | null
+          delivery_deadline?: string | null
           empresa_faturadora?: string
           end_date?: string | null
-          has_multiple_services?: boolean | null
+          estado?: string | null
+          execution_status?:
+            | Database["public"]["Enums"]["execution_status"]
+            | null
+          field_completed_at?: string | null
+          field_days_estimated?: number | null
+          field_deadline?: string | null
+          field_started_at?: string | null
           id?: string
           instrucao_faturamento_variavel?: boolean | null
           is_active?: boolean | null
@@ -1301,13 +1593,15 @@ export type Database = {
           lead_id?: string | null
           location?: string | null
           longitude?: number | null
-          modalidade_faturamento?: string | null
           name: string
+          needs_tech_prep?: boolean | null
           notes?: string | null
-          obra_id?: string | null
+          numero?: string | null
+          parent_project_id?: string | null
           referencia_contrato?: string | null
-          responsible?: string | null
           responsible_id?: string | null
+          rua?: string | null
+          scope_description?: string | null
           service?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
@@ -1315,11 +1609,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          client?: string | null
-          client_cnpj?: string | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
           client_id?: string | null
-          client_name?: string | null
-          cnpj?: string | null
           cnpj_tomador?: string | null
           codigo?: string | null
           conta_bancaria?: string | null
@@ -1327,10 +1620,19 @@ export type Database = {
           contato_financeiro?: string | null
           contract_value?: number | null
           created_at?: string
-          empresa_emissora?: string | null
+          delivered_at?: string | null
+          delivery_days_estimated?: number | null
+          delivery_deadline?: string | null
           empresa_faturadora?: string
           end_date?: string | null
-          has_multiple_services?: boolean | null
+          estado?: string | null
+          execution_status?:
+            | Database["public"]["Enums"]["execution_status"]
+            | null
+          field_completed_at?: string | null
+          field_days_estimated?: number | null
+          field_deadline?: string | null
+          field_started_at?: string | null
           id?: string
           instrucao_faturamento_variavel?: boolean | null
           is_active?: boolean | null
@@ -1338,13 +1640,15 @@ export type Database = {
           lead_id?: string | null
           location?: string | null
           longitude?: number | null
-          modalidade_faturamento?: string | null
           name?: string
+          needs_tech_prep?: boolean | null
           notes?: string | null
-          obra_id?: string | null
+          numero?: string | null
+          parent_project_id?: string | null
           referencia_contrato?: string | null
-          responsible?: string | null
           responsible_id?: string | null
+          rua?: string | null
+          scope_description?: string | null
           service?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
@@ -1364,6 +1668,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_parent_project_id_fkey"
+            columns: ["parent_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
@@ -1423,7 +1734,6 @@ export type Database = {
         Row: {
           approved_at: string | null
           client_id: string | null
-          client_name: string | null
           code: string
           created_at: string
           discount_pct: number | null
@@ -1434,11 +1744,10 @@ export type Database = {
           id: string
           lead_id: string | null
           location: string | null
-          opportunity_id: string | null
           payment_conditions: string | null
           rejected_at: string | null
           rejection_reason: string | null
-          responsible: string | null
+          responsible_id: string | null
           scope: string | null
           sent_at: string | null
           service: string | null
@@ -1451,7 +1760,6 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           client_id?: string | null
-          client_name?: string | null
           code: string
           created_at?: string
           discount_pct?: number | null
@@ -1462,11 +1770,10 @@ export type Database = {
           id?: string
           lead_id?: string | null
           location?: string | null
-          opportunity_id?: string | null
           payment_conditions?: string | null
           rejected_at?: string | null
           rejection_reason?: string | null
-          responsible?: string | null
+          responsible_id?: string | null
           scope?: string | null
           sent_at?: string | null
           service?: string | null
@@ -1479,7 +1786,6 @@ export type Database = {
         Update: {
           approved_at?: string | null
           client_id?: string | null
-          client_name?: string | null
           code?: string
           created_at?: string
           discount_pct?: number | null
@@ -1490,11 +1796,10 @@ export type Database = {
           id?: string
           lead_id?: string | null
           location?: string | null
-          opportunity_id?: string | null
           payment_conditions?: string | null
           rejected_at?: string | null
           rejection_reason?: string | null
-          responsible?: string | null
+          responsible_id?: string | null
           scope?: string | null
           sent_at?: string | null
           service?: string | null
@@ -1519,36 +1824,11 @@ export type Database = {
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      schedule_confirmations: {
-        Row: {
-          confirmed_at: string | null
-          confirmed_by: string | null
-          id: string
-          notes: string | null
-          schedule_date: string
-        }
-        Insert: {
-          confirmed_at?: string | null
-          confirmed_by?: string | null
-          id?: string
-          notes?: string | null
-          schedule_date: string
-        }
-        Update: {
-          confirmed_at?: string | null
-          confirmed_by?: string | null
-          id?: string
-          notes?: string | null
-          schedule_date?: string
-        }
-        Relationships: [
           {
-            foreignKeyName: "schedule_confirmations_confirmed_by_fkey"
-            columns: ["confirmed_by"]
+            foreignKeyName: "proposals_responsible_id_fkey"
+            columns: ["responsible_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
@@ -1685,6 +1965,83 @@ export type Database = {
             columns: ["leader_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      technical_tasks: {
+        Row: {
+          assigned_to_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by_id: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string | null
+          project_id: string
+          scope_item_id: string | null
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          project_id: string
+          scope_item_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          project_id?: string
+          scope_item_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technical_tasks_assigned_to_id_fkey"
+            columns: ["assigned_to_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technical_tasks_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technical_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technical_tasks_scope_item_id_fkey"
+            columns: ["scope_item_id"]
+            isOneToOne: false
+            referencedRelation: "project_scope_items"
             referencedColumns: ["id"]
           },
         ]
@@ -1917,6 +2274,18 @@ export type Database = {
         | "licenca"
         | "afastado"
         | "desligado"
+      empresa_faturadora_enum: "ag_topografia" | "ag_cartografia"
+      execution_status:
+        | "aguardando_campo"
+        | "em_campo"
+        | "campo_concluido"
+        | "aguardando_processamento"
+        | "em_processamento"
+        | "revisao"
+        | "aprovado"
+        | "entregue"
+        | "faturamento"
+        | "pago"
       field_payment_status:
         | "rascunho"
         | "em_revisao"
@@ -1947,13 +2316,16 @@ export type Database = {
         | "qualificado"
         | "convertido"
         | "descartado"
-      opportunity_stage:
-        | "prospeccao"
-        | "qualificacao"
         | "proposta_enviada"
-        | "negociacao"
-        | "fechado_ganho"
-        | "fechado_perdido"
+        | "aprovado"
+        | "perdido"
+      measurement_status:
+        | "rascunho"
+        | "aguardando_aprovacao"
+        | "aprovada"
+        | "nf_emitida"
+        | "paga"
+        | "cancelada"
       project_status:
         | "planejamento"
         | "execucao"
@@ -1961,6 +2333,19 @@ export type Database = {
         | "faturamento"
         | "concluido"
         | "pausado"
+      proposal_status:
+        | "rascunho"
+        | "enviada"
+        | "aprovada"
+        | "rejeitada"
+        | "expirada"
+      removal_reason:
+        | "campo_concluido"
+        | "pausa_temporaria"
+        | "reagendado"
+        | "clima"
+        | "equipamento"
+        | "falta_equipe"
       service_status:
         | "planejamento"
         | "execucao"
@@ -1968,6 +2353,7 @@ export type Database = {
         | "faturamento"
         | "concluido"
         | "cancelado"
+      tipo_documento: "nf" | "recibo"
       vehicle_status: "disponivel" | "em_uso" | "manutencao" | "indisponivel"
     }
     CompositeTypes: {
@@ -2132,6 +2518,19 @@ export const Constants = {
         "afastado",
         "desligado",
       ],
+      empresa_faturadora_enum: ["ag_topografia", "ag_cartografia"],
+      execution_status: [
+        "aguardando_campo",
+        "em_campo",
+        "campo_concluido",
+        "aguardando_processamento",
+        "em_processamento",
+        "revisao",
+        "aprovado",
+        "entregue",
+        "faturamento",
+        "pago",
+      ],
       field_payment_status: [
         "rascunho",
         "em_revisao",
@@ -2165,14 +2564,17 @@ export const Constants = {
         "qualificado",
         "convertido",
         "descartado",
-      ],
-      opportunity_stage: [
-        "prospeccao",
-        "qualificacao",
         "proposta_enviada",
-        "negociacao",
-        "fechado_ganho",
-        "fechado_perdido",
+        "aprovado",
+        "perdido",
+      ],
+      measurement_status: [
+        "rascunho",
+        "aguardando_aprovacao",
+        "aprovada",
+        "nf_emitida",
+        "paga",
+        "cancelada",
       ],
       project_status: [
         "planejamento",
@@ -2182,6 +2584,21 @@ export const Constants = {
         "concluido",
         "pausado",
       ],
+      proposal_status: [
+        "rascunho",
+        "enviada",
+        "aprovada",
+        "rejeitada",
+        "expirada",
+      ],
+      removal_reason: [
+        "campo_concluido",
+        "pausa_temporaria",
+        "reagendado",
+        "clima",
+        "equipamento",
+        "falta_equipe",
+      ],
       service_status: [
         "planejamento",
         "execucao",
@@ -2190,6 +2607,7 @@ export const Constants = {
         "concluido",
         "cancelado",
       ],
+      tipo_documento: ["nf", "recibo"],
       vehicle_status: ["disponivel", "em_uso", "manutencao", "indisponivel"],
     },
   },
