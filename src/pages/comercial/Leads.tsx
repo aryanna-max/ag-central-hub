@@ -80,7 +80,7 @@ export default function Leads() {
         (l.servico || "").toLowerCase().includes(search.toLowerCase());
       const matchStatus = statusFilter === "all" || l.status === statusFilter;
       const matchOrigin = originFilter === "all" || l.origin === originFilter;
-      const matchResp = responsibleFilter === "all" || l.responsible === responsibleFilter;
+      const matchResp = responsibleFilter === "all" || l.responsible_id === responsibleFilter;
       return matchSearch && matchStatus && matchOrigin && matchResp;
     });
   }, [leads, clients, search, statusFilter, originFilter, responsibleFilter]);
