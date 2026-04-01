@@ -86,7 +86,7 @@ export interface LeadInsert {
   company?: string | null;
   origin?: LeadOrigin;
   status?: LeadStatus;
-  responsible?: string | null;
+  responsible_id?: string | null;
   notes?: string | null;
   tags?: string[];
   cnpj?: string | null;
