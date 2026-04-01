@@ -303,14 +303,14 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
           <div className="space-y-2">
             <Label>Responsável</Label>
             <Select
-              value={form.responsible || "none"}
-              onValueChange={(v) => setForm((prev) => ({ ...prev, responsible: v === "none" ? null : v }))}
+              value={form.responsible_id || "none"}
+              onValueChange={(v) => setForm((prev) => ({ ...prev, responsible_id: v === "none" ? null : v }))}
             >
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Nenhum</SelectItem>
                 {responsaveis.map((e) => (
-                  <SelectItem key={e.id} value={e.name}>{e.name}</SelectItem>
+                  <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

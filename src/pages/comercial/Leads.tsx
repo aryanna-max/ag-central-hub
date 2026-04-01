@@ -219,7 +219,7 @@ export default function Leads() {
                   <TableCell>{originBadge(lead.origin)}</TableCell>
                   <TableCell className="text-sm">{lead.servico || "—"}</TableCell>
                   <TableCell className="text-sm">{formatValue(lead.valor)}</TableCell>
-                  <TableCell className="text-sm">{lead.responsible || "—"}</TableCell>
+                  <TableCell className="text-sm">{employees.find(e => e.id === lead.responsible_id)?.name || "—"}</TableCell>
                   <TableCell>
                     <Badge className={`text-xs ${STATUS_COLORS[lead.status]}`}>{STATUS_LABELS[lead.status]}</Badge>
                   </TableCell>

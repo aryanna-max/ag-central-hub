@@ -14,7 +14,7 @@ export function useLeadConversion() {
       client_cnpj: lead.cnpj,
       service: lead.servico,
       contract_value: lead.valor,
-      responsible: lead.responsible,
+      responsible_id: lead.responsible_id,
       lead_id: lead.id,
       status: "planejamento",
     });
