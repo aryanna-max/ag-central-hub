@@ -197,8 +197,8 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
           </div>
 
           <div>
-            <Label>Nome do Cliente (avulso)</Label>
-            <Input value={form.client_name} onChange={(e) => setForm({ ...form, client_name: e.target.value })} placeholder="Se não houver cadastro" />
+            <Label>Título</Label>
+            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Título da proposta" />
           </div>
 
           <div>
