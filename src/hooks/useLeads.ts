@@ -54,11 +54,10 @@ export interface Lead {
   source: string;
   origin: LeadOrigin | null;
   status: LeadStatus;
-  responsible: string | null;
+  responsible_id: string | null;
   notes: string | null;
   tags: string[];
   cnpj: string | null;
-  obra_id: string | null;
   servico: string | null;
   endereco: string | null;
   location: string | null;
@@ -66,6 +65,7 @@ export interface Lead {
   client_id: string | null;
   client_type: string | null;
   converted_project_id: string | null;
+  codigo: string | null;
   created_at: string;
   updated_at: string;
 }
