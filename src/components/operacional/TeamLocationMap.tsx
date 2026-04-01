@@ -37,7 +37,7 @@ export default function TeamLocationMap({ assignments, date }: TeamLocationMapPr
   const clients = useMemo(() => {
     const set = new Set<string>();
     assignments.forEach((a) => {
-      if (a.obras?.client) set.add(a.obras.client);
+      if (a.projects?.client) set.add(a.projects.client);
     });
     return Array.from(set).sort();
   }, [assignments]);
@@ -49,14 +49,14 @@ export default function TeamLocationMap({ assignments, date }: TeamLocationMapPr
   const markers = useMemo(() => {
     return assignments
       .filter((a) => {
-        if (!a.obras) return false;
-        if (filterClient !== "all" && a.obras.client !== filterClient) return false;
+        if (!a.projects) return false;
+        if (filterClient !== "all" && a.projects.client !== filterClient) return false;
         if (filterTeam !== "all" && a.team_id !== filterTeam) return false;
         if (searchText) {
           const search = searchText.toLowerCase();
           const teamName = (a.teams?.name || "").toLowerCase();
-          const obraName = (a.obras?.name || "").toLowerCase();
-          const client = (a.obras?.client || "").toLowerCase();
+          const obraName = (a.projects?.name || "").toLowerCase();
+          const client = (a.projects?.client || "").toLowerCase();
           const members = (a.teams?.team_members || []).map((m: any) => (m.employees?.name || "").toLowerCase()).join(" ");
           const vehicle = `${a.vehicles?.model || ""} ${a.vehicles?.plate || ""}`.toLowerCase();
           if (!teamName.includes(search) && !obraName.includes(search) && !client.includes(search) && !members.includes(search) && !vehicle.includes(search)) return false;
@@ -64,8 +64,8 @@ export default function TeamLocationMap({ assignments, date }: TeamLocationMapPr
         return true;
       })
       .map((a, idx) => {
-        const lat = a.obras?.latitude || -8.05 - idx * 0.015;
-        const lng = a.obras?.longitude || -34.87 + idx * 0.012;
+        const lat = a.projects?.latitude || -8.05 - idx * 0.015;
+        const lng = a.projects?.longitude || -34.87 + idx * 0.012;
         const teamMembers = a.teams?.team_members || [];
         const topografo = teamMembers.find((m: any) => m.role === "topografo");
         const auxiliares = teamMembers.filter((m: any) => m.role !== "topografo");
@@ -75,9 +75,9 @@ export default function TeamLocationMap({ assignments, date }: TeamLocationMapPr
           lat: Number(lat),
           lng: Number(lng),
           teamName: a.teams?.name || "Equipe",
-          obraName: a.obras?.name || "—",
-          client: a.obras?.client || "—",
-          location: a.obras?.location || "—",
+          obraName: a.projects?.name || "—",
+          client: a.projects?.client || "—",
+          location: a.projects?.location || "—",
           vehicle: a.vehicles ? `${a.vehicles.model} - ${a.vehicles.plate}` : "—",
           topografo: topografo?.employees?.name || "—",
           auxiliares: auxiliares.map((aux: any) => aux.employees?.name || "—"),
