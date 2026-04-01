@@ -51,7 +51,7 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
         company: lead.company || "",
         origin: (lead.origin as LeadOrigin) || "outro",
         status: lead.status as any,
-        responsible: lead.responsible || "",
+        responsible_id: lead.responsible_id || null,
         notes: lead.notes || "",
         servico: lead.servico || "",
         location: lead.location || lead.endereco || "",
