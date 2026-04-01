@@ -29,7 +29,7 @@ export default function Propostas() {
         !search ||
         p.title.toLowerCase().includes(search.toLowerCase()) ||
         p.code.toLowerCase().includes(search.toLowerCase()) ||
-        (p.client_name || "").toLowerCase().includes(search.toLowerCase()) ||
+        (p.title || "").toLowerCase().includes(search.toLowerCase()) ||
         (p.service || "").toLowerCase().includes(search.toLowerCase());
       const matchStatus = statusFilter === "all" || p.status === statusFilter;
       return matchSearch && matchStatus;
