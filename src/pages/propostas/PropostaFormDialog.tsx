@@ -185,7 +185,7 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
             <Label>Cliente</Label>
             <Select value={form.client_id} onValueChange={(v) => {
               const client = clients?.find((c) => c.id === v);
-              setForm({ ...form, client_id: v, client_name: client?.name || "" });
+              setForm({ ...form, client_id: v });
             }}>
               <SelectTrigger><SelectValue placeholder="Selecionar cliente" /></SelectTrigger>
               <SelectContent>
