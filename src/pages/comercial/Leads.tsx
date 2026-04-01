@@ -19,6 +19,7 @@ import {
   type Lead, type LeadStatus, type LeadOrigin,
 } from "@/hooks/useLeads";
 import { useClients } from "@/hooks/useClients";
+import { useEmployees } from "@/hooks/useEmployees";
 import { useProjects } from "@/hooks/useProjects";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
