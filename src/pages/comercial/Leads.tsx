@@ -179,8 +179,8 @@ export default function Leads() {
                       <span className="text-xs font-semibold text-foreground">{formatValue(lead.valor)}</span>
                       {originBadge(lead.origin)}
                     </div>
-                    {lead.responsible && (
-                      <p className="text-xs text-muted-foreground">{lead.responsible}</p>
+                    {lead.responsible_id && (
+                      <p className="text-xs text-muted-foreground">{employees.find(e => e.id === lead.responsible_id)?.name || "—"}</p>
                     )}
                   </CardContent>
                 </Card>
