@@ -105,9 +105,9 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
               <Building2 className="w-4 h-4" /> {lead.company}
             </div>
           )}
-          {lead.responsible && (
+          {lead.responsible_id && (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <User className="w-4 h-4" /> {lead.responsible}
+              <User className="w-4 h-4" /> {lead.responsible_id}
             </div>
           )}
           {lead.cnpj && (

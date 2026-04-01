@@ -54,11 +54,10 @@ export interface Lead {
   source: string;
   origin: LeadOrigin | null;
   status: LeadStatus;
-  responsible: string | null;
+  responsible_id: string | null;
   notes: string | null;
   tags: string[];
   cnpj: string | null;
-  obra_id: string | null;
   servico: string | null;
   endereco: string | null;
   location: string | null;
@@ -66,6 +65,7 @@ export interface Lead {
   client_id: string | null;
   client_type: string | null;
   converted_project_id: string | null;
+  codigo: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -86,7 +86,7 @@ export interface LeadInsert {
   company?: string | null;
   origin?: LeadOrigin;
   status?: LeadStatus;
-  responsible?: string | null;
+  responsible_id?: string | null;
   notes?: string | null;
   tags?: string[];
   cnpj?: string | null;
@@ -134,7 +134,7 @@ export function useLeadInteractions(leadId: string | undefined) {
     enabled: !!leadId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("lead_interactions" as any)
+        .from("lead_interactions")
         .select("*")
         .eq("lead_id", leadId!)
         .order("created_at", { ascending: false });
@@ -148,7 +148,8 @@ export function useCreateLead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (lead: LeadInsert) => {
-      const payload = { ...lead, source: (lead.origin || "outros") as any };
+      const { origin, ...rest } = lead;
+      const payload = { ...rest, origin, source: (origin || "outros") as any };
       const { data, error } = await supabase.from("leads").insert(payload as any).select().single();
       if (error) throw error;
       return data;
@@ -187,7 +188,7 @@ export function useAddLeadInteraction() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (interaction: Omit<LeadInteraction, "id" | "created_at">) => {
-      const { data, error } = await supabase.from("lead_interactions" as any).insert(interaction as any).select().single();
+      const { data, error } = await supabase.from("lead_interactions").insert(interaction as any).select().single();
       if (error) throw error;
       return data;
     },

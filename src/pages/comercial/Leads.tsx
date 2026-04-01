@@ -19,6 +19,7 @@ import {
   type Lead, type LeadStatus, type LeadOrigin,
 } from "@/hooks/useLeads";
 import { useClients } from "@/hooks/useClients";
+import { useEmployees } from "@/hooks/useEmployees";
 import { useProjects } from "@/hooks/useProjects";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -47,6 +48,7 @@ function getDisplayName(lead: Lead, clients: { id: string; name: string }[]) {
 export default function Leads() {
   const { data: leads = [], isLoading } = useLeads();
   const { data: clients = [] } = useClients();
+  const { data: employees = [] } = useEmployees();
   const { data: projects = [] } = useProjects();
   const deleteLead = useDeleteLead();
   const updateLead = useUpdateLead();
@@ -66,7 +68,7 @@ export default function Leads() {
   const [conversionLead, setConversionLead] = useState<Lead | null>(null);
 
   const responsaveis = useMemo(() => {
-    const set = new Set(leads.map((l) => l.responsible).filter(Boolean) as string[]);
+    const set = new Set(leads.map((l) => l.responsible_id).filter(Boolean) as string[]);
     return Array.from(set).sort();
   }, [leads]);
 
@@ -80,7 +82,7 @@ export default function Leads() {
         (l.servico || "").toLowerCase().includes(search.toLowerCase());
       const matchStatus = statusFilter === "all" || l.status === statusFilter;
       const matchOrigin = originFilter === "all" || l.origin === originFilter;
-      const matchResp = responsibleFilter === "all" || l.responsible === responsibleFilter;
+      const matchResp = responsibleFilter === "all" || l.responsible_id === responsibleFilter;
       return matchSearch && matchStatus && matchOrigin && matchResp;
     });
   }, [leads, clients, search, statusFilter, originFilter, responsibleFilter]);
@@ -179,8 +181,8 @@ export default function Leads() {
                       <span className="text-xs font-semibold text-foreground">{formatValue(lead.valor)}</span>
                       {originBadge(lead.origin)}
                     </div>
-                    {lead.responsible && (
-                      <p className="text-xs text-muted-foreground">{lead.responsible}</p>
+                    {lead.responsible_id && (
+                      <p className="text-xs text-muted-foreground">{employees.find(e => e.id === lead.responsible_id)?.name || "—"}</p>
                     )}
                   </CardContent>
                 </Card>
@@ -219,7 +221,7 @@ export default function Leads() {
                   <TableCell>{originBadge(lead.origin)}</TableCell>
                   <TableCell className="text-sm">{lead.servico || "—"}</TableCell>
                   <TableCell className="text-sm">{formatValue(lead.valor)}</TableCell>
-                  <TableCell className="text-sm">{lead.responsible || "—"}</TableCell>
+                  <TableCell className="text-sm">{employees.find(e => e.id === lead.responsible_id)?.name || "—"}</TableCell>
                   <TableCell>
                     <Badge className={`text-xs ${STATUS_COLORS[lead.status]}`}>{STATUS_LABELS[lead.status]}</Badge>
                   </TableCell>
