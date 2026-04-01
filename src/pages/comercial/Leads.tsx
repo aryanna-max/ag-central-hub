@@ -48,6 +48,7 @@ function getDisplayName(lead: Lead, clients: { id: string; name: string }[]) {
 export default function Leads() {
   const { data: leads = [], isLoading } = useLeads();
   const { data: clients = [] } = useClients();
+  const { data: employees = [] } = useEmployees();
   const { data: projects = [] } = useProjects();
   const deleteLead = useDeleteLead();
   const updateLead = useUpdateLead();
