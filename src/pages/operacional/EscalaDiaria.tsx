@@ -553,7 +553,7 @@ export default function EscalaDiaria() {
                           </TableCell>
                           <TableCell>
                             <div>
-                              <p className="text-sm font-medium">{a.projects?.name || a.projects?.client_name || "—"}</p>
+                              <p className="text-sm font-medium">{a.projects?.name || "—"}</p>
                               <p className="text-xs text-muted-foreground">{a.projects?.location || ""}</p>
                             </div>
                           </TableCell>
@@ -629,7 +629,7 @@ export default function EscalaDiaria() {
                 <SelectTrigger><SelectValue placeholder="Selecionar projeto..." /></SelectTrigger>
                 <SelectContent>
                   {(obrasData || []).map((o: any) => (
-                    <SelectItem key={o.id} value={o.id}>{o.name} {o.client ? `(${o.client})` : ""}</SelectItem>
+                    <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

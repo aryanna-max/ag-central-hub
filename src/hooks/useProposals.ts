@@ -19,10 +19,9 @@ export interface Proposal {
   id: string;
   code: string;
   title: string;
-  client_name: string | null;
   client_id: string | null;
   lead_id: string | null;
-  opportunity_id: string | null;
+  responsible_id: string | null;
   empresa_faturadora: string;
   service: string | null;
   scope: string | null;
@@ -39,7 +38,6 @@ export interface Proposal {
   approved_at: string | null;
   rejected_at: string | null;
   rejection_reason: string | null;
-  responsible: string | null;
   created_at: string;
   updated_at: string;
 }

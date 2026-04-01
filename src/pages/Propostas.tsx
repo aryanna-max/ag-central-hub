@@ -29,7 +29,7 @@ export default function Propostas() {
         !search ||
         p.title.toLowerCase().includes(search.toLowerCase()) ||
         p.code.toLowerCase().includes(search.toLowerCase()) ||
-        (p.client_name || "").toLowerCase().includes(search.toLowerCase()) ||
+        (p.title || "").toLowerCase().includes(search.toLowerCase()) ||
         (p.service || "").toLowerCase().includes(search.toLowerCase());
       const matchStatus = statusFilter === "all" || p.status === statusFilter;
       return matchSearch && matchStatus;
@@ -193,7 +193,7 @@ export default function Propostas() {
                   >
                     <TableCell className="font-mono text-xs">{p.code}</TableCell>
                     <TableCell className="font-medium">{p.title}</TableCell>
-                    <TableCell>{p.client_name || "—"}</TableCell>
+                    <TableCell>{"—"}</TableCell>
                     <TableCell className="text-xs">{p.service || "—"}</TableCell>
                     <TableCell className="text-right font-mono">
                       {formatCurrency(p.final_value || p.estimated_value || 0)}

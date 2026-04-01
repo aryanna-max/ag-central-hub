@@ -38,7 +38,6 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
   const [form, setForm] = useState({
     code: "",
     title: "",
-    client_name: "",
     client_id: "",
     service: "",
     empresa_faturadora: "ag_topografia",
@@ -51,7 +50,7 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
     estimated_duration: "",
     payment_conditions: "",
     technical_notes: "",
-    responsible: "",
+    responsible_id: "",
   });
 
   const [items, setItems] = useState<ProposalItemRow[]>([
@@ -63,7 +62,6 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
       setForm({
         code: proposal.code,
         title: proposal.title,
-        client_name: proposal.client_name || "",
         client_id: proposal.client_id || "",
         service: proposal.service || "",
         empresa_faturadora: proposal.empresa_faturadora,
@@ -76,7 +74,7 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
         estimated_duration: proposal.estimated_duration || "",
         payment_conditions: proposal.payment_conditions || "",
         technical_notes: proposal.technical_notes || "",
-        responsible: proposal.responsible || "",
+        responsible_id: proposal.responsible_id || "",
       });
     } else if (prefill) {
       generateNextCode().then((code) => {
@@ -84,7 +82,7 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
           ...prev,
           code,
           title: prefill.title || "",
-          client_name: prefill.client_name || "",
+          client_id: prefill.client_id || "",
           service: prefill.service || "",
           empresa_faturadora: prefill.empresa_faturadora || "ag_topografia",
           scope: prefill.scope || "",
@@ -94,7 +92,7 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
           estimated_duration: prefill.estimated_duration || "",
           payment_conditions: prefill.payment_conditions || "",
           technical_notes: prefill.technical_notes || "",
-          responsible: prefill.responsible || "",
+          responsible_id: prefill.responsible_id || "",
         }));
         if (prefill.items && prefill.items.length > 0) {
           setItems(prefill.items);
@@ -187,7 +185,7 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
             <Label>Cliente</Label>
             <Select value={form.client_id} onValueChange={(v) => {
               const client = clients?.find((c) => c.id === v);
-              setForm({ ...form, client_id: v, client_name: client?.name || "" });
+              setForm({ ...form, client_id: v });
             }}>
               <SelectTrigger><SelectValue placeholder="Selecionar cliente" /></SelectTrigger>
               <SelectContent>
@@ -199,8 +197,8 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
           </div>
 
           <div>
-            <Label>Nome do Cliente (avulso)</Label>
-            <Input value={form.client_name} onChange={(e) => setForm({ ...form, client_name: e.target.value })} placeholder="Se não houver cadastro" />
+            <Label>Título</Label>
+            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Título da proposta" />
           </div>
 
           <div>
@@ -228,7 +226,7 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
 
           <div>
             <Label>Responsável</Label>
-            <Select value={form.responsible} onValueChange={(v) => setForm({ ...form, responsible: v })}>
+            <Select value={form.responsible_id} onValueChange={(v) => setForm({ ...form, responsible_id: v })}>
               <SelectTrigger><SelectValue placeholder="Responsável" /></SelectTrigger>
               <SelectContent>
                 {RESPONSAVEIS.map((r) => (

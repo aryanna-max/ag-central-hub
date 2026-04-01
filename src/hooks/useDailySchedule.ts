@@ -19,7 +19,7 @@ export function useDailySchedule(date: string) {
 
       const { data: assignments, error: assErr } = await supabase
         .from("daily_team_assignments")
-        .select("*, teams(*, team_members(*, employees(*))), projects:project_id(id, name, client, client_name, location), vehicles(*)")
+        .select("*, teams(*, team_members(*, employees(*))), projects:project_id(id, name, location), vehicles(*)")
         .eq("daily_schedule_id", schedule.id);
       if (assErr) throw assErr;
 

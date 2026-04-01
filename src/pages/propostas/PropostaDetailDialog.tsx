@@ -49,10 +49,10 @@ export default function PropostaDetailDialog({ open, onOpenChange, proposal, onE
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
-          <div><span className="font-medium text-muted-foreground">Cliente:</span> {proposal.client_name || "—"}</div>
+          <div><span className="font-medium text-muted-foreground">Cliente:</span> {"—"}</div>
           <div><span className="font-medium text-muted-foreground">Serviço:</span> {proposal.service || "—"}</div>
           <div><span className="font-medium text-muted-foreground">Empresa:</span> {proposal.empresa_faturadora === "ag_topografia" ? "AG Topografia" : "AG Cartografia"}</div>
-          <div><span className="font-medium text-muted-foreground">Responsável:</span> {proposal.responsible || "—"}</div>
+          <div><span className="font-medium text-muted-foreground">Responsável:</span> {proposal.responsible_id || "—"}</div>
           <div><span className="font-medium text-muted-foreground">Local:</span> {proposal.location || "—"}</div>
           <div><span className="font-medium text-muted-foreground">Prazo:</span> {proposal.estimated_duration || "—"}</div>
           <div><span className="font-medium text-muted-foreground">Validade:</span> {proposal.validity_days} dias</div>

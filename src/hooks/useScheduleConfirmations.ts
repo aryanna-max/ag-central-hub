@@ -16,11 +16,11 @@ export function useScheduleConfirmation(date: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("schedule_confirmations")
-        .select("*, profiles:confirmed_by(full_name)")
+        .select("*")
         .eq("schedule_date", date)
         .maybeSingle();
       if (error) throw error;
-      return data as ScheduleConfirmation | null;
+      return data as unknown as ScheduleConfirmation | null;
     },
   });
 }
