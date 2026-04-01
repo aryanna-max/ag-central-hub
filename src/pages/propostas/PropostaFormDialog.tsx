@@ -38,7 +38,6 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
   const [form, setForm] = useState({
     code: "",
     title: "",
-    client_name: "",
     client_id: "",
     service: "",
     empresa_faturadora: "ag_topografia",
@@ -51,7 +50,7 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
     estimated_duration: "",
     payment_conditions: "",
     technical_notes: "",
-    responsible: "",
+    responsible_id: "",
   });
 
   const [items, setItems] = useState<ProposalItemRow[]>([
