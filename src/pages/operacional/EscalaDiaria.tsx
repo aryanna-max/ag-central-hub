@@ -629,7 +629,7 @@ export default function EscalaDiaria() {
                 <SelectTrigger><SelectValue placeholder="Selecionar projeto..." /></SelectTrigger>
                 <SelectContent>
                   {(obrasData || []).map((o: any) => (
-                    <SelectItem key={o.id} value={o.id}>{o.name} {o.client ? `(${o.client})` : ""}</SelectItem>
+                    <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
