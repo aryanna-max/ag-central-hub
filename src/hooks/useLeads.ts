@@ -148,7 +148,8 @@ export function useCreateLead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (lead: LeadInsert) => {
-      const payload = { ...lead, source: (lead.origin || "outros") as any };
+      const { origin, ...rest } = lead;
+      const payload = { ...rest, origin, source: (origin || "outros") as any };
       const { data, error } = await supabase.from("leads").insert(payload as any).select().single();
       if (error) throw error;
       return data;
