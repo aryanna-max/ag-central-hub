@@ -101,6 +101,54 @@ export type Database = {
           },
         ]
       }
+      attendance: {
+        Row: {
+          created_at: string
+          created_by_id: string | null
+          date: string
+          employee_id: string
+          id: string
+          notes: string | null
+          project_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_id?: string | null
+          date: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          project_id?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_id?: string | null
+          date?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          project_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_events: {
         Row: {
           calendar_id: string | null
@@ -1867,6 +1915,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      schedule_confirmations: {
+        Row: {
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          schedule_date: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          schedule_date: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          schedule_date?: string
+        }
+        Relationships: []
       }
       suppressed_emails: {
         Row: {
