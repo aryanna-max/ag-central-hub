@@ -66,7 +66,7 @@ export default function Leads() {
   const [conversionLead, setConversionLead] = useState<Lead | null>(null);
 
   const responsaveis = useMemo(() => {
-    const set = new Set(leads.map((l) => l.responsible).filter(Boolean) as string[]);
+    const set = new Set(leads.map((l) => l.responsible_id).filter(Boolean) as string[]);
     return Array.from(set).sort();
   }, [leads]);
 
