@@ -63,7 +63,7 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
       setForm({
         code: proposal.code,
         title: proposal.title,
-        client_name: proposal.client_name || "",
+        client_id: proposal.client_id || "",
         client_id: proposal.client_id || "",
         service: proposal.service || "",
         empresa_faturadora: proposal.empresa_faturadora,
