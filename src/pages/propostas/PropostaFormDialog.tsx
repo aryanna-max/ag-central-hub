@@ -226,7 +226,7 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
 
           <div>
             <Label>Responsável</Label>
-            <Select value={form.responsible} onValueChange={(v) => setForm({ ...form, responsible: v })}>
+            <Select value={form.responsible_id} onValueChange={(v) => setForm({ ...form, responsible_id: v })}>
               <SelectTrigger><SelectValue placeholder="Responsável" /></SelectTrigger>
               <SelectContent>
                 {RESPONSAVEIS.map((r) => (
