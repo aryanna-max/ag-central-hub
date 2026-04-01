@@ -84,7 +84,7 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
           ...prev,
           code,
           title: prefill.title || "",
-          client_name: prefill.client_name || "",
+          client_id: prefill.client_id || "",
           service: prefill.service || "",
           empresa_faturadora: prefill.empresa_faturadora || "ag_topografia",
           scope: prefill.scope || "",
