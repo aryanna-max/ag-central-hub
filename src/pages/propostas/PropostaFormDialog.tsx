@@ -76,7 +76,7 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
         estimated_duration: proposal.estimated_duration || "",
         payment_conditions: proposal.payment_conditions || "",
         technical_notes: proposal.technical_notes || "",
-        responsible: proposal.responsible || "",
+        responsible_id: proposal.responsible_id || "",
       });
     } else if (prefill) {
       generateNextCode().then((code) => {
