@@ -553,7 +553,7 @@ export default function EscalaDiaria() {
                           </TableCell>
                           <TableCell>
                             <div>
-                              <p className="text-sm font-medium">{a.projects?.name || a.projects?.client_name || "—"}</p>
+                              <p className="text-sm font-medium">{a.projects?.name || "—"}</p>
                               <p className="text-xs text-muted-foreground">{a.projects?.location || ""}</p>
                             </div>
                           </TableCell>
