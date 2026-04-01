@@ -134,7 +134,7 @@ export function useLeadInteractions(leadId: string | undefined) {
     enabled: !!leadId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("lead_interactions" as any)
+        .from("lead_interactions")
         .select("*")
         .eq("lead_id", leadId!)
         .order("created_at", { ascending: false });
