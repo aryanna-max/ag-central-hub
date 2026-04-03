@@ -28,6 +28,12 @@ export interface Client {
   notes: string | null;
   is_active: boolean;
   lead_id: string | null;
+  cep: string | null;
+  rua: string | null;
+  bairro: string | null;
+  numero: string | null;
+  cidade: string | null;
+  estado: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -48,6 +54,12 @@ export interface ClientInsert {
   notes?: string | null;
   is_active?: boolean;
   lead_id?: string | null;
+  cep?: string | null;
+  rua?: string | null;
+  bairro?: string | null;
+  numero?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
 }
 
 export interface ClientContact {
