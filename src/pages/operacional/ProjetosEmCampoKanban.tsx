@@ -36,14 +36,14 @@ const COLUMNS = [
   { key: "campo_concluido", label: "Campo concluído", color: "bg-blue-50" },
 ] as const;
 
-const EXEC_STATUS_LABELS: Record<string, string> = {
-  aguardando_processamento: "Aguardando processamento",
-  em_processamento: "Em processamento",
-  revisao: "Em revisão",
-  aprovado: "Aprovado",
-  entregue: "Entregue",
-  faturamento: "Faturamento",
-  pago: "Pago",
+const HISTORY_BADGE: Record<string, { label: string; className: string }> = {
+  aguardando_processamento: { label: "Prancheta", className: "bg-blue-100 text-blue-800" },
+  em_processamento: { label: "Prancheta", className: "bg-blue-100 text-blue-800" },
+  revisao: { label: "Prancheta", className: "bg-blue-100 text-blue-800" },
+  aprovado: { label: "Prancheta", className: "bg-blue-100 text-blue-800" },
+  entregue: { label: "Concluído", className: "bg-emerald-100 text-emerald-800" },
+  faturamento: { label: "Concluído", className: "bg-emerald-100 text-emerald-800" },
+  pago: { label: "Concluído", className: "bg-emerald-100 text-emerald-800" },
 };
 
 export default function ProjetosEmCampoKanban() {
@@ -339,20 +339,23 @@ export default function ProjetosEmCampoKanban() {
                 <p className="p-4 text-sm text-muted-foreground text-center">Nenhum projeto no histórico.</p>
               ) : (
                 <div className="divide-y">
-                  {historyProjects.map((p: any) => (
-                    <div key={p.id} className="flex items-center gap-3 px-4 py-2 text-sm">
-                      <span className="font-mono font-semibold text-primary">{p.codigo || "—"}</span>
-                      <span className="text-muted-foreground">·</span>
-                      <span className="flex-1 truncate">{p.client_id && clientsMap[p.client_id] ? clientsMap[p.client_id] : p.name}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        {EXEC_STATUS_LABELS[p.execution_status] || p.execution_status}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {p.field_started_at && format(new Date(p.field_started_at), "dd/MM")}
-                        {p.field_completed_at && ` → ${format(new Date(p.field_completed_at), "dd/MM")}`}
-                      </span>
-                    </div>
-                  ))}
+                  {historyProjects.map((p: any) => {
+                    const badge = HISTORY_BADGE[p.execution_status] || { label: p.execution_status, className: "bg-muted text-muted-foreground" };
+                    return (
+                      <div key={p.id} className="flex items-center gap-3 px-4 py-2 text-sm">
+                        <span className="font-mono font-semibold text-primary">{p.codigo || "—"}</span>
+                        <span className="text-muted-foreground">·</span>
+                        <span className="flex-1 truncate">{p.client_id && clientsMap[p.client_id] ? clientsMap[p.client_id] : p.name}</span>
+                        <Badge className={badge.className + " text-xs"}>
+                          {badge.label}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {p.field_started_at && format(new Date(p.field_started_at), "dd/MM")}
+                          {p.field_completed_at && ` → ${format(new Date(p.field_completed_at), "dd/MM")}`}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

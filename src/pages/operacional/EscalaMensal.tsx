@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarDays, Plus, Trash2, ChevronLeft, ChevronRight, Car, Printer } from "lucide-react";
+import { CalendarDays, Plus, Trash2, ChevronLeft, ChevronRight, Car, Printer, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ import {
 import MonthlyCalendarGrid from "@/components/operacional/MonthlyCalendarGrid";
 import MonthlyDayEditDialog from "@/components/operacional/MonthlyDayEditDialog";
 import MonthlyScheduleReport from "@/components/operacional/MonthlyScheduleReport";
+import PlanningReportsTab from "@/components/operacional/PlanningReportsTab";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -34,6 +36,7 @@ export default function EscalaMensal() {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
+  const [planTab, setPlanTab] = useState<"mensal" | "relatorios">("mensal");
   const [showNew, setShowNew] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [form, setForm] = useState({
@@ -216,6 +219,20 @@ export default function EscalaMensal() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Tabs */}
+      <Tabs value={planTab} onValueChange={(v) => setPlanTab(v as any)}>
+        <TabsList>
+          <TabsTrigger value="mensal">Planejamento Mensal</TabsTrigger>
+          <TabsTrigger value="relatorios" className="gap-1">
+            <BarChart3 className="w-3.5 h-3.5" /> Relatórios
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="relatorios">
+          <PlanningReportsTab />
+        </TabsContent>
+
+        <TabsContent value="mensal">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
@@ -491,6 +508,8 @@ export default function EscalaMensal() {
           />
         </DialogContent>
       </Dialog>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

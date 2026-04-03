@@ -11,6 +11,7 @@ import { useVehicles, useDeleteVehicle } from "@/hooks/useVehicles";
 import VehicleEditDialog from "@/components/operacional/VehicleEditDialog";
 import VehicleDetailDialog from "@/components/operacional/VehicleDetailDialog";
 import DiariasVeiculos from "./DiariasVeiculos";
+import VehicleReportsTab from "@/components/operacional/VehicleReportsTab";
 import { toast } from "sonner";
 
 const statusColors: Record<string, string> = {
@@ -83,6 +84,7 @@ export default function Veiculos() {
         <TabsList>
           <TabsTrigger value="frota">Frota</TabsTrigger>
           <TabsTrigger value="diarias">Diárias</TabsTrigger>
+          <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
         </TabsList>
 
         <TabsContent value="frota">
@@ -191,6 +193,10 @@ export default function Veiculos() {
 
         <TabsContent value="diarias">
           <DiariasVeiculos />
+        </TabsContent>
+
+        <TabsContent value="relatorios">
+          <VehicleReportsTab />
         </TabsContent>
       </Tabs>
 
