@@ -476,7 +476,11 @@ export default function Projetos() {
                                   label="Entrega"
                                 />
                                 <div className="flex items-center gap-1 flex-wrap">
-                                  {bt && <Badge className={bt.className + " text-[10px]"}>{bt.label}</Badge>}
+                                  {bt ? (
+                                    <Badge className={bt.className + " text-[10px]"}>{bt.label}</Badge>
+                                  ) : (
+                                    <Badge className="bg-red-100 text-red-800 text-[10px]">⚠ Definir faturamento</Badge>
+                                  )}
                                   {canSeeValues && project.contract_value != null && (
                                     <span className="text-[10px] font-semibold text-foreground">
                                       {formatCurrency(project.contract_value)}
