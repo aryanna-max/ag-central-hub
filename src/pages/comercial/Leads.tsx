@@ -87,7 +87,7 @@ export default function Leads() {
         (l.company || "").toLowerCase().includes(search.toLowerCase()) ||
         (l.servico || "").toLowerCase().includes(search.toLowerCase()) ||
         (l.codigo || "").toLowerCase().includes(search.toLowerCase());
-      const matchStatus = statusFilter === "all" || l.status === statusFilter;
+      const matchStatus = statusFilter === "all" || l.status === statusFilter || (statusFilter === "aprovado" && l.status === "convertido");
       const matchOrigin = originFilter === "all" || l.origin === originFilter;
       const matchResp = responsibleFilter === "all" || l.responsible_id === responsibleFilter;
       return matchSearch && matchStatus && matchOrigin && matchResp;

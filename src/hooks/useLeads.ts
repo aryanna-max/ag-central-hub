@@ -20,7 +20,7 @@ export const STATUS_LABELS: Record<LeadStatus, string> = {
   qualificado: "Qualificado",
   proposta_enviada: "Proposta Enviada",
   aprovado: "Aprovado",
-  convertido: "Convertido",
+  convertido: "Aprovado",
   perdido: "Perdido",
 };
 
@@ -29,7 +29,7 @@ export const STATUS_COLORS: Record<LeadStatus, string> = {
   qualificado: "bg-blue-100 text-blue-800",
   proposta_enviada: "bg-yellow-100 text-yellow-800",
   aprovado: "bg-green-100 text-green-800",
-  convertido: "bg-emerald-200 text-emerald-900",
+  convertido: "bg-green-100 text-green-800",
   perdido: "bg-red-100 text-red-800",
 };
 
