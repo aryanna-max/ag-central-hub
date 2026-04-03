@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef } from "react";
 import {
   Bell, CheckCircle2, AlertTriangle, Clock,
-  Map, Receipt, FolderKanban, Filter,
+  Map as MapIcon, Receipt, FolderKanban, Filter,
   ChevronRight, ChevronDown,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
