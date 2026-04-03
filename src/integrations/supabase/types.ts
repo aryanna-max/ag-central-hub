@@ -2242,7 +2242,58 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_prazos_criticos: {
+        Row: {
+          client_name: string | null
+          codigo: string | null
+          data_limite: string | null
+          dias_restantes: number | null
+          id: string | null
+          modulo: string | null
+          name: string | null
+          rota: string | null
+          tipo_prazo: string | null
+        }
+        Relationships: []
+      }
+      vw_tarefas_dia: {
+        Row: {
+          assigned_to_id: string | null
+          created_by_id: string | null
+          delivery_deadline: string | null
+          due_date: string | null
+          employee_name: string | null
+          id: string | null
+          project_codigo: string | null
+          project_id: string | null
+          project_name: string | null
+          status: string | null
+          title: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technical_tasks_assigned_to_id_fkey"
+            columns: ["assigned_to_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technical_tasks_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technical_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       delete_email: {
