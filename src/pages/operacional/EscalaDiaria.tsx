@@ -147,18 +147,85 @@ export default function EscalaDiaria() {
     }
   };
 
+  // Vacation check helper
+  const checkVacation = async (empId: string): Promise<{ onVacation: boolean; start?: string; end?: string; name?: string }> => {
+    const emp = activeEmployees.find((e) => e.id === empId);
+    const { data } = await supabase
+      .from("employee_vacations")
+      .select("start_date, end_date")
+      .eq("employee_id", empId)
+      .lte("start_date", selectedDate)
+      .gte("end_date", selectedDate);
+    if (data && data.length > 0) {
+      return { onVacation: true, start: data[0].start_date, end: data[0].end_date, name: emp?.name };
+    }
+    return { onVacation: false };
+  };
+
+  // Duplicate allocation check
+  const checkDuplicate = async (empId: string): Promise<{ duplicate: boolean; projectCode?: string }> => {
+    const { data: schedules } = await supabase
+      .from("daily_schedules")
+      .select("id")
+      .eq("schedule_date", selectedDate);
+    if (!schedules?.length) return { duplicate: false };
+    const { data: entries } = await supabase
+      .from("daily_schedule_entries")
+      .select("project_id, projects:project_id(codigo)")
+      .eq("employee_id", empId)
+      .in("daily_schedule_id", schedules.map((s) => s.id));
+    if (entries && entries.length > 0) {
+      return { duplicate: true, projectCode: (entries[0] as any).projects?.codigo || "outro projeto" };
+    }
+    return { duplicate: false };
+  };
+
+  const [vacationDialog, setVacationDialog] = useState<{ show: boolean; empIds: { id: string; name: string; start: string; end: string }[]; pending: string[] }>({ show: false, empIds: [], pending: [] });
+  const [duplicateDialog, setDuplicateDialog] = useState<{ show: boolean; empId: string; name: string; projectCode: string } | null>(null);
+
   const handleAddEmployees = async () => {
     if (!addForm.project_id || addForm.employee_ids.length === 0 || !schedule) {
       toast.error("Selecione projeto e pelo menos um funcionário");
       return;
     }
+
+    // Check vacations and duplicates
+    const vacationWarnings: { id: string; name: string; start: string; end: string }[] = [];
+    const duplicateWarnings: { id: string; name: string; projectCode: string }[] = [];
+
+    for (const empId of addForm.employee_ids) {
+      const vac = await checkVacation(empId);
+      if (vac.onVacation) {
+        vacationWarnings.push({ id: empId, name: vac.name || empId, start: vac.start!, end: vac.end! });
+      }
+      const dup = await checkDuplicate(empId);
+      if (dup.duplicate) {
+        const emp = activeEmployees.find((e) => e.id === empId);
+        duplicateWarnings.push({ id: empId, name: emp?.name || empId, projectCode: dup.projectCode! });
+      }
+    }
+
+    if (vacationWarnings.length > 0) {
+      setVacationDialog({ show: true, empIds: vacationWarnings, pending: addForm.employee_ids });
+      return;
+    }
+
+    if (duplicateWarnings.length > 0) {
+      setDuplicateDialog({ show: true, empId: duplicateWarnings[0].id, name: duplicateWarnings[0].name, projectCode: duplicateWarnings[0].projectCode });
+      return;
+    }
+
+    await doAddEmployees(addForm.employee_ids, []);
+  };
+
+  const doAddEmployees = async (empIds: string[], vacationOverrideIds: string[]) => {
+    if (!schedule) return;
     try {
-      // Create a team assignment so it shows in the table
       const { data: assignment, error: assErr } = await supabase
         .from("daily_team_assignments")
         .insert({
           daily_schedule_id: schedule.id,
-          team_id: (teams || [])[0]?.id || schedule.id, // fallback
+          team_id: (teams || [])[0]?.id || schedule.id,
           project_id: addForm.project_id,
           vehicle_id: addForm.vehicle_id || null,
         })
@@ -166,20 +233,19 @@ export default function EscalaDiaria() {
         .single();
 
       if (assErr) {
-        // If no team available, insert entries directly
-        for (let i = 0; i < addForm.employee_ids.length; i++) {
-          const empId = addForm.employee_ids[i];
+        for (let i = 0; i < empIds.length; i++) {
+          const empId = empIds[i];
           await supabase.from("daily_schedule_entries").insert({
             daily_schedule_id: schedule.id,
             employee_id: empId,
             project_id: addForm.project_id,
             vehicle_id: i === 0 && addForm.vehicle_id ? addForm.vehicle_id : null,
+            is_vacation_override: vacationOverrideIds.includes(empId),
           });
         }
       } else {
-        // Insert entries linked to the assignment
-        for (let i = 0; i < addForm.employee_ids.length; i++) {
-          const empId = addForm.employee_ids[i];
+        for (let i = 0; i < empIds.length; i++) {
+          const empId = empIds[i];
           await supabase.from("daily_schedule_entries").insert({
             daily_schedule_id: schedule.id,
             employee_id: empId,
@@ -187,6 +253,7 @@ export default function EscalaDiaria() {
             vehicle_id: i === 0 && addForm.vehicle_id ? addForm.vehicle_id : null,
             team_id: assignment.team_id,
             daily_team_assignment_id: assignment.id,
+            is_vacation_override: vacationOverrideIds.includes(empId),
           });
         }
       }
@@ -195,7 +262,7 @@ export default function EscalaDiaria() {
       setShowAddModal(false);
       setAddForm({ project_id: "", employee_ids: [], vehicle_id: "", benefits: { cafe: false, almoco: false, janta: false, vt: false } });
       setEmpSearch("");
-      toast.success(`${addForm.employee_ids.length} funcionário(s) adicionado(s) à escala!`);
+      toast.success(`${empIds.length} funcionário(s) adicionado(s) à escala!`);
     } catch {
       toast.error("Erro ao adicionar funcionários");
     }
@@ -445,7 +512,7 @@ export default function EscalaDiaria() {
           {/* Action bar */}
           <div className="flex items-center gap-3 flex-wrap">
             <Badge variant="outline" className="text-sm py-1 px-3">
-              {assignments.length} equipes escaladas
+              {assignments.length} grupos escalados
             </Badge>
             {isConfirmed && confirmation && (
               <Badge className="bg-emerald-600 text-white gap-1">
@@ -503,8 +570,8 @@ export default function EscalaDiaria() {
           {/* Team-centric table */}
           {assignments.length === 0 ? (
             <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                Nenhuma equipe escalada. Adicione funcionários ou crie a escala mensal primeiro.
+             <CardContent className="py-8 text-center text-muted-foreground">
+                Nenhum grupo escalado. Adicione funcionários ou crie a escala mensal primeiro.
               </CardContent>
             </Card>
           ) : (
@@ -636,7 +703,7 @@ export default function EscalaDiaria() {
 
             {/* Favorite group shortcut */}
             <div className="flex items-center gap-2 flex-wrap">
-              <Label className="text-sm text-muted-foreground">Grupo favorito (atalho):</Label>
+              <Label className="text-sm text-muted-foreground">Grupo Rápido (atalho):</Label>
               <Select onValueChange={handleLoadGroup}>
                 <SelectTrigger className="w-52"><SelectValue placeholder="Carregar grupo..." /></SelectTrigger>
                 <SelectContent>
@@ -786,6 +853,51 @@ export default function EscalaDiaria() {
         onDelete={handleDeleteAssignment}
         isPending={false}
       />
+
+      {/* Vacation Warning Dialog */}
+      <Dialog open={vacationDialog.show} onOpenChange={(o) => !o && setVacationDialog({ show: false, empIds: [], pending: [] })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-500" /> Funcionário(s) em férias</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            {vacationDialog.empIds.map((v) => (
+              <p key={v.id} className="text-sm">
+                <strong>{v.name}</strong> está de férias de {format(new Date(v.start + "T12:00:00"), "dd/MM")} a {format(new Date(v.end + "T12:00:00"), "dd/MM")}.
+              </p>
+            ))}
+            <p className="text-sm text-muted-foreground mt-2">
+              Confirmar como serviço avulso fora do período CLT?<br />
+              <strong>Atenção:</strong> sem benefícios calculados para este dia.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVacationDialog({ show: false, empIds: [], pending: [] })}>Cancelar</Button>
+            <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={() => {
+              const vacIds = vacationDialog.empIds.map((v) => v.id);
+              doAddEmployees(vacationDialog.pending, vacIds);
+              setVacationDialog({ show: false, empIds: [], pending: [] });
+            }}>
+              Confirmar como avulso
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate Allocation Dialog */}
+      {duplicateDialog && (
+        <Dialog open={duplicateDialog.show} onOpenChange={() => setDuplicateDialog(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-500" /> Dupla alocação</DialogTitle></DialogHeader>
+            <p className="text-sm">{duplicateDialog.name} já está em <strong>{duplicateDialog.projectCode}</strong> hoje. Confirmar mesmo assim?</p>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDuplicateDialog(null)}>Cancelar</Button>
+              <Button onClick={() => {
+                setDuplicateDialog(null);
+                doAddEmployees(addForm.employee_ids, []);
+              }}>Confirmar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

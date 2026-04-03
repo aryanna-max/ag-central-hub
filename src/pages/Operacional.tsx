@@ -7,12 +7,15 @@ import Medicoes from "./operacional/Medicoes";
 import DespesasDeCampo from "./operacional/DespesasDeCampo";
 import Veiculos from "./operacional/Veiculos";
 import DiariasVeiculos from "./operacional/DiariasVeiculos";
+import ProjetosEmCampoKanban from "./operacional/ProjetosEmCampoKanban";
+import Ferias from "./operacional/Ferias";
 
 export default function Operacional() {
   return (
     <Routes>
       <Route index element={<DashboardOperacional />} />
       <Route path="dashboard" element={<DashboardOperacional />} />
+      <Route path="projetos-campo" element={<ProjetosEmCampoKanban />} />
       <Route path="equipes" element={<Equipes />} />
       <Route path="escala" element={<EscalaMensal />} />
       <Route path="escala-diaria" element={<EscalaDiaria />} />
@@ -20,6 +23,7 @@ export default function Operacional() {
       <Route path="despesas-de-campo" element={<DespesasDeCampo />} />
       <Route path="veiculos" element={<Veiculos />} />
       <Route path="diarias-veiculos" element={<DiariasVeiculos />} />
+      <Route path="ferias" element={<Ferias />} />
       <Route path="*" element={<Navigate to="dashboard" replace />} />
     </Routes>
   );
