@@ -20,12 +20,12 @@ import { useNavigate } from "react-router-dom";
 
 const LEAD_STATUS_LABELS: Record<string, string> = {
   novo: "Novo", qualificado: "Qualificado", proposta_enviada: "Proposta Enviada",
-  aprovado: "Aprovado", convertido: "Convertido", perdido: "Perdido",
+  aprovado: "Aprovado", convertido: "Aprovado", perdido: "Perdido",
 };
 const LEAD_STATUS_COLORS: Record<string, string> = {
   novo: "bg-muted text-muted-foreground", qualificado: "bg-blue-100 text-blue-800",
   proposta_enviada: "bg-amber-100 text-amber-800", aprovado: "bg-emerald-100 text-emerald-800",
-  convertido: "bg-green-200 text-green-900", perdido: "bg-rose-100 text-rose-800",
+  convertido: "bg-emerald-100 text-emerald-800", perdido: "bg-rose-100 text-rose-800",
 };
 const PROJECT_STATUS_LABELS: Record<string, string> = {
   planejamento: "Planejamento", execucao: "Execução", entrega: "Entrega",
@@ -184,7 +184,7 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground">Leads no Funil</p>
                 <p className="text-3xl font-bold mt-1">{activeLeads.length}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {leads.filter(l => l.status === "convertido").length} convertidos
+                  {leads.filter(l => ["aprovado", "convertido"].includes(l.status)).length} aprovados
                 </p>
               </div>
               <div className="p-2.5 rounded-lg bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-secondary-foreground transition-colors">
