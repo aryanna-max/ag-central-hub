@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { useClients, type Client } from "@/hooks/useClients";
 import { useCreateProject } from "@/hooks/useProjects";
+import { useCepAutofill } from "@/hooks/useCepAutofill";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -39,25 +40,37 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
   const [codeLoading, setCodeLoading] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
+  // Address fields
+  const [cep, setCep] = useState("");
+  const [rua, setRua] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [numero, setNumero] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [estado, setEstado] = useState("");
+
+  const cepData = useCepAutofill(cep);
+
+  useEffect(() => {
+    if (cepData.rua) setRua(cepData.rua);
+    if (cepData.bairro) setBairro(cepData.bairro);
+    if (cepData.cidade) setCidade(cepData.cidade);
+    if (cepData.estado) setEstado(cepData.estado);
+  }, [cepData.rua, cepData.bairro, cepData.cidade, cepData.estado]);
+
   const selectedClient = clients.find((c) => c.id === clientId);
   const clientMissingCode = selectedClient && !selectedClient.codigo;
 
   useEffect(() => {
     if (!open) {
-      setClientId("");
-      setProjectName("");
-      setCnpjTomador("");
-      setContractValue(null);
-      setEmpresaFaturadora("ag_topografia");
-      setProjectCode("");
+      setClientId(""); setProjectName(""); setCnpjTomador("");
+      setContractValue(null); setEmpresaFaturadora("ag_topografia");
+      setProjectCode(""); setCep(""); setRua(""); setBairro("");
+      setNumero(""); setCidade(""); setEstado("");
     }
   }, [open]);
 
   useEffect(() => {
-    if (!selectedClient?.codigo) {
-      setProjectCode("");
-      return;
-    }
+    if (!selectedClient?.codigo) { setProjectCode(""); return; }
     setCodeLoading(true);
     generateProjectCode(selectedClient.codigo)
       .then(setProjectCode)
@@ -84,6 +97,12 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
         start_date: new Date().toISOString().split("T")[0],
         is_active: true,
         client_codigo: selectedClient!.codigo!,
+        cep: cep || null,
+        rua: rua || null,
+        bairro: bairro || null,
+        numero: numero || null,
+        cidade: cidade || null,
+        estado: estado || null,
       } as any);
       toast.success(`Projeto ${projectCode} criado`);
       onOpenChange(false);
@@ -152,6 +171,42 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
                   <SelectItem value="ag_cartografia">AG Cartografia</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* Endereço da obra */}
+          <div className="space-y-1">
+            <Label className="text-sm font-medium text-muted-foreground">Endereço da obra</Label>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">CEP</Label>
+              <div className="relative">
+                <Input value={cep} onChange={(e) => setCep(e.target.value)} placeholder="00000-000" maxLength={9} className="h-9" />
+                {cepData.loading && <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 animate-spin text-muted-foreground" />}
+              </div>
+            </div>
+            <div className="col-span-2 space-y-1">
+              <Label className="text-xs">Rua</Label>
+              <Input value={rua} onChange={(e) => setRua(e.target.value)} className="h-9" />
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Nº</Label>
+              <Input value={numero} onChange={(e) => setNumero(e.target.value)} className="h-9" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Bairro</Label>
+              <Input value={bairro} onChange={(e) => setBairro(e.target.value)} className="h-9" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Cidade</Label>
+              <Input value={cidade} onChange={(e) => setCidade(e.target.value)} className="h-9" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">UF</Label>
+              <Input value={estado} onChange={(e) => setEstado(e.target.value)} maxLength={2} className="h-9" />
             </div>
           </div>
 
