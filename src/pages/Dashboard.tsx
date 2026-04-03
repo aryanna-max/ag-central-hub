@@ -121,7 +121,7 @@ export default function Dashboard() {
 
   // ─── KPIs ───
   const activeProjects = useMemo(
-    () => projects.filter((p) => (p as any).execution_status !== "pago"),
+    () => projects.filter((p) => p.execution_status !== "pago"),
     [projects],
   );
 

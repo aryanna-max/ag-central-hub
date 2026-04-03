@@ -41,6 +41,27 @@ export interface Project {
   instrucao_faturamento_variavel: boolean | null;
   has_multiple_services: boolean | null;
   is_active: boolean | null;
+  location: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  parent_project_id: string | null;
+  execution_status: string | null;
+  needs_tech_prep: boolean | null;
+  billing_type: string | null;
+  cep: string | null;
+  rua: string | null;
+  bairro: string | null;
+  numero: string | null;
+  cidade: string | null;
+  estado: string | null;
+  scope_description: string | null;
+  field_started_at: string | null;
+  field_deadline: string | null;
+  delivery_deadline: string | null;
+  field_completed_at: string | null;
+  delivered_at: string | null;
+  field_days_estimated: number | null;
+  delivery_days_estimated: number | null;
   created_at: string;
   updated_at: string;
 }
