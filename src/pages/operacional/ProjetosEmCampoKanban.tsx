@@ -24,6 +24,7 @@ interface Project {
   field_started_at: string | null;
   field_days_estimated: number | null;
   field_completed_at: string | null;
+  billing_type: string | null;
 }
 
 interface ClientMap {
@@ -46,6 +47,14 @@ const HISTORY_BADGE: Record<string, { label: string; className: string }> = {
   pago: { label: "Concluído", className: "bg-emerald-100 text-emerald-800" },
 };
 
+const BILLING_BADGE: Record<string, { label: string; className: string }> = {
+  entrega_nf: { label: "NF na entrega", className: "bg-emerald-100 text-emerald-800" },
+  entrega_recibo: { label: "Recibo na entrega", className: "bg-emerald-100 text-emerald-800" },
+  medicao_mensal: { label: "Por medição", className: "bg-blue-100 text-blue-800" },
+  misto: { label: "Misto", className: "bg-amber-100 text-amber-800" },
+  sem_documento: { label: "Sem documento", className: "bg-muted text-muted-foreground" },
+};
+
 export default function ProjetosEmCampoKanban() {
   const qc = useQueryClient();
   const { user } = useAuth();
@@ -58,7 +67,7 @@ export default function ProjetosEmCampoKanban() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, codigo, name, client_id, execution_status, field_deadline, field_started_at, field_days_estimated, field_completed_at, is_active")
+        .select("id, codigo, name, client_id, execution_status, field_deadline, field_started_at, field_days_estimated, field_completed_at, billing_type, is_active")
         .eq("is_active", true)
         .in("execution_status", ["aguardando_campo", "em_campo", "campo_concluido"])
         .order("name");
@@ -312,6 +321,12 @@ export default function ProjetosEmCampoKanban() {
                           <AlertTriangle className="w-3 h-3" /> Sem escala hoje
                         </Badge>
                       )}
+                      {(() => {
+                        const bt = p.billing_type;
+                        const badge = bt ? BILLING_BADGE[bt] : null;
+                        if (badge) return <Badge className={badge.className + " text-[10px]"}>{badge.label}</Badge>;
+                        return <Badge className="bg-red-100 text-red-800 text-[10px]">⚠ Definir faturamento</Badge>;
+                      })()}
                     </CardContent>
                   </Card>
                 );

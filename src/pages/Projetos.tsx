@@ -304,6 +304,7 @@ export default function Projetos() {
         instrucao_faturamento_variavel: editForm.instrucao_faturamento_variavel,
         contato_engenheiro: editForm.contato_engenheiro,
         contato_financeiro: editForm.contato_financeiro,
+        billing_type: (editForm as any).billing_type,
       });
       toast.success("Projeto atualizado");
       setSelectedProject(null);
@@ -475,7 +476,11 @@ export default function Projetos() {
                                   label="Entrega"
                                 />
                                 <div className="flex items-center gap-1 flex-wrap">
-                                  {bt && <Badge className={bt.className + " text-[10px]"}>{bt.label}</Badge>}
+                                  {bt ? (
+                                    <Badge className={bt.className + " text-[10px]"}>{bt.label}</Badge>
+                                  ) : (
+                                    <Badge className="bg-red-100 text-red-800 text-[10px]">⚠ Definir faturamento</Badge>
+                                  )}
                                   {canSeeValues && project.contract_value != null && (
                                     <span className="text-[10px] font-semibold text-foreground">
                                       {formatCurrency(project.contract_value)}
@@ -595,6 +600,19 @@ export default function Projetos() {
                     <Badge className={EXEC_STATUS_BADGE[(selectedProject as any).execution_status] || "bg-muted"}>
                       {(selectedProject as any).execution_status || "—"}
                     </Badge>
+                  </div>
+                  <div>
+                    <Label>Tipo de Faturamento *</Label>
+                    <Select value={(editForm as any).billing_type || ""} onValueChange={(val) => setEditForm({ ...editForm, billing_type: val } as any)}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="entrega_nf">NF na entrega</SelectItem>
+                        <SelectItem value="entrega_recibo">Recibo na entrega</SelectItem>
+                        <SelectItem value="medicao_mensal">Por medição mensal</SelectItem>
+                        <SelectItem value="misto">Misto</SelectItem>
+                        <SelectItem value="sem_documento">Sem documento</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <Separator className="my-2" />
                   <div>

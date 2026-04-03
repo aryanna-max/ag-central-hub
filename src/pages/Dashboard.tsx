@@ -35,10 +35,11 @@ const EXEC_STATUS_LABELS: Record<string, string> = {
 };
 
 const BILLING_LABELS: Record<string, string> = {
-  medicao_mensal: "Medição mensal",
+  medicao_mensal: "Por medição",
   entrega_nf: "NF na entrega",
   entrega_recibo: "Recibo na entrega",
   misto: "Misto",
+  sem_documento: "Sem documento",
 };
 
 // ─── Kanban groups ───
@@ -563,8 +564,10 @@ function ProjectCard({
       )}
 
       <div className="flex flex-wrap gap-1 mt-1">
-        {p.billing_type && (
+        {p.billing_type ? (
           <Badge variant="outline" className="text-[9px] h-4 px-1">{billingLabel}</Badge>
+        ) : (
+          <Badge className="bg-red-100 text-red-800 text-[9px] h-4 px-1">⚠ Definir faturamento</Badge>
         )}
         {p.contract_value > 0 && (
           <Badge variant="secondary" className="text-[9px] h-4 px-1">
