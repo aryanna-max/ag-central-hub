@@ -87,7 +87,7 @@ export default function AprovacaoExterna() {
     const { error: uErr } = await supabase
       .from("field_expense_sheets")
       .update({
-        status: "aprovada",
+        status: "aprovado",
         approved_at: new Date().toISOString(),
         approval_comments: comments as any,
       } as any)
@@ -169,7 +169,7 @@ export default function AprovacaoExterna() {
 
   if (!sheet) return null;
 
-  const isAlreadyResolved = sheet.status === "aprovada" || sheet.status === "paga";
+  const isAlreadyResolved = sheet.status === "aprovado" || sheet.status === "pago";
 
   if (done) {
     return (
