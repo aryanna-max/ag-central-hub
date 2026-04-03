@@ -103,7 +103,7 @@ export default function STKanban() {
         supabase.from("clients").select("id, name"),
         supabase.from("project_scope_items").select("project_id, is_completed").in("project_id", ids as any),
         supabase.from("technical_tasks").select("project_id, status, assigned_to_id").in("project_id", ids as any),
-        (supabase.from("alerts").select("reference_id").in("reference_id", ids as any) as any).eq("alert_status", "ativo"),
+        (supabase.from("alerts").select("reference_id").in("reference_id", ids as any) as any).eq("resolved", false),
         supabase.from("profiles").select("id, full_name"),
       ]);
 

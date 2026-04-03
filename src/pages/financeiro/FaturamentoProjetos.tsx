@@ -49,7 +49,7 @@ export default function FaturamentoProjetos() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, codigo, name, billing_type, contract_value, execution_status, delivered_at, empresa_faturadora, cnpj_tomador, instrucao_faturamento_variavel, contato_financeiro, conta_bancaria, referencia_contrato, client_id, is_active, updated_at")
+        .select("id, codigo, name, billing_type, contract_value, execution_status, delivered_at, nf_data, empresa_faturadora, cnpj_tomador, instrucao_faturamento_variavel, contato_financeiro, conta_bancaria, referencia_contrato, client_id, is_active, updated_at")
         .eq("is_active", true)
         .order("codigo");
       if (error) throw error;
@@ -87,7 +87,7 @@ export default function FaturamentoProjetos() {
     } else if (quickFilter === "medicao_aberta") {
       list = list.filter((p: any) => p.billing_type === "medicao_mensal" && p.execution_status !== "pago");
     } else if (quickFilter === "pagos_mes") {
-      list = list.filter((p: any) => p.execution_status === "pago" && p.updated_at >= monthStart);
+      list = list.filter((p: any) => p.execution_status === "pago" && (p.nf_data || p.delivered_at || p.updated_at) >= monthStart);
     }
 
     if (filterClient !== "todos") {

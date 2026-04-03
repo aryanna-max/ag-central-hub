@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FolderKanban, GripVertical, FileText, Plus, Wrench, Bell, ChevronRight, Filter } from "lucide-react";
 import ProjectFormDialog from "./projetos/ProjectFormDialog";
 import { useProjects, useUpdateProject, type Project, type ProjectStatus } from "@/hooks/useProjects";
+import { SERVICE_TYPES } from "@/lib/serviceTypes";
 import { useProjectMeasurements } from "@/hooks/useMeasurements";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useClients } from "@/hooks/useClients";
@@ -229,7 +230,7 @@ export default function Projetos() {
       const { data } = await supabase
         .from("alerts")
         .select("reference_id")
-        .eq("alert_status", "ativo")
+        .eq("resolved", false)
         .eq("reference_type", "project");
       const map: Record<string, number> = {};
       (data || []).forEach((a: any) => {
@@ -551,7 +552,15 @@ export default function Projetos() {
                   </div>
                   <div>
                     <Label>Serviço</Label>
-                    <Input value={editForm.service || ""} onChange={(e) => setEditForm({ ...editForm, service: e.target.value })} />
+                    <Select value={editForm.service || "none"} onValueChange={(v) => setEditForm({ ...editForm, service: v === "none" ? "" : v })}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o serviço" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Selecione...</SelectItem>
+                        {SERVICE_TYPES.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label>Valor do Contrato (R$)</Label>

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useScopeItems, useCreateScopeItem, useUpdateScopeItem } from "@/hooks/useScopeItems";
@@ -51,6 +51,8 @@ export default function STProjectDetail() {
   const [concludeTaskId, setConcludeTaskId] = useState<string | null>(null);
   const [concludeNote, setConcludeNote] = useState("");
 
+  const queryClient = useQueryClient();
+
   const { data: project } = useQuery({
     queryKey: ["st_project_detail", id],
     enabled: !!id,
@@ -65,6 +67,34 @@ export default function STProjectDetail() {
       return { ...p, clients: Array.isArray(p.clients) ? p.clients[0] : p.clients };
     },
   });
+
+  const { data: profiles = [] } = useQuery({
+    queryKey: ["profiles_for_responsible"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .order("full_name");
+      if (error) throw error;
+      return (data || []).filter((p: any) => p.full_name);
+    },
+  });
+
+  const handleResponsibleChange = async (field: "responsible_tecnico_id" | "responsible_campo_id", value: string) => {
+    if (!id) return;
+    const updateVal = value === "__none__" ? null : value;
+    const { error } = await supabase
+      .from("projects")
+      .update({ [field]: updateVal } as any)
+      .eq("id", id);
+    if (error) {
+      toast.error("Erro ao atualizar responsável: " + error.message);
+      return;
+    }
+    toast.success("Responsável atualizado");
+    queryClient.invalidateQueries({ queryKey: ["st_project_detail", id] });
+    queryClient.invalidateQueries({ queryKey: ["st_kanban_projects"] });
+  };
 
   const { data: scopeItems = [] } = useScopeItems(id || null);
   const { data: tasks = [] } = useTechnicalTasksByProject(id || null);
@@ -176,6 +206,42 @@ export default function STProjectDetail() {
             {address && <div><strong>Endereço:</strong> {address}</div>}
             {project.service && <div><strong>Serviço:</strong> {project.service}</div>}
             {project.contato_engenheiro && <div><strong>Resp. Técnico:</strong> {project.contato_engenheiro}</div>}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-2">
+            <div>
+              <Label className="text-xs text-muted-foreground">Resp. Sala Técnica</Label>
+              <Select
+                value={project.responsible_tecnico_id || "__none__"}
+                onValueChange={(v) => handleResponsibleChange("responsible_tecnico_id", v)}
+              >
+                <SelectTrigger className="h-8 text-xs mt-1">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Nenhum</SelectItem>
+                  {profiles.map((p: any) => (
+                    <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Resp. Campo</Label>
+              <Select
+                value={project.responsible_campo_id || "__none__"}
+                onValueChange={(v) => handleResponsibleChange("responsible_campo_id", v)}
+              >
+                <SelectTrigger className="h-8 text-xs mt-1">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Nenhum</SelectItem>
+                  {profiles.map((p: any) => (
+                    <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DeadlineBadge
             deadline={project.delivery_deadline ? new Date(project.delivery_deadline) : null}

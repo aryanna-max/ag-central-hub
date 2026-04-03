@@ -110,7 +110,7 @@ export default function ProjetosEmCampoKanban() {
         .from("alerts")
         .select("*")
         .eq("recipient", "operacional")
-        .eq("alert_status", "ativo")
+        .eq("resolved", false)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data || [];

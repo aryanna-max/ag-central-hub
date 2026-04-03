@@ -15,15 +15,7 @@ import DeadlineBadge from "@/components/DeadlineBadge";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-
-const TECH_ROLES = [
-  "Cadista",
-  "Cartógrafo - Prestador",
-  "Técnico de Saneamento",
-  "Técnica em Saneamento - Estagiária",
-  "Técnica em Saneamento - Prestadora",
-  "Técnico em Edificações",
-];
+import { TECH_ROLES } from "@/lib/fieldRoles";
 
 const EXECUTION_STATUSES = [
   "aguardando_processamento",

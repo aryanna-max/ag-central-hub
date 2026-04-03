@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Loader2 } from "lucide-react";
+import { SERVICE_TYPES } from "@/lib/serviceTypes";
 import { useClients, type Client } from "@/hooks/useClients";
 import { useCreateProject } from "@/hooks/useProjects";
 import { useCepAutofill } from "@/hooks/useCepAutofill";
@@ -39,6 +40,7 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
   const [billingType, setBillingType] = useState("");
   const [projectCode, setProjectCode] = useState("");
   const [codeLoading, setCodeLoading] = useState(false);
+  const [service, setService] = useState("");
   const [isPending, setIsPending] = useState(false);
 
   // Address fields
@@ -65,7 +67,7 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
     if (!open) {
       setClientId(""); setProjectName(""); setCnpjTomador("");
       setContractValue(null); setEmpresaFaturadora("ag_topografia"); setBillingType("");
-      setProjectCode(""); setCep(""); setRua(""); setBairro("");
+      setProjectCode(""); setService(""); setCep(""); setRua(""); setBairro("");
       setNumero(""); setCidade(""); setEstado("");
     }
   }, [open]);
@@ -90,6 +92,7 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
     try {
       await createProject.mutateAsync({
         name: projectName,
+        service: service || null,
         client_id: clientId,
         client: selectedClient?.name || null,
         client_cnpj: cnpjTomador || null,
@@ -147,6 +150,19 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
           <div className="space-y-1">
             <Label>Nome do projeto *</Label>
             <Input value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="Nome do projeto" />
+          </div>
+
+          <div className="space-y-1">
+            <Label>Serviço</Label>
+            <Select value={service || "none"} onValueChange={(v) => setService(v === "none" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Selecione o serviço" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Selecione...</SelectItem>
+                {SERVICE_TYPES.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1">

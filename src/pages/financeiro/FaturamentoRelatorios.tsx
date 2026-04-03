@@ -99,7 +99,7 @@ function ReportFaturamentoPeriodo() {
     if (!show || !start || !end || !projects) return [];
     return projects.filter(p => {
       if (!["entregue", "faturamento", "pago"].includes(p.execution_status || "")) return false;
-      const ref = p.delivered_at || p.updated_at;
+      const ref = p.nf_data || p.delivered_at;
       if (!ref) return false;
       const d = parseISO(ref);
       return isWithinInterval(d, { start, end });
@@ -385,7 +385,9 @@ function ReportReceitaRealizada() {
     if (!show || !start || !end || !projects) return [];
     return projects.filter(p => {
       if (p.execution_status !== "pago") return false;
-      const d = parseISO(p.updated_at);
+      const ref = p.nf_data || p.delivered_at;
+      if (!ref) return false;
+      const d = parseISO(ref);
       return isWithinInterval(d, { start, end });
     });
   }, [show, start, end, projects]);

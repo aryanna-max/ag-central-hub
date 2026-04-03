@@ -88,7 +88,7 @@ export default function Dashboard() {
       const { data, error } = await supabase
         .from("alerts")
         .select("*")
-        .eq("alert_status", "ativo")
+        .eq("resolved", false)
         .order("created_at", { ascending: false })
         .limit(5);
       if (error) throw error;
@@ -102,7 +102,7 @@ export default function Dashboard() {
       const { data, error } = await supabase
         .from("alerts")
         .select("reference_id")
-        .eq("alert_status", "ativo");
+        .eq("resolved", false);
       if (error) throw error;
       return data;
     },
@@ -110,7 +110,7 @@ export default function Dashboard() {
 
   const resolveAlert = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("alerts").update({ alert_status: "resolvido" } as any).eq("id", id);
+      const { error } = await supabase.from("alerts").update({ alert_status: "resolvido", resolved: true, resolved_at: new Date().toISOString() } as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

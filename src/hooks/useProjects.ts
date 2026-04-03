@@ -60,6 +60,7 @@ export interface Project {
   delivery_deadline: string | null;
   field_completed_at: string | null;
   delivered_at: string | null;
+  nf_data: string | null;
   field_days_estimated: number | null;
   delivery_days_estimated: number | null;
   created_at: string;

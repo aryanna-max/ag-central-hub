@@ -50,7 +50,7 @@ export default function ProjetosDashboard() {
       const { data, error } = await supabase
         .from("alerts")
         .select("*")
-        .eq("read", false)
+        .eq("resolved", false)
         .order("created_at", { ascending: false })
         .limit(5);
       if (error) throw error;

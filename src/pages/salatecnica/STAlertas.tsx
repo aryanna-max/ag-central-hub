@@ -53,9 +53,16 @@ export default function STAlertas() {
         .eq("recipient", "sala_tecnica")
         .order("created_at", { ascending: false });
 
-      const q = filterStatus !== "all"
-        ? (base as any).eq("alert_status", filterStatus)
-        : base;
+      let q;
+      if (filterStatus === "ativo") {
+        q = (base as any).eq("resolved", false).or("alert_status.is.null,alert_status.eq.ativo");
+      } else if (filterStatus === "resolvido") {
+        q = (base as any).eq("resolved", true);
+      } else if (filterStatus === "all") {
+        q = base;
+      } else {
+        q = (base as any).eq("alert_status", filterStatus);
+      }
 
       const { data, error } = await q;
       if (error) throw error;
@@ -68,9 +75,10 @@ export default function STAlertas() {
     return alerts.filter(a => a.priority === filterPriority);
   }, [alerts, filterPriority]);
 
-  const urgentAlerts = filtered.filter(a => a.priority === "urgente" && a.alert_status === "ativo");
-  const importantAlerts = filtered.filter(a => a.priority === "importante" && a.alert_status === "ativo");
-  const otherAlerts = filtered.filter(a => !(a.priority === "urgente" && a.alert_status === "ativo") && !(a.priority === "importante" && a.alert_status === "ativo"));
+  const isActive = (a: AlertRow) => !a.alert_status || a.alert_status === "ativo";
+  const urgentAlerts = filtered.filter(a => a.priority === "urgente" && isActive(a));
+  const importantAlerts = filtered.filter(a => a.priority === "importante" && isActive(a));
+  const otherAlerts = filtered.filter(a => !(a.priority === "urgente" && isActive(a)) && !(a.priority === "importante" && isActive(a)));
 
   const patchAlert = async (id: string, updates: Record<string, any>) => {
     await supabase.from("alerts").update(updates as any).eq("id", id);
@@ -103,8 +111,8 @@ export default function STAlertas() {
   };
 
   const AlertCard = ({ alert }: { alert: AlertRow }) => {
-    const isUrgent = alert.priority === "urgente" && alert.alert_status === "ativo";
-    const isImportant = alert.priority === "importante" && alert.alert_status === "ativo";
+    const isUrgent = alert.priority === "urgente" && isActive(alert);
+    const isImportant = alert.priority === "importante" && isActive(alert);
     return (
       <Card className={cn(
         isUrgent && "border-destructive bg-destructive/5",
@@ -123,7 +131,7 @@ export default function STAlertas() {
             </span>
           </div>
           <p className="text-sm">{alert.message || alert.title}</p>
-          {alert.alert_status === "ativo" && (
+          {isActive(alert) && (
             <div className="flex gap-1.5 flex-wrap pt-1">
               {alert.action_url && (
                 <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => navigate(alert.action_url!)}>

@@ -42,6 +42,28 @@ function useVacations() {
   });
 }
 
+/**
+ * Syncs the employee status with their vacation state.
+ * If the employee has ANY active vacation covering today, status = "ferias".
+ * Otherwise, status = "disponivel".
+ */
+async function syncEmployeeVacationStatus(employeeId: string) {
+  const today = new Date().toISOString().split("T")[0];
+  const { data: activeVacations } = await supabase
+    .from("employee_vacations")
+    .select("id")
+    .eq("employee_id", employeeId)
+    .lte("start_date", today)
+    .gte("end_date", today)
+    .limit(1);
+
+  const isOnVacation = activeVacations && activeVacations.length > 0;
+  await supabase
+    .from("employees")
+    .update({ status: isOnVacation ? "ferias" : "disponivel" })
+    .eq("id", employeeId);
+}
+
 export default function Ferias() {
   const qc = useQueryClient();
   const { data: vacations = [], isLoading } = useVacations();
@@ -109,8 +131,15 @@ export default function Ferias() {
         if (error) throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Sync employee status for the current employee
+      await syncEmployeeVacationStatus(formData.employee_id);
+      // If editing and employee changed, also sync the old employee
+      if (editing && editing.employee_id !== formData.employee_id) {
+        await syncEmployeeVacationStatus(editing.employee_id);
+      }
       qc.invalidateQueries({ queryKey: ["employee-vacations"] });
+      qc.invalidateQueries({ queryKey: ["employees"] });
       setShowForm(false);
       toast.success(editing ? "Férias atualizadas" : "Férias registradas");
     },
@@ -119,11 +148,18 @@ export default function Ferias() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Look up the vacation to get employee_id before deleting
+      const vacation = vacations.find((v) => v.id === id);
       const { error } = await supabase.from("employee_vacations").delete().eq("id", id);
       if (error) throw error;
+      return vacation?.employee_id;
     },
-    onSuccess: () => {
+    onSuccess: async (employeeId) => {
+      if (employeeId) {
+        await syncEmployeeVacationStatus(employeeId);
+      }
       qc.invalidateQueries({ queryKey: ["employee-vacations"] });
+      qc.invalidateQueries({ queryKey: ["employees"] });
       setDeleteId(null);
       toast.success("Férias excluídas");
     },

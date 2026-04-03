@@ -24,6 +24,24 @@ export function isTopografo(role?: string | null): boolean {
   return lower.includes("topógrafo") || lower.includes("topografo");
 }
 
+/** Canonical list of technical (Sala Técnica) roles used throughout the system */
+export const TECH_ROLES = [
+  "Cadista",
+  "Cartógrafo - Prestador",
+  "Técnico de Saneamento",
+  "Técnica em Saneamento - Estagiária",
+  "Técnica em Saneamento - Prestadora",
+  "Técnico em Edificações",
+] as const;
+
+const techRolesLower = new Set(TECH_ROLES.map((r) => r.toLowerCase()));
+
+/** Returns true if the given role is a technical (Sala Técnica) role */
+export function isTechRole(role?: string | null): boolean {
+  if (!role) return false;
+  return techRolesLower.has(role.toLowerCase());
+}
+
 /** Canonical list of commercial directors (name fragments, lowercase) */
 export const COMMERCIAL_DIRECTORS = ["sérgio", "sergio", "ciro"] as const;
 
