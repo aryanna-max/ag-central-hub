@@ -38,9 +38,11 @@ const navigation: SidebarItem[] = [
     label: "Operacional", path: "/operacional", icon: Truck,
     children: [
       { label: "Dashboard", path: "/operacional/dashboard", icon: LayoutDashboard },
-      { label: "Equipes", path: "/operacional/equipes", icon: Users },
+      { label: "Projetos em Campo", path: "/operacional/projetos-campo", icon: FolderKanban },
+      { label: "Grupos Rápidos", path: "/operacional/equipes", icon: Users },
       { label: "Escala Diária", path: "/operacional/escala-diaria", icon: CalendarDays },
       { label: "Escala Mensal", path: "/operacional/escala", icon: CalendarDays },
+      { label: "Férias", path: "/operacional/ferias", icon: CalendarDays },
       { label: "Medições", path: "/operacional/medicoes", icon: FileText },
       { label: "Despesas de Campo", path: "/operacional/despesas-de-campo", icon: Banknote },
       { label: "Veículos", path: "/operacional/veiculos", icon: Car },
