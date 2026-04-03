@@ -23,6 +23,7 @@ import UserManagement from "./pages/admin/UserManagement";
 import CadastrosBase from "./pages/admin/CadastrosBase";
 import AdminClientes from "./pages/admin/Clientes";
 import ClienteHistorico from "./pages/admin/ClienteHistorico";
+import ProjetoHistorico from "./pages/projetos/ProjetoHistorico";
 
 const queryClient = new QueryClient();
 
