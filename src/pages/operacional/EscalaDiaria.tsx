@@ -570,8 +570,8 @@ export default function EscalaDiaria() {
           {/* Team-centric table */}
           {assignments.length === 0 ? (
             <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                Nenhuma equipe escalada. Adicione funcionários ou crie a escala mensal primeiro.
+             <CardContent className="py-8 text-center text-muted-foreground">
+                Nenhum grupo escalado. Adicione funcionários ou crie a escala mensal primeiro.
               </CardContent>
             </Card>
           ) : (
