@@ -11,6 +11,7 @@ import { useVehicles, useDeleteVehicle } from "@/hooks/useVehicles";
 import VehicleEditDialog from "@/components/operacional/VehicleEditDialog";
 import VehicleDetailDialog from "@/components/operacional/VehicleDetailDialog";
 import DiariasVeiculos from "./DiariasVeiculos";
+import VehicleReportsTab from "@/components/operacional/VehicleReportsTab";
 import { toast } from "sonner";
 
 const statusColors: Record<string, string> = {
