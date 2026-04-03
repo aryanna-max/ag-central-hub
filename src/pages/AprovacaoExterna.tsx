@@ -78,7 +78,7 @@ export default function AprovacaoExterna() {
 
     const newComment = {
       action: "aprovada",
-      by: "Diretor Comercial",
+      by: "Diretoria Comercial",
       at: new Date().toISOString(),
       text: comment.trim() || null,
     };
@@ -103,8 +103,8 @@ export default function AprovacaoExterna() {
     try {
       await supabase.rpc("enqueue_email" as any, {
         p_to: "financeiro@agtopografia.com.br",
-        p_subject: `Folha ${sheet.codigo || sheet.week_label} APROVADA`,
-        p_body: `A folha de despesas ${sheet.codigo || sheet.week_label} (${format(new Date(sheet.period_start), "dd/MM")} a ${format(new Date(sheet.period_end), "dd/MM")}) foi aprovada.\n\nValor total: R$ ${(sheet.total_value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n\n${comment.trim() ? `Observação: ${comment.trim()}` : ""}`,
+        p_subject: `Folha ${sheet.codigo || sheet.week_label} APROVADA pela Diretoria Comercial`,
+        p_body: `A folha de despesas ${sheet.codigo || sheet.week_label} (${format(new Date(sheet.period_start), "dd/MM")} a ${format(new Date(sheet.period_end), "dd/MM")}) foi aprovada pela Diretoria Comercial.\n\nValor total: R$ ${(sheet.total_value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n\n${comment.trim() ? `Observação: ${comment.trim()}` : ""}`,
       });
     } catch {
       // Email infrastructure may not be configured yet — don't block approval
@@ -120,7 +120,7 @@ export default function AprovacaoExterna() {
 
     const newComment = {
       action: "questionada",
-      by: "Diretor Comercial",
+      by: "Diretoria Comercial",
       at: new Date().toISOString(),
       text: comment.trim(),
     };
@@ -181,7 +181,7 @@ export default function AprovacaoExterna() {
                 <Check className="w-8 h-8 text-green-600" />
               </div>
               <h2 className="text-lg font-bold text-gray-900 mb-1">Folha Aprovada</h2>
-              <p className="text-sm text-gray-500">Financeiro foi notificado por email.</p>
+              <p className="text-sm text-gray-500">O Financeiro foi notificado por email.</p>
             </>
           ) : (
             <>
