@@ -29,8 +29,7 @@ export default function RelatorioAusencias() {
   const { data: records = [], isLoading } = useQuery({
     queryKey: ["absence-report", startDate, endDate],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("attendance")
+      const { data, error } = await (supabase.from as any)("attendance")
         .select("*, employees:employee_id(name, matricula), profiles:created_by_id(full_name)")
         .gte("date", startDate)
         .lte("date", endDate)
