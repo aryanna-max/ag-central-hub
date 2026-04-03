@@ -64,7 +64,7 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
   useEffect(() => {
     if (!open) {
       setClientId(""); setProjectName(""); setCnpjTomador("");
-      setContractValue(null); setEmpresaFaturadora("ag_topografia");
+      setContractValue(null); setEmpresaFaturadora("ag_topografia"); setBillingType("");
       setProjectCode(""); setCep(""); setRua(""); setBairro("");
       setNumero(""); setCidade(""); setEstado("");
     }
