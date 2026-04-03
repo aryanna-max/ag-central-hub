@@ -26,6 +26,7 @@ interface AlertRow {
   title: string;
   priority: string;
   alert_status: string | null;
+  resolved: boolean;
   created_at: string;
   action_url: string | null;
   scheduled_at: string | null;
@@ -49,13 +50,13 @@ export default function STAlertas() {
     queryFn: async () => {
       const base = supabase
         .from("alerts")
-        .select("id, tipo, message, title, priority, alert_status, created_at, action_url, scheduled_at, reference_id")
+        .select("id, tipo, message, title, priority, alert_status, resolved, created_at, action_url, scheduled_at, reference_id")
         .eq("recipient", "sala_tecnica")
         .order("created_at", { ascending: false });
 
       let q;
       if (filterStatus === "ativo") {
-        q = (base as any).eq("resolved", false).or("alert_status.is.null,alert_status.eq.ativo");
+        q = (base as any).eq("resolved", false);
       } else if (filterStatus === "resolvido") {
         q = (base as any).eq("resolved", true);
       } else if (filterStatus === "all") {
@@ -75,7 +76,7 @@ export default function STAlertas() {
     return alerts.filter(a => a.priority === filterPriority);
   }, [alerts, filterPriority]);
 
-  const isActive = (a: AlertRow) => !a.alert_status || a.alert_status === "ativo";
+  const isActive = (a: AlertRow) => !a.resolved;
   const urgentAlerts = filtered.filter(a => a.priority === "urgente" && isActive(a));
   const importantAlerts = filtered.filter(a => a.priority === "importante" && isActive(a));
   const otherAlerts = filtered.filter(a => !(a.priority === "urgente" && isActive(a)) && !(a.priority === "importante" && isActive(a)));
@@ -96,7 +97,7 @@ export default function STAlertas() {
 
   const handleSchedule = async () => {
     if (!scheduleId || !scheduleDate) return;
-    await patchAlert(scheduleId, { alert_status: "agendado", scheduled_at: scheduleDate.toISOString() });
+    await patchAlert(scheduleId, { alert_status: "agendado", resolved: true, resolved_at: new Date().toISOString(), scheduled_at: scheduleDate.toISOString() });
     toast.success("Alerta agendado");
     setScheduleId(null);
     setScheduleDate(null);
@@ -104,7 +105,7 @@ export default function STAlertas() {
 
   const handleIgnore = async () => {
     if (!ignoreId || !ignoreReason.trim()) return;
-    await patchAlert(ignoreId, { alert_status: "ignorado" });
+    await patchAlert(ignoreId, { alert_status: "ignorado", resolved: true, resolved_at: new Date().toISOString() });
     toast.info("Alerta ignorado");
     setIgnoreId(null);
     setIgnoreReason("");

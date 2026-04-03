@@ -383,14 +383,14 @@ export default function ProjetoHistorico() {
               {projectAlerts.map((a: any) => (
                 <div key={a.id} className={cn(
                   "p-3 rounded-lg border text-sm flex items-start gap-3",
-                  a.alert_status === "resolvido" && "opacity-60",
+                  a.resolved && "opacity-60",
                   a.priority === "urgente" && "border-red-200 bg-red-50 dark:bg-red-950/20",
                   a.priority === "importante" && "border-amber-200 bg-amber-50 dark:bg-amber-950/20",
                 )}>
                   <div className="flex-1">
                     <p className="font-medium">{a.message || a.title}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {fmtDate(a.created_at)} · {a.alert_status}
+                      {fmtDate(a.created_at)} · {a.resolved ? (a.alert_status || "resolvido") : (a.alert_status || "ativo")}
                     </p>
                   </div>
                   <Badge variant="outline" className="shrink-0">{a.priority}</Badge>
