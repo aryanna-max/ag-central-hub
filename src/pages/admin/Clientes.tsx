@@ -16,6 +16,7 @@ import { toast } from "sonner";
 const TIPOS = ["Construtora", "Incorporadora", "Empresa privada", "Órgão público", "Pessoa física"] as const;
 
 export default function AdminClientes() {
+  const navigate = useNavigate();
   const { data: clients = [], isLoading } = useClients();
   const createClient = useCreateClient();
   const updateClient = useUpdateClient();
