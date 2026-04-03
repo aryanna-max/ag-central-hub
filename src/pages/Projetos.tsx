@@ -597,6 +597,19 @@ export default function Projetos() {
                       {(selectedProject as any).execution_status || "—"}
                     </Badge>
                   </div>
+                  <div>
+                    <Label>Tipo de Faturamento *</Label>
+                    <Select value={(editForm as any).billing_type || ""} onValueChange={(val) => setEditForm({ ...editForm, billing_type: val } as any)}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="entrega_nf">NF na entrega</SelectItem>
+                        <SelectItem value="entrega_recibo">Recibo na entrega</SelectItem>
+                        <SelectItem value="medicao_mensal">Por medição mensal</SelectItem>
+                        <SelectItem value="misto">Misto</SelectItem>
+                        <SelectItem value="sem_documento">Sem documento</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <Separator className="my-2" />
                   <div>
                     <Label>Observações</Label>
