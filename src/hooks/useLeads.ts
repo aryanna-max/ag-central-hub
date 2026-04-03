@@ -162,13 +162,24 @@ export async function generateLeadCode(): Promise<string> {
   return `${prefix}${String(seq).padStart(3, "0")}`;
 }
 
+const ORIGIN_TO_SOURCE: Record<string, string> = {
+  indicacao: "indicacao",
+  whatsapp: "whatsapp",
+  site_instagram: "site",
+  licitacao: "licitacao",
+  cliente_recorrente: "outros",
+  contrato_ativo: "outros",
+  outro: "outros",
+};
+
 export function useCreateLead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (lead: LeadInsert) => {
       const { origin, ...rest } = lead;
       const codigo = await generateLeadCode();
-      const payload = { ...rest, origin, source: (origin || "outros") as any, codigo };
+      const source = ORIGIN_TO_SOURCE[origin || "outro"] || "outros";
+      const payload = { ...rest, origin, source: source as any, codigo };
       const { data, error } = await supabase.from("leads").insert(payload as any).select().single();
       if (error) throw error;
       return data;
