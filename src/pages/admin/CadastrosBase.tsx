@@ -52,7 +52,7 @@ export default function CadastrosBase() {
       description: "Projetos ativos, valor de contrato e empresa faturadora",
       icon: FolderKanban,
       count: (projects || []).length,
-      path: "/projetos",
+      path: "/projetos/kanban",
       editable: true,
     },
     {
@@ -68,7 +68,7 @@ export default function CadastrosBase() {
       description: "Composição de equipes, veículo e projeto padrão",
       icon: Truck,
       count: (teams || []).length,
-      path: "/operacional/equipes",
+      path: "/operacional/escala",
       editable: false,
     },
   ], [employees, clients, projects, vehicles, teams]);
