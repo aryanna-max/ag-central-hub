@@ -84,6 +84,7 @@ export default function Veiculos() {
         <TabsList>
           <TabsTrigger value="frota">Frota</TabsTrigger>
           <TabsTrigger value="diarias">Diárias</TabsTrigger>
+          <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
         </TabsList>
 
         <TabsContent value="frota">
