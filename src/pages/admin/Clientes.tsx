@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { Building2, Search, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Building2, Search, Plus, History } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
