@@ -2,12 +2,17 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Users, GripVertical } from "lucide-react";
-import { format } from "date-fns";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, Users, GripVertical, Bell, ChevronDown, ChevronRight, CheckCircle, Map } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import DeadlineBadge from "@/components/DeadlineBadge";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useNavigate } from "react-router-dom";
 
 interface Project {
   id: string;
@@ -31,10 +36,22 @@ const COLUMNS = [
   { key: "campo_concluido", label: "Campo concluído", color: "bg-blue-50" },
 ] as const;
 
+const EXEC_STATUS_LABELS: Record<string, string> = {
+  aguardando_processamento: "Aguardando processamento",
+  em_processamento: "Em processamento",
+  revisao: "Em revisão",
+  aprovado: "Aprovado",
+  entregue: "Entregue",
+  faturamento: "Faturamento",
+  pago: "Pago",
+};
+
 export default function ProjetosEmCampoKanban() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const today = format(new Date(), "yyyy-MM-dd");
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects-field-kanban"],
@@ -57,6 +74,51 @@ export default function ProjetosEmCampoKanban() {
       const map: ClientMap = {};
       (data || []).forEach((c) => { map[c.id] = c.name; });
       return map;
+    },
+  });
+
+  // History projects
+  const { data: historyProjects = [] } = useQuery({
+    queryKey: ["projects-field-history"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, codigo, name, client_id, execution_status, field_started_at, field_completed_at")
+        .not("execution_status", "in", '("aguardando_campo","em_campo","campo_concluido")')
+        .not("field_started_at", "is", null)
+        .gte("field_started_at", "2026-03-31")
+        .order("field_completed_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Alerts
+  const { data: alerts = [] } = useQuery({
+    queryKey: ["operacional-alerts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("alerts")
+        .select("*")
+        .eq("recipient", "operacional")
+        .eq("alert_status", "ativo")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const resolveAlert = useMutation({
+    mutationFn: async (alertId: string) => {
+      const { error } = await supabase
+        .from("alerts")
+        .update({ alert_status: "resolvido", resolved: true, resolved_at: new Date().toISOString(), resolved_by: user?.id } as any)
+        .eq("id", alertId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["operacional-alerts"] });
+      toast.success("Alerta resolvido");
     },
   });
 
@@ -95,7 +157,6 @@ export default function ProjetosEmCampoKanban() {
         .update({ execution_status: "em_campo" as any })
         .eq("id", projectId);
       if (error) throw error;
-      // Log status change
       await supabase.from("project_status_history").insert({
         project_id: projectId,
         from_status: "aguardando_campo",
@@ -139,6 +200,63 @@ export default function ProjetosEmCampoKanban() {
 
   return (
     <div className="space-y-4">
+      {/* Header with alerts bell */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Map className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Projetos em Campo</h1>
+            <p className="text-sm text-muted-foreground">Kanban de execução em campo</p>
+          </div>
+        </div>
+
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon" className="relative">
+              <Bell className="w-5 h-5" />
+              {alerts.length > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                  {alerts.length}
+                </span>
+              )}
+            </Button>
+          </SheetTrigger>
+          <SheetContent>
+            <SheetHeader>
+              <SheetTitle>Alertas do Campo ({alerts.length})</SheetTitle>
+            </SheetHeader>
+            <div className="mt-4 space-y-3">
+              {alerts.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Nenhum alerta ativo.</p>
+              ) : (
+                alerts.map((alert: any) => (
+                  <div key={alert.id} className="p-3 rounded-lg border space-y-2">
+                    <p className="text-sm font-medium">{alert.title}</p>
+                    {alert.message && <p className="text-xs text-muted-foreground">{alert.message}</p>}
+                    <p className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true, locale: ptBR })}
+                    </p>
+                    <div className="flex gap-2">
+                      {alert.action_url && (
+                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate(alert.action_url)}>
+                          Ver projeto
+                        </Button>
+                      )}
+                      <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={() => resolveAlert.mutate(alert.id)}>
+                        <CheckCircle className="w-3 h-3 mr-1" /> Resolver
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Kanban */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {COLUMNS.map((col) => (
           <div
@@ -205,6 +323,42 @@ export default function ProjetosEmCampoKanban() {
           </div>
         ))}
       </div>
+
+      {/* History */}
+      <Collapsible open={historyOpen} onOpenChange={setHistoryOpen}>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground">
+            {historyOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            Histórico ({historyProjects.length} projetos)
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <Card className="mt-2">
+            <CardContent className="p-0">
+              {historyProjects.length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground text-center">Nenhum projeto no histórico.</p>
+              ) : (
+                <div className="divide-y">
+                  {historyProjects.map((p: any) => (
+                    <div key={p.id} className="flex items-center gap-3 px-4 py-2 text-sm">
+                      <span className="font-mono font-semibold text-primary">{p.codigo || "—"}</span>
+                      <span className="text-muted-foreground">·</span>
+                      <span className="flex-1 truncate">{p.client_id && clientsMap[p.client_id] ? clientsMap[p.client_id] : p.name}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {EXEC_STATUS_LABELS[p.execution_status] || p.execution_status}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {p.field_started_at && format(new Date(p.field_started_at), "dd/MM")}
+                        {p.field_completed_at && ` → ${format(new Date(p.field_completed_at), "dd/MM")}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }
