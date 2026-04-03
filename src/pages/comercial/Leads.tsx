@@ -106,7 +106,7 @@ export default function Leads() {
     novos: leads.filter((l) => l.status === "novo").length,
     qualificados: leads.filter((l) => l.status === "qualificado").length,
     propostas: leads.filter((l) => l.status === "proposta_enviada").length,
-    aprovados: leads.filter((l) => l.status === "aprovado").length,
+    aprovados: leads.filter((l) => ["aprovado", "convertido"].includes(l.status)).length,
   }), [leads]);
 
   const handleDelete = async () => {
