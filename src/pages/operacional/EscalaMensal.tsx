@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarDays, Plus, Trash2, ChevronLeft, ChevronRight, Car, Printer } from "lucide-react";
+import { CalendarDays, Plus, Trash2, ChevronLeft, ChevronRight, Car, Printer, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
