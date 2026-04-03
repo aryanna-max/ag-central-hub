@@ -141,7 +141,9 @@ export default function EscalaDiaria() {
     try {
       const created = await createSchedule.mutateAsync(selectedDate);
       await preFill.mutateAsync({ scheduleId: created.id, date: selectedDate });
-      toast.success("Escala criada e pré-preenchida a partir da escala mensal!");
+      toast.success(selectedDate === tomorrow
+        ? "Escala de amanhã montada! Ajuste e envie ao grupo."
+        : "Escala criada e pré-preenchida a partir da escala mensal!");
     } catch {
       toast.error("Erro ao criar escala");
     }
@@ -489,7 +491,13 @@ export default function EscalaDiaria() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">Escala Diária</h1>
-            <p className="text-sm text-muted-foreground">Acompanhamento diário das equipes de campo</p>
+            <p className="text-sm text-muted-foreground">
+              {selectedDate === tomorrow
+                ? "Monte a escala de amanhã — será enviada ao grupo"
+                : isToday
+                  ? "Confirme presenças e ajuste a escala do dia"
+                  : "Consulta de escala"}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -507,8 +515,11 @@ export default function EscalaDiaria() {
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground mb-4">Nenhuma escala para {dateFormatted}</p>
             <Button onClick={handleCreateSchedule} className="gap-2">
-              <Plus className="w-4 h-4" /> Criar Escala
+              <Plus className="w-4 h-4" /> {selectedDate === tomorrow ? "Montar Escala de Amanhã" : "Criar Escala"}
             </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              {selectedDate === tomorrow ? "Pré-preenche a partir da escala mensal, se houver" : ""}
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -544,7 +555,7 @@ export default function EscalaDiaria() {
               </Button>
               {!isConfirmed && !isClosed && (role === "operacional" || role === "master" || role === "diretor") && assignments.length > 0 && (
                 <Button onClick={handleConfirmSchedule} className="gap-2 bg-emerald-700 hover:bg-emerald-800 text-white" disabled={confirmSchedule.isPending}>
-                  <CheckCircle className="w-4 h-4" /> Confirmar Escala
+                  <CheckCircle className="w-4 h-4" /> {isToday ? "Confirmar Dia" : "Confirmar Escala"}
                 </Button>
               )}
               {!isReadOnly && (
@@ -575,7 +586,7 @@ export default function EscalaDiaria() {
           {assignments.length === 0 ? (
             <Card>
              <CardContent className="py-8 text-center text-muted-foreground">
-                Nenhum grupo escalado. Adicione funcionários ou crie a escala mensal primeiro.
+                Nenhum grupo escalado. Use "Adicionar à Escala" para montar as equipes do dia.
               </CardContent>
             </Card>
           ) : (
@@ -798,7 +809,7 @@ export default function EscalaDiaria() {
               <Select value={addForm.vehicle_id} onValueChange={(v) => setAddForm((prev) => ({ ...prev, vehicle_id: v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecionar veículo..." /></SelectTrigger>
                 <SelectContent>
-                  {(vehicles || []).filter((v) => v.status === "disponivel").map((v) => (
+                  {(vehicles || []).map((v: any) => (
                     <SelectItem key={v.id} value={v.id}>{v.model} — {v.plate}</SelectItem>
                   ))}
                 </SelectContent>

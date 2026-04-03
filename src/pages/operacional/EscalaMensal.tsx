@@ -240,8 +240,8 @@ export default function EscalaMensal() {
             <CalendarDays className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Escala Mensal</h1>
-            <p className="text-sm text-muted-foreground">Planejamento mensal de alocação de equipes por projeto</p>
+            <h1 className="text-2xl font-bold text-foreground">Visão Mensal</h1>
+            <p className="text-sm text-muted-foreground">Previsão de alocação — pré-preenche a escala diária automaticamente</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

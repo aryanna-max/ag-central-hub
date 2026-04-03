@@ -23,8 +23,8 @@ export default function Planejamento() {
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="hoje">Hoje</TabsTrigger>
-          <TabsTrigger value="mensal">Mensal</TabsTrigger>
+          <TabsTrigger value="hoje">Escala Diária</TabsTrigger>
+          <TabsTrigger value="mensal">Visão Mensal</TabsTrigger>
           <TabsTrigger value="grupos">Grupos Rápidos</TabsTrigger>
           <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
         </TabsList>
