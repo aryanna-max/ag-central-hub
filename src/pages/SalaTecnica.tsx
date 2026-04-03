@@ -1,18 +1,53 @@
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Monitor } from "lucide-react";
-import ModulePage from "@/components/ModulePage";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import STKanban from "./salatecnica/STKanban";
+import STMinhasTarefas from "./salatecnica/STMinhasTarefas";
+import STAlertas from "./salatecnica/STAlertas";
+import STProjectDetail from "./salatecnica/STProjectDetail";
+
+const TABS = [
+  { value: "projetos", label: "Projetos", path: "/sala-tecnica" },
+  { value: "minhas-tarefas", label: "Minhas Tarefas", path: "/sala-tecnica/minhas-tarefas" },
+  { value: "alertas", label: "Alertas", path: "/sala-tecnica/alertas" },
+];
 
 export default function SalaTecnica() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const currentTab = location.pathname.includes("/minhas-tarefas")
+    ? "minhas-tarefas"
+    : location.pathname.includes("/alertas")
+      ? "alertas"
+      : location.pathname.includes("/projetos/")
+        ? "projetos"
+        : "projetos";
+
   return (
-    <ModulePage
-      title="Sala Técnica"
-      subtitle="Processamento técnico, arquivos e entregas"
-      icon={<Monitor className="w-5 h-5" />}
-      sections={[
-        { title: "Arquivos", description: "Recebimento e organização de arquivos técnicos." },
-        { title: "Processamento", description: "Acompanhamento do processamento de dados de campo." },
-        { title: "Entregas", description: "Controle de entregas técnicas ao cliente." },
-        { title: "Relatórios Técnicos", description: "Emissão e gestão de relatórios." },
-      ]}
-    />
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Monitor className="w-5 h-5 text-primary" />
+        <h1 className="text-xl font-bold">Sala Técnica</h1>
+      </div>
+
+      {!location.pathname.includes("/projetos/") && (
+        <Tabs value={currentTab} onValueChange={v => {
+          const tab = TABS.find(t => t.value === v);
+          if (tab) navigate(tab.path);
+        }}>
+          <TabsList>
+            {TABS.map(t => <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>)}
+          </TabsList>
+        </Tabs>
+      )}
+
+      <Routes>
+        <Route index element={<STKanban />} />
+        <Route path="minhas-tarefas" element={<STMinhasTarefas />} />
+        <Route path="alertas" element={<STAlertas />} />
+        <Route path="projetos/:id" element={<STProjectDetail />} />
+      </Routes>
+    </div>
   );
 }
