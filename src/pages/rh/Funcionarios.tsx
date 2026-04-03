@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Employee } from "@/hooks/useEmployees";
-import { FIELD_ROLES } from "@/lib/fieldRoles";
+import { FIELD_ROLES, isFieldRole, isTechRole } from "@/lib/fieldRoles";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   disponivel: { label: "Disponível", className: "bg-green-600 text-white" },
@@ -97,15 +97,15 @@ export default function Funcionarios() {
 
   // Summary counts
   const totalCount = employees.length;
-  const disponiveisCount = employees.filter((e) => e.status === "disponivel").length;
-  const campoCount = employees.filter((e) => ["topógrafo", "ajudante"].some((r) => (e.role || "").toLowerCase().includes(r))).length;
-  const afastadosFeriasCount = employees.filter((e) => e.status === "ferias" || e.status === "afastado").length;
+  const campoCount = employees.filter((e) => isFieldRole(e.role)).length;
+  const salaTecnicaCount = employees.filter((e) => isTechRole(e.role)).length;
+  const adminCount = totalCount - campoCount - salaTecnicaCount;
 
   const summaryCards = [
-    { label: "Total de Funcionários", value: totalCount, color: "text-primary" },
-    { label: "Disponíveis", value: disponiveisCount, color: "text-green-600" },
-    { label: "Campo", value: campoCount, color: "text-amber-600" },
-    { label: "Afastados / Férias", value: afastadosFeriasCount, color: "text-red-600" },
+    { label: "Total", value: totalCount, color: "text-primary" },
+    { label: "Operacional", value: campoCount, color: "text-amber-600" },
+    { label: "Sala Técnica", value: salaTecnicaCount, color: "text-blue-600" },
+    { label: "Administrativo", value: adminCount, color: "text-gray-600" },
   ];
 
   const getTypeBadge = (matricula?: string | null) => {
