@@ -103,7 +103,7 @@ export default function Funcionarios() {
 
   const summaryCards = [
     { label: "Total", value: totalCount, color: "text-primary" },
-    { label: "Operacional", value: campoCount, color: "text-amber-600" },
+    { label: "Campo", value: campoCount, color: "text-amber-600" },
     { label: "Sala Técnica", value: salaTecnicaCount, color: "text-blue-600" },
     { label: "Administrativo", value: adminCount, color: "text-gray-600" },
   ];
