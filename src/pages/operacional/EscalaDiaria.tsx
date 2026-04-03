@@ -853,6 +853,51 @@ export default function EscalaDiaria() {
         onDelete={handleDeleteAssignment}
         isPending={false}
       />
+
+      {/* Vacation Warning Dialog */}
+      <Dialog open={vacationDialog.show} onOpenChange={(o) => !o && setVacationDialog({ show: false, empIds: [], pending: [] })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-500" /> Funcionário(s) em férias</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            {vacationDialog.empIds.map((v) => (
+              <p key={v.id} className="text-sm">
+                <strong>{v.name}</strong> está de férias de {format(new Date(v.start + "T12:00:00"), "dd/MM")} a {format(new Date(v.end + "T12:00:00"), "dd/MM")}.
+              </p>
+            ))}
+            <p className="text-sm text-muted-foreground mt-2">
+              Confirmar como serviço avulso fora do período CLT?<br />
+              <strong>Atenção:</strong> sem benefícios calculados para este dia.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVacationDialog({ show: false, empIds: [], pending: [] })}>Cancelar</Button>
+            <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={() => {
+              const vacIds = vacationDialog.empIds.map((v) => v.id);
+              doAddEmployees(vacationDialog.pending, vacIds);
+              setVacationDialog({ show: false, empIds: [], pending: [] });
+            }}>
+              Confirmar como avulso
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate Allocation Dialog */}
+      {duplicateDialog && (
+        <Dialog open={duplicateDialog.show} onOpenChange={() => setDuplicateDialog(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-500" /> Dupla alocação</DialogTitle></DialogHeader>
+            <p className="text-sm">{duplicateDialog.name} já está em <strong>{duplicateDialog.projectCode}</strong> hoje. Confirmar mesmo assim?</p>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDuplicateDialog(null)}>Cancelar</Button>
+              <Button onClick={() => {
+                setDuplicateDialog(null);
+                doAddEmployees(addForm.employee_ids, []);
+              }}>Confirmar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
