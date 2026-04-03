@@ -45,7 +45,7 @@ interface GroupDef {
 const GROUPS: GroupDef[] = [
   {
     key: "campo",
-    label: "Campo",
+    label: "Operacional",
     emoji: "🏕️",
     borderColor: "border-[#1A9E7C]",
     columns: [
@@ -56,7 +56,7 @@ const GROUPS: GroupDef[] = [
   },
   {
     key: "prancheta",
-    label: "Prancheta",
+    label: "Sala Técnica",
     emoji: "📐",
     borderColor: "border-[#2D6E8E]",
     columns: [
