@@ -15,7 +15,7 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
-const RESPONSIBLE_ROLES = ["Diretor", "Diretora Administrativa", "Gerente Operacional"];
+// All non-desligado employees can be responsible
 
 interface Props {
   open: boolean;
