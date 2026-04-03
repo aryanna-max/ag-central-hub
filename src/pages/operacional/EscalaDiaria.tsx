@@ -512,7 +512,7 @@ export default function EscalaDiaria() {
           {/* Action bar */}
           <div className="flex items-center gap-3 flex-wrap">
             <Badge variant="outline" className="text-sm py-1 px-3">
-              {assignments.length} equipes escaladas
+              {assignments.length} grupos escalados
             </Badge>
             {isConfirmed && confirmation && (
               <Badge className="bg-emerald-600 text-white gap-1">
