@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, ArrowRightLeft, Target, LayoutGrid, List, FolderKanban } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, ArrowRightLeft, Target, LayoutGrid, List, FolderKanban, AlertTriangle } from "lucide-react";
 import LeadConversionDialog from "./LeadConversionDialog";
 import {
   useLeads, useDeleteLead, useUpdateLead,
@@ -27,7 +27,6 @@ import { toast } from "sonner";
 import LeadFormDialog from "./LeadFormDialog";
 import LeadDetailDialog from "./LeadDetailDialog";
 
-// Allowed transitions
 const ALLOWED_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
   novo: ["qualificado", "perdido"],
   qualificado: ["proposta_enviada", "perdido"],
@@ -67,10 +66,17 @@ export default function Leads() {
   const [lossReason, setLossReason] = useState("");
   const [conversionLead, setConversionLead] = useState<Lead | null>(null);
 
+  const getEmployeeName = (id: string | null) => {
+    if (!id) return "—";
+    return employees.find((e) => e.id === id)?.name || "—";
+  };
+
   const responsaveis = useMemo(() => {
-    const set = new Set(leads.map((l) => l.responsible_id).filter(Boolean) as string[]);
-    return Array.from(set).sort();
-  }, [leads]);
+    const ids = new Set(leads.map((l) => l.responsible_id).filter(Boolean) as string[]);
+    return Array.from(ids)
+      .map((id) => ({ id, name: getEmployeeName(id) }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [leads, employees]);
 
   const filtered = useMemo(() => {
     return leads.filter((l) => {
@@ -79,13 +85,21 @@ export default function Leads() {
         displayName.toLowerCase().includes(search.toLowerCase()) ||
         (l.name || "").toLowerCase().includes(search.toLowerCase()) ||
         (l.company || "").toLowerCase().includes(search.toLowerCase()) ||
-        (l.servico || "").toLowerCase().includes(search.toLowerCase());
+        (l.servico || "").toLowerCase().includes(search.toLowerCase()) ||
+        (l.codigo || "").toLowerCase().includes(search.toLowerCase());
       const matchStatus = statusFilter === "all" || l.status === statusFilter;
       const matchOrigin = originFilter === "all" || l.origin === originFilter;
       const matchResp = responsibleFilter === "all" || l.responsible_id === responsibleFilter;
       return matchSearch && matchStatus && matchOrigin && matchResp;
     });
   }, [leads, clients, search, statusFilter, originFilter, responsibleFilter]);
+
+  // Projects without lead
+  const projectsWithoutLead = useMemo(() => {
+    return projects.filter(
+      (p) => !p.lead_id && p.status !== "concluido" && p.status !== "pausado"
+    );
+  }, [projects]);
 
   const stats = useMemo(() => ({
     total: leads.length,
@@ -106,14 +120,8 @@ export default function Leads() {
 
   const handleStatusChange = async (lead: Lead, newStatus: LeadStatus) => {
     if (newStatus === lead.status) return;
-    if (newStatus === "perdido") {
-      setLossDialog(lead);
-      return;
-    }
-    if (newStatus === "convertido") {
-      setConversionLead(lead);
-      return;
-    }
+    if (newStatus === "perdido") { setLossDialog(lead); return; }
+    if (newStatus === "convertido") { setConversionLead(lead); return; }
     const allowed = ALLOWED_TRANSITIONS[lead.status];
     if (!allowed?.includes(newStatus)) {
       toast.error(`Transição não permitida: ${STATUS_LABELS[lead.status]} → ${STATUS_LABELS[newStatus]}`);
@@ -175,6 +183,9 @@ export default function Leads() {
                   onClick={() => setDetailLead(lead)}
                 >
                   <CardContent className="p-3 space-y-1.5">
+                    {lead.codigo && (
+                      <p className="text-xs font-mono font-bold text-primary">{lead.codigo}</p>
+                    )}
                     <p className="text-sm font-medium leading-tight">{getDisplayName(lead, clients)}</p>
                     {lead.servico && <p className="text-xs text-muted-foreground truncate">{lead.servico}</p>}
                     <div className="flex items-center justify-between">
@@ -182,7 +193,7 @@ export default function Leads() {
                       {originBadge(lead.origin)}
                     </div>
                     {lead.responsible_id && (
-                      <p className="text-xs text-muted-foreground">{employees.find(e => e.id === lead.responsible_id)?.name || "—"}</p>
+                      <p className="text-xs text-muted-foreground">{getEmployeeName(lead.responsible_id)}</p>
                     )}
                   </CardContent>
                 </Card>
@@ -204,6 +215,7 @@ export default function Leads() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Código</TableHead>
                 <TableHead>Empresa/Nome</TableHead>
                 <TableHead>Origem</TableHead>
                 <TableHead>Serviço</TableHead>
@@ -217,11 +229,12 @@ export default function Leads() {
             <TableBody>
               {filtered.map((lead) => (
                 <TableRow key={lead.id} className="cursor-pointer" onClick={() => setDetailLead(lead)}>
+                  <TableCell className="font-mono text-xs font-bold text-primary">{lead.codigo || "—"}</TableCell>
                   <TableCell className="font-medium">{getDisplayName(lead, clients)}</TableCell>
                   <TableCell>{originBadge(lead.origin)}</TableCell>
                   <TableCell className="text-sm">{lead.servico || "—"}</TableCell>
                   <TableCell className="text-sm">{formatValue(lead.valor)}</TableCell>
-                  <TableCell className="text-sm">{employees.find(e => e.id === lead.responsible_id)?.name || "—"}</TableCell>
+                  <TableCell className="text-sm">{getEmployeeName(lead.responsible_id)}</TableCell>
                   <TableCell>
                     <Badge className={`text-xs ${STATUS_COLORS[lead.status]}`}>{STATUS_LABELS[lead.status]}</Badge>
                   </TableCell>
@@ -334,7 +347,7 @@ export default function Leads() {
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
             {responsaveis.map((r) => (
-              <SelectItem key={r} value={r}>{r}</SelectItem>
+              <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -362,6 +375,32 @@ export default function Leads() {
       {isLoading ? (
         <p className="text-center text-muted-foreground py-10">Carregando...</p>
       ) : viewMode === "kanban" ? renderKanban() : renderTable()}
+
+      {/* Projects without lead */}
+      {projectsWithoutLead.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-500" />
+            Projetos sem lead ({projectsWithoutLead.length})
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {projectsWithoutLead.map((p) => (
+              <Card key={p.id}>
+                <CardContent className="p-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold text-primary">{p.codigo || "—"}</span>
+                    <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Sem lead</Badge>
+                  </div>
+                  <p className="text-sm font-medium">{p.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {p.clients?.name || p.client || "—"}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Dialogs */}
       <LeadFormDialog open={formOpen} onOpenChange={setFormOpen} lead={editingLead} />
