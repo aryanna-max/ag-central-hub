@@ -146,7 +146,10 @@ export default function AdminClientes() {
                         {c.is_active ? "Ativo" : "Inativo"}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="flex gap-1">
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/base/clientes/${c.id}`); }} title="Histórico">
+                        <History className="w-4 h-4" />
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openEdit(c); }}>Editar</Button>
                     </TableCell>
                   </TableRow>
