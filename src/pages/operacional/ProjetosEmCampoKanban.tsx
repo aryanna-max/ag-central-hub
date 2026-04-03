@@ -321,6 +321,12 @@ export default function ProjetosEmCampoKanban() {
                           <AlertTriangle className="w-3 h-3" /> Sem escala hoje
                         </Badge>
                       )}
+                      {(() => {
+                        const bt = p.billing_type;
+                        const badge = bt ? BILLING_BADGE[bt] : null;
+                        if (badge) return <Badge className={badge.className + " text-[10px]"}>{badge.label}</Badge>;
+                        return <Badge className="bg-red-100 text-red-800 text-[10px]">⚠ Definir faturamento</Badge>;
+                      })()}
                     </CardContent>
                   </Card>
                 );
