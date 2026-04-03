@@ -304,6 +304,7 @@ export default function Projetos() {
         instrucao_faturamento_variavel: editForm.instrucao_faturamento_variavel,
         contato_engenheiro: editForm.contato_engenheiro,
         contato_financeiro: editForm.contato_financeiro,
+        billing_type: (editForm as any).billing_type,
       });
       toast.success("Projeto atualizado");
       setSelectedProject(null);
