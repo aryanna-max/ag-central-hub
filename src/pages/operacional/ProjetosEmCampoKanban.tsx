@@ -339,20 +339,23 @@ export default function ProjetosEmCampoKanban() {
                 <p className="p-4 text-sm text-muted-foreground text-center">Nenhum projeto no histórico.</p>
               ) : (
                 <div className="divide-y">
-                  {historyProjects.map((p: any) => (
-                    <div key={p.id} className="flex items-center gap-3 px-4 py-2 text-sm">
-                      <span className="font-mono font-semibold text-primary">{p.codigo || "—"}</span>
-                      <span className="text-muted-foreground">·</span>
-                      <span className="flex-1 truncate">{p.client_id && clientsMap[p.client_id] ? clientsMap[p.client_id] : p.name}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        {EXEC_STATUS_LABELS[p.execution_status] || p.execution_status}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {p.field_started_at && format(new Date(p.field_started_at), "dd/MM")}
-                        {p.field_completed_at && ` → ${format(new Date(p.field_completed_at), "dd/MM")}`}
-                      </span>
-                    </div>
-                  ))}
+                  {historyProjects.map((p: any) => {
+                    const badge = HISTORY_BADGE[p.execution_status] || { label: p.execution_status, className: "bg-muted text-muted-foreground" };
+                    return (
+                      <div key={p.id} className="flex items-center gap-3 px-4 py-2 text-sm">
+                        <span className="font-mono font-semibold text-primary">{p.codigo || "—"}</span>
+                        <span className="text-muted-foreground">·</span>
+                        <span className="flex-1 truncate">{p.client_id && clientsMap[p.client_id] ? clientsMap[p.client_id] : p.name}</span>
+                        <Badge className={badge.className + " text-xs"}>
+                          {badge.label}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {p.field_started_at && format(new Date(p.field_started_at), "dd/MM")}
+                          {p.field_completed_at && ` → ${format(new Date(p.field_completed_at), "dd/MM")}`}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
