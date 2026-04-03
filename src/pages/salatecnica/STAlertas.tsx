@@ -47,19 +47,19 @@ export default function STAlertas() {
   const { data: alerts = [], refetch } = useQuery({
     queryKey: ["st_alerts", filterStatus],
     queryFn: async () => {
-      let q = supabase
+      const base = supabase
         .from("alerts")
-        .select("*")
+        .select("id, tipo, message, title, priority, alert_status, created_at, action_url, scheduled_at, reference_id")
         .eq("recipient", "sala_tecnica")
         .order("created_at", { ascending: false });
 
-      if (filterStatus !== "all") {
-        q = q.eq("alert_status" as any, filterStatus);
-      }
+      const q = filterStatus !== "all"
+        ? (base as any).eq("alert_status", filterStatus)
+        : base;
 
       const { data, error } = await q;
       if (error) throw error;
-      return (data || []) as unknown as AlertRow[];
+      return (data || []) as AlertRow[];
     },
   });
 
