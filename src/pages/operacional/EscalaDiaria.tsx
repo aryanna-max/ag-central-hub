@@ -147,18 +147,85 @@ export default function EscalaDiaria() {
     }
   };
 
+  // Vacation check helper
+  const checkVacation = async (empId: string): Promise<{ onVacation: boolean; start?: string; end?: string; name?: string }> => {
+    const emp = activeEmployees.find((e) => e.id === empId);
+    const { data } = await supabase
+      .from("employee_vacations")
+      .select("start_date, end_date")
+      .eq("employee_id", empId)
+      .lte("start_date", selectedDate)
+      .gte("end_date", selectedDate);
+    if (data && data.length > 0) {
+      return { onVacation: true, start: data[0].start_date, end: data[0].end_date, name: emp?.name };
+    }
+    return { onVacation: false };
+  };
+
+  // Duplicate allocation check
+  const checkDuplicate = async (empId: string): Promise<{ duplicate: boolean; projectCode?: string }> => {
+    const { data: schedules } = await supabase
+      .from("daily_schedules")
+      .select("id")
+      .eq("schedule_date", selectedDate);
+    if (!schedules?.length) return { duplicate: false };
+    const { data: entries } = await supabase
+      .from("daily_schedule_entries")
+      .select("project_id, projects:project_id(codigo)")
+      .eq("employee_id", empId)
+      .in("daily_schedule_id", schedules.map((s) => s.id));
+    if (entries && entries.length > 0) {
+      return { duplicate: true, projectCode: (entries[0] as any).projects?.codigo || "outro projeto" };
+    }
+    return { duplicate: false };
+  };
+
+  const [vacationDialog, setVacationDialog] = useState<{ show: boolean; empIds: { id: string; name: string; start: string; end: string }[]; pending: string[] }>({ show: false, empIds: [], pending: [] });
+  const [duplicateDialog, setDuplicateDialog] = useState<{ show: boolean; empId: string; name: string; projectCode: string } | null>(null);
+
   const handleAddEmployees = async () => {
     if (!addForm.project_id || addForm.employee_ids.length === 0 || !schedule) {
       toast.error("Selecione projeto e pelo menos um funcionário");
       return;
     }
+
+    // Check vacations and duplicates
+    const vacationWarnings: { id: string; name: string; start: string; end: string }[] = [];
+    const duplicateWarnings: { id: string; name: string; projectCode: string }[] = [];
+
+    for (const empId of addForm.employee_ids) {
+      const vac = await checkVacation(empId);
+      if (vac.onVacation) {
+        vacationWarnings.push({ id: empId, name: vac.name || empId, start: vac.start!, end: vac.end! });
+      }
+      const dup = await checkDuplicate(empId);
+      if (dup.duplicate) {
+        const emp = activeEmployees.find((e) => e.id === empId);
+        duplicateWarnings.push({ id: empId, name: emp?.name || empId, projectCode: dup.projectCode! });
+      }
+    }
+
+    if (vacationWarnings.length > 0) {
+      setVacationDialog({ show: true, empIds: vacationWarnings, pending: addForm.employee_ids });
+      return;
+    }
+
+    if (duplicateWarnings.length > 0) {
+      setDuplicateDialog({ show: true, empId: duplicateWarnings[0].id, name: duplicateWarnings[0].name, projectCode: duplicateWarnings[0].projectCode });
+      return;
+    }
+
+    await doAddEmployees(addForm.employee_ids, []);
+  };
+
+  const doAddEmployees = async (empIds: string[], vacationOverrideIds: string[]) => {
+    if (!schedule) return;
     try {
-      // Create a team assignment so it shows in the table
       const { data: assignment, error: assErr } = await supabase
         .from("daily_team_assignments")
         .insert({
           daily_schedule_id: schedule.id,
-          team_id: (teams || [])[0]?.id || schedule.id, // fallback
+          team_id: (teams || [])[0]?.id || schedule.id,
           project_id: addForm.project_id,
           vehicle_id: addForm.vehicle_id || null,
         })
@@ -166,20 +233,19 @@ export default function EscalaDiaria() {
         .single();
 
       if (assErr) {
-        // If no team available, insert entries directly
-        for (let i = 0; i < addForm.employee_ids.length; i++) {
-          const empId = addForm.employee_ids[i];
+        for (let i = 0; i < empIds.length; i++) {
+          const empId = empIds[i];
           await supabase.from("daily_schedule_entries").insert({
             daily_schedule_id: schedule.id,
             employee_id: empId,
             project_id: addForm.project_id,
             vehicle_id: i === 0 && addForm.vehicle_id ? addForm.vehicle_id : null,
+            is_vacation_override: vacationOverrideIds.includes(empId),
           });
         }
       } else {
-        // Insert entries linked to the assignment
-        for (let i = 0; i < addForm.employee_ids.length; i++) {
-          const empId = addForm.employee_ids[i];
+        for (let i = 0; i < empIds.length; i++) {
+          const empId = empIds[i];
           await supabase.from("daily_schedule_entries").insert({
             daily_schedule_id: schedule.id,
             employee_id: empId,
@@ -187,6 +253,7 @@ export default function EscalaDiaria() {
             vehicle_id: i === 0 && addForm.vehicle_id ? addForm.vehicle_id : null,
             team_id: assignment.team_id,
             daily_team_assignment_id: assignment.id,
+            is_vacation_override: vacationOverrideIds.includes(empId),
           });
         }
       }
@@ -195,7 +262,7 @@ export default function EscalaDiaria() {
       setShowAddModal(false);
       setAddForm({ project_id: "", employee_ids: [], vehicle_id: "", benefits: { cafe: false, almoco: false, janta: false, vt: false } });
       setEmpSearch("");
-      toast.success(`${addForm.employee_ids.length} funcionário(s) adicionado(s) à escala!`);
+      toast.success(`${empIds.length} funcionário(s) adicionado(s) à escala!`);
     } catch {
       toast.error("Erro ao adicionar funcionários");
     }
