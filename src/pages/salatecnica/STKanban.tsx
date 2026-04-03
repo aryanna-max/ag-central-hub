@@ -69,7 +69,7 @@ export default function STKanban() {
 
       const [clientsRes, scopeRes, tasksRes, alertsRes] = await Promise.all([
         supabase.from("clients").select("id, name"),
-        supabase.from("project_scope_items").select("project_id, is_completed").in("project_id", ids),
+        supabase.from("project_scope_items").select("project_id, is_completed").in("project_id", ids as any),
         supabase.from("technical_tasks").select("project_id, status").in("project_id", ids),
         supabase.from("alerts").select("reference_id").in("reference_id", ids).eq("alert_status" as any, "ativo"),
       ]);
