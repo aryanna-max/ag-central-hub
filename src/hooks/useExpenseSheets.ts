@@ -27,6 +27,8 @@ export interface ExpenseSheet {
   return_comment: string | null;
   approved_by: string | null;
   approved_at: string | null;
+  approval_token: string | null;
+  approval_comments: any[] | null;
   created_at: string;
   updated_at: string;
 }

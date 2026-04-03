@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { format, parseISO, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, Eye, DollarSign, Clock, CheckCircle } from "lucide-react";
+import { Plus, Eye, DollarSign, Clock, CheckCircle, Send, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +10,10 @@ import { Label } from "@/components/ui/label";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { useExpenseSheets } from "@/hooks/useExpenseSheets";
+import { useExpenseSheets, useUpdateExpenseSheetStatus } from "@/hooks/useExpenseSheets";
 import ExpenseSheetDrawer from "@/components/operacional/ExpenseSheetDrawer";
 import ExpenseSheetDetail from "@/components/operacional/ExpenseSheetDetail";
+import { toast } from "sonner";
 
 const statusCfg: Record<string, { label: string; cls: string }> = {
   rascunho:  { label: "Rascunho",  cls: "bg-gray-500 text-white hover:bg-gray-600" },
@@ -24,6 +25,7 @@ const statusCfg: Record<string, { label: string; cls: string }> = {
 
 export default function DespesasDeCampo() {
   const { data: sheets = [], isLoading } = useExpenseSheets();
+  const updateStatus = useUpdateExpenseSheetStatus();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -52,6 +54,22 @@ export default function DespesasDeCampo() {
   const handleDrawerClose = (open: boolean) => {
     setDrawerOpen(open);
     if (!open) setEditingSheetId(null);
+  };
+
+  const handleSubmit = async (sheetId: string) => {
+    try {
+      await updateStatus.mutateAsync({ id: sheetId, status: "submetido" });
+      toast.success("Folha submetida para aprovação!");
+    } catch {
+      toast.error("Erro ao submeter folha");
+    }
+  };
+
+  const handleCopyLink = (token: string | null) => {
+    if (!token) { toast.error("Token de aprovação não encontrado"); return; }
+    const url = `${window.location.origin}/aprovacao/${token}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Link copiado! Cole no WhatsApp para a Diretoria Comercial aprovar.");
   };
 
   return (
@@ -150,7 +168,17 @@ export default function DespesasDeCampo() {
                       <TableCell>
                         <Badge className={cfg.cls}>{cfg.label}</Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right space-x-1">
+                        {s.status === "rascunho" && (
+                          <Button size="sm" variant="outline" className="text-blue-600 h-7 text-xs" onClick={(e) => { e.stopPropagation(); handleSubmit(s.id); }}>
+                            <Send className="w-3 h-3 mr-1" /> Submeter
+                          </Button>
+                        )}
+                        {["submetido", "devolvido"].includes(s.status) && (
+                          <Button size="sm" variant="outline" className="text-green-600 h-7 text-xs" onClick={(e) => { e.stopPropagation(); handleCopyLink((s as any).approval_token); }}>
+                            <Link2 className="w-3 h-3 mr-1" /> Copiar Link
+                          </Button>
+                        )}
                         <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setSelectedId(s.id); }}>
                           <Eye className="w-4 h-4" />
                         </Button>

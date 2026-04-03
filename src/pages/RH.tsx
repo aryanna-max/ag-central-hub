@@ -8,7 +8,7 @@ import Ferias from "./operacional/Ferias";
 function RHPlaceholder() {
   return (
     <ModulePage
-      title="Pessoas"
+      title="RH"
       subtitle="Funcionários, Documentos e Exames"
       icon={<Users className="w-5 h-5" />}
       sections={[
