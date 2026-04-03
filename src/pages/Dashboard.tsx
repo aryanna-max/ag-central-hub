@@ -126,7 +126,7 @@ export default function Dashboard() {
   );
 
   const emCampoCount = useMemo(
-    () => projects.filter((p) => (p as any).execution_status === "em_campo").length,
+    () => projects.filter((p) => p.execution_status === "em_campo").length,
     [projects],
   );
 
@@ -134,7 +134,7 @@ export default function Dashboard() {
     const limit = new Date();
     limit.setDate(limit.getDate() + 7);
     return projects.filter((p) => {
-      const es = (p as any).execution_status;
+      const es = p.execution_status;
       if (["entregue", "faturamento", "pago"].includes(es)) return false;
       const dd = p.delivery_deadline;
       if (!dd) return false;
@@ -146,8 +146,8 @@ export default function Dashboard() {
     () =>
       projects.filter(
         (p) =>
-          (p as any).execution_status === "entregue" &&
-          ["entrega_nf", "entrega_recibo"].includes((p as any).billing_type || ""),
+          p.execution_status === "entregue" &&
+          ["entrega_nf", "entrega_recibo"].includes(p.billing_type || ""),
       ).length,
     [projects],
   );
@@ -178,14 +178,14 @@ export default function Dashboard() {
   // Filter projects for kanban
   const kanbanProjects = useMemo(() => {
     return projects.filter((p) => {
-      const es = (p as any).execution_status;
+      const es = p.execution_status;
       if (!es || !ALL_COLUMNS.includes(es)) return false;
 
       // KPI filter
       if (kpiFilter === "em_campo" && es !== "em_campo") return false;
       if (kpiFilter === "a_faturar") {
         if (es !== "entregue") return false;
-        if (!["entrega_nf", "entrega_recibo"].includes((p as any).billing_type || "")) return false;
+        if (!["entrega_nf", "entrega_recibo"].includes(p.billing_type || "")) return false;
       }
       if (kpiFilter === "prazo_critico") {
         if (["entregue", "faturamento", "pago"].includes(es)) return false;
@@ -198,7 +198,7 @@ export default function Dashboard() {
       if (kpiFilter === "ativos" && es === "pago") return false;
 
       if (clientFilter !== "all" && p.client_id !== clientFilter) return false;
-      if (billingFilter !== "all" && (p as any).billing_type !== billingFilter) return false;
+      if (billingFilter !== "all" && p.billing_type !== billingFilter) return false;
 
       if (prazoFilter === "vencido") {
         const dd = p.delivery_deadline;
@@ -221,7 +221,7 @@ export default function Dashboard() {
     const map: Record<string, Project[]> = {};
     ALL_COLUMNS.forEach((c) => (map[c] = []));
     kanbanProjects.forEach((p) => {
-      const es = (p as any).execution_status;
+      const es = p.execution_status;
       if (map[es]) map[es].push(p);
     });
     return map;
@@ -537,7 +537,7 @@ function ProjectCard({
   hasAlert: boolean;
   onClick: () => void;
 }) {
-  const p = project as any;
+  const p = project;
   const billingLabel = BILLING_LABELS[p.billing_type] || p.billing_type;
 
   return (
