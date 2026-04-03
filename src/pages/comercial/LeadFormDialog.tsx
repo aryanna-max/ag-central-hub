@@ -30,7 +30,10 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
   const { data: employees = [] } = useEmployees();
   const isEditing = !!lead;
 
-  const responsaveis = employees.filter((e) => e.status !== "desligado");
+  const responsaveis = employees.filter((e) =>
+    e.status !== "desligado" &&
+    (e.name?.toLowerCase().includes("sérgio") || e.name?.toLowerCase().includes("sergio") || e.name?.toLowerCase().includes("ciro"))
+  );
 
   const [form, setForm] = useState<LeadInsert>({
     name: "",
@@ -269,11 +272,34 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
           {/* Common fields */}
           <div className="space-y-2">
             <Label>Serviço / Descrição</Label>
-            <Input
-              value={form.servico || ""}
-              onChange={(e) => setForm((prev) => ({ ...prev, servico: e.target.value }))}
-              placeholder="Tipo de serviço solicitado"
-            />
+            <Select
+              value={form.servico || "none"}
+              onValueChange={(v) => setForm((prev) => ({ ...prev, servico: v === "none" ? "" : v }))}
+            >
+              <SelectTrigger><SelectValue placeholder="Selecione o serviço" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Selecione...</SelectItem>
+                {[
+                  "Levantamento Topográfico Planialtimétrico",
+                  "Levantamento Topográfico Planialtimétrico Cadastral Georreferenciado",
+                  "Levantamento Cadastral Urbano",
+                  "Levantamento Altimétrico",
+                  "Levantamento Planimétrico",
+                  "Levantamento para Projeto de Engenharia",
+                  "Georreferenciamento",
+                  "Cartografia",
+                  "Implantação de Lotes",
+                  "Acompanhamento de Obras",
+                  "Locação de Equipe",
+                  "Locação de Equipe Mensal",
+                  "Masterplan",
+                  "Processamento de Dados",
+                  "Outros",
+                ].map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type LeadOrigin = "indicacao" | "whatsapp" | "site_instagram" | "licitacao" | "cliente_recorrente" | "contrato_ativo" | "outro";
-export type LeadStatus = "novo" | "qualificado" | "proposta_enviada" | "aprovado" | "convertido" | "perdido";
+export type LeadStatus = "novo" | "em_contato" | "qualificado" | "proposta_enviada" | "aprovado" | "convertido" | "perdido";
 export type LeadInteractionType = "nota" | "ligacao" | "email" | "whatsapp" | "reuniao" | "visita";
 
 export const ORIGIN_LABELS: Record<LeadOrigin, string> = {
@@ -17,15 +17,17 @@ export const ORIGIN_LABELS: Record<LeadOrigin, string> = {
 
 export const STATUS_LABELS: Record<LeadStatus, string> = {
   novo: "Novo",
+  em_contato: "Em Contato",
   qualificado: "Qualificado",
   proposta_enviada: "Proposta Enviada",
   aprovado: "Aprovado",
-  convertido: "Aprovado",
+  convertido: "Convertido",
   perdido: "Perdido",
 };
 
 export const STATUS_COLORS: Record<LeadStatus, string> = {
   novo: "bg-gray-100 text-gray-800",
+  em_contato: "bg-cyan-100 text-cyan-800",
   qualificado: "bg-blue-100 text-blue-800",
   proposta_enviada: "bg-yellow-100 text-yellow-800",
   aprovado: "bg-green-100 text-green-800",
@@ -43,7 +45,7 @@ export const ORIGIN_COLORS: Record<LeadOrigin, string> = {
   outro: "bg-gray-100 text-gray-800",
 };
 
-export const LEAD_STATUSES: LeadStatus[] = ["novo", "qualificado", "proposta_enviada", "aprovado", "convertido", "perdido"];
+export const LEAD_STATUSES: LeadStatus[] = ["novo", "em_contato", "qualificado", "proposta_enviada", "aprovado", "convertido", "perdido"];
 
 export interface Lead {
   id: string;

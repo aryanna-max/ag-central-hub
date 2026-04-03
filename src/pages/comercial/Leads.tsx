@@ -28,7 +28,8 @@ import LeadFormDialog from "./LeadFormDialog";
 import LeadDetailDialog from "./LeadDetailDialog";
 
 const ALLOWED_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
-  novo: ["qualificado", "perdido"],
+  novo: ["em_contato", "qualificado", "perdido"],
+  em_contato: ["qualificado", "perdido"],
   qualificado: ["proposta_enviada", "perdido"],
   proposta_enviada: ["aprovado", "perdido"],
   aprovado: ["convertido", "perdido"],
@@ -241,6 +242,13 @@ export default function Leads() {
                   <TableCell className="text-xs text-muted-foreground">
                     {format(new Date(lead.created_at), "dd/MM/yy", { locale: ptBR })}
                   </TableCell>
+                  {lead.status === "aprovado" && (
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Button size="sm" variant="outline" className="h-7 text-xs text-green-700" onClick={() => setConversionLead(lead)}>
+                        Converter
+                      </Button>
+                    </TableCell>
+                  )}
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

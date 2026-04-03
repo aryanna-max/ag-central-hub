@@ -318,11 +318,34 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
                     <p className="text-xs font-semibold text-muted-foreground uppercase">Nova Proposta</p>
                     <div className="space-y-2">
                       <Label className="text-xs">Descrição do serviço *</Label>
-                      <Input
-                        value={proposalForm.service}
-                        onChange={(e) => setProposalForm((p) => ({ ...p, service: e.target.value }))}
-                        placeholder="Tipo de serviço"
-                      />
+                      <Select
+                        value={proposalForm.service || "none"}
+                        onValueChange={(v) => setProposalForm((p) => ({ ...p, service: v === "none" ? "" : v }))}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Selecione o serviço" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Selecione...</SelectItem>
+                          {[
+                            "Levantamento Topográfico Planialtimétrico",
+                            "Levantamento Topográfico Planialtimétrico Cadastral Georreferenciado",
+                            "Levantamento Cadastral Urbano",
+                            "Levantamento Altimétrico",
+                            "Levantamento Planimétrico",
+                            "Levantamento para Projeto de Engenharia",
+                            "Georreferenciamento",
+                            "Cartografia",
+                            "Implantação de Lotes",
+                            "Acompanhamento de Obras",
+                            "Locação de Equipe",
+                            "Locação de Equipe Mensal",
+                            "Masterplan",
+                            "Processamento de Dados",
+                            "Outros",
+                          ].map((s) => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
@@ -383,7 +406,10 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
                           <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">Nenhum</SelectItem>
-                            {employees.filter((e) => e.status !== "desligado").map((e) => (
+                            {employees.filter((e) =>
+                              e.status !== "desligado" &&
+                              (e.name?.toLowerCase().includes("sérgio") || e.name?.toLowerCase().includes("sergio") || e.name?.toLowerCase().includes("ciro"))
+                            ).map((e) => (
                               <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
                             ))}
                           </SelectContent>
