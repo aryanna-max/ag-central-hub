@@ -184,7 +184,7 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground">Leads no Funil</p>
                 <p className="text-3xl font-bold mt-1">{activeLeads.length}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {leads.filter(l => l.status === "convertido").length} convertidos
+                  {leads.filter(l => ["aprovado", "convertido"].includes(l.status)).length} aprovados
                 </p>
               </div>
               <div className="p-2.5 rounded-lg bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-secondary-foreground transition-colors">
