@@ -636,7 +636,7 @@ export default function EscalaDiaria() {
 
             {/* Favorite group shortcut */}
             <div className="flex items-center gap-2 flex-wrap">
-              <Label className="text-sm text-muted-foreground">Grupo favorito (atalho):</Label>
+              <Label className="text-sm text-muted-foreground">Grupo Rápido (atalho):</Label>
               <Select onValueChange={handleLoadGroup}>
                 <SelectTrigger className="w-52"><SelectValue placeholder="Carregar grupo..." /></SelectTrigger>
                 <SelectContent>
