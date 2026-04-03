@@ -40,17 +40,19 @@ import { useAuth } from "@/contexts/AuthContext";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
 
-function useProjectsList() {
+function useProjectsList(showAll = false) {
   return useQuery({
-    queryKey: ["projects-active"],
+    queryKey: ["projects-operational", showAll],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("projects")
         .select("*")
         .eq("is_active", true)
-        .eq("show_in_operational", true)
-        .in("execution_status", ["aguardando_campo", "em_campo"] as any)
-        .order("name");
+        .eq("show_in_operational", true);
+      if (!showAll) {
+        query = query.in("execution_status", ["aguardando_campo", "em_campo"] as any);
+      }
+      const { data, error } = await query.order("name");
       if (error) throw error;
       return data;
     },
@@ -74,6 +76,7 @@ export default function EscalaDiaria() {
     benefits: { cafe: false, almoco: false, janta: false, vt: false },
   });
   const [empSearch, setEmpSearch] = useState("");
+  const [showAllProjects, setShowAllProjects] = useState(false);
   const [showSaveGroup, setShowSaveGroup] = useState(false);
   const [groupName, setGroupName] = useState("");
 
@@ -95,7 +98,7 @@ export default function EscalaDiaria() {
     },
   });
 
-  const { data: obrasData } = useProjectsList();
+  const { data: obrasData } = useProjectsList(showAllProjects);
   const createSchedule = useCreateDailySchedule();
   const addAssignment = useAddTeamAssignment();
   const removeAssignment = useRemoveTeamAssignment();
@@ -700,6 +703,14 @@ export default function EscalaDiaria() {
                   ))}
                 </SelectContent>
               </Select>
+              <label className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground cursor-pointer">
+                <Checkbox
+                  checked={showAllProjects}
+                  onCheckedChange={(checked) => setShowAllProjects(!!checked)}
+                  className="h-3.5 w-3.5"
+                />
+                Mostrar todos os projetos ativos
+              </label>
             </div>
 
             {/* Favorite group shortcut */}

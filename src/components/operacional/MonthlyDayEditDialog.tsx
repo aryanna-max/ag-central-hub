@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AlertTriangle, Car, Plus, Trash2, Users } from "lucide-react";
 import { useTeams } from "@/hooks/useTeams";
 import { useActiveVehicles } from "@/hooks/useVehicles";
@@ -55,14 +56,17 @@ export default function MonthlyDayEditDialog({
   const [memberAdditions, setMemberAdditions] = useState<string[]>([]);
   const [memberRemovals, setMemberRemovals] = useState<string[]>([]);
   const [addingMember, setAddingMember] = useState("");
+  const [showAllProjects, setShowAllProjects] = useState(false);
 
   const { data: teams } = useTeams();
   const { data: vehicles } = useActiveVehicles();
   const { data: allEmployees } = useEmployees();
   const { data: projectsList } = useQuery({
-    queryKey: ["projects-active"],
+    queryKey: ["projects-operational", showAllProjects],
     queryFn: async () => {
-      const { data, error } = await supabase.from("projects").select("*").eq("is_active", true).eq("show_in_operational", true).in("execution_status", ["aguardando_campo", "em_campo"] as any).order("name");
+      let query = supabase.from("projects").select("*").eq("is_active", true).eq("show_in_operational", true);
+      if (!showAllProjects) { query = query.in("execution_status", ["aguardando_campo", "em_campo"] as any); }
+      const { data, error } = await query.order("name");
       if (error) throw error;
       return data;
     },
@@ -224,6 +228,14 @@ export default function MonthlyDayEditDialog({
                   ))}
                 </SelectContent>
               </Select>
+              <label className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground cursor-pointer">
+                <Checkbox
+                  checked={showAllProjects}
+                  onCheckedChange={(checked) => setShowAllProjects(!!checked)}
+                  className="h-3.5 w-3.5"
+                />
+                Mostrar todos os projetos ativos
+              </label>
             </div>
 
             {/* Veículo */}
