@@ -32,9 +32,9 @@ interface ClientMap {
 }
 
 const COLUMNS = [
-  { key: "aguardando_campo", label: "Aguardando campo", color: "bg-muted" },
-  { key: "em_campo", label: "Em campo", color: "bg-emerald-50" },
-  { key: "campo_concluido", label: "Campo concluído", color: "bg-blue-50" },
+  { key: "aguardando_campo", label: "Aguardando Campo", color: "bg-muted" },
+  { key: "em_campo", label: "Em Campo", color: "bg-emerald-50" },
+  { key: "campo_concluido", label: "Campo Concluído", color: "bg-blue-50" },
 ] as const;
 
 const HISTORY_BADGE: Record<string, { label: string; className: string }> = {

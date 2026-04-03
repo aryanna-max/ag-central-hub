@@ -23,9 +23,9 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
 const EXEC_LABELS: Record<string, string> = {
-  aguardando_campo: "Aguardando campo", em_campo: "Em campo",
-  campo_concluido: "Campo concluído", aguardando_processamento: "Aguardando proc.",
-  em_processamento: "Em processamento", revisao: "Em revisão",
+  aguardando_campo: "Aguardando Campo", em_campo: "Em Campo",
+  campo_concluido: "Campo Concluído", aguardando_processamento: "Aguardando Processamento",
+  em_processamento: "Em Processamento", revisao: "Revisão",
   aprovado: "Aprovado", entregue: "Entregue", faturamento: "Faturamento", pago: "Pago",
 };
 const EXEC_COLORS: Record<string, string> = {
@@ -142,7 +142,7 @@ export default function ProjetoHistorico() {
                   {EXEC_LABELS[p.execution_status] || p.execution_status}
                 </Badge>
               )}
-              <Badge variant="secondary">{STATUS_LABELS[p.status] || p.status}</Badge>
+              <Badge variant="secondary" className="text-[10px] opacity-60">{STATUS_LABELS[p.status] || p.status}</Badge>
             </div>
             <h1 className="text-2xl font-bold mt-2">{p.name}</h1>
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">

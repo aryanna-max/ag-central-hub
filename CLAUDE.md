@@ -369,6 +369,19 @@ Arquivos na pasta `Sistema AG/`:
 | 4 | Frequência relatórios automáticos (campo, veículos, ausências, férias) | Scripts | Email alerts não configurados |
 | 5 | Categorias e centros de custo Meu Dinheiro | Alcione | Financeiro sem estrutura |
 | 6 | Gran Alpes — verificar se está nos leads e qual o status | Leads no sistema | Cadastro cliente pendente |
+| 7 | Integração NF — hoje gerada fora do sistema. Verificar APIs futuras (Enotas, Nuvem Fiscal, Focus NFe) para emissão automática | Diretoria | Financeiro — fase futura |
+
+## Decisões fechadas (03/04/2026)
+
+| # | Decisão | Resolução |
+|---|---|---|
+| 14 | Oportunidades vs Leads | **Oportunidades eliminado** — usar apenas Leads com funil completo |
+| 15 | Status duplo (status + execution_status) | **Simplificar UI** — Financeiro e Operacional veem só execution_status. project_status fica interno |
+| 16 | NF gerada fora ou dentro do sistema | **Fora por enquanto** — sistema só registra. Avaliar integração futura |
+| 17 | Sérgio e Ciro | **Diretores Comerciais** — aprovam folhas de despesa, gerenciam comercial |
+| 18 | BRK no Operacional | **show_in_operational** — Gerente Operacional vê só BRK Obras e BRK Projetos |
+| 19 | Escala mensal obrigatória | **Opcional** — é facilitador de pré-preenchimento, não obrigação |
+| 20 | Confirmação de escala | **Eliminada** — só existe fechamento (is_closed). Véspera=montar, dia=ajustar+fechar |
 
 ## Servidor — estado atual (02/04/2026)
 
