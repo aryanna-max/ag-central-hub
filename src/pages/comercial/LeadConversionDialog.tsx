@@ -395,6 +395,20 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
             </div>
           </div>
 
+          <div className="space-y-1">
+            <Label>Tipo de faturamento *</Label>
+            <Select value={billingType} onValueChange={setBillingType}>
+              <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="entrega_nf">NF na entrega</SelectItem>
+                <SelectItem value="entrega_recibo">Recibo na entrega</SelectItem>
+                <SelectItem value="medicao_mensal">Por medição mensal</SelectItem>
+                <SelectItem value="misto">Misto</SelectItem>
+                <SelectItem value="sem_documento">Sem documento</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Código do projeto</Label>
