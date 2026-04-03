@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FolderKanban, GripVertical, FileText, Plus, Wrench } from "lucide-react";
+import { FolderKanban, GripVertical, FileText, Plus, Wrench, Bell, ChevronRight, Filter } from "lucide-react";
 import ProjectFormDialog from "./projetos/ProjectFormDialog";
 import { useProjects, useUpdateProject, type Project, type ProjectStatus } from "@/hooks/useProjects";
 import { useProjectMeasurements } from "@/hooks/useMeasurements";
@@ -19,17 +19,89 @@ import { useClients } from "@/hooks/useClients";
 import { useProjectServices } from "@/hooks/useProjectServices";
 import MeasurementFormDialog from "@/components/operacional/MeasurementFormDialog";
 import ProjectServicesSection from "@/components/projetos/ProjectServicesSection";
+import DeadlineBadge from "@/components/DeadlineBadge";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const COLUMNS: { key: ProjectStatus; label: string; color: string }[] = [
-  { key: "planejamento", label: "Planejamento", color: "bg-blue-500" },
-  { key: "execucao", label: "Execução", color: "bg-amber-500" },
-  { key: "entrega", label: "Entrega", color: "bg-purple-500" },
-  { key: "faturamento", label: "Faturamento", color: "bg-emerald-500" },
-  { key: "concluido", label: "Concluído", color: "bg-muted-foreground" },
-  { key: "pausado", label: "Pausado", color: "bg-rose-500" },
+// ── Execution status groups ──
+type ExecStatus = string;
+
+interface ColumnDef {
+  key: ExecStatus;
+  label: string;
+}
+
+interface GroupDef {
+  key: string;
+  label: string;
+  emoji: string;
+  borderColor: string;
+  columns: ColumnDef[];
+}
+
+const GROUPS: GroupDef[] = [
+  {
+    key: "campo",
+    label: "Campo",
+    emoji: "🏕️",
+    borderColor: "border-[#1A9E7C]",
+    columns: [
+      { key: "aguardando_campo", label: "Aguardando campo" },
+      { key: "em_campo", label: "Em campo" },
+      { key: "campo_concluido", label: "Campo concluído" },
+    ],
+  },
+  {
+    key: "prancheta",
+    label: "Prancheta",
+    emoji: "📐",
+    borderColor: "border-[#2D6E8E]",
+    columns: [
+      { key: "aguardando_processamento", label: "Aguardando proc." },
+      { key: "em_processamento", label: "Em processamento" },
+      { key: "revisao", label: "Em revisão" },
+      { key: "aprovado", label: "Aprovado" },
+    ],
+  },
+  {
+    key: "financeiro",
+    label: "Financeiro",
+    emoji: "💰",
+    borderColor: "border-[#f97316]",
+    columns: [
+      { key: "entregue", label: "Entregue" },
+      { key: "faturamento", label: "Faturamento" },
+      { key: "pago", label: "Pago" },
+    ],
+  },
 ];
 
+const ALL_EXEC_STATUSES = GROUPS.flatMap((g) => g.columns.map((c) => c.key));
+
+const BILLING_LABELS: Record<string, { label: string; className: string }> = {
+  entrega_nf: { label: "NF na entrega", className: "bg-emerald-100 text-emerald-800" },
+  entrega_recibo: { label: "Recibo na entrega", className: "bg-emerald-100 text-emerald-800" },
+  medicao_mensal: { label: "Por medição", className: "bg-blue-100 text-blue-800" },
+  misto: { label: "Misto", className: "bg-amber-100 text-amber-800" },
+  sem_documento: { label: "Sem documento", className: "bg-muted text-muted-foreground" },
+};
+
+const EXEC_STATUS_BADGE: Record<string, string> = {
+  aguardando_campo: "bg-muted text-muted-foreground",
+  em_campo: "bg-emerald-100 text-emerald-800",
+  campo_concluido: "bg-blue-100 text-blue-800",
+  aguardando_processamento: "bg-slate-100 text-slate-700",
+  em_processamento: "bg-blue-100 text-blue-800",
+  revisao: "bg-purple-100 text-purple-800",
+  aprovado: "bg-emerald-100 text-emerald-800",
+  entregue: "bg-green-100 text-green-800",
+  faturamento: "bg-amber-100 text-amber-800",
+  pago: "bg-emerald-200 text-emerald-900",
+};
+
+// ── Legacy project_status columns (keep for side panel) ──
 const STATUS_BADGE_COLORS: Record<ProjectStatus, string> = {
   planejamento: "bg-blue-100 text-blue-800",
   execucao: "bg-amber-100 text-amber-800",
@@ -47,13 +119,12 @@ const MEASUREMENT_STATUS: Record<string, { label: string; className: string }> =
   cancelado: { label: "Cancelado", className: "bg-red-600 text-white" },
 };
 
-function ProjectMeasurementsTab({
-  projectId,
-  contractValue,
-}: {
-  projectId: string;
-  contractValue: number | null;
-}) {
+function formatCurrency(value: number | null) {
+  if (value == null) return "—";
+  return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+}
+
+function ProjectMeasurementsTab({ projectId, contractValue }: { projectId: string; contractValue: number | null }) {
   const { data: filtered = [], isLoading } = useProjectMeasurements(projectId);
   const [showNewMeasurement, setShowNewMeasurement] = useState(false);
 
@@ -65,9 +136,7 @@ function ProjectMeasurementsTab({
 
   const pctContrato = contractValue ? ((totals.totalNF / contractValue) * 100).toFixed(1) : null;
 
-  if (isLoading) {
-    return <p className="py-6 text-center text-muted-foreground text-sm">Carregando...</p>;
-  }
+  if (isLoading) return <p className="py-6 text-center text-muted-foreground text-sm">Carregando...</p>;
 
   return (
     <div className="space-y-3 mt-2">
@@ -77,7 +146,6 @@ function ProjectMeasurementsTab({
           <Plus className="w-3.5 h-3.5" /> Nova Medição
         </Button>
       </div>
-
       {!filtered.length ? (
         <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
           <FileText className="w-8 h-8" />
@@ -89,7 +157,6 @@ function ProjectMeasurementsTab({
             <TableRow>
               <TableHead>Código BM</TableHead>
               <TableHead>Período</TableHead>
-              <TableHead>Equipe</TableHead>
               <TableHead className="text-right">Valor NF</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
@@ -101,29 +168,26 @@ function ProjectMeasurementsTab({
                 <TableRow key={m.id}>
                   <TableCell className="font-mono text-xs font-medium">{m.codigo_bm}</TableCell>
                   <TableCell className="text-xs">{m.period_start} a {m.period_end}</TableCell>
-                  <TableCell className="text-xs">{m.project_name || "—"}</TableCell>
                   <TableCell className="text-sm font-semibold text-right">{formatCurrency(m.valor_nf)}</TableCell>
-                  <TableCell>
-                    <Badge className={st.className}>{st.label}</Badge>
-                  </TableCell>
+                  <TableCell><Badge className={st.className}>{st.label}</Badge></TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
           <tfoot>
             <tr className="border-t bg-muted/40">
-              <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-foreground">Total Medido</td>
+              <td colSpan={2} className="px-4 py-2 text-xs font-semibold text-foreground">Total Medido</td>
               <td className="px-4 py-2 text-sm font-bold text-right text-foreground">{formatCurrency(totals.totalBruto)}</td>
               <td />
             </tr>
             <tr className="bg-muted/40">
-              <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-foreground">Total NF</td>
+              <td colSpan={2} className="px-4 py-2 text-xs font-semibold text-foreground">Total NF</td>
               <td className="px-4 py-2 text-sm font-bold text-right text-foreground">{formatCurrency(totals.totalNF)}</td>
               <td />
             </tr>
             {contractValue != null && (
               <tr className="bg-muted/40 border-t">
-                <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-foreground">
+                <td colSpan={2} className="px-4 py-2 text-xs font-semibold text-foreground">
                   Acumulado do Contrato
                   <span className="ml-1 text-muted-foreground font-normal">({formatCurrency(contractValue)})</span>
                 </td>
@@ -134,45 +198,86 @@ function ProjectMeasurementsTab({
           </tfoot>
         </Table>
       )}
-
-      <MeasurementFormDialog
-        open={showNewMeasurement}
-        onOpenChange={setShowNewMeasurement}
-        defaultProjectId={projectId}
-      />
+      <MeasurementFormDialog open={showNewMeasurement} onOpenChange={setShowNewMeasurement} defaultProjectId={projectId} />
     </div>
   );
-}
-
-function formatCurrency(value: number | null) {
-  if (value == null) return "—";
-  return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
 }
 
 export default function Projetos() {
   const { data: projects = [], isLoading } = useProjects();
   const { data: employees = [] } = useEmployees();
   const { data: clients = [] } = useClients();
+  const { role } = useAuth();
   const updateProject = useUpdateProject();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [editForm, setEditForm] = useState<Partial<Project>>({});
-  const [draggedId, setDraggedId] = useState<string | null>(null);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const [visibleGroups, setVisibleGroups] = useState<Record<string, boolean>>({
+    campo: true, prancheta: true, financeiro: true,
+  });
+  const [collapsedCols, setCollapsedCols] = useState<Set<string>>(new Set());
+  const [filterClient, setFilterClient] = useState("all");
+  const [filterBilling, setFilterBilling] = useState("all");
+  const [filterDeadline, setFilterDeadline] = useState("all");
 
+  const canSeeValues = ["master", "diretor"].includes(role ?? "");
+
+  // Active alerts per project
+  const { data: alertsByProject = {} } = useQuery({
+    queryKey: ["project-active-alerts"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("alerts")
+        .select("reference_id")
+        .eq("alert_status", "ativo")
+        .eq("reference_type", "project");
+      const map: Record<string, number> = {};
+      (data || []).forEach((a: any) => {
+        if (a.reference_id) map[a.reference_id] = (map[a.reference_id] || 0) + 1;
+      });
+      return map;
+    },
+  });
+
+  // Group projects by execution_status
   const grouped = useMemo(() => {
-    const map: Record<ProjectStatus, Project[]> = {
-      planejamento: [],
-      execucao: [],
-      entrega: [],
-      faturamento: [],
-      concluido: [],
-      pausado: [],
-    };
+    const map: Record<string, Project[]> = {};
+    ALL_EXEC_STATUSES.forEach((s) => (map[s] = []));
     projects.forEach((p) => {
-      if (map[p.status]) map[p.status].push(p);
+      const es = (p as any).execution_status || "aguardando_campo";
+      if (map[es]) {
+        // Apply filters
+        if (filterClient !== "all" && p.client_id !== filterClient) return;
+        if (filterBilling !== "all" && (p as any).billing_type !== filterBilling) return;
+        if (filterDeadline !== "all") {
+          const dl = (p as any).delivery_deadline;
+          if (filterDeadline === "sem_prazo" && dl) return;
+          if (filterDeadline === "vencido" && (!dl || new Date(dl) >= new Date())) return;
+          if (filterDeadline === "critico") {
+            if (!dl) return;
+            const days = Math.ceil((new Date(dl).getTime() - Date.now()) / 86400000);
+            if (days < 0 || days > 7) return;
+          }
+          if (filterDeadline === "ok") {
+            if (!dl) return;
+            const days = Math.ceil((new Date(dl).getTime() - Date.now()) / 86400000);
+            if (days <= 7) return;
+          }
+        }
+        map[es].push(p);
+      }
     });
     return map;
-  }, [projects]);
+  }, [projects, filterClient, filterBilling, filterDeadline]);
+
+  const getClientDisplay = (project: Project) => {
+    if (project.clients) return project.clients.name;
+    if (project.client_id) {
+      const cl = clients.find((c) => c.id === project.client_id);
+      if (cl) return cl.name;
+    }
+    return null;
+  };
 
   const openSheet = (project: Project) => {
     setSelectedProject(project);
@@ -186,21 +291,15 @@ export default function Projetos() {
         id: selectedProject.id,
         name: editForm.name,
         client_id: editForm.client_id,
-        client: editForm.client,
-        client_cnpj: editForm.client_cnpj,
         service: editForm.service,
         contract_value: editForm.contract_value,
-        responsible: editForm.responsible,
         responsible_id: editForm.responsible_id,
         notes: editForm.notes,
         start_date: editForm.start_date,
         end_date: editForm.end_date,
         empresa_faturadora: editForm.empresa_faturadora,
         tipo_documento: editForm.tipo_documento,
-        cnpj: editForm.cnpj,
-        empresa_emissora: editForm.empresa_emissora,
         conta_bancaria: editForm.conta_bancaria,
-        modalidade_faturamento: editForm.modalidade_faturamento,
         referencia_contrato: editForm.referencia_contrato,
         instrucao_faturamento_variavel: editForm.instrucao_faturamento_variavel,
         contato_engenheiro: editForm.contato_engenheiro,
@@ -213,130 +312,194 @@ export default function Projetos() {
     }
   };
 
-  const handleDragStart = (e: React.DragEvent, projectId: string) => {
-    e.dataTransfer.effectAllowed = "move";
-    setDraggedId(projectId);
+  const toggleGroup = (key: string) => setVisibleGroups((v) => ({ ...v, [key]: !v[key] }));
+  const toggleCol = (key: string) => {
+    setCollapsedCols((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
+  // Auto-collapse empty columns
+  const effectiveCollapsed = useMemo(() => {
+    const set = new Set(collapsedCols);
+    ALL_EXEC_STATUSES.forEach((s) => {
+      if ((grouped[s] || []).length === 0 && !collapsedCols.has(s)) set.add(s);
+    });
+    // If user explicitly expanded, remove
+    collapsedCols.forEach((s) => {
+      if (!set.has(s)) set.delete(s);
+    });
+    return set;
+  }, [grouped, collapsedCols]);
 
-  const handleDrop = async (e: React.DragEvent, targetStatus: ProjectStatus) => {
-    e.preventDefault();
-    if (!draggedId) return;
-    const project = projects.find((p) => p.id === draggedId);
-    if (!project || project.status === targetStatus) {
-      setDraggedId(null);
-      return;
-    }
-    try {
-      await updateProject.mutateAsync({ id: draggedId, status: targetStatus });
-      toast.success(`Movido para ${COLUMNS.find((c) => c.key === targetStatus)?.label}`);
-    } catch {
-      toast.error("Erro ao mover projeto");
-    }
-    setDraggedId(null);
-  };
-
-  // Get client name for display — prefer JOIN via client_id
-  const getClientDisplay = (project: Project) => {
-    if (project.clients) return project.clients.name;
-    if (project.client_id) {
-      const cl = clients.find((c) => c.id === project.client_id);
-      if (cl) return cl.name;
-    }
-    if (project.client) return project.client;
-    if (project.client_name) return project.client_name;
-    return null;
-  };
+  const activeClients = useMemo(() => {
+    const ids = new Set(projects.map((p) => p.client_id).filter(Boolean));
+    return clients.filter((c) => ids.has(c.id));
+  }, [projects, clients]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <FolderKanban className="w-6 h-6 text-primary" /> Projetos
           </h1>
-          <p className="text-muted-foreground text-sm">Gestão de projetos criados a partir de leads convertidos</p>
+          <p className="text-muted-foreground text-sm">Kanban por status de execução</p>
         </div>
         <Button onClick={() => setNewProjectOpen(true)}>
           <Plus className="w-4 h-4 mr-2" /> Novo Projeto
         </Button>
       </div>
 
+      {/* Group toggles */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {GROUPS.map((g) => (
+          <Button
+            key={g.key}
+            variant={visibleGroups[g.key] ? "default" : "outline"}
+            size="sm"
+            onClick={() => toggleGroup(g.key)}
+            className="gap-1.5"
+          >
+            {g.emoji} {g.label} {visibleGroups[g.key] ? "✓" : ""}
+          </Button>
+        ))}
+        <Separator orientation="vertical" className="h-6 mx-2" />
+        {/* Filters */}
+        <Filter className="w-4 h-4 text-muted-foreground" />
+        <Select value={filterClient} onValueChange={setFilterClient}>
+          <SelectTrigger className="w-40 h-8 text-xs"><SelectValue placeholder="Cliente" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos clientes</SelectItem>
+            {activeClients.map((c) => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterDeadline} onValueChange={setFilterDeadline}>
+          <SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder="Prazo" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos prazos</SelectItem>
+            <SelectItem value="vencido">Vencido</SelectItem>
+            <SelectItem value="critico">Crítico (≤7d)</SelectItem>
+            <SelectItem value="ok">OK</SelectItem>
+            <SelectItem value="sem_prazo">Sem prazo</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filterBilling} onValueChange={setFilterBilling}>
+          <SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder="Faturamento" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos tipos</SelectItem>
+            <SelectItem value="entrega_nf">NF na entrega</SelectItem>
+            <SelectItem value="entrega_recibo">Recibo</SelectItem>
+            <SelectItem value="medicao_mensal">Medição mensal</SelectItem>
+            <SelectItem value="misto">Misto</SelectItem>
+            <SelectItem value="sem_documento">Sem documento</SelectItem>
+          </SelectContent>
+        </Select>
+        {(filterClient !== "all" || filterBilling !== "all" || filterDeadline !== "all") && (
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => {
+            setFilterClient("all"); setFilterBilling("all"); setFilterDeadline("all");
+          }}>Limpar</Button>
+        )}
+      </div>
+
       {isLoading ? (
         <p className="text-center text-muted-foreground py-10">Carregando...</p>
       ) : (
-        <div className="grid grid-cols-5 gap-4 min-h-[60vh]">
-          {COLUMNS.map((col) => (
-            <div
-              key={col.key}
-              className="flex flex-col"
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, col.key)}
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <div className={`w-2.5 h-2.5 rounded-full ${col.color}`} />
-                <span className="text-sm font-semibold text-foreground">{col.label}</span>
-                <Badge variant="outline" className="text-xs ml-auto">
-                  {grouped[col.key].length}
+        <div className="space-y-6">
+          {GROUPS.filter((g) => visibleGroups[g.key]).map((group) => (
+            <div key={group.key}>
+              <div className={`flex items-center gap-2 mb-2 pb-1 border-b-2 ${group.borderColor}`}>
+                <span className="text-lg">{group.emoji}</span>
+                <span className="font-semibold text-sm">{group.label}</span>
+                <Badge variant="outline" className="text-xs ml-1">
+                  {group.columns.reduce((sum, c) => sum + (grouped[c.key]?.length || 0), 0)}
                 </Badge>
               </div>
+              <div className="flex gap-2 overflow-x-auto">
+                {group.columns.map((col) => {
+                  const items = grouped[col.key] || [];
+                  const collapsed = items.length === 0 && !collapsedCols.has(col.key);
 
-              <div className="flex-1 space-y-2 min-h-[100px] rounded-lg bg-muted/30 p-2">
-                {grouped[col.key].map((project) => (
-                  <Card
-                    key={project.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, project.id)}
-                    onClick={() => openSheet(project)}
-                    className={`cursor-pointer hover:shadow-md transition-shadow border ${
-                      draggedId === project.id ? "opacity-40" : ""
-                    }`}
-                  >
-                    <CardContent className="p-3 space-y-2">
-                      {project.codigo && (
-                        <p className="text-[10px] font-mono font-bold text-primary">{project.codigo}</p>
-                      )}
-                      <div className="flex items-start gap-1.5">
-                        <GripVertical className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0 cursor-grab" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{project.name}</p>
-                          {getClientDisplay(project) ? (
-                            <p className="text-xs text-muted-foreground truncate">{getClientDisplay(project)}</p>
-                          ) : (
-                            <Badge className="bg-amber-100 text-amber-800 text-[10px]">Cliente não vinculado</Badge>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-xs font-semibold text-foreground">
-                          {formatCurrency(project.contract_value)}
+                  if (collapsed) {
+                    return (
+                      <div
+                        key={col.key}
+                        className="flex-shrink-0 w-10 rounded-lg bg-muted/30 border flex flex-col items-center py-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => toggleCol(col.key)}
+                      >
+                        <span className="text-[10px] font-medium text-muted-foreground [writing-mode:vertical-lr] rotate-180">
+                          {col.label}
                         </span>
-                        {project.responsible && (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                            {project.responsible}
-                          </Badge>
+                        <Badge variant="outline" className="text-[9px] mt-2 px-1">{items.length}</Badge>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={col.key} className="flex-1 min-w-[200px] max-w-[280px]">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <span className="text-xs font-semibold text-foreground">{col.label}</span>
+                        <Badge variant="outline" className="text-[10px]">{items.length}</Badge>
+                      </div>
+                      <div className="space-y-2 min-h-[80px] rounded-lg bg-muted/20 p-1.5">
+                        {items.map((project) => {
+                          const clientName = getClientDisplay(project);
+                          const bt = BILLING_LABELS[(project as any).billing_type] || null;
+                          const hasAlert = alertsByProject[project.id];
+                          return (
+                            <Card
+                              key={project.id}
+                              onClick={() => openSheet(project)}
+                              className="cursor-pointer hover:shadow-md transition-shadow border"
+                            >
+                              <CardContent className="p-2.5 space-y-1.5">
+                                <div className="flex items-start justify-between gap-1">
+                                  <div className="min-w-0 flex-1">
+                                    {project.codigo && (
+                                      <p className="text-[10px] font-mono font-bold text-primary">{project.codigo}</p>
+                                    )}
+                                    <p className="text-sm font-medium text-foreground truncate">{project.name}</p>
+                                    {clientName && <p className="text-xs text-muted-foreground truncate">{clientName}</p>}
+                                  </div>
+                                  {hasAlert && <Bell className="w-3.5 h-3.5 text-destructive flex-shrink-0 mt-0.5" />}
+                                </div>
+                                <DeadlineBadge
+                                  deadline={(project as any).delivery_deadline ? new Date((project as any).delivery_deadline) : null}
+                                  started_at={(project as any).field_started_at ? new Date((project as any).field_started_at) : null}
+                                  estimated_days={(project as any).delivery_days_estimated}
+                                  completed_at={(project as any).delivered_at ? new Date((project as any).delivered_at) : null}
+                                  label="Entrega"
+                                />
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  {bt && <Badge className={bt.className + " text-[10px]"}>{bt.label}</Badge>}
+                                  {canSeeValues && project.contract_value != null && (
+                                    <span className="text-[10px] font-semibold text-foreground">
+                                      {formatCurrency(project.contract_value)}
+                                    </span>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                        {items.length === 0 && (
+                          <p className="text-[10px] text-muted-foreground text-center py-3">Vazio</p>
                         )}
                       </div>
-                      {project.has_multiple_services && (
-                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                          <Wrench className="w-3 h-3" />
-                          <span>Múltiplos serviços</span>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Side panel */}
+      {/* Side panel - keep existing detail logic */}
       <Sheet open={!!selectedProject} onOpenChange={(o) => !o && setSelectedProject(null)}>
         <SheetContent className="sm:max-w-md overflow-y-auto">
           <SheetHeader>
@@ -362,10 +525,7 @@ export default function Projetos() {
                 <div className="space-y-4 mt-2">
                   <div>
                     <Label>Nome do Projeto</Label>
-                    <Input
-                      value={editForm.name || ""}
-                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                    />
+                    <Input value={editForm.name || ""} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
                   </div>
                   <div>
                     <Label>Cliente</Label>
@@ -373,157 +533,79 @@ export default function Projetos() {
                       value={editForm.client_id || ""}
                       onValueChange={(val) => {
                         const cl = clients.find((c) => c.id === val);
-                        setEditForm({
-                          ...editForm,
-                          client_id: val,
-                          client: cl?.name || null,
-                          client_name: cl?.name || null,
-                          client_cnpj: cl?.cnpj || editForm.client_cnpj,
-                        });
+                        setEditForm({ ...editForm, client_id: val });
                       }}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecionar cliente" />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Selecionar cliente" /></SelectTrigger>
                       <SelectContent>
                         {clients.filter(c => c.is_active).map((c) => (
                           <SelectItem key={c.id} value={c.id}>{c.name}{c.cnpj ? ` — ${c.cnpj}` : ""}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    {!editForm.client_id && (
-                      <Badge className="bg-amber-100 text-amber-800 text-[10px] mt-1">Cliente não vinculado</Badge>
-                    )}
-                  </div>
-                  <div>
-                    <Label>CNPJ do Cliente</Label>
-                    <Input
-                      value={editForm.client_cnpj || ""}
-                      onChange={(e) => setEditForm({ ...editForm, client_cnpj: e.target.value })}
-                    />
                   </div>
                   <div>
                     <Label>Serviço</Label>
-                    <Input
-                      value={editForm.service || ""}
-                      onChange={(e) => setEditForm({ ...editForm, service: e.target.value })}
-                    />
+                    <Input value={editForm.service || ""} onChange={(e) => setEditForm({ ...editForm, service: e.target.value })} />
                   </div>
                   <div>
                     <Label>Valor do Contrato (R$)</Label>
                     <Input
                       type="number"
                       value={editForm.contract_value ?? ""}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, contract_value: e.target.value ? Number(e.target.value) : null })
-                      }
+                      onChange={(e) => setEditForm({ ...editForm, contract_value: e.target.value ? Number(e.target.value) : null })}
                     />
                   </div>
                   <div>
                     <Label>Responsável</Label>
                     <Select
                       value={editForm.responsible_id || ""}
-                      onValueChange={(val) => {
-                        const emp = employees.find((e) => e.id === val);
-                        setEditForm({
-                          ...editForm,
-                          responsible_id: val,
-                          responsible: emp?.name || null,
-                        });
-                      }}
+                      onValueChange={(val) => setEditForm({ ...editForm, responsible_id: val })}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um funcionário" />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
-                        {employees
-                          .filter((e) => e.status !== "desligado")
-                          .map((emp) => (
-                            <SelectItem key={emp.id} value={emp.id}>
-                              {emp.name}
-                            </SelectItem>
-                          ))}
+                        {employees.filter((e) => e.status !== "desligado").map((emp) => (
+                          <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
                     <Label>Empresa Faturadora</Label>
-                    <Select
-                      value={editForm.empresa_faturadora || "ag_topografia"}
-                      onValueChange={(val) => setEditForm({ ...editForm, empresa_faturadora: val })}
-                    >
+                    <Select value={editForm.empresa_faturadora || "ag_topografia"} onValueChange={(val) => setEditForm({ ...editForm, empresa_faturadora: val })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ag_topografia">AG Topografia e Construções</SelectItem>
+                        <SelectItem value="ag_topografia">AG Topografia</SelectItem>
                         <SelectItem value="ag_cartografia">AG Cartografia</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Tipo de Documento</Label>
-                    <Select
-                      value={editForm.tipo_documento || "nota_fiscal"}
-                      onValueChange={(val) => setEditForm({ ...editForm, tipo_documento: val })}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="nota_fiscal">Nota Fiscal</SelectItem>
-                        <SelectItem value="recibo">Recibo</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label>Data Início</Label>
-                      <Input
-                        type="date"
-                        value={editForm.start_date || ""}
-                        onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value || null })}
-                      />
+                      <Input type="date" value={editForm.start_date || ""} onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value || null })} />
                     </div>
                     <div>
                       <Label>Data Fim</Label>
-                      <Input
-                        type="date"
-                        value={editForm.end_date || ""}
-                        onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value || null })}
-                      />
+                      <Input type="date" value={editForm.end_date || ""} onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value || null })} />
                     </div>
                   </div>
                   <div>
-                    <Label>Status</Label>
-                    <Badge className={`${STATUS_BADGE_COLORS[selectedProject.status]} mt-1`}>
-                      {COLUMNS.find((c) => c.key === selectedProject.status)?.label}
+                    <Label>Status Execução</Label>
+                    <Badge className={EXEC_STATUS_BADGE[(selectedProject as any).execution_status] || "bg-muted"}>
+                      {(selectedProject as any).execution_status || "—"}
                     </Badge>
                   </div>
-
-                  <Separator className="my-2" />
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contatos do Cliente</p>
-                  <div>
-                    <Label>Engenheiro Responsável</Label>
-                    <Input value={editForm.contato_engenheiro || ""} onChange={(e) => setEditForm({ ...editForm, contato_engenheiro: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label>Contato Financeiro</Label>
-                    <Input value={editForm.contato_financeiro || ""} onChange={(e) => setEditForm({ ...editForm, contato_financeiro: e.target.value })} />
-                  </div>
-
                   <Separator className="my-2" />
                   <div>
                     <Label>Observações</Label>
-                    <Textarea
-                      value={editForm.notes || ""}
-                      onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
-                      rows={3}
-                    />
+                    <Textarea value={editForm.notes || ""} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={3} />
                   </div>
                   <div className="flex gap-2 pt-2">
                     <Button onClick={handleSave} disabled={updateProject.isPending} className="flex-1">
                       {updateProject.isPending ? "Salvando..." : "Salvar"}
                     </Button>
-                    <Button variant="outline" onClick={() => setSelectedProject(null)}>
-                      Cancelar
-                    </Button>
+                    <Button variant="outline" onClick={() => setSelectedProject(null)}>Cancelar</Button>
                   </div>
                 </div>
               </TabsContent>
@@ -532,22 +614,11 @@ export default function Projetos() {
                 <ProjectServicesSection projectId={selectedProject.id} />
               </TabsContent>
 
-
               <TabsContent value="faturamento">
                 <div className="space-y-4 mt-2">
                   <div>
-                    <Label>CNPJ Tomador da NF</Label>
-                    <Input value={editForm.cnpj || ""} onChange={(e) => setEditForm({ ...editForm, cnpj: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label>Empresa Emissora</Label>
-                    <Select value={editForm.empresa_emissora || "AG Topografia"} onValueChange={(v) => setEditForm({ ...editForm, empresa_emissora: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="AG Topografia">AG Topografia</SelectItem>
-                        <SelectItem value="AG Cartografia">AG Cartografia</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label>CNPJ Tomador</Label>
+                    <Input value={(editForm as any).cnpj_tomador || ""} onChange={(e) => setEditForm({ ...editForm, cnpj_tomador: e.target.value } as any)} />
                   </div>
                   <div>
                     <Label>Conta Bancária</Label>
@@ -561,41 +632,20 @@ export default function Projetos() {
                     </Select>
                   </div>
                   <div>
-                    <Label>Modalidade de Faturamento</Label>
-                    <Select value={editForm.modalidade_faturamento || ""} onValueChange={(v) => setEditForm({ ...editForm, modalidade_faturamento: v })}>
-                      <SelectTrigger><SelectValue placeholder="Selecionar modalidade" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="equipe_mensal">Equipe mensal</SelectItem>
-                        <SelectItem value="por_medicao">Por medição</SelectItem>
-                        <SelectItem value="diaria">Diária</SelectItem>
-                        <SelectItem value="por_servico">Por serviço</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
                     <Label>Referência de Faturamento</Label>
-                    <Input value={editForm.referencia_contrato || ""} onChange={(e) => setEditForm({ ...editForm, referencia_contrato: e.target.value })} placeholder="Contrato, BM, pedido..." />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Label>Instrução variável de faturamento</Label>
-                    <input type="checkbox" checked={editForm.instrucao_faturamento_variavel || false} onChange={(e) => setEditForm({ ...editForm, instrucao_faturamento_variavel: e.target.checked })} />
+                    <Input value={editForm.referencia_contrato || ""} onChange={(e) => setEditForm({ ...editForm, referencia_contrato: e.target.value })} />
                   </div>
                   <div className="flex gap-2 pt-2">
                     <Button onClick={handleSave} disabled={updateProject.isPending} className="flex-1">
                       {updateProject.isPending ? "Salvando..." : "Salvar"}
                     </Button>
-                    <Button variant="outline" onClick={() => setSelectedProject(null)}>
-                      Cancelar
-                    </Button>
+                    <Button variant="outline" onClick={() => setSelectedProject(null)}>Cancelar</Button>
                   </div>
                 </div>
               </TabsContent>
 
               <TabsContent value="medicoes">
-                <ProjectMeasurementsTab
-                  projectId={selectedProject.id}
-                  contractValue={selectedProject.contract_value}
-                />
+                <ProjectMeasurementsTab projectId={selectedProject.id} contractValue={selectedProject.contract_value} />
               </TabsContent>
             </Tabs>
           )}
