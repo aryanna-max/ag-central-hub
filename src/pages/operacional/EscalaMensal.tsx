@@ -507,6 +507,8 @@ export default function EscalaMensal() {
           />
         </DialogContent>
       </Dialog>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
