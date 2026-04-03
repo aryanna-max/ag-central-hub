@@ -194,6 +194,10 @@ export default function Veiculos() {
         <TabsContent value="diarias">
           <DiariasVeiculos />
         </TabsContent>
+
+        <TabsContent value="relatorios">
+          <VehicleReportsTab />
+        </TabsContent>
       </Tabs>
 
       <VehicleEditDialog open={editOpen} onOpenChange={setEditOpen} vehicle={selectedVehicle} />
