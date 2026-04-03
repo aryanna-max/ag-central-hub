@@ -9,11 +9,12 @@ import Veiculos from "./operacional/Veiculos";
 import DiariasVeiculos from "./operacional/DiariasVeiculos";
 import ProjetosEmCampoKanban from "./operacional/ProjetosEmCampoKanban";
 import Ferias from "./operacional/Ferias";
+import Relatorios from "./operacional/Relatorios";
 
 export default function Operacional() {
   return (
     <Routes>
-      <Route index element={<DashboardOperacional />} />
+      <Route index element={<Navigate to="projetos-campo" replace />} />
       <Route path="dashboard" element={<DashboardOperacional />} />
       <Route path="projetos-campo" element={<ProjetosEmCampoKanban />} />
       <Route path="equipes" element={<Equipes />} />
@@ -24,7 +25,8 @@ export default function Operacional() {
       <Route path="veiculos" element={<Veiculos />} />
       <Route path="diarias-veiculos" element={<DiariasVeiculos />} />
       <Route path="ferias" element={<Ferias />} />
-      <Route path="*" element={<Navigate to="dashboard" replace />} />
+      <Route path="relatorios" element={<Relatorios />} />
+      <Route path="*" element={<Navigate to="projetos-campo" replace />} />
     </Routes>
   );
 }

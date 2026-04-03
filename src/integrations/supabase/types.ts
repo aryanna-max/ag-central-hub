@@ -710,6 +710,51 @@ export type Database = {
         }
         Relationships: []
       }
+      field_expense_discounts: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by_id: string | null
+          discount_type: string
+          id: string
+          observation: string
+          sheet_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by_id?: string | null
+          discount_type: string
+          id?: string
+          observation: string
+          sheet_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by_id?: string | null
+          discount_type?: string
+          id?: string
+          observation?: string
+          sheet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_expense_discounts_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_expense_discounts_sheet_id_fkey"
+            columns: ["sheet_id"]
+            isOneToOne: false
+            referencedRelation: "field_expense_sheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       field_expense_items: {
         Row: {
           created_at: string
@@ -2112,9 +2157,15 @@ export type Database = {
           daily_rate: number
           days_count: number
           employee_id: string | null
+          fuel_value: number
           id: string
+          maintenance_value: number
           month: number
           notes: string | null
+          period_end: string | null
+          period_start: string | null
+          status: string
+          toll_value: number
           total_value: number
           vehicle_id: string
           year: number
@@ -2125,9 +2176,15 @@ export type Database = {
           daily_rate: number
           days_count: number
           employee_id?: string | null
+          fuel_value?: number
           id?: string
+          maintenance_value?: number
           month: number
           notes?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          toll_value?: number
           total_value: number
           vehicle_id: string
           year: number
@@ -2138,9 +2195,15 @@ export type Database = {
           daily_rate?: number
           days_count?: number
           employee_id?: string | null
+          fuel_value?: number
           id?: string
+          maintenance_value?: number
           month?: number
           notes?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          toll_value?: number
           total_value?: number
           vehicle_id?: string
           year?: number
