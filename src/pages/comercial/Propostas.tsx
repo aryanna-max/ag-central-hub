@@ -309,9 +309,10 @@ export default function Propostas() {
 
       {selectedId && (
         <PropostaDetailDialog
-          proposalId={selectedId}
+          proposal={filtered.find((p: any) => p.id === selectedId) || null}
           open={!!selectedId}
           onOpenChange={(open) => { if (!open) setSelectedId(null); }}
+          onEdit={() => {}}
         />
       )}
     </div>
