@@ -1635,6 +1635,7 @@ export type Database = {
           notes: string | null
           numero: string | null
           parent_project_id: string | null
+          show_in_operational: boolean
           referencia_contrato: string | null
           responsible_campo_id: string | null
           responsible_comercial_id: string | null
@@ -1687,6 +1688,7 @@ export type Database = {
           notes?: string | null
           numero?: string | null
           parent_project_id?: string | null
+          show_in_operational?: boolean
           referencia_contrato?: string | null
           responsible_campo_id?: string | null
           responsible_comercial_id?: string | null
@@ -1739,6 +1741,7 @@ export type Database = {
           notes?: string | null
           numero?: string | null
           parent_project_id?: string | null
+          show_in_operational?: boolean
           referencia_contrato?: string | null
           responsible_campo_id?: string | null
           responsible_comercial_id?: string | null
