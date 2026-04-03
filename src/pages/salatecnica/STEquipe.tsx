@@ -30,7 +30,7 @@ const EXECUTION_STATUSES = [
   "em_processamento",
   "revisao",
   "aprovado",
-];
+] as const;
 
 interface TaskRow {
   id: string;
