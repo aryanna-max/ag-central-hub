@@ -49,7 +49,7 @@ function useProjectsList() {
         .select("*")
         .eq("is_active", true)
         .eq("show_in_operational", true)
-        .neq("status", "concluido")
+        .in("execution_status", ["aguardando_campo", "em_campo"] as any)
         .order("name");
       if (error) throw error;
       return data;
