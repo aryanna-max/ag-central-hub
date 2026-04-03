@@ -36,6 +36,7 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
   const [cnpjTomador, setCnpjTomador] = useState("");
   const [contractValue, setContractValue] = useState<number | null>(null);
   const [empresaFaturadora, setEmpresaFaturadora] = useState("ag_topografia");
+  const [billingType, setBillingType] = useState("");
   const [projectCode, setProjectCode] = useState("");
   const [codeLoading, setCodeLoading] = useState(false);
   const [isPending, setIsPending] = useState(false);
