@@ -47,6 +47,14 @@ const HISTORY_BADGE: Record<string, { label: string; className: string }> = {
   pago: { label: "Concluído", className: "bg-emerald-100 text-emerald-800" },
 };
 
+const BILLING_BADGE: Record<string, { label: string; className: string }> = {
+  entrega_nf: { label: "NF na entrega", className: "bg-emerald-100 text-emerald-800" },
+  entrega_recibo: { label: "Recibo na entrega", className: "bg-emerald-100 text-emerald-800" },
+  medicao_mensal: { label: "Por medição", className: "bg-blue-100 text-blue-800" },
+  misto: { label: "Misto", className: "bg-amber-100 text-amber-800" },
+  sem_documento: { label: "Sem documento", className: "bg-muted text-muted-foreground" },
+};
+
 export default function ProjetosEmCampoKanban() {
   const qc = useQueryClient();
   const { user } = useAuth();
