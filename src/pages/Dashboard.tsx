@@ -328,7 +328,7 @@ export default function Dashboard() {
       {/* ═══ SEÇÃO 2 — KPIs 2×2 ═══ */}
       <section className="grid grid-cols-2 gap-3">
         <KpiCard
-          icon={<Map className="h-5 w-5 text-[hsl(var(--primary))]" />}
+          icon={<MapIcon className="h-5 w-5 text-[hsl(var(--primary))]" />}
           label="Em campo"
           value={emCampoCount}
           subtitle="projetos com equipe no campo"
