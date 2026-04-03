@@ -1,11 +1,10 @@
 import { useState, useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Users, FileText, FolderKanban, Truck, Monitor,
-  DollarSign, UserCog, ChevronLeft, ChevronRight, Target,
-  Building2, CalendarDays, Car, FolderOpen, PackageCheck, Receipt,
-  CreditCard, Wallet, UserPlus, FileCheck, HeartPulse, Banknote, Shield,
-  Database,
+  Radar, Briefcase, Map, PenTool, Receipt, Users, Database,
+  ChevronLeft, ChevronRight, Target, Building2, CalendarDays,
+  Car, FolderKanban, LayoutDashboard, UserPlus, Shield,
+  FileText, BarChart3,
 } from "lucide-react";
 import { useModuleAlertCounts } from "@/hooks/useModuleAlertCounts";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,71 +13,61 @@ interface SidebarItem {
   label: string;
   path: string;
   icon: React.ElementType;
+  allowedRoles: string[];
   children?: { label: string; path: string; icon: React.ElementType }[];
 }
 
 const navigation: SidebarItem[] = [
-  { label: "Dashboard", path: "/", icon: LayoutDashboard },
   {
-    label: "Comercial", path: "/comercial", icon: Users,
+    label: "Radar", path: "/", icon: Radar,
+    allowedRoles: ["master", "diretor"],
+  },
+  {
+    label: "Negócios", path: "/comercial", icon: Briefcase,
+    allowedRoles: ["master", "diretor", "comercial"],
     children: [
       { label: "Leads", path: "/comercial/leads", icon: Target },
       { label: "Clientes", path: "/comercial/clientes", icon: Building2 },
     ],
   },
-  { label: "Propostas", path: "/propostas", icon: FileText },
   {
-    label: "Projetos", path: "/projetos", icon: FolderKanban,
+    label: "Campo", path: "/operacional", icon: Map,
+    allowedRoles: ["master", "diretor", "operacional"],
     children: [
-      { label: "Dashboard", path: "/projetos/dashboard", icon: LayoutDashboard },
-      { label: "Kanban", path: "/projetos/kanban", icon: FolderKanban },
-    ],
-  },
-  {
-    label: "Operacional", path: "/operacional", icon: Truck,
-    children: [
-      { label: "Dashboard", path: "/operacional/dashboard", icon: LayoutDashboard },
       { label: "Projetos em Campo", path: "/operacional/projetos-campo", icon: FolderKanban },
-      { label: "Grupos Rápidos", path: "/operacional/equipes", icon: Users },
       { label: "Escala Diária", path: "/operacional/escala-diaria", icon: CalendarDays },
-      { label: "Escala Mensal", path: "/operacional/escala", icon: CalendarDays },
-      { label: "Férias", path: "/operacional/ferias", icon: CalendarDays },
-      { label: "Medições", path: "/operacional/medicoes", icon: FileText },
-      { label: "Despesas de Campo", path: "/operacional/despesas-de-campo", icon: Banknote },
       { label: "Veículos", path: "/operacional/veiculos", icon: Car },
-      { label: "Diárias de Veículos", path: "/operacional/diarias-veiculos", icon: Wallet },
+      { label: "Relatórios", path: "/operacional/relatorios", icon: BarChart3 },
     ],
   },
   {
-    label: "Sala Técnica", path: "/sala-tecnica", icon: Monitor,
+    label: "Prancheta", path: "/sala-tecnica", icon: PenTool,
+    allowedRoles: ["master", "diretor", "sala_tecnica"],
     children: [
-      { label: "Arquivos", path: "/sala-tecnica/arquivos", icon: FolderOpen },
-      { label: "Entregas", path: "/sala-tecnica/entregas", icon: PackageCheck },
+      { label: "Projetos", path: "/sala-tecnica", icon: FolderKanban },
+      { label: "Minhas Tarefas", path: "/sala-tecnica/minhas-tarefas", icon: CalendarDays },
+      { label: "Alertas", path: "/sala-tecnica/alertas", icon: Target },
     ],
   },
   {
-    label: "Financeiro", path: "/financeiro", icon: DollarSign,
-    children: [
-      { label: "Dashboard", path: "/financeiro/dashboard", icon: LayoutDashboard },
-      { label: "Faturamento", path: "/financeiro/faturamento", icon: Receipt },
-      { label: "Pagamentos", path: "/financeiro/pagamentos", icon: CreditCard },
-      { label: "Contas", path: "/financeiro/contas", icon: Wallet },
-    ],
+    label: "Faturamento", path: "/financeiro", icon: Receipt,
+    allowedRoles: ["master", "diretor", "financeiro"],
   },
   {
-    label: "RH", path: "/rh", icon: UserCog,
+    label: "Pessoas", path: "/rh", icon: Users,
+    allowedRoles: ["master", "diretor", "financeiro"],
     children: [
       { label: "Funcionários", path: "/rh/funcionarios", icon: UserPlus },
-      { label: "Ausências", path: "/rh/ausencias", icon: FileCheck },
-      { label: "Documentos", path: "/rh/documentos", icon: FileCheck },
-      { label: "Exames", path: "/rh/exames", icon: HeartPulse },
+      { label: "Férias", path: "/rh/ferias", icon: CalendarDays },
+      { label: "Ausências", path: "/rh/ausencias", icon: FileText },
     ],
   },
 ];
 
 const adminNavigation: SidebarItem[] = [
   {
-    label: "Administração", path: "/admin", icon: Shield,
+    label: "Base", path: "/admin", icon: Database,
+    allowedRoles: ["master"],
     children: [
       { label: "Usuários", path: "/admin/usuarios", icon: UserPlus },
       { label: "Cadastros Base", path: "/admin/cadastros", icon: Database },
@@ -92,11 +81,12 @@ export default function AppSidebar() {
   const [openMenus, setOpenMenus] = useState<string[]>([]);
   const location = useLocation();
   const alertCounts = useModuleAlertCounts();
-  const { isMaster } = useAuth();
-  
+  const { role } = useAuth();
+
   const fullNavigation = useMemo(() => {
-    return isMaster ? [...navigation, ...adminNavigation] : navigation;
-  }, [isMaster]);
+    const all = [...navigation, ...adminNavigation];
+    return all.filter((item) => item.allowedRoles.includes(role ?? ""));
+  }, [role]);
 
   const toggleMenu = (path: string) => {
     setOpenMenus((prev) =>
