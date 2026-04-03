@@ -564,8 +564,10 @@ function ProjectCard({
       )}
 
       <div className="flex flex-wrap gap-1 mt-1">
-        {p.billing_type && (
+        {p.billing_type ? (
           <Badge variant="outline" className="text-[9px] h-4 px-1">{billingLabel}</Badge>
+        ) : (
+          <Badge className="bg-red-100 text-red-800 text-[9px] h-4 px-1">⚠ Definir faturamento</Badge>
         )}
         {p.contract_value > 0 && (
           <Badge variant="secondary" className="text-[9px] h-4 px-1">
