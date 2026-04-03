@@ -36,14 +36,14 @@ const COLUMNS = [
   { key: "campo_concluido", label: "Campo concluído", color: "bg-blue-50" },
 ] as const;
 
-const EXEC_STATUS_LABELS: Record<string, string> = {
-  aguardando_processamento: "Aguardando processamento",
-  em_processamento: "Em processamento",
-  revisao: "Em revisão",
-  aprovado: "Aprovado",
-  entregue: "Entregue",
-  faturamento: "Faturamento",
-  pago: "Pago",
+const HISTORY_BADGE: Record<string, { label: string; className: string }> = {
+  aguardando_processamento: { label: "Prancheta", className: "bg-blue-100 text-blue-800" },
+  em_processamento: { label: "Prancheta", className: "bg-blue-100 text-blue-800" },
+  revisao: { label: "Prancheta", className: "bg-blue-100 text-blue-800" },
+  aprovado: { label: "Prancheta", className: "bg-blue-100 text-blue-800" },
+  entregue: { label: "Concluído", className: "bg-emerald-100 text-emerald-800" },
+  faturamento: { label: "Concluído", className: "bg-emerald-100 text-emerald-800" },
+  pago: { label: "Concluído", className: "bg-emerald-100 text-emerald-800" },
 };
 
 export default function ProjetosEmCampoKanban() {
