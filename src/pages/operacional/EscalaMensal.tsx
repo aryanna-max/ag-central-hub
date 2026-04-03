@@ -218,6 +218,20 @@ export default function EscalaMensal() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Tabs */}
+      <Tabs value={planTab} onValueChange={(v) => setPlanTab(v as any)}>
+        <TabsList>
+          <TabsTrigger value="mensal">Planejamento Mensal</TabsTrigger>
+          <TabsTrigger value="relatorios" className="gap-1">
+            <BarChart3 className="w-3.5 h-3.5" /> Relatórios
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="relatorios">
+          <PlanningReportsTab />
+        </TabsContent>
+
+        <TabsContent value="mensal">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
