@@ -197,6 +197,7 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
         client_cnpj: cnpjTomador || null,
         contract_value: contractValue,
         empresa_faturadora: empresaFaturadora,
+        billing_type: billingType,
         status: "planejamento",
         lead_id: lead.id,
         start_date: new Date().toISOString().split("T")[0],
