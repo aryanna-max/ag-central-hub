@@ -109,8 +109,8 @@ export default function EscalaDiaria() {
 
   const isClosed = schedule?.is_closed;
   const isToday = selectedDate === today;
-  const isConfirmed = !!confirmation;
-  const isReadOnly = isClosed || isConfirmed;
+  const isPast = selectedDate < today;
+  const isReadOnly = isClosed;
 
   // Active employees for the add modal
   const activeEmployees = useMemo(() => {
@@ -529,41 +529,26 @@ export default function EscalaDiaria() {
             <Badge variant="outline" className="text-sm py-1 px-3">
               {assignments.length} grupos escalados
             </Badge>
-            {isConfirmed && confirmation && (
-              <Badge className="bg-emerald-600 text-white gap-1">
-                <CheckCircle className="w-3 h-3" /> Confirmado por {confirmation.profiles?.full_name || "—"} — {format(new Date(confirmation.confirmed_at!), "dd/MM HH:mm")}
-              </Badge>
-            )}
-            {!isConfirmed && schedule && (
-              <Badge variant="destructive" className="gap-1 animate-pulse">
-                <AlertTriangle className="w-3 h-3" /> Escala não confirmada
-              </Badge>
-            )}
             {isClosed && (
-              <Badge className="bg-destructive text-destructive-foreground gap-1">
-                <Lock className="w-3 h-3" /> Escala Fechada
+              <Badge className="bg-emerald-600 text-white gap-1">
+                <Lock className="w-3 h-3" /> Fechada — dado real
               </Badge>
             )}
-            {!schedule.kanban_filled && (
+            {!isClosed && isPast && (
               <Badge variant="destructive" className="gap-1 animate-pulse">
-                Kanban não preenchido
+                <AlertTriangle className="w-3 h-3" /> Aberta — pendente de fechamento
               </Badge>
             )}
             <div className="flex gap-2 ml-auto">
               <Button variant="outline" className="gap-2" onClick={() => setShowReport(true)}>
                 <Printer className="w-4 h-4" /> Relatório
               </Button>
-              {!isConfirmed && !isClosed && (role === "operacional" || role === "master" || role === "diretor") && assignments.length > 0 && (
-                <Button onClick={handleConfirmSchedule} className="gap-2 bg-emerald-700 hover:bg-emerald-800 text-white" disabled={confirmSchedule.isPending}>
-                  <CheckCircle className="w-4 h-4" /> {isToday ? "Confirmar Dia" : "Confirmar Escala"}
-                </Button>
-              )}
               {!isReadOnly && (
                 <>
                   <Button onClick={() => setShowAddModal(true)} variant="outline" className="gap-2">
                     <Plus className="w-4 h-4" /> Adicionar à Escala
                   </Button>
-                  {isToday && assignments.length > 0 && (
+                  {(isToday || isPast) && assignments.length > 0 && (
                     <Button onClick={handleClose} variant="destructive" className="gap-2">
                       <Lock className="w-4 h-4" /> Fechar Escala
                     </Button>
