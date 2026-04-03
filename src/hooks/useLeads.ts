@@ -144,12 +144,31 @@ export function useLeadInteractions(leadId: string | undefined) {
   });
 }
 
+export async function generateLeadCode(): Promise<string> {
+  const year = new Date().getFullYear();
+  const prefix = `${year}-L-`;
+  const { data } = await supabase
+    .from("leads")
+    .select("codigo")
+    .like("codigo" as any, `${prefix}%`)
+    .order("codigo", { ascending: false })
+    .limit(1);
+  const last = data?.[0]?.codigo;
+  let seq = 1;
+  if (last) {
+    const num = parseInt(last.replace(prefix, ""));
+    if (!isNaN(num)) seq = num + 1;
+  }
+  return `${prefix}${String(seq).padStart(3, "0")}`;
+}
+
 export function useCreateLead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (lead: LeadInsert) => {
       const { origin, ...rest } = lead;
-      const payload = { ...rest, origin, source: (origin || "outros") as any };
+      const codigo = await generateLeadCode();
+      const payload = { ...rest, origin, source: (origin || "outros") as any, codigo };
       const { data, error } = await supabase.from("leads").insert(payload as any).select().single();
       if (error) throw error;
       return data;

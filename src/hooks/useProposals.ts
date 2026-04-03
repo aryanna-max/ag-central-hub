@@ -140,14 +140,19 @@ export function useSaveProposalItems() {
 }
 
 export async function generateNextCode(): Promise<string> {
+  const year = new Date().getFullYear();
+  const prefix = `${year}-P-`;
   const { data } = await supabase
     .from("proposals")
     .select("code")
-    .order("created_at", { ascending: false })
+    .like("code", `${prefix}%`)
+    .order("code", { ascending: false })
     .limit(1);
-  
-  if (!data || data.length === 0) return "PRO-001";
-  const last = data[0].code;
-  const num = parseInt(last.replace("PRO-", "")) || 0;
-  return `PRO-${String(num + 1).padStart(3, "0")}`;
+
+  let seq = 1;
+  if (data && data.length > 0) {
+    const num = parseInt(data[0].code.replace(prefix, ""));
+    if (!isNaN(num)) seq = num + 1;
+  }
+  return `${prefix}${String(seq).padStart(3, "0")}`;
 }

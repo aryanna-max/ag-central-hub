@@ -65,6 +65,7 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
   const [cnpjTomador, setCnpjTomador] = useState("");
   const [contractValue, setContractValue] = useState<number | null>(null);
   const [empresaFaturadora, setEmpresaFaturadora] = useState("ag_topografia");
+  const [billingType, setBillingType] = useState("");
   const [projectCode, setProjectCode] = useState("");
   const [codeLoading, setCodeLoading] = useState(false);
 
@@ -163,6 +164,10 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
       toast.error("Nome do projeto é obrigatório");
       return;
     }
+    if (!billingType) {
+      toast.error("Tipo de faturamento é obrigatório");
+      return;
+    }
 
     setIsPending(true);
     try {
@@ -192,6 +197,7 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
         client_cnpj: cnpjTomador || null,
         contract_value: contractValue,
         empresa_faturadora: empresaFaturadora,
+        billing_type: billingType,
         status: "planejamento",
         lead_id: lead.id,
         start_date: new Date().toISOString().split("T")[0],
@@ -387,6 +393,20 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label>Tipo de faturamento *</Label>
+            <Select value={billingType} onValueChange={setBillingType}>
+              <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="entrega_nf">NF na entrega</SelectItem>
+                <SelectItem value="entrega_recibo">Recibo na entrega</SelectItem>
+                <SelectItem value="medicao_mensal">Por medição mensal</SelectItem>
+                <SelectItem value="misto">Misto</SelectItem>
+                <SelectItem value="sem_documento">Sem documento</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
