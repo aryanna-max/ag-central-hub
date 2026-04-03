@@ -12,7 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useTeams } from "@/hooks/useTeams";
-import { useVehicles } from "@/hooks/useVehicles";
+import { useActiveVehicles } from "@/hooks/useVehicles";
 import {
   useMonthlySchedules,
   useCreateMonthlySchedule,
@@ -53,7 +53,7 @@ export default function EscalaMensal() {
   const [editDay, setEditDay] = useState(1);
 
   const { data: teams } = useTeams();
-  const { data: vehicles } = useVehicles();
+  const { data: vehicles } = useActiveVehicles();
   const { data: obras } = useQuery({
     queryKey: ["projects-active"],
     queryFn: async () => {

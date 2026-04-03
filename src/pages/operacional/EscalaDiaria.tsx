@@ -24,7 +24,7 @@ import {
   useUpdateTeamAssignment,
 } from "@/hooks/useDailySchedule";
 import { useTeams } from "@/hooks/useTeams";
-import { useVehicles } from "@/hooks/useVehicles";
+import { useActiveVehicles } from "@/hooks/useVehicles";
 import { useEmployees, useEmployeesWithAbsences } from "@/hooks/useEmployees";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
@@ -79,7 +79,7 @@ export default function EscalaDiaria() {
   const qc = useQueryClient();
   const { data: schedule, isLoading } = useDailySchedule(selectedDate);
   const { data: teams } = useTeams();
-  const { data: vehicles } = useVehicles();
+  const { data: vehicles } = useActiveVehicles();
   const { data: employees } = useEmployeesWithAbsences(selectedDate);
   const { data: allEmployees } = useEmployees();
 
@@ -220,12 +220,16 @@ export default function EscalaDiaria() {
 
   const doAddEmployees = async (empIds: string[], vacationOverrideIds: string[]) => {
     if (!schedule) return;
+    if (!addForm.project_id) {
+      toast.error("Selecione um projeto antes de salvar");
+      return;
+    }
     try {
       const { data: assignment, error: assErr } = await supabase
         .from("daily_team_assignments")
         .insert({
           daily_schedule_id: schedule.id,
-          team_id: (teams || [])[0]?.id || schedule.id,
+          team_id: (teams || [])[0]?.id || null,
           project_id: addForm.project_id,
           vehicle_id: addForm.vehicle_id || null,
         })

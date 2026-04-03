@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Car, Plus, Trash2, Users } from "lucide-react";
 import { useTeams } from "@/hooks/useTeams";
-import { useVehicles } from "@/hooks/useVehicles";
+import { useActiveVehicles } from "@/hooks/useVehicles";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,7 +57,7 @@ export default function MonthlyDayEditDialog({
   const [addingMember, setAddingMember] = useState("");
 
   const { data: teams } = useTeams();
-  const { data: vehicles } = useVehicles();
+  const { data: vehicles } = useActiveVehicles();
   const { data: allEmployees } = useEmployees();
   const { data: projectsList } = useQuery({
     queryKey: ["projects-active"],

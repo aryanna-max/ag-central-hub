@@ -11,6 +11,7 @@ export function useMonthlySchedules(month: number, year: number) {
       const { data, error } = await supabase
         .from("monthly_schedules")
         .select("*, teams(*, team_members(*, employees(*))), projects:project_id(id, name, client, client_name, location), vehicles(*)")
+        .eq("is_legacy", false)
         .lte("start_date", endOfMonth)
         .gte("end_date", startOfMonth);
       if (error) throw error;

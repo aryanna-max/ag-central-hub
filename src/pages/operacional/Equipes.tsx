@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTeams, useCreateTeam, useDeleteTeam, useAddTeamMember, useRemoveTeamMember, useUpdateTeamVehicle, useUpdateTeamProject } from "@/hooks/useTeams";
 import { useEmployeesWithAbsences } from "@/hooks/useEmployees";
-import { useVehicles } from "@/hooks/useVehicles";
+import { useActiveVehicles } from "@/hooks/useVehicles";
 import { useProjects } from "@/hooks/useProjects";
 import EmployeeAvailabilityBadge from "@/components/operacional/EmployeeAvailabilityBadge";
 import { toast } from "sonner";
@@ -16,7 +16,7 @@ import { toast } from "sonner";
 export default function Equipes() {
   const { data: teams, isLoading } = useTeams();
   const { data: employees } = useEmployeesWithAbsences();
-  const { data: vehicles } = useVehicles();
+  const { data: vehicles } = useActiveVehicles();
   const { data: projects } = useProjects();
   const createTeam = useCreateTeam();
   const deleteTeam = useDeleteTeam();

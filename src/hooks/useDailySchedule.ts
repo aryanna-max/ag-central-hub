@@ -13,6 +13,7 @@ export function useDailySchedule(date: string) {
         .from("daily_schedules")
         .select("*")
         .eq("schedule_date", date)
+        .eq("is_legacy", false)
         .maybeSingle();
       if (error) throw error;
       if (!schedule) return null;

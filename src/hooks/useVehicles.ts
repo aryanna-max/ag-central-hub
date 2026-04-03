@@ -20,6 +20,21 @@ export function useVehicles() {
   });
 }
 
+export function useActiveVehicles() {
+  return useQuery({
+    queryKey: ["vehicles", "active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("*, responsible_employee:responsible_employee_id(id, name)")
+        .eq("status", "disponivel")
+        .order("plate");
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 export function useCreateVehicle() {
   const qc = useQueryClient();
   return useMutation({
