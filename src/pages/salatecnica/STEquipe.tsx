@@ -1,266 +1,537 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, DragEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useEmployees } from "@/hooks/useEmployees";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ChevronDown, ChevronRight, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon, GripVertical, X } from "lucide-react";
 import DeadlineBadge from "@/components/DeadlineBadge";
 import { toast } from "sonner";
-import { subDays, format } from "date-fns";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+
+const TECH_ROLES = [
+  "Cadista",
+  "Cartógrafo - Prestador",
+  "Técnico de Saneamento",
+  "Técnica em Saneamento - Estagiária",
+  "Técnica em Saneamento - Prestadora",
+  "Técnico em Edificações",
+];
+
+const EXECUTION_STATUSES = [
+  "aguardando_processamento",
+  "em_processamento",
+  "revisao",
+  "aprovado",
+] as const;
 
 interface TaskRow {
   id: string;
   title: string;
   status: string;
   project_id: string;
-  assigned_to_id: string | null;
-  due_date: string | null;
-  completed_at: string | null;
 }
 
-interface TechnicianRow {
+interface Technician {
   id: string;
   name: string;
   role: string;
-  pending: number;
-  in_progress: number;
-  completed_30d: number;
-  tasks: TaskRow[];
+  activeTasks: TaskRow[];
   on_vacation: boolean;
   in_field_today: boolean;
+  sortOrder: number;
 }
 
-type SituationBadge = { label: string; cls: string };
+interface ProjectCard {
+  id: string;
+  codigo: string | null;
+  name: string;
+  execution_status: string | null;
+  delivery_deadline: string | null;
+  assignees: { id: string; name: string }[];
+}
 
-function getSituation(tech: TechnicianRow): SituationBadge {
+function getAvailabilityBadge(tech: Technician) {
   if (tech.on_vacation)
     return { label: "De férias", cls: "bg-blue-50 text-blue-700 border-blue-300" };
   if (tech.in_field_today)
     return { label: "Em campo hoje", cls: "bg-purple-50 text-purple-700 border-purple-300" };
-  if (tech.in_progress >= 3)
+  const count = tech.activeTasks.length;
+  if (count >= 3)
     return { label: "Carga alta", cls: "bg-orange-100 text-orange-700 border-orange-300" };
-  if (tech.in_progress >= 1)
+  if (count >= 1)
     return { label: "Ocupado", cls: "bg-yellow-50 text-yellow-700 border-yellow-300" };
   return { label: "Disponível", cls: "bg-emerald-50 text-emerald-700 border-emerald-300" };
 }
 
+function getInitials(name: string) {
+  return name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  aguardando_processamento: "Aguardando",
+  em_processamento: "Em processamento",
+  revisao: "Revisão",
+  aprovado: "Aprovado",
+};
+
 export default function STEquipe() {
   const qc = useQueryClient();
-  const { data: employees = [] } = useEmployees();
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [reassignTaskId, setReassignTaskId] = useState<string | null>(null);
-  const [reassignTo, setReassignTo] = useState("");
-
-  const activeEmployees = useMemo(() =>
-    employees.filter((e: any) => e.status !== "desligado"),
-    [employees]
-  );
-
-  const thirtyDaysAgo = useMemo(() => subDays(new Date(), 30).toISOString(), []);
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
 
-  const { data: allTechnicians = [] } = useQuery({
-    queryKey: ["st_equipe_workload", today],
+  // Drop modal state
+  const [dropModal, setDropModal] = useState<{
+    techId: string;
+    techName: string;
+    projectId: string;
+    projectName: string;
+  } | null>(null);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDueDate, setNewTaskDueDate] = useState<Date | undefined>();
+  const [saving, setSaving] = useState(false);
+
+  // Drag state
+  const [dragOverProjectId, setDragOverProjectId] = useState<string | null>(null);
+
+  // ─── Technicians query ───
+  const { data: technicians = [] } = useQuery({
+    queryKey: ["st_equipe_board_techs", today],
     queryFn: async () => {
-      // Fetch tasks, vacations, and today's field entries in parallel
-      const [tasksRes, vacationsRes, dailyRes] = await Promise.all([
+      const [empRes, tasksRes, vacRes, dailyRes] = await Promise.all([
+        supabase.from("employees").select("id, name, role, status").neq("status", "desligado"),
         supabase
           .from("technical_tasks")
-          .select("id, title, status, project_id, assigned_to_id, due_date, completed_at")
+          .select("id, title, status, project_id, assigned_to_id")
           .not("assigned_to_id", "is", null),
         supabase
           .from("employee_vacations")
           .select("employee_id")
           .lte("start_date", today)
           .gte("end_date", today),
-        supabase
-          .from("daily_schedules")
-          .select("id")
-          .eq("schedule_date", today)
-          .maybeSingle(),
+        supabase.from("daily_schedules").select("id").eq("schedule_date", today).maybeSingle(),
       ]);
 
-      if (tasksRes.error) throw tasksRes.error;
+      if (empRes.error) throw empRes.error;
 
-      // Get field employees for today
-      let fieldEmployeeIds = new Set<string>();
+      // Field employees today
+      const fieldIds = new Set<string>();
       if (dailyRes.data?.id) {
         const { data: entries } = await supabase
           .from("daily_schedule_entries")
           .select("employee_id")
           .eq("daily_schedule_id", dailyRes.data.id);
-        (entries || []).forEach((e: any) => fieldEmployeeIds.add(e.employee_id));
+        (entries || []).forEach((e: any) => fieldIds.add(e.employee_id));
       }
 
-      const vacationIds = new Set((vacationsRes.data || []).map((v: any) => v.employee_id));
+      const vacIds = new Set((vacRes.data || []).map((v: any) => v.employee_id));
 
+      // IDs with tasks assigned
+      const assignedIds = new Set<string>();
       const tasksByEmp = new Map<string, TaskRow[]>();
       (tasksRes.data || []).forEach((t: any) => {
+        assignedIds.add(t.assigned_to_id);
+        if (t.status === "concluida" || t.status === "cancelada") return;
         const list = tasksByEmp.get(t.assigned_to_id) || [];
-        list.push(t);
+        list.push({ id: t.id, title: t.title, status: t.status, project_id: t.project_id });
         tasksByEmp.set(t.assigned_to_id, list);
       });
 
-      return activeEmployees.map((e: any): TechnicianRow => {
-        const empTasks = tasksByEmp.get(e.id) || [];
+      // Filter: tech roles OR has tasks
+      const filtered = (empRes.data || []).filter(
+        (e: any) => TECH_ROLES.includes(e.role) || assignedIds.has(e.id)
+      );
+
+      return filtered.map((e: any): Technician => {
+        const tasks = tasksByEmp.get(e.id) || [];
+        const onVac = vacIds.has(e.id);
+        const inField = fieldIds.has(e.id);
+        let sortOrder: number;
+        if (onVac) sortOrder = 5;
+        else if (tasks.length >= 3) sortOrder = 4;
+        else if (tasks.length >= 1 && !inField) sortOrder = 3;
+        else if (inField) sortOrder = 2;
+        else sortOrder = 1;
+
         return {
           id: e.id,
           name: e.name,
           role: e.role,
-          pending: empTasks.filter(t => t.status === "pendente").length,
-          in_progress: empTasks.filter(t => t.status === "em_andamento").length,
-          completed_30d: empTasks.filter(t =>
-            t.status === "concluida" && t.completed_at && t.completed_at >= thirtyDaysAgo
-          ).length,
-          tasks: empTasks.filter(t => t.status !== "concluida" && t.status !== "cancelada"),
-          on_vacation: vacationIds.has(e.id),
-          in_field_today: fieldEmployeeIds.has(e.id),
+          activeTasks: tasks,
+          on_vacation: onVac,
+          in_field_today: inField,
+          sortOrder,
         };
-      }).sort((a, b) => (b.pending + b.in_progress) - (a.pending + a.in_progress));
+      }).sort((a, b) => a.sortOrder - b.sortOrder);
     },
   });
 
-  const { data: projectMap = {} } = useQuery({
-    queryKey: ["st_equipe_projects"],
+  // ─── Projects query ───
+  const { data: projects = [] } = useQuery({
+    queryKey: ["st_equipe_board_projects"],
     queryFn: async () => {
-      const { data } = await supabase.from("projects").select("id, codigo, name");
-      const map: Record<string, { codigo: string | null; name: string }> = {};
-      (data || []).forEach((p: any) => (map[p.id] = { codigo: p.codigo, name: p.name }));
-      return map;
+      const [projRes, tasksRes, empRes] = await Promise.all([
+        supabase
+          .from("projects")
+          .select("id, codigo, name, execution_status, delivery_deadline")
+          .in("execution_status", EXECUTION_STATUSES)
+          .order("delivery_deadline", { ascending: true, nullsFirst: false }),
+        supabase
+          .from("technical_tasks")
+          .select("project_id, assigned_to_id")
+          .not("assigned_to_id", "is", null)
+          .neq("status", "concluida")
+          .neq("status", "cancelada"),
+        supabase.from("employees").select("id, name"),
+      ]);
+
+      if (projRes.error) throw projRes.error;
+
+      const empMap = new Map<string, string>();
+      (empRes.data || []).forEach((e: any) => empMap.set(e.id, e.name));
+
+      // Group assignees by project (unique)
+      const assigneesByProject = new Map<string, Map<string, string>>();
+      (tasksRes.data || []).forEach((t: any) => {
+        if (!assigneesByProject.has(t.project_id)) {
+          assigneesByProject.set(t.project_id, new Map());
+        }
+        const m = assigneesByProject.get(t.project_id)!;
+        if (!m.has(t.assigned_to_id)) {
+          m.set(t.assigned_to_id, empMap.get(t.assigned_to_id) || "?");
+        }
+      });
+
+      return (projRes.data || []).map((p: any): ProjectCard => ({
+        id: p.id,
+        codigo: p.codigo,
+        name: p.name,
+        execution_status: p.execution_status,
+        delivery_deadline: p.delivery_deadline,
+        assignees: Array.from(assigneesByProject.get(p.id)?.entries() || []).map(
+          ([id, name]) => ({ id, name })
+        ),
+      }));
     },
   });
 
-  const handleReassign = async () => {
-    if (!reassignTaskId || !reassignTo) return;
-    await supabase.from("technical_tasks").update({ assigned_to_id: reassignTo } as any).eq("id", reassignTaskId);
-    toast.success("Tarefa reatribuída");
-    setReassignTaskId(null);
-    setReassignTo("");
-    qc.invalidateQueries({ queryKey: ["st_equipe_workload"] });
-    qc.invalidateQueries({ queryKey: ["technical_tasks"] });
+  // Project name map for tech tasks
+  const projectNameMap = useMemo(() => {
+    const m = new Map<string, string>();
+    projects.forEach(p => m.set(p.id, p.codigo || p.name));
+    return m;
+  }, [projects]);
+
+  // ─── Drag handlers ───
+  const onDragStart = useCallback((e: DragEvent, techId: string) => {
+    e.dataTransfer.setData("techId", techId);
+    e.dataTransfer.effectAllowed = "copy";
+  }, []);
+
+  const onDragOver = useCallback((e: DragEvent, projectId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    setDragOverProjectId(projectId);
+  }, []);
+
+  const onDragLeave = useCallback(() => {
+    setDragOverProjectId(null);
+  }, []);
+
+  const onDrop = useCallback((e: DragEvent, project: ProjectCard) => {
+    e.preventDefault();
+    setDragOverProjectId(null);
+    const techId = e.dataTransfer.getData("techId");
+    if (!techId) return;
+
+    const tech = technicians.find(t => t.id === techId);
+    if (!tech) return;
+    if (tech.on_vacation) {
+      toast.error("Técnico está de férias e não pode receber tarefas.");
+      return;
+    }
+
+    setDropModal({
+      techId,
+      techName: tech.name,
+      projectId: project.id,
+      projectName: project.codigo || project.name,
+    });
+    setNewTaskTitle("");
+    setNewTaskDueDate(undefined);
+  }, [technicians]);
+
+  const handleCreateTask = async () => {
+    if (!dropModal || !newTaskTitle.trim()) return;
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from("technical_tasks").insert({
+        project_id: dropModal.projectId,
+        assigned_to_id: dropModal.techId,
+        title: newTaskTitle.trim(),
+        due_date: newTaskDueDate ? format(newTaskDueDate, "yyyy-MM-dd") : null,
+        created_by_id: user?.id || null,
+        status: "pendente",
+      } as any);
+      if (error) throw error;
+      toast.success("Tarefa criada com sucesso");
+      setDropModal(null);
+      qc.invalidateQueries({ queryKey: ["st_equipe_board_techs"] });
+      qc.invalidateQueries({ queryKey: ["st_equipe_board_projects"] });
+      qc.invalidateQueries({ queryKey: ["technical_tasks"] });
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao criar tarefa");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Carga por técnico</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs">Técnico</TableHead>
-                  <TableHead className="text-xs text-center">Pendentes</TableHead>
-                  <TableHead className="text-xs text-center">Em andamento</TableHead>
-                  <TableHead className="text-xs text-center">Concluídas (30d)</TableHead>
-                  <TableHead className="text-xs text-center">Situação</TableHead>
-                  <TableHead className="text-xs"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {allTechnicians.map(tech => {
-                  const isExpanded = expandedId === tech.id;
-                  const situation = getSituation(tech);
-                  const isHighLoad = tech.in_progress >= 5;
-                  return (
-                    <TableRow key={tech.id} className={isHighLoad ? "bg-orange-50/50" : ""}>
-                      <TableCell>
-                        <div>
-                          <p className="text-sm font-medium">{tech.name}</p>
+    <TooltipProvider>
+      <div className="flex gap-4 h-[calc(100vh-12rem)]">
+        {/* ─── LEFT PANEL: Technicians ─── */}
+        <div className="w-[35%] min-w-[280px] flex flex-col">
+          <h2 className="text-sm font-semibold mb-2 text-muted-foreground">Equipe disponível</h2>
+          <ScrollArea className="flex-1 pr-2">
+            <div className="space-y-2 pb-4">
+              {technicians.map(tech => {
+                const badge = getAvailabilityBadge(tech);
+                const isDraggable = !tech.on_vacation;
+                return (
+                  <Card
+                    key={tech.id}
+                    draggable={isDraggable}
+                    onDragStart={isDraggable ? (e) => onDragStart(e as any, tech.id) : undefined}
+                    className={cn(
+                      "transition-shadow",
+                      isDraggable ? "cursor-grab active:cursor-grabbing hover:shadow-md" : "opacity-60 cursor-not-allowed"
+                    )}
+                  >
+                    <CardContent className="p-3 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <GripVertical className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{tech.name}</p>
                           <p className="text-[10px] text-muted-foreground">{tech.role}</p>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-center text-sm">{tech.pending}</TableCell>
-                      <TableCell className="text-center text-sm">{tech.in_progress}</TableCell>
-                      <TableCell className="text-center text-sm">{tech.completed_30d}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline" className={`text-[10px] ${situation.cls}`}>
-                          {situation.label}
+                        <Badge variant="outline" className={cn("text-[10px] shrink-0", badge.cls)}>
+                          {badge.label}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {tech.tasks.length > 0 && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-xs"
-                            onClick={() => setExpandedId(isExpanded ? null : tech.id)}
-                          >
-                            {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                            Ver tarefas
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                      </div>
+                      {tech.activeTasks.length > 0 && (
+                        <div className="pl-5 space-y-0.5">
+                          {tech.activeTasks.slice(0, 4).map(t => (
+                            <p key={t.id} className="text-[11px] text-muted-foreground truncate">
+                              • {t.title}
+                              <span className="text-[10px] ml-1 opacity-60">
+                                ({projectNameMap.get(t.project_id) || "—"})
+                              </span>
+                            </p>
+                          ))}
+                          {tech.activeTasks.length > 4 && (
+                            <p className="text-[10px] text-muted-foreground/60">
+                              +{tech.activeTasks.length - 4} mais
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+              {technicians.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-8">Nenhum técnico encontrado</p>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
 
-          {/* Expanded tasks */}
-          {expandedId && (() => {
-            const tech = allTechnicians.find(t => t.id === expandedId);
-            if (!tech || tech.tasks.length === 0) return null;
-            return (
-              <div className="border-t px-4 py-3 bg-muted/20 space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground mb-1">Tarefas de {tech.name}</p>
-                {tech.tasks.map(task => {
-                  const proj = projectMap[task.project_id];
-                  return (
-                    <div key={task.id} className="flex items-center justify-between p-2 rounded border bg-background gap-2">
-                      <div className="flex-1 space-y-0.5">
-                        <p className="text-sm font-medium">{task.title}</p>
-                        {proj && <p className="text-[10px] text-muted-foreground">{proj.codigo || proj.name}</p>}
-                        {task.due_date && (
-                          <DeadlineBadge
-                            deadline={new Date(task.due_date)}
-                            started_at={null}
-                            estimated_days={null}
-                            completed_at={null}
-                          />
+        {/* ─── RIGHT PANEL: Projects ─── */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <h2 className="text-sm font-semibold mb-2 text-muted-foreground">Projetos ativos</h2>
+          <ScrollArea className="flex-1 pr-2">
+            <div className="space-y-2 pb-4">
+              {projects.map(proj => {
+                const isOver = dragOverProjectId === proj.id;
+                return (
+                  <Card
+                    key={proj.id}
+                    onDragOver={(e) => onDragOver(e as any, proj.id)}
+                    onDragLeave={onDragLeave}
+                    onDrop={(e) => onDrop(e as any, proj)}
+                    className={cn(
+                      "transition-all border-2",
+                      isOver
+                        ? "border-primary bg-primary/5 shadow-lg"
+                        : "border-transparent"
+                    )}
+                  >
+                    <CardContent className="p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold">
+                            {proj.codigo && (
+                              <span className="text-primary mr-1.5">{proj.codigo}</span>
+                            )}
+                            <span className="text-foreground">{proj.name}</span>
+                          </p>
+                        </div>
+                        {proj.execution_status && (
+                          <Badge variant="outline" className="text-[10px] shrink-0">
+                            {STATUS_LABELS[proj.execution_status] || proj.execution_status}
+                          </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <Badge variant="outline" className="text-[10px]">{task.status}</Badge>
-                        {reassignTaskId === task.id ? (
-                          <div className="flex gap-1 items-center">
-                            <Select value={reassignTo} onValueChange={setReassignTo}>
-                              <SelectTrigger className="h-7 w-[140px] text-xs"><SelectValue placeholder="Técnico..." /></SelectTrigger>
-                              <SelectContent>
-                                {activeEmployees.filter((e: any) => e.id !== tech.id).map((e: any) => (
-                                  <SelectItem key={e.id} value={e.id} className="text-xs">{e.name}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <Button size="sm" className="h-7 text-xs" onClick={handleReassign} disabled={!reassignTo}>OK</Button>
-                            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setReassignTaskId(null); setReassignTo(""); }}>✕</Button>
+
+                      {proj.delivery_deadline && (
+                        <DeadlineBadge
+                          deadline={new Date(proj.delivery_deadline)}
+                          started_at={null}
+                          estimated_days={null}
+                          completed_at={null}
+                          label="Entrega"
+                        />
+                      )}
+
+                      <div className="flex items-center gap-2">
+                        {proj.assignees.length > 0 && (
+                          <div className="flex -space-x-1.5">
+                            {proj.assignees.slice(0, 5).map(a => (
+                              <Tooltip key={a.id}>
+                                <TooltipTrigger asChild>
+                                  <Avatar className="h-6 w-6 border-2 border-background">
+                                    <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+                                      {getInitials(a.name)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="text-xs">
+                                  {a.name}
+                                </TooltipContent>
+                              </Tooltip>
+                            ))}
+                            {proj.assignees.length > 5 && (
+                              <Avatar className="h-6 w-6 border-2 border-background">
+                                <AvatarFallback className="text-[9px] bg-muted text-muted-foreground">
+                                  +{proj.assignees.length - 5}
+                                </AvatarFallback>
+                              </Avatar>
+                            )}
                           </div>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-xs"
-                            onClick={() => setReassignTaskId(task.id)}
-                          >
-                            <RefreshCw className="w-3 h-3 mr-0.5" /> Reatribuir
-                          </Button>
                         )}
+                        <div
+                          className={cn(
+                            "flex-1 border border-dashed rounded-md px-3 py-1.5 text-center text-[11px] transition-colors",
+                            isOver
+                              ? "border-primary text-primary bg-primary/10"
+                              : "border-muted-foreground/30 text-muted-foreground/50"
+                          )}
+                        >
+                          Arraste um técnico aqui
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+              {projects.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Nenhum projeto nos status de processamento
+                </p>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+      </div>
+
+      {/* ─── DROP MODAL ─── */}
+      {dropModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <Card className="w-full max-w-md mx-4 shadow-xl">
+            <CardContent className="p-5 space-y-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-semibold">Nova tarefa</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {dropModal.techName} → {dropModal.projectName}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0"
+                  onClick={() => setDropModal(null)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
-            );
-          })()}
-        </CardContent>
-      </Card>
-    </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium mb-1 block">Título da tarefa *</label>
+                  <Input
+                    value={newTaskTitle}
+                    onChange={e => setNewTaskTitle(e.target.value)}
+                    placeholder="Ex: Processar levantamento"
+                    className="text-sm"
+                    autoFocus
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && newTaskTitle.trim()) handleCreateTask();
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium mb-1 block">Prazo (opcional)</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left text-sm font-normal",
+                          !newTaskDueDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {newTaskDueDate ? format(newTaskDueDate, "dd/MM/yyyy") : "Selecionar data"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={newTaskDueDate}
+                        onSelect={setNewTaskDueDate}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" size="sm" onClick={() => setDropModal(null)}>
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleCreateTask}
+                  disabled={!newTaskTitle.trim() || saving}
+                >
+                  {saving ? "Salvando..." : "Criar tarefa"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </TooltipProvider>
   );
 }
