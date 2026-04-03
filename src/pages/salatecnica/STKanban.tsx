@@ -55,7 +55,7 @@ export default function STKanban() {
   const { data: projects = [], refetch } = useQuery({
     queryKey: ["st_kanban_projects"],
     queryFn: async () => {
-      const validStatuses = COLUMNS.map(c => c.key);
+      const validStatuses = COLUMNS.map(c => c.key) as ("aguardando_processamento" | "em_processamento" | "revisao" | "aprovado" | "entregue")[];
       const { data: rows, error } = await supabase
         .from("projects")
         .select("id, codigo, name, execution_status, billing_type, delivery_deadline, field_completed_at, delivery_days_estimated, delivered_at, client_id, is_active")
