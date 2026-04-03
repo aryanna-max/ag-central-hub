@@ -24,6 +24,7 @@ import CadastrosBase from "./pages/admin/CadastrosBase";
 import AdminClientes from "./pages/admin/Clientes";
 import ClienteHistorico from "./pages/admin/ClienteHistorico";
 import ProjetoHistorico from "./pages/projetos/ProjetoHistorico";
+import AprovacaoExterna from "./pages/AprovacaoExterna";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,7 @@ function AppRoutes() {
       <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
       <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/aprovacao/:token" element={<AprovacaoExterna />} />
       <Route path="/change-password" element={<ChangePasswordRoute><ChangePassword /></ChangePasswordRoute>} />
 
       {/* Protected routes */}

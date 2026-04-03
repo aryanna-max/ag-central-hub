@@ -851,6 +851,8 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by_id: string | null
+          approval_token: string | null
+          approval_comments: any[] | null
           codigo: string | null
           created_at: string
           id: string
@@ -869,6 +871,8 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by_id?: string | null
+          approval_token?: string | null
+          approval_comments?: any[] | null
           codigo?: string | null
           created_at?: string
           id?: string
@@ -887,6 +891,8 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by_id?: string | null
+          approval_token?: string | null
+          approval_comments?: any[] | null
           codigo?: string | null
           created_at?: string
           id?: string
