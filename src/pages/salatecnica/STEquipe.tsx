@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ChevronDown, ChevronRight, RefreshCw } from "lucide-react";
 import DeadlineBadge from "@/components/DeadlineBadge";
 import { toast } from "sonner";
-import { subDays } from "date-fns";
+import { subDays, format } from "date-fns";
 
 interface TaskRow {
   id: string;
@@ -30,6 +30,22 @@ interface TechnicianRow {
   in_progress: number;
   completed_30d: number;
   tasks: TaskRow[];
+  on_vacation: boolean;
+  in_field_today: boolean;
+}
+
+type SituationBadge = { label: string; cls: string };
+
+function getSituation(tech: TechnicianRow): SituationBadge {
+  if (tech.on_vacation)
+    return { label: "De férias", cls: "bg-blue-50 text-blue-700 border-blue-300" };
+  if (tech.in_field_today)
+    return { label: "Em campo hoje", cls: "bg-purple-50 text-purple-700 border-purple-300" };
+  if (tech.in_progress >= 3)
+    return { label: "Carga alta", cls: "bg-orange-100 text-orange-700 border-orange-300" };
+  if (tech.in_progress >= 1)
+    return { label: "Ocupado", cls: "bg-yellow-50 text-yellow-700 border-yellow-300" };
+  return { label: "Disponível", cls: "bg-emerald-50 text-emerald-700 border-emerald-300" };
 }
 
 export default function STEquipe() {
@@ -45,18 +61,45 @@ export default function STEquipe() {
   );
 
   const thirtyDaysAgo = useMemo(() => subDays(new Date(), 30).toISOString(), []);
+  const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
 
-  const { data: technicians = [] } = useQuery({
-    queryKey: ["st_equipe_workload"],
+  const { data: allTechnicians = [] } = useQuery({
+    queryKey: ["st_equipe_workload", today],
     queryFn: async () => {
-      const { data: tasks, error } = await supabase
-        .from("technical_tasks")
-        .select("id, title, status, project_id, assigned_to_id, due_date, completed_at")
-        .not("assigned_to_id", "is", null);
-      if (error) throw error;
+      // Fetch tasks, vacations, and today's field entries in parallel
+      const [tasksRes, vacationsRes, dailyRes] = await Promise.all([
+        supabase
+          .from("technical_tasks")
+          .select("id, title, status, project_id, assigned_to_id, due_date, completed_at")
+          .not("assigned_to_id", "is", null),
+        supabase
+          .from("employee_vacations")
+          .select("employee_id")
+          .lte("start_date", today)
+          .gte("end_date", today),
+        supabase
+          .from("daily_schedules")
+          .select("id")
+          .eq("schedule_date", today)
+          .maybeSingle(),
+      ]);
+
+      if (tasksRes.error) throw tasksRes.error;
+
+      // Get field employees for today
+      let fieldEmployeeIds = new Set<string>();
+      if (dailyRes.data?.id) {
+        const { data: entries } = await supabase
+          .from("daily_schedule_entries")
+          .select("employee_id")
+          .eq("daily_schedule_id", dailyRes.data.id);
+        (entries || []).forEach((e: any) => fieldEmployeeIds.add(e.employee_id));
+      }
+
+      const vacationIds = new Set((vacationsRes.data || []).map((v: any) => v.employee_id));
 
       const tasksByEmp = new Map<string, TaskRow[]>();
-      (tasks || []).forEach((t: any) => {
+      (tasksRes.data || []).forEach((t: any) => {
         const list = tasksByEmp.get(t.assigned_to_id) || [];
         list.push(t);
         tasksByEmp.set(t.assigned_to_id, list);
@@ -74,23 +117,12 @@ export default function STEquipe() {
             t.status === "concluida" && t.completed_at && t.completed_at >= thirtyDaysAgo
           ).length,
           tasks: empTasks.filter(t => t.status !== "concluida" && t.status !== "cancelada"),
+          on_vacation: vacationIds.has(e.id),
+          in_field_today: fieldEmployeeIds.has(e.id),
         };
-      }).filter(t => t.pending > 0 || t.in_progress > 0 || t.completed_30d > 0 || t.tasks.length > 0)
-        .sort((a, b) => (b.pending + b.in_progress) - (a.pending + a.in_progress));
+      }).sort((a, b) => (b.pending + b.in_progress) - (a.pending + a.in_progress));
     },
   });
-
-  // Also load employees with zero tasks for "Disponível" badge
-  const allTechnicians = useMemo(() => {
-    const withTasks = new Set(technicians.map(t => t.id));
-    const noTasks = activeEmployees
-      .filter((e: any) => !withTasks.has(e.id))
-      .map((e: any): TechnicianRow => ({
-        id: e.id, name: e.name, role: e.role,
-        pending: 0, in_progress: 0, completed_30d: 0, tasks: [],
-      }));
-    return [...technicians, ...noTasks];
-  }, [technicians, activeEmployees]);
 
   const { data: projectMap = {} } = useQuery({
     queryKey: ["st_equipe_projects"],
@@ -127,16 +159,17 @@ export default function STEquipe() {
                   <TableHead className="text-xs text-center">Pendentes</TableHead>
                   <TableHead className="text-xs text-center">Em andamento</TableHead>
                   <TableHead className="text-xs text-center">Concluídas (30d)</TableHead>
-                  <TableHead className="text-xs text-center">Status</TableHead>
+                  <TableHead className="text-xs text-center">Situação</TableHead>
                   <TableHead className="text-xs"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {allTechnicians.map(tech => {
                   const isExpanded = expandedId === tech.id;
-                  const totalActive = tech.pending + tech.in_progress;
+                  const situation = getSituation(tech);
+                  const isHighLoad = tech.in_progress >= 5;
                   return (
-                    <TableRow key={tech.id} className="group">
+                    <TableRow key={tech.id} className={isHighLoad ? "bg-orange-50/50" : ""}>
                       <TableCell>
                         <div>
                           <p className="text-sm font-medium">{tech.name}</p>
@@ -147,11 +180,9 @@ export default function STEquipe() {
                       <TableCell className="text-center text-sm">{tech.in_progress}</TableCell>
                       <TableCell className="text-center text-sm">{tech.completed_30d}</TableCell>
                       <TableCell className="text-center">
-                        {totalActive === 0 ? (
-                          <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-300">Disponível</Badge>
-                        ) : tech.in_progress >= 5 ? (
-                          <Badge className="text-[10px] bg-orange-100 text-orange-700 border-orange-300">Carga alta</Badge>
-                        ) : null}
+                        <Badge variant="outline" className={`text-[10px] ${situation.cls}`}>
+                          {situation.label}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         {tech.tasks.length > 0 && (
