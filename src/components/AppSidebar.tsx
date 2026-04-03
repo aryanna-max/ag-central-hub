@@ -27,6 +27,7 @@ const navigation: SidebarItem[] = [
     allowedRoles: ["master", "diretor", "comercial"],
     children: [
       { label: "Leads", path: "/comercial/leads", icon: Target },
+      { label: "Propostas", path: "/comercial/propostas", icon: FileText },
       { label: "Clientes", path: "/comercial/clientes", icon: Building2 },
     ],
   },
