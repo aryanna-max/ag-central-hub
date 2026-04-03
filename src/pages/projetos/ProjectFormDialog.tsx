@@ -95,6 +95,7 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
         client_cnpj: cnpjTomador || null,
         contract_value: contractValue,
         empresa_faturadora: empresaFaturadora,
+        billing_type: billingType,
         status: "planejamento",
         start_date: new Date().toISOString().split("T")[0],
         is_active: true,
