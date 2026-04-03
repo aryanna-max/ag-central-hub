@@ -1636,7 +1636,11 @@ export type Database = {
           numero: string | null
           parent_project_id: string | null
           referencia_contrato: string | null
+          responsible_campo_id: string | null
+          responsible_comercial_id: string | null
+          responsible_diretor_id: string | null
           responsible_id: string | null
+          responsible_tecnico_id: string | null
           rua: string | null
           scope_description: string | null
           service: string | null
@@ -1684,7 +1688,11 @@ export type Database = {
           numero?: string | null
           parent_project_id?: string | null
           referencia_contrato?: string | null
+          responsible_campo_id?: string | null
+          responsible_comercial_id?: string | null
+          responsible_diretor_id?: string | null
           responsible_id?: string | null
+          responsible_tecnico_id?: string | null
           rua?: string | null
           scope_description?: string | null
           service?: string | null
@@ -1732,7 +1740,11 @@ export type Database = {
           numero?: string | null
           parent_project_id?: string | null
           referencia_contrato?: string | null
+          responsible_campo_id?: string | null
+          responsible_comercial_id?: string | null
+          responsible_diretor_id?: string | null
           responsible_id?: string | null
+          responsible_tecnico_id?: string | null
           rua?: string | null
           scope_description?: string | null
           service?: string | null
@@ -1764,10 +1776,38 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "projects_responsible_campo_id_fkey"
+            columns: ["responsible_campo_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_responsible_comercial_id_fkey"
+            columns: ["responsible_comercial_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_responsible_diretor_id_fkey"
+            columns: ["responsible_diretor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "projects_responsible_id_fkey"
             columns: ["responsible_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_responsible_tecnico_id_fkey"
+            columns: ["responsible_tecnico_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

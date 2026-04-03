@@ -52,9 +52,9 @@ export default function EntregueConfirmDialog({ open, onOpenChange, project, onC
   let description = "";
 
   if (bt === "entrega_nf") {
-    description = "Ao confirmar, Alcione receberá email para emissão de NF.";
+    description = "Ao confirmar, o setor financeiro receberá email para emissão de NF.";
   } else if (bt === "entrega_recibo") {
-    description = "Ao confirmar, Alcione receberá email para emissão de Recibo.";
+    description = "Ao confirmar, o setor financeiro receberá email para emissão de Recibo.";
   } else if (bt === "medicao_mensal") {
     title = "Projeto por medição";
     description = "O alerta financeiro será gerado pela medição, não pela entrega.";
