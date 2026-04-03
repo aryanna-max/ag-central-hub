@@ -67,7 +67,7 @@ export default function ProjetosEmCampoKanban() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, codigo, name, client_id, execution_status, field_deadline, field_started_at, field_days_estimated, field_completed_at, is_active")
+        .select("id, codigo, name, client_id, execution_status, field_deadline, field_started_at, field_days_estimated, field_completed_at, billing_type, is_active")
         .eq("is_active", true)
         .in("execution_status", ["aguardando_campo", "em_campo", "campo_concluido"])
         .order("name");
