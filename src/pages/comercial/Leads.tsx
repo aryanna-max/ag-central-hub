@@ -143,7 +143,7 @@ export default function Leads() {
       await updateLead.mutateAsync({
         id: lossDialog.id,
         status: "perdido" as any,
-        notes: `${lossDialog.notes || ""}\n\n[PERDIDO] ${lossReason}`.trim(),
+        notes: `${lossDialog.notes || ""}\n\n[PERDIDO] ${format(new Date(), "dd/MM/yyyy", { locale: ptBR })}: ${lossReason}`.trim(),
       });
       toast.success("Lead marcado como perdido");
     } catch { toast.error("Erro ao alterar status"); }

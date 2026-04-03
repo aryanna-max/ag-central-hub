@@ -14,6 +14,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { format, addDays, isToday, isBefore, isAfter } from "date-fns";
 
+const PRIORITY_BADGE: Record<string, { label: string; cls: string }> = {
+  urgente: { label: "Urgente", cls: "bg-red-100 text-red-800 border-red-300" },
+  alta: { label: "Alta", cls: "bg-orange-100 text-orange-800 border-orange-300" },
+  normal: { label: "Normal", cls: "bg-blue-100 text-blue-800 border-blue-300" },
+  baixa: { label: "Baixa", cls: "bg-gray-100 text-gray-600 border-gray-300" },
+};
+
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   pendente: { label: "Pendente", cls: "bg-muted text-muted-foreground" },
   em_andamento: { label: "Em andamento", cls: "bg-blue-50 text-blue-700 border-blue-300" },
@@ -80,6 +87,7 @@ export default function STMinhasTarefas() {
       <div className="flex items-center justify-between p-2 rounded border gap-2">
         <div className="flex-1 space-y-0.5">
           <p className="text-sm font-medium">{t.title}</p>
+          {t.description && <p className="text-xs text-muted-foreground line-clamp-2">{t.description}</p>}
           {proj && <p className="text-[10px] text-muted-foreground">{proj.codigo || proj.name}</p>}
           {t.due_date && (
             <DeadlineBadge
@@ -91,6 +99,9 @@ export default function STMinhasTarefas() {
           )}
         </div>
         <div className="flex items-center gap-1.5">
+          {t.priority && PRIORITY_BADGE[t.priority] && (
+            <Badge variant="outline" className={`text-[10px] ${PRIORITY_BADGE[t.priority].cls}`}>{PRIORITY_BADGE[t.priority].label}</Badge>
+          )}
           <Badge variant="outline" className={`text-[10px] ${sb.cls}`}>{sb.label}</Badge>
           {t.status === "pendente" && (
             <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => handleStart(t.id)}>

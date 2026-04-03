@@ -266,7 +266,35 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
               </div>
             </div>
 
-            {lead.notes && <p className="text-sm bg-muted/50 rounded-md p-3">{lead.notes}</p>}
+            {lead.notes && (() => {
+              // Parse notes to separate [PERDIDO] entries from regular notes
+              const lines = lead.notes.split("\n");
+              const lossLines: string[] = [];
+              const regularLines: string[] = [];
+              for (const line of lines) {
+                if (line.trim().startsWith("[PERDIDO]")) {
+                  lossLines.push(line.trim().replace("[PERDIDO]", "").trim());
+                } else {
+                  regularLines.push(line);
+                }
+              }
+              const regularText = regularLines.join("\n").trim();
+              return (
+                <>
+                  {regularText && <p className="text-sm bg-muted/50 rounded-md p-3">{regularText}</p>}
+                  {lossLines.length > 0 && (
+                    <div className="space-y-1.5">
+                      {lossLines.map((reason, i) => (
+                        <div key={i} className="flex items-start gap-2 rounded-md bg-red-50 border border-red-200 p-3">
+                          <Badge className="bg-red-600 text-white text-xs shrink-0">Perdido</Badge>
+                          <p className="text-sm text-red-800">{reason}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
 
             <Separator />
 

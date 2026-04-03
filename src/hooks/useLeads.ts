@@ -179,12 +179,23 @@ export function useCreateLead() {
   return useMutation({
     mutationFn: async (lead: LeadInsert) => {
       const { origin, ...rest } = lead;
-      const codigo = await generateLeadCode();
       const source = ORIGIN_TO_SOURCE[origin || "outro"] || "outros";
-      const payload = { ...rest, origin, source: source as any, codigo };
-      const { data, error } = await supabase.from("leads").insert(payload as any).select().single();
-      if (error) throw error;
-      return data;
+
+      const attemptInsert = async (retryCount: number): Promise<any> => {
+        const codigo = await generateLeadCode();
+        const payload = { ...rest, origin, source: source as any, codigo };
+        const { data, error } = await supabase.from("leads").insert(payload as any).select().single();
+        if (error) {
+          if (retryCount > 0 && (error.message.includes("unique") || error.message.includes("duplicate") || error.code === "23505")) {
+            console.warn("Código duplicado detectado, tentando novamente:", codigo);
+            return attemptInsert(retryCount - 1);
+          }
+          throw error;
+        }
+        return data;
+      };
+
+      return attemptInsert(1);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["leads"] }),
   });

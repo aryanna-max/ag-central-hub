@@ -92,9 +92,21 @@ export function useCreateProposal() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (proposal: Partial<Proposal> & { code: string; title: string }) => {
-      const { data, error } = await supabase.from("proposals").insert(proposal).select().single();
-      if (error) throw error;
-      return data as Proposal;
+      const attemptInsert = async (retryCount: number, isRetry: boolean): Promise<Proposal> => {
+        const code = isRetry ? await generateNextCode() : proposal.code;
+        const payload = { ...proposal, code };
+        const { data, error } = await supabase.from("proposals").insert(payload).select().single();
+        if (error) {
+          if (retryCount > 0 && (error.message.includes("unique") || error.message.includes("duplicate") || error.code === "23505")) {
+            console.warn("Código duplicado detectado, tentando novamente:", code);
+            return attemptInsert(retryCount - 1, true);
+          }
+          throw error;
+        }
+        return data as Proposal;
+      };
+
+      return attemptInsert(1, false);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["proposals"] }),
   });

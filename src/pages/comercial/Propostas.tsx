@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Plus, Eye, Copy, Send, FileText } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, addDays, isBefore } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -79,12 +79,35 @@ export default function Propostas() {
     validity_days: "30",
   });
 
+  const STATUS_ORDER: Record<string, number> = {
+    enviada: 0,
+    rascunho: 1,
+    aprovada: 2,
+    rejeitada: 3,
+    convertida: 4,
+    expirada: 5,
+  };
+
   const filtered = useMemo(() => {
-    return proposals.filter((p: any) => {
-      if (filterStatus !== "all" && p.status !== filterStatus) return false;
-      if (filterClient !== "all" && p.client_id !== filterClient) return false;
-      return true;
-    });
+    return proposals
+      .filter((p: any) => {
+        if (filterStatus !== "all") {
+          if (filterStatus === "expirada") {
+            if (!isExpired(p)) return false;
+          } else if (p.status !== filterStatus) {
+            return false;
+          }
+        }
+        if (filterClient !== "all" && p.client_id !== filterClient) return false;
+        return true;
+      })
+      .sort((a: any, b: any) => {
+        const orderA = STATUS_ORDER[a.status] ?? 99;
+        const orderB = STATUS_ORDER[b.status] ?? 99;
+        if (orderA !== orderB) return orderA - orderB;
+        // Within same status, newest first
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
   }, [proposals, filterStatus, filterClient]);
 
   const createMutation = useMutation({
@@ -150,6 +173,13 @@ export default function Propostas() {
     },
     onError: () => toast.error("Erro ao enviar"),
   });
+
+  const isExpired = (p: any): boolean => {
+    if (p.status !== "enviada") return false;
+    if (!p.sent_at || !p.validity_days) return false;
+    const expirationDate = addDays(parseISO(p.sent_at), p.validity_days);
+    return isBefore(expirationDate, new Date());
+  };
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -225,7 +255,8 @@ export default function Propostas() {
               ) : filtered.length === 0 ? (
                 <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nenhuma proposta encontrada</TableCell></TableRow>
               ) : filtered.map((p: any) => {
-                const cfg = statusCfg[p.status] || statusCfg.rascunho;
+                const expired = isExpired(p);
+                const cfg = expired ? statusCfg.expirada : (statusCfg[p.status] || statusCfg.rascunho);
                 return (
                   <TableRow key={p.id} className="cursor-pointer" onClick={() => setSelectedId(p.id)}>
                     <TableCell className="font-mono font-medium">{p.code}</TableCell>

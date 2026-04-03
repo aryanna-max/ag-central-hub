@@ -255,6 +255,9 @@ export function usePreFillFromMonthly() {
             vehicle_id: ms.vehicle_id,
           });
         if (error && !error.message.includes("duplicate")) throw error;
+        if (error && error.message.includes("duplicate")) {
+          console.warn("Entrada duplicada ignorada (assignment):", ms.team_id);
+        }
 
         const members = (ms as any).teams?.team_members || [];
         for (const member of members) {
@@ -266,8 +269,9 @@ export function usePreFillFromMonthly() {
               team_id: ms.team_id,
               vehicle_id: ms.vehicle_id,
             });
-          if (entErr && !entErr.message.includes("duplicate")) {
-            // Ignore duplicates
+          if (entErr && !entErr.message.includes("duplicate")) throw entErr;
+          if (entErr && entErr.message.includes("duplicate")) {
+            console.warn("Entrada duplicada ignorada:", member.employee_id);
           }
         }
       }
