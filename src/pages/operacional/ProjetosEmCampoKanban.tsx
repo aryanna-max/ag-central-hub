@@ -24,6 +24,7 @@ interface Project {
   field_started_at: string | null;
   field_days_estimated: number | null;
   field_completed_at: string | null;
+  billing_type: string | null;
 }
 
 interface ClientMap {
