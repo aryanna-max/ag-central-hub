@@ -27,6 +27,7 @@ const navigation: SidebarItem[] = [
     allowedRoles: ["master", "diretor", "comercial"],
     children: [
       { label: "Leads", path: "/comercial/leads", icon: Target },
+      { label: "Propostas", path: "/comercial/propostas", icon: FileText },
       { label: "Clientes", path: "/comercial/clientes", icon: Building2 },
     ],
   },
@@ -35,9 +36,9 @@ const navigation: SidebarItem[] = [
     allowedRoles: ["master", "diretor", "operacional"],
     children: [
       { label: "Projetos em Campo", path: "/operacional/projetos-campo", icon: FolderKanban },
-      { label: "Escala Diária", path: "/operacional/escala-diaria", icon: CalendarDays },
+      { label: "Planejamento", path: "/operacional/escala", icon: CalendarDays },
+      { label: "Despesas de Campo", path: "/operacional/despesas-de-campo", icon: Receipt },
       { label: "Veículos", path: "/operacional/veiculos", icon: Car },
-      { label: "Relatórios", path: "/operacional/relatorios", icon: BarChart3 },
     ],
   },
   {
