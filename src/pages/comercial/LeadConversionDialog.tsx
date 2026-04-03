@@ -164,6 +164,10 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
       toast.error("Nome do projeto é obrigatório");
       return;
     }
+    if (!billingType) {
+      toast.error("Tipo de faturamento é obrigatório");
+      return;
+    }
 
     setIsPending(true);
     try {
