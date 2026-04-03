@@ -23,6 +23,7 @@ import UserManagement from "./pages/admin/UserManagement";
 import CadastrosBase from "./pages/admin/CadastrosBase";
 import AdminClientes from "./pages/admin/Clientes";
 import ClienteHistorico from "./pages/admin/ClienteHistorico";
+import SystemSettings from "./pages/admin/SystemSettings";
 import ProjetoHistorico from "./pages/projetos/ProjetoHistorico";
 import AprovacaoExterna from "./pages/AprovacaoExterna";
 
@@ -94,6 +95,7 @@ function AppRoutes() {
         <Route path="/admin/usuarios" element={<UserManagement />} />
         <Route path="/admin/cadastros" element={<CadastrosBase />} />
         <Route path="/admin/clientes" element={<AdminClientes />} />
+        <Route path="/admin/configuracoes" element={<SystemSettings />} />
         <Route path="/base/clientes/:clientId" element={<ClienteHistorico />} />
       </Route>
       <Route path="*" element={<NotFound />} />

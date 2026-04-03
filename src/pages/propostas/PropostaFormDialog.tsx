@@ -8,31 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, Save } from "lucide-react";
 import { useCreateProposal, useUpdateProposal, useSaveProposalItems, generateNextCode, Proposal } from "@/hooks/useProposals";
 import { useClients } from "@/hooks/useClients";
+import { SERVICE_TYPES } from "@/lib/serviceTypes";
 import { toast } from "sonner";
-
-const SERVICOS = [
-  "Levantamento Planimétrico",
-  "Levantamento Altimétrico",
-  "Levantamento Planialtimétrico",
-  "Levantamento Cadastral Urbano",
-  "Levantamento Cadastral Rural",
-  "Levantamento para Projeto de Engenharia",
-  "Levantamento Batimétrico",
-  "Levantamento com Drone/VANT",
-  "Escaneamento Laser 3D",
-  "Georreferenciamento INCRA",
-  "Desmembramento de Área",
-  "Remembramento de Área",
-  "Usucapião",
-  "Retificação em Cartório",
-  "Locação de Obra",
-  "Controle de Terraplenagem",
-  "As-built",
-  "Acompanhamento de Obras",
-  "Topografia Industrial",
-  "Supervisão Técnica",
-  "Projeto de Loteamento",
-];
 
 interface ProposalItemRow {
   description: string;
@@ -229,7 +206,7 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
             <Select value={form.service} onValueChange={(v) => setForm({ ...form, service: v })}>
               <SelectTrigger><SelectValue placeholder="Tipo de serviço" /></SelectTrigger>
               <SelectContent>
-                {SERVICOS.map((s) => (
+                {SERVICE_TYPES.map((s) => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
               </SelectContent>

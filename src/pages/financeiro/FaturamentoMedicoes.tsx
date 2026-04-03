@@ -201,16 +201,45 @@ export default function FaturamentoMedicoes() {
   const registerNfMutation = useMutation({
     mutationFn: async () => {
       if (!nfDialogId || !nfNumero.trim()) throw new Error("Número da NF obrigatório");
+
+      // Find the measurement data to populate the invoice
+      const measurement = measurements.find((m: any) => m.id === nfDialogId);
+      if (!measurement) throw new Error("Medição não encontrada");
+
+      // Update measurement status
       const { error } = await supabase.from("measurements").update({
         nf_numero: nfNumero,
         nf_data: nfData || null,
         status: "nf_emitida",
       }).eq("id", nfDialogId);
       if (error) throw error;
+
+      // Create linked invoice record
+      if (measurement.project_id) {
+        const tipoDoc: "nf" | "recibo" = measurement.tipo_documento === "recibo" ? "recibo" : "nf";
+        const empresaFat = measurement.empresa_faturadora === "ag_cartografia" ? "ag_cartografia" as const : "ag_topografia" as const;
+
+        const { error: invoiceError } = await supabase.from("invoices").insert({
+          project_id: measurement.project_id,
+          tipo: tipoDoc,
+          nf_numero: nfNumero,
+          nf_data: nfData || null,
+          valor_bruto: measurement.valor_bruto ?? 0,
+          retencao: measurement.valor_retencao ?? 0,
+          valor_liquido: measurement.valor_nf ?? 0,
+          empresa_faturadora: empresaFat,
+          status: "emitida",
+          notes: `Gerada a partir da medição ${measurement.codigo_bm}`,
+        });
+        if (invoiceError) {
+          // Log but don't fail the NF registration — measurement is already updated
+          console.error("Erro ao criar invoice vinculada:", invoiceError);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["faturamento-medicoes"] });
-      toast({ title: "NF registrada" });
+      toast({ title: "NF registrada e fatura criada" });
       setNfDialogId(null);
       setNfNumero("");
       setNfData("");
