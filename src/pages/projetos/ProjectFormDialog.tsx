@@ -84,6 +84,7 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
     if (!clientId) { toast.error("Selecione um cliente"); return; }
     if (clientMissingCode) { toast.error("O cliente selecionado não possui código"); return; }
     if (!projectName.trim()) { toast.error("Nome do projeto é obrigatório"); return; }
+    if (!billingType) { toast.error("Tipo de faturamento é obrigatório"); return; }
 
     setIsPending(true);
     try {
