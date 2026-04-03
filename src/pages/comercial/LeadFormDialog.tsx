@@ -30,9 +30,7 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
   const { data: employees = [] } = useEmployees();
   const isEditing = !!lead;
 
-  const responsaveis = employees.filter((e) =>
-    RESPONSIBLE_ROLES.some((r) => e.role?.toLowerCase() === r.toLowerCase())
-  );
+  const responsaveis = employees.filter((e) => e.status !== "desligado");
 
   const [form, setForm] = useState<LeadInsert>({
     name: "",
