@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { useClients, useCreateClient, useUpdateClient, SEGMENTOS, type Client, type ClientInsert } from "@/hooks/useClients";
 import { useProjects } from "@/hooks/useProjects";
+import { useCepAutofill } from "@/hooks/useCepAutofill";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -34,26 +35,12 @@ function extractDigits(value: string): string {
 
 function suggestCode(name: string): string {
   const stopWords = ["de", "do", "da", "dos", "das", "e", "a", "o", "em", "para", "com", "ltda", "sa", "s/a", "me", "epp", "eireli"];
-  const cleaned = name
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[&\-_./,;:()]/g, " ")
-    .trim();
+  const cleaned = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[&\-_./,;:()]/g, " ").trim();
   const words = cleaned.split(/\s+/).filter(w => w.length > 0 && !stopWords.includes(w.toLowerCase()));
-  
   if (words.length === 0) return "";
-  
-  // If first word is already 3 chars or less (like BRK, 2MS), use it
   if (words[0].length <= 3) return words[0].toUpperCase().slice(0, 3);
-  
-  // If only one significant word, take first 3 letters
   if (words.length === 1) return words[0].slice(0, 3).toUpperCase();
-  
-  // Multiple words: try first letter of each
-  if (words.length >= 3) {
-    return (words[0][0] + words[1][0] + words[2][0]).toUpperCase();
-  }
-  
-  // Two words: first two letters of first + first letter of second
+  if (words.length >= 3) return (words[0][0] + words[1][0] + words[2][0]).toUpperCase();
   return (words[0].slice(0, 2) + words[1][0]).toUpperCase();
 }
 
@@ -81,6 +68,16 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
   const tipo = form.tipo || "pj";
   const isPF = tipo === "pf";
 
+  // CEP autofill
+  const cepData = useCepAutofill(form.cep || "");
+
+  useEffect(() => {
+    if (cepData.rua) setForm(prev => ({ ...prev, rua: cepData.rua }));
+    if (cepData.bairro) setForm(prev => ({ ...prev, bairro: cepData.bairro }));
+    if (cepData.cidade) setForm(prev => ({ ...prev, cidade: cepData.cidade }));
+    if (cepData.estado) setForm(prev => ({ ...prev, estado: cepData.estado }));
+  }, [cepData.rua, cepData.bairro, cepData.cidade, cepData.estado]);
+
   const hasProjects = useMemo(() => {
     if (!client) return false;
     return projects.some(p => p.client_id === client.id);
@@ -102,19 +99,20 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
         notes: client.notes,
         tipo: client.tipo || "pj",
         codigo: client.codigo,
+        cep: (client as any).cep || "",
+        rua: (client as any).rua || "",
+        bairro: (client as any).bairro || "",
+        numero: (client as any).numero || "",
+        cidade: (client as any).cidade || "",
+        estado: (client as any).estado || "",
       });
       const isPfEdit = client.tipo === "pf";
       setDocDisplay(client.cnpj ? (isPfEdit ? formatCpf(client.cnpj) : formatCnpj(client.cnpj)) : "");
-      setContactName("");
-      setContactPhone("");
-      setContactEmail("");
+      setContactName(""); setContactPhone(""); setContactEmail("");
       setCodigoSuggested(true);
     } else if (open) {
       setForm({ name: "", tipo: "pj" });
-      setDocDisplay("");
-      setContactName("");
-      setContactPhone("");
-      setContactEmail("");
+      setDocDisplay(""); setContactName(""); setContactPhone(""); setContactEmail("");
       setCodigoSuggested(false);
     }
   }, [open, client]);
@@ -133,7 +131,6 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
         state: data.uf || prev.state,
         address: [data.logradouro, data.numero, data.bairro].filter(Boolean).join(", ") || prev.address,
       }));
-      // Auto-suggest code from fetched name
       if (!codigoSuggested && newName) {
         const suggested = suggestCode(newName);
         if (suggested) {
@@ -151,12 +148,10 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
 
   const handleDocChange = (value: string) => {
     if (isPF) {
-      const formatted = formatCpf(value);
-      setDocDisplay(formatted);
+      setDocDisplay(formatCpf(value));
       setForm((prev) => ({ ...prev, cnpj: extractDigits(value).slice(0, 11) }));
     } else {
-      const formatted = formatCnpj(value);
-      setDocDisplay(formatted);
+      setDocDisplay(formatCnpj(value));
       const digits = extractDigits(value);
       setForm((prev) => ({ ...prev, cnpj: digits.slice(0, 14) }));
       if (digits.length === 14) fetchCnpj(digits);
@@ -170,7 +165,6 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
 
   const handleNameChange = (name: string) => {
     setForm(prev => ({ ...prev, name }));
-    // Auto-suggest código for new clients
     if (!isEdit && !codigoSuggested && name.length >= 3) {
       const suggested = suggestCode(name);
       if (suggested) {
@@ -188,7 +182,7 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
 
   const validateCodigo = (): string | null => {
     const codigo = form.codigo;
-    if (!codigo) return null; // not required
+    if (!codigo) return null;
     if (codigo.length !== 3) return "Código deve ter exatamente 3 caracteres";
     const existing = allClients.find(c => c.codigo === codigo && c.id !== client?.id);
     if (existing) return `Código já utilizado por "${existing.name}"`;
@@ -198,7 +192,6 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) { toast.error("Nome/Razão Social é obrigatório"); return; }
-    
     const codigoError = validateCodigo();
     if (codigoError) { toast.error(codigoError); return; }
 
@@ -225,7 +218,6 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
           <DialogTitle>{isEdit ? "Editar Cliente" : "Novo Cliente"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Código do cliente */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Código (3 caracteres)</Label>
@@ -253,7 +245,6 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
             </div>
           </div>
 
-          {/* CNPJ / CPF */}
           <div className="space-y-2">
             <Label>{isPF ? "CPF" : "CNPJ"}</Label>
             <div className="relative">
@@ -291,22 +282,47 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
           </div>
 
           <Separator />
+          <p className="text-sm font-medium text-muted-foreground">Endereço (sede)</p>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Cidade</Label>
-              <Input value={form.city || ""} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">CEP</Label>
+              <div className="relative">
+                <Input
+                  value={form.cep || ""}
+                  onChange={(e) => setForm(prev => ({ ...prev, cep: e.target.value }))}
+                  placeholder="00000-000"
+                  maxLength={9}
+                  className="h-9"
+                />
+                {cepData.loading && <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 animate-spin text-muted-foreground" />}
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>UF</Label>
-              <Input value={form.state || ""} onChange={(e) => setForm({ ...form, state: e.target.value })} maxLength={2} />
+            <div className="col-span-2 space-y-1">
+              <Label className="text-xs">Rua</Label>
+              <Input value={form.rua || ""} onChange={(e) => setForm(prev => ({ ...prev, rua: e.target.value }))} className="h-9" />
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Nº</Label>
+              <Input value={form.numero || ""} onChange={(e) => setForm(prev => ({ ...prev, numero: e.target.value }))} className="h-9" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Bairro</Label>
+              <Input value={form.bairro || ""} onChange={(e) => setForm(prev => ({ ...prev, bairro: e.target.value }))} className="h-9" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Cidade</Label>
+              <Input value={form.cidade || ""} onChange={(e) => setForm(prev => ({ ...prev, cidade: e.target.value }))} className="h-9" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">UF</Label>
+              <Input value={form.estado || ""} onChange={(e) => setForm(prev => ({ ...prev, estado: e.target.value }))} maxLength={2} className="h-9" />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Endereço</Label>
-            <Input value={form.address || ""} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-          </div>
+          <Separator />
 
           <div className="space-y-2">
             <Label>Segmento</Label>
