@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { Building2, Search, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Building2, Search, Plus, History } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import { toast } from "sonner";
 const TIPOS = ["Construtora", "Incorporadora", "Empresa privada", "Órgão público", "Pessoa física"] as const;
 
 export default function AdminClientes() {
+  const navigate = useNavigate();
   const { data: clients = [], isLoading } = useClients();
   const createClient = useCreateClient();
   const updateClient = useUpdateClient();
@@ -144,7 +146,10 @@ export default function AdminClientes() {
                         {c.is_active ? "Ativo" : "Inativo"}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="flex gap-1">
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/base/clientes/${c.id}`); }} title="Histórico">
+                        <History className="w-4 h-4" />
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openEdit(c); }}>Editar</Button>
                     </TableCell>
                   </TableRow>
