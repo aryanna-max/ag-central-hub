@@ -21,6 +21,7 @@ import {
 import MonthlyCalendarGrid from "@/components/operacional/MonthlyCalendarGrid";
 import MonthlyDayEditDialog from "@/components/operacional/MonthlyDayEditDialog";
 import MonthlyScheduleReport from "@/components/operacional/MonthlyScheduleReport";
+import PlanningReportsTab from "@/components/operacional/PlanningReportsTab";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
