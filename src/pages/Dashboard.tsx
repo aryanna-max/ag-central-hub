@@ -599,7 +599,7 @@ export default function Dashboard() {
                           project={p}
                           clientName={clientMap.get(p.client_id || "") || "—"}
                           hasAlert={alertProjectIds.has(p.id)}
-                          onClick={() => navigate(`/projetos/kanban`)}
+                          onClick={() => navigate(`/projetos/${p.id}`)}
                           fmtBRL={fmtBRL}
                         />
                       ))}
