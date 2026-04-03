@@ -56,7 +56,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    const defaultPassword = password || "32725203AG";
+    if (!password) {
+      return new Response(JSON.stringify({ error: "Senha é obrigatória" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const defaultPassword = password;
 
     // Create user via admin API
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({

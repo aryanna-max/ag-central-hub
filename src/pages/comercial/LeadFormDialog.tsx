@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { SERVICE_TYPES } from "@/lib/serviceTypes";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import {
 } from "@/hooks/useLeads";
 import { useClients } from "@/hooks/useClients";
 import { useEmployees } from "@/hooks/useEmployees";
+import { isCommercialDirector } from "@/lib/fieldRoles";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -31,8 +33,7 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
   const isEditing = !!lead;
 
   const responsaveis = employees.filter((e) =>
-    e.status !== "desligado" &&
-    (e.name?.toLowerCase().includes("sérgio") || e.name?.toLowerCase().includes("sergio") || e.name?.toLowerCase().includes("ciro"))
+    e.status !== "desligado" && isCommercialDirector(e.name)
   );
 
   const [form, setForm] = useState<LeadInsert>({
@@ -279,23 +280,7 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
               <SelectTrigger><SelectValue placeholder="Selecione o serviço" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Selecione...</SelectItem>
-                {[
-                  "Levantamento Topográfico Planialtimétrico",
-                  "Levantamento Topográfico Planialtimétrico Cadastral Georreferenciado",
-                  "Levantamento Cadastral Urbano",
-                  "Levantamento Altimétrico",
-                  "Levantamento Planimétrico",
-                  "Levantamento para Projeto de Engenharia",
-                  "Georreferenciamento",
-                  "Cartografia",
-                  "Implantação de Lotes",
-                  "Acompanhamento de Obras",
-                  "Locação de Equipe",
-                  "Locação de Equipe Mensal",
-                  "Masterplan",
-                  "Processamento de Dados",
-                  "Outros",
-                ].map((s) => (
+                {SERVICE_TYPES.map((s) => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
               </SelectContent>

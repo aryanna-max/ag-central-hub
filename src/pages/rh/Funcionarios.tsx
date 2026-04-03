@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Employee } from "@/hooks/useEmployees";
+import { FIELD_ROLES } from "@/lib/fieldRoles";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   disponivel: { label: "Disponível", className: "bg-green-600 text-white" },
@@ -398,7 +399,14 @@ export default function Funcionarios() {
             </div>
             <div>
               <Label>Função</Label>
-              <Input value={newRole} onChange={(e) => setNewRole(e.target.value)} placeholder="Ex: Topógrafo I" />
+              <Select value={newRole} onValueChange={(v) => setNewRole(v)}>
+                <SelectTrigger><SelectValue placeholder="Selecione o cargo" /></SelectTrigger>
+                <SelectContent>
+                  {FIELD_ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Data de Admissão</Label>
@@ -467,7 +475,14 @@ export default function Funcionarios() {
             </div>
             <div>
               <Label>Função</Label>
-              <Input value={editRole} onChange={(e) => setEditRole(e.target.value)} />
+              <Select value={editRole} onValueChange={(v) => setEditRole(v)}>
+                <SelectTrigger><SelectValue placeholder="Selecione o cargo" /></SelectTrigger>
+                <SelectContent>
+                  {FIELD_ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Data de Admissão</Label>

@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { SERVICE_TYPES } from "@/lib/serviceTypes";
+import { isCommercialDirector } from "@/lib/fieldRoles";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -325,23 +327,7 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
                         <SelectTrigger><SelectValue placeholder="Selecione o serviço" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">Selecione...</SelectItem>
-                          {[
-                            "Levantamento Topográfico Planialtimétrico",
-                            "Levantamento Topográfico Planialtimétrico Cadastral Georreferenciado",
-                            "Levantamento Cadastral Urbano",
-                            "Levantamento Altimétrico",
-                            "Levantamento Planimétrico",
-                            "Levantamento para Projeto de Engenharia",
-                            "Georreferenciamento",
-                            "Cartografia",
-                            "Implantação de Lotes",
-                            "Acompanhamento de Obras",
-                            "Locação de Equipe",
-                            "Locação de Equipe Mensal",
-                            "Masterplan",
-                            "Processamento de Dados",
-                            "Outros",
-                          ].map((s) => (
+                          {SERVICE_TYPES.map((s) => (
                             <SelectItem key={s} value={s}>{s}</SelectItem>
                           ))}
                         </SelectContent>
@@ -407,8 +393,7 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
                           <SelectContent>
                             <SelectItem value="none">Nenhum</SelectItem>
                             {employees.filter((e) =>
-                              e.status !== "desligado" &&
-                              (e.name?.toLowerCase().includes("sérgio") || e.name?.toLowerCase().includes("sergio") || e.name?.toLowerCase().includes("ciro"))
+                              e.status !== "desligado" && isCommercialDirector(e.name)
                             ).map((e) => (
                               <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
                             ))}

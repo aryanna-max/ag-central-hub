@@ -1,0 +1,17 @@
+export const SERVICE_TYPES = [
+  "Levantamento Topográfico Planialtimétrico",
+  "Levantamento Topográfico Planialtimétrico Cadastral Georreferenciado",
+  "Levantamento Cadastral Urbano",
+  "Levantamento Altimétrico",
+  "Levantamento Planimétrico",
+  "Levantamento para Projeto de Engenharia",
+  "Georreferenciamento",
+  "Cartografia",
+  "Implantação de Lotes",
+  "Acompanhamento de Obras",
+  "Locação de Equipe",
+  "Locação de Equipe Mensal",
+  "Masterplan",
+  "Processamento de Dados",
+  "Outros",
+] as const;

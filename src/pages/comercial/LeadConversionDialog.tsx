@@ -182,6 +182,17 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
           tipo: clientType,
         });
         clientId = newClient.id;
+
+        // Save lead contact info as primary contact for the new client
+        if (lead.name?.trim()) {
+          await supabase.from("client_contacts" as any).insert({
+            client_id: newClient.id,
+            contact_name: lead.name.trim(),
+            contact_phone: lead.phone || null,
+            contact_email: lead.email || null,
+            is_primary: true,
+          });
+        }
       }
 
       // Step 2: Generate final project code

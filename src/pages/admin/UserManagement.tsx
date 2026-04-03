@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { UserPlus, Users, Shield } from "lucide-react";
+import { UserPlus, Users, Shield, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -38,6 +38,7 @@ export default function UserManagement() {
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<string>("operacional");
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -54,16 +55,17 @@ export default function UserManagement() {
 
   const createUser = useMutation({
     mutationFn: async () => {
+      const password = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4);
       const { data: { session } } = await supabase.auth.getSession();
       const res = await supabase.functions.invoke("create-user", {
-        body: { email, full_name: fullName, role, password: "32725203AG" },
+        body: { email, full_name: fullName, role, password },
       });
       if (res.error) throw new Error(res.error.message);
       if (res.data?.error) throw new Error(res.data.error);
-      return res.data;
+      return { ...res.data, password };
     },
-    onSuccess: () => {
-      toast.success("Usuário criado com sucesso! Senha padrão: 32725203AG");
+    onSuccess: (data) => {
+      setGeneratedPassword(data.password);
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setDialogOpen(false);
       setEmail("");
@@ -131,7 +133,7 @@ export default function UserManagement() {
                 </Select>
               </div>
               <p className="text-xs text-muted-foreground">
-                Senha padrão: <strong>32725203AG</strong> — será solicitada alteração no primeiro login.
+                Uma senha aleatória será gerada e exibida após a criação. O usuário deverá alterá-la no primeiro login.
               </p>
               <Button type="submit" className="w-full" disabled={createUser.isPending}>
                 {createUser.isPending ? "Criando..." : "Criar Usuário"}
@@ -140,6 +142,40 @@ export default function UserManagement() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <Dialog open={!!generatedPassword} onOpenChange={(open) => { if (!open) setGeneratedPassword(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Usuário criado com sucesso</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Copie a senha abaixo e envie ao usuário. Ela será solicitada apenas no primeiro login.
+            </p>
+            <div className="flex items-center gap-2">
+              <Input readOnly value={generatedPassword || ""} className="font-mono text-lg" />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  if (generatedPassword) {
+                    navigator.clipboard.writeText(generatedPassword);
+                    toast.success("Senha copiada!");
+                  }
+                }}
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-amber-600">
+              Esta senha não poderá ser visualizada novamente após fechar este diálogo.
+            </p>
+            <Button className="w-full" onClick={() => setGeneratedPassword(null)}>
+              Entendi, já copiei a senha
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader>
