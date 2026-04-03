@@ -20,7 +20,7 @@ import { useNavigate } from "react-router-dom";
 
 const LEAD_STATUS_LABELS: Record<string, string> = {
   novo: "Novo", qualificado: "Qualificado", proposta_enviada: "Proposta Enviada",
-  aprovado: "Aprovado", convertido: "Convertido", perdido: "Perdido",
+  aprovado: "Aprovado", convertido: "Aprovado", perdido: "Perdido",
 };
 const LEAD_STATUS_COLORS: Record<string, string> = {
   novo: "bg-muted text-muted-foreground", qualificado: "bg-blue-100 text-blue-800",
