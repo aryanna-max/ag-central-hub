@@ -104,19 +104,18 @@ export default function EmployeeAvailabilityKanban({
 
     try {
       if (targetCol === "nao_alocado") {
-        await supabase.from("attendance").delete().eq("employee_id", empId).eq("date", scheduleDate);
+        await (supabase.from as any)("attendance").delete().eq("employee_id", empId).eq("date", scheduleDate);
       } else {
-        const { data: existing } = await supabase
-          .from("attendance")
+        const { data: existing } = await (supabase.from as any)("attendance")
           .select("id")
           .eq("employee_id", empId)
           .eq("date", scheduleDate)
           .maybeSingle();
 
         if (existing) {
-          await supabase.from("attendance").update({ status: targetCol }).eq("id", existing.id);
+          await (supabase.from as any)("attendance").update({ status: targetCol }).eq("id", existing.id);
         } else {
-          await supabase.from("attendance").insert({
+          await (supabase.from as any)("attendance").insert({
             employee_id: empId,
             date: scheduleDate,
             status: targetCol,

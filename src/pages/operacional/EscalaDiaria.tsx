@@ -86,8 +86,7 @@ export default function EscalaDiaria() {
   const { data: attendanceRecords } = useQuery({
     queryKey: ["attendance", selectedDate],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("attendance")
+      const { data, error } = await (supabase.from as any)("attendance")
         .select("*")
         .eq("date", selectedDate);
       if (error) throw error;

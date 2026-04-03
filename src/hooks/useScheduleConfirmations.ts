@@ -14,8 +14,7 @@ export function useScheduleConfirmation(date: string) {
   return useQuery({
     queryKey: ["schedule-confirmation", date],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("schedule_confirmations")
+      const { data, error } = await (supabase.from as any)("schedule_confirmations")
         .select("*")
         .eq("schedule_date", date)
         .maybeSingle();
@@ -29,8 +28,7 @@ export function useConfirmSchedule() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ date, userId, notes }: { date: string; userId: string; notes?: string }) => {
-      const { data, error } = await supabase
-        .from("schedule_confirmations")
+      const { data, error } = await (supabase.from as any)("schedule_confirmations")
         .insert({
           schedule_date: date,
           confirmed_by: userId,
