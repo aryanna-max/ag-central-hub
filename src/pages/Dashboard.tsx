@@ -35,10 +35,11 @@ const EXEC_STATUS_LABELS: Record<string, string> = {
 };
 
 const BILLING_LABELS: Record<string, string> = {
-  medicao_mensal: "Medição mensal",
+  medicao_mensal: "Por medição",
   entrega_nf: "NF na entrega",
   entrega_recibo: "Recibo na entrega",
   misto: "Misto",
+  sem_documento: "Sem documento",
 };
 
 // ─── Kanban groups ───
