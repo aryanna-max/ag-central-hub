@@ -1,713 +1,577 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import {
-  FolderKanban, FileText, Users, Bell, TrendingUp,
-  AlertTriangle, ChevronRight, ExternalLink, Activity,
-  CheckCircle2, Clock, XCircle, Eye,
+  Bell, CheckCircle2, AlertTriangle, Clock,
+  Map as MapIcon, Receipt, FolderKanban, Filter,
+  ChevronRight, ChevronDown,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { useQuery } from "@tanstack/react-query";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useProjects, type Project } from "@/hooks/useProjects";
 import { useClients } from "@/hooks/useClients";
-import { format, formatDistanceToNow } from "date-fns";
+import { useAlerts } from "@/hooks/useAlerts";
+import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
+import DeadlineBadge from "@/components/DeadlineBadge";
+import { cn } from "@/lib/utils";
 
-const LEAD_STATUS_LABELS: Record<string, string> = {
-  novo: "Novo", qualificado: "Qualificado", proposta_enviada: "Proposta Enviada",
-  aprovado: "Aprovado", convertido: "Aprovado", perdido: "Perdido",
-};
-const LEAD_STATUS_COLORS: Record<string, string> = {
-  novo: "bg-muted text-muted-foreground", qualificado: "bg-blue-100 text-blue-800",
-  proposta_enviada: "bg-amber-100 text-amber-800", aprovado: "bg-emerald-100 text-emerald-800",
-  convertido: "bg-emerald-100 text-emerald-800", perdido: "bg-rose-100 text-rose-800",
-};
-const PROJECT_STATUS_LABELS: Record<string, string> = {
-  planejamento: "Planejamento", execucao: "Execução", entrega: "Entrega",
-  faturamento: "Faturamento", concluido: "Concluído", pausado: "Pausado",
-};
-const PROJECT_STATUS_COLORS: Record<string, string> = {
-  planejamento: "bg-muted text-muted-foreground", execucao: "bg-blue-100 text-blue-800",
-  entrega: "bg-amber-100 text-amber-800", faturamento: "bg-orange-100 text-orange-800",
-  concluido: "bg-green-100 text-green-800", pausado: "bg-rose-100 text-rose-800",
+// ─── Execution status labels & colors ───
+const EXEC_STATUS_LABELS: Record<string, string> = {
+  aguardando_campo: "Aguardando campo",
+  em_campo: "Em campo",
+  campo_concluido: "Campo concluído",
+  aguardando_processamento: "Aguardando proc.",
+  em_processamento: "Em processamento",
+  revisao: "Em revisão",
+  aprovado: "Aprovado",
+  entregue: "Entregue",
+  faturamento: "Faturamento",
+  pago: "Pago",
 };
 
-type PanelType = "projects" | "leads" | "proposals" | "alerts" | null;
+const BILLING_LABELS: Record<string, string> = {
+  medicao_mensal: "Medição mensal",
+  entrega_nf: "NF na entrega",
+  entrega_recibo: "Recibo na entrega",
+  misto: "Misto",
+};
+
+// ─── Kanban groups ───
+const GROUPS = [
+  {
+    key: "campo", label: "🏕️ Campo", color: "#1A9E7C",
+    columns: ["aguardando_campo", "em_campo", "campo_concluido"],
+  },
+  {
+    key: "prancheta", label: "📐 Prancheta", color: "#2D6E8E",
+    columns: ["aguardando_processamento", "em_processamento", "revisao", "aprovado"],
+  },
+  {
+    key: "financeiro", label: "💰 Financeiro", color: "#f97316",
+    columns: ["entregue", "faturamento", "pago"],
+  },
+];
+
+const ALL_COLUMNS = GROUPS.flatMap((g) => g.columns);
+
+type KpiFilter = "em_campo" | "prazo_critico" | "a_faturar" | "ativos" | null;
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [activePanel, setActivePanel] = useState<PanelType>(null);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const qc = useQueryClient();
+  const kanbanRef = useRef<HTMLDivElement>(null);
 
   const { data: projects = [] } = useProjects();
   const { data: clients = [] } = useClients();
 
-  const { data: leads = [] } = useQuery({
-    queryKey: ["dashboard-leads"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: proposals = [] } = useQuery({
-    queryKey: ["dashboard-proposals"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("proposals").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: measurements = [] } = useQuery({
-    queryKey: ["dashboard-measurements"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("measurements").select("*");
-      if (error) throw error;
-      return data;
-    },
-  });
-
+  // Alerts
   const { data: alerts = [] } = useQuery({
-    queryKey: ["dashboard-alerts-all"],
+    queryKey: ["radar-alerts"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("alerts").select("*").eq("resolved", false)
-        .order("created_at", { ascending: false }).limit(20);
+        .from("alerts")
+        .select("*")
+        .eq("alert_status", "ativo")
+        .order("created_at", { ascending: false })
+        .limit(5);
       if (error) throw error;
       return data;
     },
   });
 
-  const { data: expenseSheets = [] } = useQuery({
-    queryKey: ["dashboard-expenses"],
+  const { data: allActiveAlerts = [] } = useQuery({
+    queryKey: ["radar-alerts-project-ids"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("field_expense_sheets").select("*");
+      const { data, error } = await supabase
+        .from("alerts")
+        .select("reference_id")
+        .eq("alert_status", "ativo");
       if (error) throw error;
       return data;
     },
   });
 
-  // Computed
-  const activeProjects = useMemo(() => projects.filter((p) => !["concluido", "pausado"].includes(p.status)), [projects]);
-  const activeLeads = useMemo(() => leads.filter((l) => !["convertido", "perdido"].includes(l.status)), [leads]);
-  const openProposals = useMemo(() => proposals.filter((p) => !["aprovada", "rejeitada"].includes(p.status)), [proposals]);
-  const urgentAlerts = useMemo(() => alerts.filter((a: any) => a.priority === "urgente"), [alerts]);
+  const resolveAlert = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("alerts").update({ alert_status: "resolvido" } as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["radar-alerts"] });
+      qc.invalidateQueries({ queryKey: ["radar-alerts-project-ids"] });
+    },
+  });
 
-  const formatCurrency = (v: number) =>
-    v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  const alertProjectIds = useMemo(
+    () => new Set(allActiveAlerts.map((a: any) => a.reference_id).filter(Boolean)),
+    [allActiveAlerts],
+  );
 
-  // Project diagnostics
-  const getProjectDiagnostics = (project: Project) => {
-    const projectMeasurements = measurements.filter((m: any) => m.project_id === project.id);
-    const projectExpenses = expenseSheets.filter((e: any) => e.project_id === project.id);
-    const projectAlerts = alerts.filter((a: any) => a.reference_id === project.id);
-    const client = project.client_id ? clients.find((c) => c.id === project.client_id) : null;
-    const projectLeads = leads.filter((l: any) => l.converted_project_id === project.id);
+  // Client lookup
+  const clientMap = useMemo(() => {
+    const m = new Map<string, string>();
+    clients.forEach((c) => m.set(c.id, c.name));
+    return m;
+  }, [clients]);
 
-    const totalMedido = projectMeasurements.reduce((s: number, m: any) => s + (m.valor_nf || 0), 0);
-    const totalDespesas = projectExpenses.reduce((s: number, e: any) => s + (e.total_value || 0), 0);
-    const pendingMeasurements = projectMeasurements.filter((m: any) => ["rascunho", "aguardando_nf"].includes(m.status));
-    const pendingExpenses = projectExpenses.filter((e: any) => e.status === "submetida");
+  // ─── KPIs ───
+  const activeProjects = useMemo(
+    () => projects.filter((p) => p.execution_status !== "pago"),
+    [projects],
+  );
 
-    const warnings: string[] = [];
-    if (pendingMeasurements.length > 0) warnings.push(`${pendingMeasurements.length} medição(ões) pendente(s)`);
-    if (pendingExpenses.length > 0) warnings.push(`${pendingExpenses.length} folha(s) de despesa aguardando aprovação`);
-    if (project.contract_value && totalMedido > project.contract_value * 0.9)
-      warnings.push("Valor medido próximo do valor contratado");
-    if (!project.responsible) warnings.push("Sem responsável definido");
-    if (projectAlerts.length > 0) warnings.push(`${projectAlerts.length} alerta(s) não resolvido(s)`);
+  const emCampoCount = useMemo(
+    () => projects.filter((p) => p.execution_status === "em_campo").length,
+    [projects],
+  );
 
-    return {
-      client, projectMeasurements, projectExpenses, projectAlerts, projectLeads,
-      totalMedido, totalDespesas, pendingMeasurements, pendingExpenses, warnings,
-    };
+  const prazoCriticoCount = useMemo(() => {
+    const limit = new Date();
+    limit.setDate(limit.getDate() + 7);
+    return projects.filter((p) => {
+      const es = p.execution_status;
+      if (["entregue", "faturamento", "pago"].includes(es)) return false;
+      const dd = p.delivery_deadline;
+      if (!dd) return false;
+      return new Date(dd) <= limit;
+    }).length;
+  }, [projects]);
+
+  const aFaturarCount = useMemo(
+    () =>
+      projects.filter(
+        (p) =>
+          p.execution_status === "entregue" &&
+          ["entrega_nf", "entrega_recibo"].includes(p.billing_type || ""),
+      ).length,
+    [projects],
+  );
+
+  // ─── Kanban state ───
+  const [groupToggles, setGroupToggles] = useState<Record<string, boolean>>({
+    campo: true,
+    prancheta: true,
+    financeiro: true,
+  });
+  const [collapsedCols, setCollapsedCols] = useState<Set<string>>(new Set());
+  const [clientFilter, setClientFilter] = useState<string>("all");
+  const [billingFilter, setBillingFilter] = useState<string>("all");
+  const [prazoFilter, setPrazoFilter] = useState<string>("all");
+  const [kpiFilter, setKpiFilter] = useState<KpiFilter>(null);
+
+  const toggleGroup = (key: string) =>
+    setGroupToggles((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const toggleCol = (col: string) =>
+    setCollapsedCols((prev) => {
+      const next = new Set(prev);
+      if (next.has(col)) next.delete(col);
+      else next.add(col);
+      return next;
+    });
+
+  // Filter projects for kanban
+  const kanbanProjects = useMemo(() => {
+    return projects.filter((p) => {
+      const es = p.execution_status;
+      if (!es || !ALL_COLUMNS.includes(es)) return false;
+
+      // KPI filter
+      if (kpiFilter === "em_campo" && es !== "em_campo") return false;
+      if (kpiFilter === "a_faturar") {
+        if (es !== "entregue") return false;
+        if (!["entrega_nf", "entrega_recibo"].includes(p.billing_type || "")) return false;
+      }
+      if (kpiFilter === "prazo_critico") {
+        if (["entregue", "faturamento", "pago"].includes(es)) return false;
+        const dd = p.delivery_deadline;
+        if (!dd) return false;
+        const limit = new Date();
+        limit.setDate(limit.getDate() + 7);
+        if (new Date(dd) > limit) return false;
+      }
+      if (kpiFilter === "ativos" && es === "pago") return false;
+
+      if (clientFilter !== "all" && p.client_id !== clientFilter) return false;
+      if (billingFilter !== "all" && p.billing_type !== billingFilter) return false;
+
+      if (prazoFilter === "vencido") {
+        const dd = p.delivery_deadline;
+        if (!dd || new Date(dd) >= new Date()) return false;
+      } else if (prazoFilter === "critico") {
+        const dd = p.delivery_deadline;
+        if (!dd) return false;
+        const limit = new Date();
+        limit.setDate(limit.getDate() + 7);
+        if (new Date(dd) > limit || new Date(dd) < new Date()) return false;
+      } else if (prazoFilter === "sem_prazo") {
+        if (p.delivery_deadline) return false;
+      }
+
+      return true;
+    });
+  }, [projects, kpiFilter, clientFilter, billingFilter, prazoFilter]);
+
+  const projectsByStatus = useMemo(() => {
+    const map: Record<string, Project[]> = {};
+    ALL_COLUMNS.forEach((c) => (map[c] = []));
+    kanbanProjects.forEach((p) => {
+      const es = p.execution_status;
+      if (map[es]) map[es].push(p);
+    });
+    return map;
+  }, [kanbanProjects]);
+
+  // Visible columns
+  const visibleColumns = useMemo(() => {
+    return GROUPS.flatMap((g) => (groupToggles[g.key] ? g.columns : []));
+  }, [groupToggles]);
+
+  // Unique clients for filter
+  const clientOptions = useMemo(() => {
+    const ids = new Set(projects.map((p) => p.client_id).filter(Boolean));
+    return Array.from(ids)
+      .map((id) => ({ id: id!, name: clientMap.get(id!) || "—" }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [projects, clientMap]);
+
+  const handleKpiClick = (filter: KpiFilter) => {
+    setKpiFilter((prev) => (prev === filter ? null : filter));
+    kanbanRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const getProjectName = (refId: string | null) => {
+    if (!refId) return "";
+    const p = projects.find((pr) => pr.id === refId);
+    return p ? `${p.codigo || ""} ${p.name}` : "";
+  };
+
+  // ─── RENDER ───
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Painel do Diretor</h1>
-          <p className="text-muted-foreground text-sm">
-            {format(new Date(), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {urgentAlerts.length > 0 && (
-            <Badge variant="destructive" className="cursor-pointer" onClick={() => setActivePanel("alerts")}>
-              <AlertTriangle className="w-3 h-3 mr-1" /> {urgentAlerts.length} urgente(s)
-            </Badge>
-          )}
-        </div>
-      </div>
+    <div className="space-y-6 p-4 md:p-6 max-w-[1400px] mx-auto">
+      <h1 className="text-2xl font-bold">Radar</h1>
 
-      {/* Main KPI Grid - all clickable */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card
-          className="cursor-pointer hover:border-primary/50 transition-colors group"
-          onClick={() => setActivePanel("projects")}
-        >
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Projetos Ativos</p>
-                <p className="text-3xl font-bold mt-1">{activeProjects.length}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {projects.filter(p => p.status === "concluido").length} concluídos
-                </p>
-              </div>
-              <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                <FolderKanban className="w-5 h-5" />
-              </div>
-            </div>
-            <div className="flex items-center gap-1 mt-2 text-xs text-primary">
-              <span>Ver diagnóstico</span> <ChevronRight className="w-3 h-3" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="cursor-pointer hover:border-primary/50 transition-colors group"
-          onClick={() => setActivePanel("leads")}
-        >
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Leads no Funil</p>
-                <p className="text-3xl font-bold mt-1">{activeLeads.length}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {leads.filter(l => ["aprovado", "convertido"].includes(l.status)).length} aprovados
-                </p>
-              </div>
-              <div className="p-2.5 rounded-lg bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-secondary-foreground transition-colors">
-                <Users className="w-5 h-5" />
-              </div>
-            </div>
-            <div className="flex items-center gap-1 mt-2 text-xs text-secondary">
-              <span>Ver detalhes</span> <ChevronRight className="w-3 h-3" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="cursor-pointer hover:border-primary/50 transition-colors group"
-          onClick={() => setActivePanel("proposals")}
-        >
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Propostas Abertas</p>
-                <p className="text-3xl font-bold mt-1">{openProposals.length}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {formatCurrency(openProposals.reduce((s, p: any) => s + (p.final_value || p.estimated_value || 0), 0))}
-                </p>
-              </div>
-              <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors">
-                <FileText className="w-5 h-5" />
-              </div>
-            </div>
-            <div className="flex items-center gap-1 mt-2 text-xs text-amber-600">
-              <span>Ver propostas</span> <ChevronRight className="w-3 h-3" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="cursor-pointer hover:border-destructive/50 transition-colors group"
-          onClick={() => setActivePanel("alerts")}
-        >
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Alertas Pendentes</p>
-                <p className="text-3xl font-bold mt-1">{alerts.length}</p>
-                <p className="text-xs text-destructive mt-1">
-                  {urgentAlerts.length} urgente(s)
-                </p>
-              </div>
-              <div className="p-2.5 rounded-lg bg-destructive/10 text-destructive group-hover:bg-destructive group-hover:text-destructive-foreground transition-colors">
-                <Bell className="w-5 h-5" />
-              </div>
-            </div>
-            <div className="flex items-center gap-1 mt-2 text-xs text-destructive">
-              <span>Ver todos</span> <ChevronRight className="w-3 h-3" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Projects Overview - clickable rows */}
-      <Card>
-        <CardHeader className="pb-2 flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Activity className="w-4 h-4 text-primary" />
-            Panorama dos Projetos
-          </CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/projetos/kanban")}>
-            <ExternalLink className="w-4 h-4 mr-1" /> Abrir Kanban
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-1">
-            {activeProjects.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-6">Nenhum projeto ativo.</p>
-            )}
-            {activeProjects.map((project) => {
-              const diag = getProjectDiagnostics(project);
+      {/* ═══ SEÇÃO 1 — ALERTAS ═══ */}
+      <section>
+        {alerts.length === 0 ? (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <CheckCircle2 className="h-5 w-5" />
+            <span className="text-sm font-medium">Sem alertas pendentes</span>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {alerts.map((a: any) => {
+              const borderColor =
+                a.priority === "urgente"
+                  ? "border-l-red-500"
+                  : a.priority === "importante"
+                    ? "border-l-orange-500"
+                    : "border-l-blue-500";
               return (
                 <div
-                  key={project.id}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors border border-transparent hover:border-border"
-                  onClick={() => setSelectedProject(project)}
+                  key={a.id}
+                  className={cn(
+                    "flex items-start gap-3 p-3 rounded-lg border border-l-4 bg-card",
+                    borderColor,
+                  )}
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold truncate">{project.codigo || "—"}</span>
-                      <span className="text-sm truncate">{project.name}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {diag.client?.name || project.client || "Sem cliente"} • {project.responsible || "Sem responsável"}
+                    <p className="text-sm font-medium leading-tight">{a.message || a.title}</p>
+                    {a.reference_id && (
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {getProjectName(a.reference_id)}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatDistanceToNow(new Date(a.created_at), { addSuffix: true, locale: ptBR })}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {diag.warnings.length > 0 && (
-                      <Badge variant="destructive" className="text-[10px]">
-                        <AlertTriangle className="w-3 h-3 mr-0.5" /> {diag.warnings.length}
-                      </Badge>
+                  <div className="flex gap-1 shrink-0">
+                    {a.reference_id && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs"
+                        onClick={() => navigate(`/projetos/kanban`)}
+                      >
+                        Ver
+                      </Button>
                     )}
-                    <Badge className={`text-[10px] ${PROJECT_STATUS_COLORS[project.status]}`} variant="secondary">
-                      {PROJECT_STATUS_LABELS[project.status] || project.status}
-                    </Badge>
-                    <Eye className="w-4 h-4 text-muted-foreground" />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      onClick={() => resolveAlert.mutate(a.id)}
+                    >
+                      ✓
+                    </Button>
                   </div>
                 </div>
               );
             })}
+            <Button
+              variant="link"
+              className="text-xs p-0 h-auto"
+              onClick={() => navigate("/projetos/kanban")}
+            >
+              Ver todos os alertas →
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </section>
 
-      {/* Recent Leads + Alerts side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="cursor-pointer" onClick={() => setActivePanel("leads")}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-secondary" />
-              Leads Recentes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {leads.slice(0, 5).map((lead: any) => (
-                <div key={lead.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{lead.company || lead.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{lead.servico || "—"}</p>
-                  </div>
-                  <Badge className={`text-[10px] ${LEAD_STATUS_COLORS[lead.status]}`} variant="secondary">
-                    {LEAD_STATUS_LABELS[lead.status] || lead.status}
-                  </Badge>
-                </div>
+      {/* ═══ SEÇÃO 2 — KPIs 2×2 ═══ */}
+      <section className="grid grid-cols-2 gap-3">
+        <KpiCard
+          icon={<MapIcon className="h-5 w-5 text-[hsl(var(--primary))]" />}
+          label="Em campo"
+          value={emCampoCount}
+          subtitle="projetos com equipe no campo"
+          active={kpiFilter === "em_campo"}
+          onClick={() => handleKpiClick("em_campo")}
+        />
+        <KpiCard
+          icon={<AlertTriangle className="h-5 w-5" />}
+          label="Prazo crítico"
+          value={prazoCriticoCount}
+          subtitle="entregas nos próximos 7 dias"
+          danger={prazoCriticoCount > 0}
+          active={kpiFilter === "prazo_critico"}
+          onClick={() => handleKpiClick("prazo_critico")}
+        />
+        <KpiCard
+          icon={<Receipt className="h-5 w-5" />}
+          label="A faturar"
+          value={aFaturarCount}
+          subtitle="aguardando emissão de documento"
+          warning={aFaturarCount > 0}
+          active={kpiFilter === "a_faturar"}
+          onClick={() => handleKpiClick("a_faturar")}
+        />
+        <KpiCard
+          icon={<FolderKanban className="h-5 w-5 text-[hsl(var(--primary))]" />}
+          label="Ativos"
+          value={activeProjects.length}
+          subtitle="projetos em andamento"
+          active={kpiFilter === "ativos"}
+          onClick={() => handleKpiClick("ativos")}
+        />
+      </section>
+
+      {/* ═══ SEÇÃO 3 — KANBAN ═══ */}
+      <section ref={kanbanRef} className="space-y-3">
+        {/* Group toggles */}
+        <div className="flex flex-wrap gap-2">
+          {GROUPS.map((g) => (
+            <Button
+              key={g.key}
+              size="sm"
+              variant={groupToggles[g.key] ? "default" : "outline"}
+              className="text-xs"
+              onClick={() => toggleGroup(g.key)}
+            >
+              {g.label} {groupToggles[g.key] ? "✓" : ""}
+            </Button>
+          ))}
+          {kpiFilter && (
+            <Button size="sm" variant="destructive" className="text-xs" onClick={() => setKpiFilter(null)}>
+              Limpar filtro
+            </Button>
+          )}
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-2">
+          <Select value={clientFilter} onValueChange={setClientFilter}>
+            <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectValue placeholder="Cliente" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os clientes</SelectItem>
+              {clientOptions.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
               ))}
-              {leads.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Nenhum lead.</p>}
-            </div>
-          </CardContent>
-        </Card>
+            </SelectContent>
+          </Select>
 
-        <Card className="cursor-pointer" onClick={() => setActivePanel("alerts")}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Bell className="w-4 h-4 text-destructive" />
-              Alertas Recentes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {alerts.slice(0, 5).map((a: any) => (
-                <div key={a.id} className="flex items-start gap-2 p-2 rounded-lg bg-muted/50 border">
-                  <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-                    a.priority === "urgente" ? "bg-destructive" : a.priority === "importante" ? "bg-amber-500" : "bg-blue-500"
-                  }`} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium truncate">{a.title}</p>
-                    {a.message && <p className="text-[10px] text-muted-foreground line-clamp-1">{a.message}</p>}
-                  </div>
-                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                    {formatDistanceToNow(new Date(a.created_at), { addSuffix: true, locale: ptBR })}
-                  </span>
-                </div>
+          <Select value={prazoFilter} onValueChange={setPrazoFilter}>
+            <SelectTrigger className="w-[140px] h-8 text-xs">
+              <SelectValue placeholder="Prazo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos prazos</SelectItem>
+              <SelectItem value="vencido">Vencido</SelectItem>
+              <SelectItem value="critico">Crítico</SelectItem>
+              <SelectItem value="sem_prazo">Sem prazo</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={billingFilter} onValueChange={setBillingFilter}>
+            <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectValue placeholder="Faturamento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos tipos</SelectItem>
+              {Object.entries(BILLING_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
               ))}
-              {alerts.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Nenhum alerta.</p>}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </SelectContent>
+          </Select>
+        </div>
 
-      {/* ═══ DIAGNOSTIC PANELS ═══ */}
+        {/* Kanban board */}
+        <div className="overflow-x-auto pb-4 -mx-4 px-4">
+          <div className="flex gap-2 min-w-max">
+            {GROUPS.map((group) => {
+              if (!groupToggles[group.key]) return null;
+              return group.columns.map((col) => {
+                const items = projectsByStatus[col] || [];
+                const isCollapsed = collapsedCols.has(col) && items.length === 0;
 
-      {/* Projects Panel */}
-      <Dialog open={activePanel === "projects"} onOpenChange={(o) => !o && setActivePanel(null)}>
-        <DialogContent className="max-w-3xl max-h-[85vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FolderKanban className="w-5 h-5" /> Diagnóstico de Projetos
-            </DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[70vh] pr-4">
-            <div className="space-y-3">
-              {projects.map((project) => {
-                const diag = getProjectDiagnostics(project);
+                if (isCollapsed) {
+                  return (
+                    <div
+                      key={col}
+                      className="w-8 shrink-0 rounded-lg border cursor-pointer flex flex-col items-center justify-center py-4 hover:bg-muted/50 transition-colors"
+                      style={{ borderTopColor: group.color, borderTopWidth: 3 }}
+                      onClick={() => toggleCol(col)}
+                    >
+                      <span
+                        className="text-[10px] text-muted-foreground font-medium"
+                        style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
+                      >
+                        {EXEC_STATUS_LABELS[col]} ({items.length})
+                      </span>
+                    </div>
+                  );
+                }
+
                 return (
                   <div
-                    key={project.id}
-                    className="p-4 border rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
-                    onClick={() => { setActivePanel(null); setSelectedProject(project); }}
+                    key={col}
+                    className="w-[220px] shrink-0 rounded-lg border bg-muted/30"
+                    style={{ borderTopColor: group.color, borderTopWidth: 3 }}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <p className="font-semibold">{project.codigo} — {project.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {diag.client?.name || project.client || "—"} • {project.responsible || "—"}
-                        </p>
-                      </div>
-                      <Badge className={`${PROJECT_STATUS_COLORS[project.status]}`} variant="secondary">
-                        {PROJECT_STATUS_LABELS[project.status]}
+                    <div
+                      className="px-2 py-1.5 flex items-center justify-between cursor-pointer"
+                      onClick={() => items.length === 0 && toggleCol(col)}
+                    >
+                      <span className="text-xs font-semibold truncate">
+                        {EXEC_STATUS_LABELS[col]}
+                      </span>
+                      <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                        {items.length}
                       </Badge>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div><span className="text-muted-foreground">Contrato:</span> <strong>{formatCurrency(project.contract_value || 0)}</strong></div>
-                      <div><span className="text-muted-foreground">Medido:</span> <strong>{formatCurrency(diag.totalMedido)}</strong></div>
-                      <div><span className="text-muted-foreground">Despesas:</span> <strong>{formatCurrency(diag.totalDespesas)}</strong></div>
+
+                    <div className="px-1.5 pb-1.5 space-y-1.5 max-h-[60vh] overflow-y-auto">
+                      {items.map((p) => (
+                        <ProjectCard
+                          key={p.id}
+                          project={p}
+                          clientName={clientMap.get(p.client_id || "") || "—"}
+                          hasAlert={alertProjectIds.has(p.id)}
+                          onClick={() => navigate(`/projetos/kanban`)}
+                        />
+                      ))}
                     </div>
-                    {diag.warnings.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {diag.warnings.map((w, i) => (
-                          <Badge key={i} variant="destructive" className="text-[10px]">{w}</Badge>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 );
-              })}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-
-      {/* Leads Panel */}
-      <Dialog open={activePanel === "leads"} onOpenChange={(o) => !o && setActivePanel(null)}>
-        <DialogContent className="max-w-3xl max-h-[85vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" /> Diagnóstico do Funil Comercial
-            </DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[70vh] pr-4">
-            {/* Funil summary */}
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
-              {Object.entries(LEAD_STATUS_LABELS).map(([key, label]) => {
-                const count = leads.filter((l: any) => l.status === key).length;
-                return (
-                  <div key={key} className="text-center p-2 rounded-lg bg-muted/50">
-                    <p className="text-lg font-bold">{count}</p>
-                    <p className="text-[10px] text-muted-foreground">{label}</p>
-                  </div>
-                );
-              })}
-            </div>
-            <Separator className="mb-4" />
-            <div className="space-y-2">
-              {leads.map((lead: any) => (
-                <div key={lead.id} className="p-3 border rounded-lg flex items-center gap-3 hover:bg-muted/30 cursor-pointer"
-                  onClick={() => { setActivePanel(null); navigate("/comercial/leads"); }}>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{lead.company || lead.name}</p>
-                    <p className="text-xs text-muted-foreground">{lead.servico || "—"} • {lead.origin || "—"}</p>
-                  </div>
-                  <Badge className={`text-[10px] ${LEAD_STATUS_COLORS[lead.status]}`} variant="secondary">
-                    {LEAD_STATUS_LABELS[lead.status]}
-                  </Badge>
-                  {lead.valor && <span className="text-xs font-medium">{formatCurrency(lead.valor)}</span>}
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-
-      {/* Proposals Panel */}
-      <Dialog open={activePanel === "proposals"} onOpenChange={(o) => !o && setActivePanel(null)}>
-        <DialogContent className="max-w-3xl max-h-[85vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" /> Propostas em Aberto
-            </DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[70vh] pr-4">
-            <div className="space-y-2">
-              {proposals.map((p: any) => (
-                <div key={p.id} className="p-3 border rounded-lg flex items-center gap-3 hover:bg-muted/30 cursor-pointer"
-                  onClick={() => { setActivePanel(null); navigate("/propostas"); }}>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{p.code} — {p.title}</p>
-                    <p className="text-xs text-muted-foreground">{p.client_name || "—"} • {p.service || "—"}</p>
-                  </div>
-                  <Badge variant="secondary" className="text-[10px]">{p.status}</Badge>
-                  <span className="text-xs font-medium">
-                    {formatCurrency(p.final_value || p.estimated_value || 0)}
-                  </span>
-                </div>
-              ))}
-              {proposals.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">Nenhuma proposta.</p>}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-
-      {/* Alerts Panel */}
-      <Dialog open={activePanel === "alerts"} onOpenChange={(o) => !o && setActivePanel(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Bell className="w-5 h-5" /> Todos os Alertas Pendentes
-            </DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[70vh] pr-4">
-            <div className="space-y-2">
-              {alerts.map((a: any) => (
-                <div key={a.id} className="flex items-start gap-3 p-3 border rounded-lg">
-                  <div className={`w-3 h-3 rounded-full mt-0.5 shrink-0 ${
-                    a.priority === "urgente" ? "bg-destructive" : a.priority === "importante" ? "bg-amber-500" : "bg-blue-500"
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{a.title}</p>
-                    {a.message && <p className="text-xs text-muted-foreground mt-0.5">{a.message}</p>}
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      {a.recipient} • {formatDistanceToNow(new Date(a.created_at), { addSuffix: true, locale: ptBR })}
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="text-[10px] shrink-0">{a.alert_type}</Badge>
-                </div>
-              ))}
-              {alerts.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">Nenhum alerta pendente.</p>}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-
-      {/* ═══ PROJECT DETAIL PANORAMA ═══ */}
-      <Dialog open={!!selectedProject} onOpenChange={(o) => !o && setSelectedProject(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          {selectedProject && <ProjectPanorama project={selectedProject} clients={clients} measurements={measurements} expenseSheets={expenseSheets} alerts={alerts} leads={leads} proposals={proposals} onNavigate={(path) => { setSelectedProject(null); navigate(path); }} />}
-        </DialogContent>
-      </Dialog>
+              });
+            })}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
 
-// ═══ Project Panorama Component ═══
-function ProjectPanorama({ project, clients, measurements, expenseSheets, alerts, leads, proposals, onNavigate }: {
-  project: Project;
-  clients: any[];
-  measurements: any[];
-  expenseSheets: any[];
-  alerts: any[];
-  leads: any[];
-  proposals: any[];
-  onNavigate: (path: string) => void;
+// ─── KPI Card ───
+function KpiCard({
+  icon, label, value, subtitle, danger, warning, active, onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  subtitle: string;
+  danger?: boolean;
+  warning?: boolean;
+  active?: boolean;
+  onClick: () => void;
 }) {
-  const client = project.client_id ? clients.find((c) => c.id === project.client_id) : null;
-  const projMeas = measurements.filter((m: any) => m.project_id === project.id);
-  const projExp = expenseSheets.filter((e: any) => e.project_id === project.id);
-  const projAlerts = alerts.filter((a: any) => a.reference_id === project.id);
-  const projLead = leads.find((l: any) => l.converted_project_id === project.id);
-  const projProposal = proposals.find((p: any) => p.client_id === project.client_id);
+  return (
+    <Card
+      className={cn(
+        "cursor-pointer transition-all hover:shadow-md",
+        active && "ring-2 ring-primary",
+        danger && value > 0 && "border-red-300 bg-red-50",
+        warning && value > 0 && !danger && "border-orange-300 bg-orange-50",
+      )}
+      onClick={onClick}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 mb-1">
+          {icon}
+          <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        </div>
+        <p className={cn("text-3xl font-bold", danger && value > 0 && "text-red-600", warning && value > 0 && !danger && "text-orange-600")}>
+          {value}
+        </p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>
+      </CardContent>
+    </Card>
+  );
+}
 
-  const totalMedido = projMeas.reduce((s: number, m: any) => s + (m.valor_nf || 0), 0);
-  const totalDespesas = projExp.reduce((s: number, e: any) => s + (e.total_value || 0), 0);
-  const pendingMeas = projMeas.filter((m: any) => ["rascunho", "aguardando_nf"].includes(m.status));
-  const pendingExp = projExp.filter((e: any) => e.status === "submetida");
-
-  const formatCurrency = (v: number) =>
-    v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-
-  // Suggestions
-  const suggestions: string[] = [];
-  if (!project.responsible) suggestions.push("⚠️ Definir um responsável para o projeto.");
-  if (pendingMeas.length > 0) suggestions.push(`📋 ${pendingMeas.length} medição(ões) aguardando NF — agilizar emissão.`);
-  if (pendingExp.length > 0) suggestions.push(`💰 ${pendingExp.length} folha(s) de despesa aguardando aprovação.`);
-  if (project.contract_value && totalMedido < project.contract_value * 0.3 && project.status === "execucao")
-    suggestions.push("📊 Medição baixa em relação ao contrato — verificar andamento.");
-  if (project.contract_value && totalMedido > project.contract_value * 0.9)
-    suggestions.push("🔴 Medição próxima do limite contratual — avaliar aditivo.");
-  if (projAlerts.length > 0) suggestions.push(`🔔 ${projAlerts.length} alerta(s) pendente(s) vinculado(s) a este projeto.`);
+// ─── Project Card ───
+function ProjectCard({
+  project, clientName, hasAlert, onClick,
+}: {
+  project: Project;
+  clientName: string;
+  hasAlert: boolean;
+  onClick: () => void;
+}) {
+  const p = project;
+  const billingLabel = BILLING_LABELS[p.billing_type] || p.billing_type;
 
   return (
-    <>
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2 text-lg">
-          <FolderKanban className="w-5 h-5" />
-          {project.codigo} — {project.name}
-          <Badge className={`ml-2 ${PROJECT_STATUS_COLORS[project.status]}`} variant="secondary">
-            {PROJECT_STATUS_LABELS[project.status]}
+    <div
+      className="p-2 rounded-md bg-card border shadow-sm cursor-pointer hover:shadow-md transition-shadow text-xs space-y-1"
+      onClick={onClick}
+    >
+      <div className="flex items-start justify-between gap-1">
+        <span className="font-bold text-[11px] text-primary truncate">{p.codigo || "—"}</span>
+        {hasAlert && <span className="text-sm shrink-0">🔔</span>}
+      </div>
+      <p className="text-[11px] font-medium leading-tight truncate">{p.name}</p>
+      <p className="text-[10px] text-muted-foreground truncate">{clientName}</p>
+
+      {p.delivery_deadline && (
+        <DeadlineBadge
+          deadline={new Date(p.delivery_deadline)}
+          started_at={p.field_completed_at ? new Date(p.field_completed_at) : null}
+          estimated_days={p.delivery_days_estimated}
+          completed_at={p.delivered_at ? new Date(p.delivered_at) : null}
+          label="Entrega"
+        />
+      )}
+
+      <div className="flex flex-wrap gap-1 mt-1">
+        {p.billing_type && (
+          <Badge variant="outline" className="text-[9px] h-4 px-1">{billingLabel}</Badge>
+        )}
+        {p.contract_value > 0 && (
+          <Badge variant="secondary" className="text-[9px] h-4 px-1">
+            {Number(p.contract_value).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}
           </Badge>
-        </DialogTitle>
-      </DialogHeader>
-      <ScrollArea className="max-h-[75vh] pr-4">
-        <div className="space-y-5">
-          {/* Client + General */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-muted-foreground">Projeto</h3>
-              <div className="text-sm space-y-1">
-                <p><span className="text-muted-foreground">Responsável:</span> {project.responsible || "—"}</p>
-                <p><span className="text-muted-foreground">Início:</span> {project.start_date ? format(new Date(project.start_date), "dd/MM/yyyy") : "—"}</p>
-                <p><span className="text-muted-foreground">Término:</span> {project.end_date ? format(new Date(project.end_date), "dd/MM/yyyy") : "—"}</p>
-                <p><span className="text-muted-foreground">Faturadora:</span> {project.empresa_faturadora}</p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-muted-foreground">Cliente</h3>
-              <div className="text-sm space-y-1">
-                <p><span className="text-muted-foreground">Nome:</span> {client?.name || project.client || "—"}</p>
-                <p><span className="text-muted-foreground">CNPJ:</span> {client?.cnpj || project.cnpj || "—"}</p>
-                <p><span className="text-muted-foreground">Contato Eng.:</span> {project.contato_engenheiro || "—"}</p>
-                <p><span className="text-muted-foreground">Contato Fin.:</span> {project.contato_financeiro || "—"}</p>
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Financial Summary */}
-          <div>
-            <h3 className="text-sm font-semibold text-muted-foreground mb-3">Resumo Financeiro</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3 rounded-lg bg-muted/50 text-center">
-                <p className="text-xs text-muted-foreground">Valor Contrato</p>
-                <p className="text-lg font-bold">{formatCurrency(project.contract_value || 0)}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/50 text-center">
-                <p className="text-xs text-muted-foreground">Total Medido</p>
-                <p className="text-lg font-bold text-primary">{formatCurrency(totalMedido)}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/50 text-center">
-                <p className="text-xs text-muted-foreground">Despesas Campo</p>
-                <p className="text-lg font-bold text-destructive">{formatCurrency(totalDespesas)}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/50 text-center">
-                <p className="text-xs text-muted-foreground">Saldo</p>
-                <p className="text-lg font-bold">{formatCurrency((project.contract_value || 0) - totalMedido)}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          {project.contract_value && project.contract_value > 0 && (
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-muted-foreground">Execução financeira</span>
-                <span className="font-medium">{Math.min(100, Math.round((totalMedido / project.contract_value) * 100))}%</span>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2.5">
-                <div
-                  className={`h-2.5 rounded-full transition-all ${
-                    totalMedido / project.contract_value > 0.9 ? "bg-destructive" : "bg-primary"
-                  }`}
-                  style={{ width: `${Math.min(100, (totalMedido / project.contract_value) * 100)}%` }}
-                />
-              </div>
-            </div>
-          )}
-
-          <Separator />
-
-          {/* Measurements */}
-          <div>
-            <h3 className="text-sm font-semibold text-muted-foreground mb-2">
-              Medições ({projMeas.length})
-            </h3>
-            {projMeas.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Nenhuma medição registrada.</p>
-            ) : (
-              <div className="space-y-1">
-                {projMeas.slice(0, 5).map((m: any) => (
-                  <div key={m.id} className="flex items-center justify-between text-xs py-1.5 border-b last:border-0">
-                    <span className="font-medium">{m.codigo_bm}</span>
-                    <span>{m.period_start && format(new Date(m.period_start), "dd/MM")} — {m.period_end && format(new Date(m.period_end), "dd/MM")}</span>
-                    <span className="font-medium">{formatCurrency(m.valor_nf || 0)}</span>
-                    <Badge variant="outline" className="text-[10px]">{m.status}</Badge>
-                  </div>
-                ))}
-                {projMeas.length > 5 && <p className="text-[10px] text-muted-foreground">+{projMeas.length - 5} medição(ões)...</p>}
-              </div>
-            )}
-          </div>
-
-          {/* Origin: Lead / Proposal */}
-          {(projLead || projProposal) && (
-            <>
-              <Separator />
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">Histórico Comercial</h3>
-                {projLead && (
-                  <div className="text-xs p-2 rounded bg-muted/50 mb-2">
-                    <p><span className="text-muted-foreground">Lead de origem:</span> {projLead.company || projLead.name}</p>
-                    <p><span className="text-muted-foreground">Criado em:</span> {format(new Date(projLead.created_at), "dd/MM/yyyy")}</p>
-                  </div>
-                )}
-                {projProposal && (
-                  <div className="text-xs p-2 rounded bg-muted/50">
-                    <p><span className="text-muted-foreground">Proposta:</span> {projProposal.code} — {projProposal.title}</p>
-                    <p><span className="text-muted-foreground">Valor:</span> {formatCurrency(projProposal.final_value || projProposal.estimated_value || 0)}</p>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* Suggestions & Alerts */}
-          {suggestions.length > 0 && (
-            <>
-              <Separator />
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-500" /> Sugestões e Alertas
-                </h3>
-                <div className="space-y-1.5">
-                  {suggestions.map((s, i) => (
-                    <p key={i} className="text-xs p-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
-                      {s}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Action buttons */}
-          <Separator />
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => onNavigate("/projetos/kanban")}>
-              <FolderKanban className="w-4 h-4 mr-1" /> Kanban
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => onNavigate("/operacional/medicoes")}>
-              <FileText className="w-4 h-4 mr-1" /> Medições
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => onNavigate("/operacional/despesas-de-campo")}>
-              <Clock className="w-4 h-4 mr-1" /> Despesas
-            </Button>
-          </div>
-        </div>
-      </ScrollArea>
-    </>
+        )}
+      </div>
+    </div>
   );
 }
