@@ -1,4 +1,4 @@
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -15,7 +15,7 @@ interface Props {
 const modules = [
   { icon: Radar, label: "Radar", desc: "Visão panorâmica", path: "/", color: "#2D6A8E" },
   { icon: Briefcase, label: "Negócios", desc: "Leads, propostas e clientes", path: "/comercial", color: "#2F9E8E" },
-  { icon: Map, label: "Campo", desc: "Escalas, veículos, despesas", path: "/operacional", color: "#8AB41D" },
+  { icon: Map, label: "Campo", desc: "Escalas, veículos, despesas", path: "/operacional/escala", color: "#8AB41D" },
   { icon: PenTool, label: "Prancheta", desc: "Sala Técnica — tarefas", path: "/sala-tecnica", color: "#E67E22" },
   { icon: Receipt, label: "Faturamento", desc: "Medições, NFs, pipeline", path: "/financeiro", color: "#9B59B6" },
   { icon: Users, label: "Pessoas", desc: "Funcionários, férias", path: "/rh", color: "#E74C3C" },
@@ -35,12 +35,14 @@ export default function MobileMenuSheet({ open, onOpenChange }: Props) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-[300px] p-0">
         <SheetHeader className="p-5 pb-4 border-b border-border">
+          <SheetTitle className="sr-only">Menu mobile</SheetTitle>
+          <SheetDescription className="sr-only">Acesso rápido aos módulos e ações do usuário.</SheetDescription>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#2D6A8E] flex items-center justify-center">
-              <span className="text-white text-sm font-bold">{initials}</span>
+            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground text-sm font-bold">{initials}</span>
             </div>
             <div>
-              <SheetTitle className="text-base text-left">{profile?.full_name || "Usuário"}</SheetTitle>
+              <p className="text-base font-semibold text-left">{profile?.full_name || "Usuário"}</p>
               <p className="text-xs text-muted-foreground">{profile?.email}</p>
             </div>
           </div>
