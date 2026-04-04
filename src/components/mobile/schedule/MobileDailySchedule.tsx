@@ -112,6 +112,15 @@ export default function MobileDailySchedule() {
 
   return (
     <div className="pb-40">
+      {/* Add to Schedule Sheet */}
+      {schedule && !isClosed && (
+        <AddToScheduleSheet
+          open={addSheetOpen}
+          onOpenChange={setAddSheetOpen}
+          scheduleId={schedule.id}
+          dateStr={dateStr}
+        />
+      )}
       {/* Header */}
       <div className="px-4 pt-4 pb-3 flex items-center justify-between">
         <div>
