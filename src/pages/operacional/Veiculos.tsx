@@ -130,13 +130,13 @@ export default function Veiculos() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Placa</TableHead>
-                      <TableHead>Modelo</TableHead>
-                      <TableHead>Marca</TableHead>
-                      <TableHead>Ano</TableHead>
-                      <TableHead>KM Atual</TableHead>
-                      <TableHead>Responsável</TableHead>
-                      <TableHead>Status</TableHead>
+                      <SortableTableHead sortKey="plate" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Placa</SortableTableHead>
+                      <SortableTableHead sortKey="model" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Modelo</SortableTableHead>
+                      <SortableTableHead sortKey="brand" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Marca</SortableTableHead>
+                      <SortableTableHead sortKey="year" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Ano</SortableTableHead>
+                      <SortableTableHead sortKey="km_current" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>KM Atual</SortableTableHead>
+                      <SortableTableHead>Responsável</SortableTableHead>
+                      <SortableTableHead sortKey="status" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Status</SortableTableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
