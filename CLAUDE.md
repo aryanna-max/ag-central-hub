@@ -14,11 +14,11 @@ Sistema de gestão interna da **AG Topografia**, empresa de topografia e cartogr
 
 **Objetivo:** chegar a **10/10**
 **Ponto de partida:** 2.8/10 (antes das correções de abril/2026)
-**Estado atual:** ~4.5/10 (após simplificação de leads, mobile layer, correções de bugs)
+**Estado atual:** ~5.2/10 (após diagnóstico fase imediata — 04/04/2026)
 
 | Faixa | Marco | Status |
 |-------|-------|--------|
-| **5-6** | SQL Fases 1-4 executadas (campos sujos, tabelas novas, tabelas mortas) | Pendente |
+| **5-6** | SQL Fases 1-4 executadas (campos sujos, tabelas novas, tabelas mortas) | Em andamento |
 | **6-7** | Sala Técnica funcional, Financeiro com pipeline real, execution_status em todos os módulos | Pendente |
 | **7-8** | Alertas automáticos (email Alcione), aprovação despesas via WhatsApp, relatórios por módulo | Pendente |
 | **8-9** | Dados 100% limpos, clientes deduplicados, ViaCEP, histórico de status | Pendente |
