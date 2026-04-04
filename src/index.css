@@ -95,4 +95,37 @@
   body {
     @apply bg-background text-foreground font-sans;
   }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar but keep scroll */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Thin scrollbar for tables */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 3px;
+  }
 }

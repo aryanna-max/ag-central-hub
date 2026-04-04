@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, ArrowRightLeft, Target, LayoutGrid, List, FolderKanban, AlertTriangle } from "lucide-react";
+import ColumnToggle, { useColumnVisibility, type ColumnDef } from "@/components/ColumnToggle";
 import LeadConversionDialog from "./LeadConversionDialog";
 import {
   useLeads, useDeleteLead, useUpdateLead,
@@ -66,6 +67,18 @@ export default function Leads() {
   const [lossDialog, setLossDialog] = useState<Lead | null>(null);
   const [lossReason, setLossReason] = useState("");
   const [conversionLead, setConversionLead] = useState<Lead | null>(null);
+
+  const LEAD_COLUMNS: ColumnDef[] = [
+    { key: "codigo", label: "Código" },
+    { key: "empresa", label: "Empresa/Nome" },
+    { key: "origem", label: "Origem" },
+    { key: "servico", label: "Serviço" },
+    { key: "valor", label: "Valor" },
+    { key: "responsavel", label: "Responsável" },
+    { key: "status", label: "Status" },
+    { key: "data", label: "Data" },
+  ];
+  const { visibleColumns, toggle: toggleColumn, isVisible } = useColumnVisibility(LEAD_COLUMNS);
 
   const getEmployeeName = (id: string | null) => {
     if (!id) return "—";
@@ -165,7 +178,7 @@ export default function Leads() {
 
   // ─── KANBAN VIEW ───
   const renderKanban = () => (
-    <div className="flex gap-3 overflow-x-auto pb-4">
+    <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-thin -mx-2 px-2">
       {LEAD_STATUSES.map((status) => {
         const columnLeads = filtered.filter((l) => l.status === status);
         return (
@@ -176,7 +189,7 @@ export default function Leads() {
                 <Badge variant="outline" className="text-xs h-5 px-1.5">{columnLeads.length}</Badge>
               </div>
             </div>
-            <div className="bg-muted/30 rounded-b-lg p-2 space-y-2 min-h-[100px]">
+            <div className="bg-muted/30 rounded-b-lg p-2 space-y-2 min-h-[100px] max-h-[60vh] overflow-y-auto scrollbar-thin">
               {columnLeads.map((lead) => (
                 <Card
                   key={lead.id}
@@ -213,81 +226,79 @@ export default function Leads() {
         {filtered.length === 0 ? (
           <p className="text-center text-muted-foreground py-10">Nenhum lead encontrado.</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Código</TableHead>
-                <TableHead>Empresa/Nome</TableHead>
-                <TableHead>Origem</TableHead>
-                <TableHead>Serviço</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Responsável</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead className="w-10" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((lead) => (
-                <TableRow key={lead.id} className="cursor-pointer" onClick={() => setDetailLead(lead)}>
-                  <TableCell className="font-mono text-xs font-bold text-primary">{lead.codigo || "—"}</TableCell>
-                  <TableCell className="font-medium">{getDisplayName(lead, clients)}</TableCell>
-                  <TableCell>{originBadge(lead.origin)}</TableCell>
-                  <TableCell className="text-sm">{lead.servico || "—"}</TableCell>
-                  <TableCell className="text-sm">{formatValue(lead.valor)}</TableCell>
-                  <TableCell className="text-sm">{getEmployeeName(lead.responsible_id)}</TableCell>
-                  <TableCell>
-                    <Badge className={`text-xs ${STATUS_COLORS[lead.status]}`}>{STATUS_LABELS[lead.status]}</Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {format(new Date(lead.created_at), "dd/MM/yy", { locale: ptBR })}
-                  </TableCell>
-                  {lead.status === "aprovado" && (
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Button size="sm" variant="outline" className="h-7 text-xs text-green-700" onClick={() => setConversionLead(lead)}>
-                        Converter
-                      </Button>
-                    </TableCell>
-                  )}
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => { setEditingLead(lead); setFormOpen(true); }}>
-                          <Pencil className="w-4 h-4 mr-2" /> Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuSub>
-                          <DropdownMenuSubTrigger>
-                            <ArrowRightLeft className="w-4 h-4 mr-2" /> Alterar Status
-                          </DropdownMenuSubTrigger>
-                          <DropdownMenuSubContent>
-                            {LEAD_STATUSES.filter((s) => s !== lead.status).map((s) => (
-                              <DropdownMenuItem key={s} onClick={() => handleStatusChange(lead, s)}>
-                                <Badge className={`${STATUS_COLORS[s]} text-xs mr-2`}>{STATUS_LABELS[s]}</Badge>
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-                        {projects.find((p) => p.lead_id === lead.id) && (
-                          <DropdownMenuItem onClick={() => navigate("/projetos")}>
-                            <FolderKanban className="w-4 h-4 mr-2" /> Ver Projeto
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(lead.id)}>
-                          <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          <div className="overflow-x-auto scrollbar-thin">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {isVisible("codigo") && <TableHead>Código</TableHead>}
+                  {isVisible("empresa") && <TableHead>Empresa/Nome</TableHead>}
+                  {isVisible("origem") && <TableHead>Origem</TableHead>}
+                  {isVisible("servico") && <TableHead>Serviço</TableHead>}
+                  {isVisible("valor") && <TableHead>Valor</TableHead>}
+                  {isVisible("responsavel") && <TableHead>Responsável</TableHead>}
+                  {isVisible("status") && <TableHead>Status</TableHead>}
+                  {isVisible("data") && <TableHead>Data</TableHead>}
+                  <TableHead className="w-10" />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((lead) => (
+                  <TableRow key={lead.id} className="cursor-pointer" onClick={() => setDetailLead(lead)}>
+                    {isVisible("codigo") && <TableCell className="font-mono text-xs font-bold text-primary">{lead.codigo || "—"}</TableCell>}
+                    {isVisible("empresa") && <TableCell className="font-medium">{getDisplayName(lead, clients)}</TableCell>}
+                    {isVisible("origem") && <TableCell>{originBadge(lead.origin)}</TableCell>}
+                    {isVisible("servico") && <TableCell className="text-sm">{lead.servico || "—"}</TableCell>}
+                    {isVisible("valor") && <TableCell className="text-sm">{formatValue(lead.valor)}</TableCell>}
+                    {isVisible("responsavel") && <TableCell className="text-sm">{getEmployeeName(lead.responsible_id)}</TableCell>}
+                    {isVisible("status") && <TableCell><Badge className={`text-xs ${STATUS_COLORS[lead.status]}`}>{STATUS_LABELS[lead.status]}</Badge></TableCell>}
+                    {isVisible("data") && <TableCell className="text-xs text-muted-foreground">{format(new Date(lead.created_at), "dd/MM/yy", { locale: ptBR })}</TableCell>}
+                    {lead.status === "aprovado" && (
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Button size="sm" variant="outline" className="h-7 text-xs text-green-700" onClick={() => setConversionLead(lead)}>
+                          Converter
+                        </Button>
+                      </TableCell>
+                    )}
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => { setEditingLead(lead); setFormOpen(true); }}>
+                            <Pencil className="w-4 h-4 mr-2" /> Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                              <ArrowRightLeft className="w-4 h-4 mr-2" /> Alterar Status
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent>
+                              {LEAD_STATUSES.filter((s) => s !== lead.status).map((s) => (
+                                <DropdownMenuItem key={s} onClick={() => handleStatusChange(lead, s)}>
+                                  <Badge className={`${STATUS_COLORS[s]} text-xs mr-2`}>{STATUS_LABELS[s]}</Badge>
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuSubContent>
+                          </DropdownMenuSub>
+                          {projects.find((p) => p.lead_id === lead.id) && (
+                            <DropdownMenuItem onClick={() => navigate("/projetos")}>
+                              <FolderKanban className="w-4 h-4 mr-2" /> Ver Projeto
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(lead.id)}>
+                            <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -377,6 +388,9 @@ export default function Leads() {
             <List className="w-4 h-4" />
           </Button>
         </div>
+        {viewMode === "list" && (
+          <ColumnToggle columns={LEAD_COLUMNS} visibleColumns={visibleColumns} onToggle={toggleColumn} />
+        )}
       </div>
 
       {/* Content */}
