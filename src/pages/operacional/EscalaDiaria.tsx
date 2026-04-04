@@ -73,6 +73,7 @@ export default function EscalaDiaria() {
     project_id: "",
     employee_ids: [] as string[],
     vehicle_id: "",
+    team_id: "",
     benefits: { cafe: false, almoco: false, janta: false, vt: false },
   });
   const [empSearch, setEmpSearch] = useState("");
