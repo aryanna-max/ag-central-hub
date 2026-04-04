@@ -290,6 +290,8 @@ export default function Dashboard() {
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
   // ─── RENDER ───
+  if (isMobile) return <MobileHome />;
+
   return (
     <div className="space-y-6 p-4 md:p-6 max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between">
