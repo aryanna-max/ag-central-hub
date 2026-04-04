@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Employee } from "@/hooks/useEmployees";
 import { FIELD_ROLES, isFieldRole, isTechRole } from "@/lib/fieldRoles";
+import ColumnToggle, { useColumnVisibility, type ColumnDef } from "@/components/ColumnToggle";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   disponivel: { label: "Disponível", className: "bg-green-600 text-white" },
