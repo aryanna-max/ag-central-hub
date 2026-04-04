@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { MARCO_ZERO } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -97,7 +98,7 @@ export default function ProjetosEmCampoKanban() {
         .eq("show_in_operational", true)
         .not("execution_status", "in", '("aguardando_campo","em_campo","campo_concluido")')
         .not("field_started_at", "is", null)
-        .gte("field_started_at", "2026-03-31")
+        .gte("field_started_at", MARCO_ZERO)
         .order("field_completed_at", { ascending: false });
       if (error) throw error;
       return data || [];

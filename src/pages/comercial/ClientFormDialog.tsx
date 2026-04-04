@@ -127,9 +127,11 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
       setForm((prev) => ({
         ...prev,
         name: newName,
-        city: data.municipio || prev.city,
-        state: data.uf || prev.state,
-        address: [data.logradouro, data.numero, data.bairro].filter(Boolean).join(", ") || prev.address,
+        cidade: data.municipio || prev.cidade || prev.city,
+        estado: data.uf || prev.estado || prev.state,
+        rua: data.logradouro || prev.rua,
+        bairro: data.bairro || prev.bairro,
+        numero: data.numero || prev.numero,
       }));
       if (!codigoSuggested && newName) {
         const suggested = suggestCode(newName);

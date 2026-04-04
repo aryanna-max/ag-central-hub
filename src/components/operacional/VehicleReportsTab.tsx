@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { MARCO_ZERO } from "@/lib/constants";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
@@ -62,7 +63,7 @@ export default function VehicleReportsTab() {
         .select("vehicle_id, project_id, daily_schedule_id, daily_schedules!inner(schedule_date)")
         .not("vehicle_id", "is", null)
         .not("project_id", "is", null)
-        .gte("daily_schedules.schedule_date", "2026-03-31")
+        .gte("daily_schedules.schedule_date", MARCO_ZERO)
         .gte("daily_schedules.schedule_date", startDate)
         .lte("daily_schedules.schedule_date", endDate);
       if (vehicleFilter !== "all") q = q.eq("vehicle_id", vehicleFilter);

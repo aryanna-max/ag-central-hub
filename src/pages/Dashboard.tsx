@@ -1,6 +1,7 @@
 import { useMemo, useState, useRef } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
+import { canSeeFinancials as checkFinancials } from "@/lib/constants";
 import MobileHome from "@/components/mobile/MobileHome";
 import {
   Bell, CheckCircle2, AlertTriangle, Clock, Zap,
@@ -82,7 +83,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const kanbanRef = useRef<HTMLDivElement>(null);
-  const canSeeFinancials = role === "master" || role === "diretor" || role === "financeiro";
+  const canSeeFinancials = checkFinancials(role);
 
   const { data: projects = [] } = useProjects();
   const { data: clients = [] } = useClients();

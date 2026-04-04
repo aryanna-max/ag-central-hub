@@ -5,6 +5,7 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@
 import { useProjects, type Project } from "@/hooks/useProjects";
 import { useClients } from "@/hooks/useClients";
 import { useAuth } from "@/contexts/AuthContext";
+import { canSeeFinancials as checkFinancials } from "@/lib/constants";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
@@ -44,7 +45,7 @@ export default function ProjetosDashboard() {
   const { data: projects = [] } = useProjects();
   const { data: clients = [] } = useClients();
   const { role } = useAuth();
-  const canSeeFinancials = role === "master" || role === "diretor" || role === "financeiro";
+  const canSeeFinancials = checkFinancials(role);
 
   const { data: measurements = [] } = useQuery({
     queryKey: ["all-measurements-dashboard"],

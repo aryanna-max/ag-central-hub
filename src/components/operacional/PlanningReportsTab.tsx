@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { MARCO_ZERO } from "@/lib/constants";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
@@ -44,7 +45,7 @@ export default function PlanningReportsTab() {
     },
   });
 
-  const minDate = startDate < "2026-03-31" ? "2026-03-31" : startDate;
+  const minDate = startDate < MARCO_ZERO ? MARCO_ZERO : startDate;
 
   // All entries for the period
   const { data: entries = [] } = useQuery({
@@ -133,7 +134,7 @@ export default function PlanningReportsTab() {
           <Filter className="w-4 h-4 text-muted-foreground" />
           <div>
             <label className="text-xs text-muted-foreground">Início</label>
-            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} min="2026-03-31" className="w-36 h-8" />
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} min=MARCO_ZERO className="w-36 h-8" />
           </div>
           <div>
             <label className="text-xs text-muted-foreground">Fim</label>

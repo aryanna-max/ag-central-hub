@@ -54,7 +54,7 @@ export default function Clientes() {
         c.name.toLowerCase().includes(q) ||
         c.cnpj?.toLowerCase().includes(q) ||
         c.email?.toLowerCase().includes(q) ||
-        c.city?.toLowerCase().includes(q) ||
+        (c.cidade || c.city || "").toLowerCase().includes(q) ||
         c.segmento?.toLowerCase().includes(q) ||
         c.codigo?.toLowerCase().includes(q)
     );
@@ -162,7 +162,7 @@ export default function Clientes() {
                           <TableCell className="font-medium" onClick={() => setSelectedClient(client)}>{client.name}</TableCell>
                           <TableCell className="text-muted-foreground text-xs font-mono">{client.cnpj || "—"}</TableCell>
                           <TableCell className="text-muted-foreground">
-                            {client.city ? `${client.city}${client.state ? `/${client.state}` : ""}` : "—"}
+                            {(client.cidade || client.city) ? `${client.cidade || client.city}${(client.estado || client.state) ? `/${client.estado || client.state}` : ""}` : "—"}
                           </TableCell>
                           <TableCell>
                             <div className="text-xs space-y-0.5">
@@ -391,7 +391,7 @@ function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | n
           )}
           {client.phone && <div className="flex items-center gap-2 text-muted-foreground"><Phone className="w-4 h-4" /> {client.phone}</div>}
           {client.email && <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-4 h-4" /> {client.email}</div>}
-          {client.city && <div className="text-muted-foreground">{client.city}{client.state ? `/${client.state}` : ""}</div>}
+          {(client.cidade || client.city) && <div className="text-muted-foreground">{client.cidade || client.city}{(client.estado || client.state) ? `/${client.estado || client.state}` : ""}</div>}
           {client.segmento && <div className="text-muted-foreground">Segmento: <span className="font-medium text-foreground">{client.segmento}</span></div>}
         </div>
 

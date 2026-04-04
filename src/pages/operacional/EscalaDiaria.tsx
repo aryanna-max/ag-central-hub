@@ -173,7 +173,8 @@ export default function EscalaDiaria() {
     const { data: schedules } = await supabase
       .from("daily_schedules")
       .select("id")
-      .eq("schedule_date", selectedDate);
+      .eq("schedule_date", selectedDate)
+      .eq("is_legacy", false);
     if (!schedules?.length) return { duplicate: false };
     const { data: entries } = await supabase
       .from("daily_schedule_entries")
@@ -230,12 +231,17 @@ export default function EscalaDiaria() {
       toast.error("Selecione um projeto antes de salvar");
       return;
     }
+    const teamId = addForm.team_id || (teams || [])[0]?.id;
+    if (!teamId) {
+      toast.error("Nenhum grupo rápido disponível. Crie um grupo primeiro.");
+      return;
+    }
     try {
       const { data: assignment, error: assErr } = await supabase
         .from("daily_team_assignments")
         .insert({
           daily_schedule_id: schedule.id,
-          team_id: (teams || [])[0]?.id || null,
+          team_id: teamId,
           project_id: addForm.project_id,
           vehicle_id: addForm.vehicle_id || null,
         })
