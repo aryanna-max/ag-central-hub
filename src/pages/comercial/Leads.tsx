@@ -388,6 +388,9 @@ export default function Leads() {
             <List className="w-4 h-4" />
           </Button>
         </div>
+        {viewMode === "list" && (
+          <ColumnToggle columns={LEAD_COLUMNS} visibleColumns={visibleColumns} onToggle={toggleColumn} />
+        )}
       </div>
 
       {/* Content */}
