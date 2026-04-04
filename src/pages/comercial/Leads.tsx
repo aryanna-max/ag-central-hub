@@ -245,7 +245,7 @@ export default function Leads() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((lead) => (
+                {sortedFiltered.map((lead) => (
                   <TableRow key={lead.id} className="cursor-pointer" onClick={() => setDetailLead(lead)}>
                     {isVisible("codigo") && <TableCell className="font-mono text-xs font-bold text-primary">{lead.codigo || "—"}</TableCell>}
                     {isVisible("empresa") && <TableCell className="font-medium">{getDisplayName(lead, clients)}</TableCell>}

@@ -298,12 +298,12 @@ export default function Funcionarios() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                       {isVisible("matricula") && <TableHead>Matrícula</TableHead>}
-                       {isVisible("tipo") && <TableHead>Tipo</TableHead>}
-                       {isVisible("nome") && <TableHead>Nome</TableHead>}
-                       {isVisible("funcao") && <TableHead>Função</TableHead>}
-                       {isVisible("admissao") && <TableHead>Admissão</TableHead>}
-                       {isVisible("status") && <TableHead>Status</TableHead>}
+                       {isVisible("matricula") && <SortableTableHead sortKey="matricula" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Matrícula</SortableTableHead>}
+                       {isVisible("tipo") && <SortableTableHead>Tipo</SortableTableHead>}
+                       {isVisible("nome") && <SortableTableHead sortKey="name" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Nome</SortableTableHead>}
+                       {isVisible("funcao") && <SortableTableHead sortKey="role" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Função</SortableTableHead>}
+                       {isVisible("admissao") && <SortableTableHead sortKey="admission_date" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Admissão</SortableTableHead>}
+                       {isVisible("status") && <SortableTableHead sortKey="status" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Status</SortableTableHead>}
                       <TableHead className="w-[50px]" />
                     </TableRow>
                   </TableHeader>

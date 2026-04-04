@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { SortableTableHead, useSortableTable } from "@/components/ui/sortable-table-head";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useVehicles, useDeleteVehicle } from "@/hooks/useVehicles";
 import VehicleEditDialog from "@/components/operacional/VehicleEditDialog";
