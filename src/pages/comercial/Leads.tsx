@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, ArrowRightLeft, Target, LayoutGrid, List, FolderKanban, AlertTriangle } from "lucide-react";
+import ColumnToggle, { useColumnVisibility, type ColumnDef } from "@/components/ColumnToggle";
 import LeadConversionDialog from "./LeadConversionDialog";
 import {
   useLeads, useDeleteLead, useUpdateLead,
