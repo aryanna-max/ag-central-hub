@@ -17,7 +17,8 @@ import { SortableTableHead, useSortableTable } from "@/components/ui/sortable-ta
 import LeadConversionDialog from "./LeadConversionDialog";
 import {
   useLeads, useDeleteLead, useUpdateLead,
-  LEAD_STATUSES, STATUS_LABELS, STATUS_COLORS, ORIGIN_LABELS, ORIGIN_COLORS,
+  LEAD_STATUSES, ACTIVE_STATUSES, HISTORY_STATUSES,
+  STATUS_LABELS, STATUS_COLORS, ORIGIN_LABELS, ORIGIN_COLORS,
   type Lead, type LeadStatus, type LeadOrigin,
 } from "@/hooks/useLeads";
 import { useClients } from "@/hooks/useClients";
@@ -30,11 +31,9 @@ import LeadFormDialog from "./LeadFormDialog";
 import LeadDetailDialog from "./LeadDetailDialog";
 
 const ALLOWED_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
-  novo: ["em_contato", "qualificado", "perdido"],
-  em_contato: ["qualificado", "perdido"],
-  qualificado: ["proposta_enviada", "perdido"],
-  proposta_enviada: ["aprovado", "perdido"],
-  aprovado: ["convertido", "perdido"],
+  novo: ["em_negociacao", "perdido"],
+  em_negociacao: ["proposta_enviada", "perdido"],
+  proposta_enviada: ["convertido", "perdido"],
   convertido: [],
   perdido: [],
 };
@@ -61,6 +60,7 @@ export default function Leads() {
   const [originFilter, setOriginFilter] = useState<string>("all");
   const [responsibleFilter, setResponsibleFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
+  const [showHistory, setShowHistory] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
@@ -102,12 +102,14 @@ export default function Leads() {
         (l.company || "").toLowerCase().includes(search.toLowerCase()) ||
         (l.servico || "").toLowerCase().includes(search.toLowerCase()) ||
         (l.codigo || "").toLowerCase().includes(search.toLowerCase());
-      const matchStatus = statusFilter === "all" || l.status === statusFilter || (statusFilter === "aprovado" && l.status === "convertido");
+      const matchStatus = statusFilter === "all" || l.status === statusFilter;
       const matchOrigin = originFilter === "all" || l.origin === originFilter;
       const matchResp = responsibleFilter === "all" || l.responsible_id === responsibleFilter;
-      return matchSearch && matchStatus && matchOrigin && matchResp;
+      // Se não está mostrando histórico, esconder convertido e perdido
+      const matchHistory = showHistory || ACTIVE_STATUSES.includes(l.status);
+      return matchSearch && matchStatus && matchOrigin && matchResp && matchHistory;
     });
-  }, [leads, clients, search, statusFilter, originFilter, responsibleFilter]);
+  }, [leads, clients, search, statusFilter, originFilter, responsibleFilter, showHistory]);
 
   const { sorted: sortedFiltered, sortKey, sortDir, handleSort } = useSortableTable(filtered);
 
@@ -119,11 +121,11 @@ export default function Leads() {
   }, [projects]);
 
   const stats = useMemo(() => ({
-    total: leads.length,
+    total: leads.filter((l) => ACTIVE_STATUSES.includes(l.status)).length,
     novos: leads.filter((l) => l.status === "novo").length,
-    qualificados: leads.filter((l) => l.status === "qualificado").length,
+    negociando: leads.filter((l) => l.status === "em_negociacao").length,
     propostas: leads.filter((l) => l.status === "proposta_enviada").length,
-    aprovados: leads.filter((l) => ["aprovado", "convertido"].includes(l.status)).length,
+    convertidos: leads.filter((l) => l.status === "convertido").length,
   }), [leads]);
 
   const handleDelete = async () => {
@@ -180,41 +182,64 @@ export default function Leads() {
     v != null ? `R$ ${Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 0 })}` : "—";
 
   // ─── KANBAN VIEW ───
+  const kanbanStatuses = useMemo(() => {
+    if (showHistory) return LEAD_STATUSES;
+    return ACTIVE_STATUSES;
+  }, [showHistory]);
+
   const renderKanban = () => (
     <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-thin -mx-2 px-2">
-      {LEAD_STATUSES.map((status) => {
+      {kanbanStatuses.map((status) => {
         const columnLeads = filtered.filter((l) => l.status === status);
+        const isHistory = HISTORY_STATUSES.includes(status);
         return (
-          <div key={status} className="min-w-[220px] w-[220px] flex-shrink-0">
+          <div key={status} className={`min-w-[220px] w-[220px] flex-shrink-0 ${isHistory ? "opacity-70" : ""}`}>
             <div className={`rounded-t-lg px-3 py-2 ${STATUS_COLORS[status]}`}>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold">{STATUS_LABELS[status]}</span>
-                <Badge variant="outline" className="text-xs h-5 px-1.5">{columnLeads.length}</Badge>
+                <div className="flex items-center gap-1">
+                  {isHistory && <Badge variant="outline" className="text-[9px] h-4 px-1">Histórico</Badge>}
+                  <Badge variant="outline" className="text-xs h-5 px-1.5">{columnLeads.length}</Badge>
+                </div>
               </div>
             </div>
             <div className="bg-muted/30 rounded-b-lg p-2 space-y-2 min-h-[100px] max-h-[60vh] overflow-y-auto scrollbar-thin">
-              {columnLeads.map((lead) => (
-                <Card
-                  key={lead.id}
-                  className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => setDetailLead(lead)}
-                >
-                  <CardContent className="p-3 space-y-1.5">
-                    {lead.codigo && (
-                      <p className="text-xs font-mono font-bold text-primary">{lead.codigo}</p>
-                    )}
-                    <p className="text-sm font-medium leading-tight">{getDisplayName(lead, clients)}</p>
-                    {lead.servico && <p className="text-xs text-muted-foreground truncate">{lead.servico}</p>}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-foreground">{formatValue(lead.valor)}</span>
-                      {originBadge(lead.origin)}
-                    </div>
-                    {lead.responsible_id && (
-                      <p className="text-xs text-muted-foreground">{getEmployeeName(lead.responsible_id)}</p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+              {columnLeads.map((lead) => {
+                const linkedProject = lead.converted_project_id
+                  ? projects.find((p) => p.id === lead.converted_project_id)
+                  : projects.find((p) => p.lead_id === lead.id);
+                return (
+                  <Card
+                    key={lead.id}
+                    className={`cursor-pointer hover:shadow-md transition-shadow ${isHistory ? "border-dashed" : ""}`}
+                    onClick={() => setDetailLead(lead)}
+                  >
+                    <CardContent className="p-3 space-y-1.5">
+                      {lead.codigo && (
+                        <p className="text-xs font-mono font-bold text-primary">{lead.codigo}</p>
+                      )}
+                      <p className="text-sm font-medium leading-tight">{getDisplayName(lead, clients)}</p>
+                      {lead.servico && <p className="text-xs text-muted-foreground truncate">{lead.servico}</p>}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-foreground">{formatValue(lead.valor)}</span>
+                        {originBadge(lead.origin)}
+                      </div>
+                      {lead.responsible_id && (
+                        <p className="text-xs text-muted-foreground">{getEmployeeName(lead.responsible_id)}</p>
+                      )}
+                      {isHistory && linkedProject && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); navigate(`/projetos/${linkedProject.id}`); }}
+                          className="text-xs text-primary font-medium hover:underline flex items-center gap-1 mt-1"
+                        >
+                          <FolderKanban className="w-3 h-3" />
+                          {linkedProject.codigo || linkedProject.name}
+                        </button>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         );
@@ -253,15 +278,15 @@ export default function Leads() {
                     {isVisible("servico") && <TableCell className="text-sm">{lead.servico || "—"}</TableCell>}
                     {isVisible("valor") && <TableCell className="text-sm">{formatValue(lead.valor)}</TableCell>}
                     {isVisible("responsavel") && <TableCell className="text-sm">{getEmployeeName(lead.responsible_id)}</TableCell>}
-                    {isVisible("status") && <TableCell><Badge className={`text-xs ${STATUS_COLORS[lead.status]}`}>{STATUS_LABELS[lead.status]}</Badge></TableCell>}
-                    {isVisible("data") && <TableCell className="text-xs text-muted-foreground">{format(new Date(lead.created_at), "dd/MM/yy", { locale: ptBR })}</TableCell>}
-                    {lead.status === "aprovado" && (
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <Button size="sm" variant="outline" className="h-7 text-xs text-green-700" onClick={() => setConversionLead(lead)}>
-                          Converter
-                        </Button>
+                    {isVisible("status") && (
+                      <TableCell>
+                        <Badge className={`text-xs ${STATUS_COLORS[lead.status]}`}>{STATUS_LABELS[lead.status]}</Badge>
+                        {HISTORY_STATUSES.includes(lead.status) && (
+                          <Badge variant="outline" className="text-[9px] ml-1 h-4 px-1">Histórico</Badge>
+                        )}
                       </TableCell>
                     )}
+                    {isVisible("data") && <TableCell className="text-xs text-muted-foreground">{format(new Date(lead.created_at), "dd/MM/yy", { locale: ptBR })}</TableCell>}
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -270,30 +295,45 @@ export default function Leads() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => { setEditingLead(lead); setFormOpen(true); }}>
-                            <Pencil className="w-4 h-4 mr-2" /> Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>
-                              <ArrowRightLeft className="w-4 h-4 mr-2" /> Alterar Status
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent>
-                              {LEAD_STATUSES.filter((s) => s !== lead.status).map((s) => (
-                                <DropdownMenuItem key={s} onClick={() => handleStatusChange(lead, s)}>
-                                  <Badge className={`${STATUS_COLORS[s]} text-xs mr-2`}>{STATUS_LABELS[s]}</Badge>
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuSubContent>
-                          </DropdownMenuSub>
-                          {projects.find((p) => p.lead_id === lead.id) && (
-                            <DropdownMenuItem onClick={() => navigate("/projetos")}>
-                              <FolderKanban className="w-4 h-4 mr-2" /> Ver Projeto
-                            </DropdownMenuItem>
+                          {HISTORY_STATUSES.includes(lead.status) ? (
+                            <>
+                              {(() => {
+                                const linkedProject = lead.converted_project_id
+                                  ? projects.find((p) => p.id === lead.converted_project_id)
+                                  : projects.find((p) => p.lead_id === lead.id);
+                                return linkedProject ? (
+                                  <DropdownMenuItem onClick={() => navigate(`/projetos/${linkedProject.id}`)}>
+                                    <FolderKanban className="w-4 h-4 mr-2" /> Ver Projeto
+                                  </DropdownMenuItem>
+                                ) : null;
+                              })()}
+                              <DropdownMenuItem disabled className="text-muted-foreground text-xs">
+                                Lead histórico — somente leitura
+                              </DropdownMenuItem>
+                            </>
+                          ) : (
+                            <>
+                              <DropdownMenuItem onClick={() => { setEditingLead(lead); setFormOpen(true); }}>
+                                <Pencil className="w-4 h-4 mr-2" /> Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                  <ArrowRightLeft className="w-4 h-4 mr-2" /> Alterar Status
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                  {(ALLOWED_TRANSITIONS[lead.status] || []).map((s) => (
+                                    <DropdownMenuItem key={s} onClick={() => handleStatusChange(lead, s)}>
+                                      <Badge className={`${STATUS_COLORS[s]} text-xs mr-2`}>{STATUS_LABELS[s]}</Badge>
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuSubContent>
+                              </DropdownMenuSub>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(lead.id)}>
+                                <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                              </DropdownMenuItem>
+                            </>
                           )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(lead.id)}>
-                            <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -325,11 +365,11 @@ export default function Leads() {
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
-          { label: "Total", value: stats.total, color: "text-foreground" },
-          { label: "Novos", value: stats.novos, color: "text-gray-600" },
-          { label: "Qualificados", value: stats.qualificados, color: "text-blue-600" },
-          { label: "Propostas", value: stats.propostas, color: "text-yellow-600" },
-          { label: "Aprovados", value: stats.aprovados, color: "text-green-600" },
+          { label: "Ativos", value: stats.total, color: "text-foreground" },
+          { label: "Novos", value: stats.novos, color: "text-blue-600" },
+          { label: "Em negociação", value: stats.negociando, color: "text-emerald-600" },
+          { label: "Propostas", value: stats.propostas, color: "text-amber-600" },
+          { label: "Convertidos", value: stats.convertidos, color: "text-green-600" },
         ].map((kpi) => (
           <Card key={kpi.label}>
             <CardContent className="p-3">
@@ -373,6 +413,14 @@ export default function Leads() {
             ))}
           </SelectContent>
         </Select>
+        <Button
+          variant={showHistory ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowHistory(!showHistory)}
+          className="text-xs gap-1"
+        >
+          {showHistory ? "Esconder" : "Mostrar"} histórico
+        </Button>
         <div className="flex border rounded-md">
           <Button
             variant={viewMode === "kanban" ? "default" : "ghost"}

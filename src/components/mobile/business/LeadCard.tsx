@@ -10,10 +10,8 @@ interface Props {
 
 const STATUS_STYLES: Record<string, { label: string; bg: string; fg: string }> = {
   novo: { label: "Novo", bg: "rgba(45, 106, 142, 0.12)", fg: "#2D6A8E" },
-  em_contato: { label: "Em contato", bg: "rgba(47, 158, 142, 0.12)", fg: "#2F9E8E" },
-  qualificado: { label: "Qualificado", bg: "rgba(47, 158, 142, 0.12)", fg: "#2F9E8E" },
+  em_negociacao: { label: "Em negociação", bg: "rgba(47, 158, 142, 0.12)", fg: "#2F9E8E" },
   proposta_enviada: { label: "Proposta enviada", bg: "rgba(233, 168, 37, 0.14)", fg: "#B7791F" },
-  aprovado: { label: "Aprovado", bg: "rgba(138, 180, 29, 0.16)", fg: "#6B8E12" },
   convertido: { label: "Convertido", bg: "rgba(39, 174, 96, 0.16)", fg: "#1F8A4D" },
   perdido: { label: "Perdido", bg: "rgba(231, 76, 60, 0.14)", fg: "#C0392B" },
 };

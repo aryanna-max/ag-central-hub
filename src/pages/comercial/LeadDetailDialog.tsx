@@ -141,7 +141,7 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
       });
 
       // Auto-update lead status to proposta_enviada
-      if (lead.status === "novo" || lead.status === "qualificado") {
+      if (lead.status === "novo" || lead.status === "em_negociacao") {
         await updateLead.mutateAsync({
           id: lead.id,
           status: "proposta_enviada" as any,
@@ -166,12 +166,7 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
         status: "aprovada",
         approved_at: new Date().toISOString(),
       });
-      // Auto-update lead status to aprovado
-      await updateLead.mutateAsync({
-        id: lead.id,
-        status: "aprovado" as any,
-      });
-      toast.success("Proposta aprovada — lead movido para Aprovado");
+      toast.success("Proposta aprovada — converta o lead em projeto para finalizar");
     } catch {
       toast.error("Erro ao aprovar proposta");
     }

@@ -2,8 +2,20 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type LeadOrigin = "indicacao" | "whatsapp" | "site_instagram" | "licitacao" | "cliente_recorrente" | "contrato_ativo" | "outro";
-export type LeadStatus = "novo" | "em_contato" | "qualificado" | "proposta_enviada" | "aprovado" | "convertido" | "perdido";
+export type LeadStatus = "novo" | "em_negociacao" | "proposta_enviada" | "convertido" | "perdido";
 export type LeadInteractionType = "nota" | "ligacao" | "email" | "whatsapp" | "reuniao" | "visita";
+
+/** Normaliza status legados do banco para os 5 status simplificados */
+export function normalizeLeadStatus(raw: string): LeadStatus {
+  if (raw === "em_contato" || raw === "qualificado") return "em_negociacao";
+  if (raw === "descartado") return "perdido";
+  if (raw === "aprovado") return "convertido";
+  return raw as LeadStatus;
+}
+
+/** Status ativos (editáveis) vs históricos (bloqueados) */
+export const ACTIVE_STATUSES: LeadStatus[] = ["novo", "em_negociacao", "proposta_enviada"];
+export const HISTORY_STATUSES: LeadStatus[] = ["convertido", "perdido"];
 
 export const ORIGIN_LABELS: Record<LeadOrigin, string> = {
   indicacao: "Indicação",
@@ -17,20 +29,16 @@ export const ORIGIN_LABELS: Record<LeadOrigin, string> = {
 
 export const STATUS_LABELS: Record<LeadStatus, string> = {
   novo: "Novo",
-  em_contato: "Em Contato",
-  qualificado: "Qualificado",
-  proposta_enviada: "Proposta Enviada",
-  aprovado: "Aprovado",
+  em_negociacao: "Em negociação",
+  proposta_enviada: "Proposta enviada",
   convertido: "Convertido",
   perdido: "Perdido",
 };
 
 export const STATUS_COLORS: Record<LeadStatus, string> = {
-  novo: "bg-gray-100 text-gray-800",
-  em_contato: "bg-cyan-100 text-cyan-800",
-  qualificado: "bg-blue-100 text-blue-800",
-  proposta_enviada: "bg-yellow-100 text-yellow-800",
-  aprovado: "bg-green-100 text-green-800",
+  novo: "bg-blue-100 text-blue-800",
+  em_negociacao: "bg-emerald-100 text-emerald-800",
+  proposta_enviada: "bg-amber-100 text-amber-800",
   convertido: "bg-green-100 text-green-800",
   perdido: "bg-red-100 text-red-800",
 };
@@ -45,7 +53,7 @@ export const ORIGIN_COLORS: Record<LeadOrigin, string> = {
   outro: "bg-gray-100 text-gray-800",
 };
 
-export const LEAD_STATUSES: LeadStatus[] = ["novo", "em_contato", "qualificado", "proposta_enviada", "aprovado", "convertido", "perdido"];
+export const LEAD_STATUSES: LeadStatus[] = ["novo", "em_negociacao", "proposta_enviada", "convertido", "perdido"];
 
 export interface Lead {
   id: string;
@@ -109,7 +117,10 @@ export function useLeads() {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as unknown as Lead[];
+      return (data || []).map((l: any) => ({
+        ...l,
+        status: normalizeLeadStatus(l.status),
+      })) as Lead[];
     },
   });
 }

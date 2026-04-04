@@ -17,25 +17,12 @@ import ProposalCard from "./ProposalCard";
 import ClientCard from "./ClientCard";
 import NewProposalDrawer from "./NewProposalDrawer";
 
-const LEAD_SEGMENT_COLORS: Record<string, string> = {
-  novo: "#2D6A8E",
-  qualificado: "#2F9E8E",
-  proposta_enviada: "#E9A825",
-  em_contato: "#8AB41D",
-  convertido: "#27AE60",
-  perdido: "#E74C3C",
-  aprovado: "#27AE60",
-};
-
 const LEAD_STATUS_STYLES: Record<string, { label: string; bg: string; fg: string }> = {
   novo: { label: "Novo", bg: "rgba(45, 106, 142, 0.12)", fg: "#2D6A8E" },
-  em_contato: { label: "Em contato", bg: "rgba(47, 158, 142, 0.12)", fg: "#2F9E8E" },
-  qualificado: { label: "Qualificado", bg: "rgba(47, 158, 142, 0.12)", fg: "#2F9E8E" },
+  em_negociacao: { label: "Em negociação", bg: "rgba(47, 158, 142, 0.12)", fg: "#2F9E8E" },
   proposta_enviada: { label: "Proposta enviada", bg: "rgba(233, 168, 37, 0.14)", fg: "#B7791F" },
-  aprovado: { label: "Aprovado", bg: "rgba(138, 180, 29, 0.16)", fg: "#6B8E12" },
   convertido: { label: "Convertido", bg: "rgba(39, 174, 96, 0.16)", fg: "#1F8A4D" },
   perdido: { label: "Perdido", bg: "rgba(231, 76, 60, 0.14)", fg: "#C0392B" },
-  descartado: { label: "Descartado", bg: "rgba(153, 153, 153, 0.14)", fg: "#666666" },
 };
 
 const PROPOSAL_STATUS_LABELS: Record<string, string> = {
@@ -115,12 +102,11 @@ export default function MobileBusiness() {
 
   const leadSegments = useMemo(
     () => [
-      { label: "Novo", count: leads.filter((lead) => lead.status === "novo").length, color: LEAD_SEGMENT_COLORS.novo },
-      { label: "Qualificado", count: leads.filter((lead) => lead.status === "qualificado").length, color: LEAD_SEGMENT_COLORS.qualificado },
-      { label: "Proposta Enviada", count: leads.filter((lead) => lead.status === "proposta_enviada").length, color: LEAD_SEGMENT_COLORS.proposta_enviada },
-      { label: "Em Contato", count: leads.filter((lead) => lead.status === "em_contato").length, color: LEAD_SEGMENT_COLORS.em_contato },
-      { label: "Convertido", count: leads.filter((lead) => ["convertido", "aprovado"].includes(lead.status)).length, color: LEAD_SEGMENT_COLORS.convertido },
-      { label: "Perdido", count: leads.filter((lead) => lead.status === "perdido").length, color: LEAD_SEGMENT_COLORS.perdido },
+      { label: "Novo", count: leads.filter((lead) => lead.status === "novo").length, color: "#2D6A8E" },
+      { label: "Em negociação", count: leads.filter((lead) => lead.status === "em_negociacao").length, color: "#2F9E8E" },
+      { label: "Proposta enviada", count: leads.filter((lead) => lead.status === "proposta_enviada").length, color: "#E9A825" },
+      { label: "Convertido", count: leads.filter((lead) => lead.status === "convertido").length, color: "#27AE60" },
+      { label: "Perdido", count: leads.filter((lead) => lead.status === "perdido").length, color: "#E74C3C" },
     ],
     [leads],
   );
@@ -162,7 +148,7 @@ export default function MobileBusiness() {
           <BusinessKPIs
             items={[
               { label: "Total Leads", value: leads.length, icon: <Users className="w-4 h-4" /> },
-              { label: "Qualificados", value: leads.filter((lead) => lead.status === "qualificado").length, icon: <MessageSquare className="w-4 h-4" /> },
+              { label: "Em negociação", value: leads.filter((lead) => lead.status === "em_negociacao").length, icon: <MessageSquare className="w-4 h-4" /> },
               { label: "Convertidos", value: leads.filter((lead) => lead.status === "convertido").length, icon: <CheckCircle2 className="w-4 h-4" /> },
             ]}
           />
