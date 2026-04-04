@@ -377,11 +377,17 @@ Arquivos na pasta `Sistema AG/`:
 |---|---|---|
 | 14 | Oportunidades vs Leads | **Oportunidades eliminado** — usar apenas Leads com funil completo |
 | 15 | Status duplo (status + execution_status) | **Simplificar UI** — Financeiro e Operacional veem só execution_status. project_status fica interno |
-| 16 | NF gerada fora ou dentro do sistema | **Fora por enquanto** — sistema só registra. Avaliar integração futura |
+| 16 | NF gerada fora ou dentro do sistema | **Fora por enquanto** — sistema só registra. Avaliar integração futura (Enotas, Nuvem Fiscal, Focus NFe) |
 | 17 | Sérgio e Ciro | **Diretores Comerciais** — aprovam folhas de despesa, gerenciam comercial |
-| 18 | BRK no Operacional | **show_in_operational** — Gerente Operacional vê só BRK Obras e BRK Projetos |
+| 18 | BRK no Operacional | **show_in_operational** — Gerente Operacional vê só BRK Obras e BRK Projetos. Demais projetos BRK só no Financeiro |
 | 19 | Escala mensal obrigatória | **Opcional** — é facilitador de pré-preenchimento, não obrigação |
 | 20 | Confirmação de escala | **Eliminada** — só existe fechamento (is_closed). Véspera=montar, dia=ajustar+fechar |
+| 21 | Diárias de veículos | **Automáticas** — ao fechar escala diária, gera 1 diária por veículo em vehicle_payment_history |
+| 22 | Aprovação de despesas | **Via link externo** — Gerente Operacional submete, copia link, envia no WhatsApp. Diretoria Comercial aprova no celular sem login. Financeiro recebe email |
+| 23 | Labels dos módulos | **Nomes criativos mantidos** — Radar, Negócios, Campo, Prancheta, Faturamento, Pessoas (rotas internas não mudam) |
+| 24 | Import/Export | **Import via planilha+SQL** — seguro para veículos, equipes, clientes novos. NUNCA importar projetos, leads ou escalas |
+| 25 | Filtro de projetos no Operacional | **Default com toggle** — por padrão mostra só execution_status IN (aguardando_campo, em_campo). Checkbox "Mostrar todos" libera lista completa |
+| 26 | RH cards de resumo | **Por setor** — Total, Campo (FIELD_ROLES), Sala Técnica (TECH_ROLES), Administrativo (restante) |
 
 ## Servidor — estado atual (02/04/2026)
 
