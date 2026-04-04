@@ -60,6 +60,8 @@ export default function Clientes() {
     );
   }, [clients, search]);
 
+  const { sorted: sortedFiltered, sortKey, sortDir, handleSort } = useSortableTable(filtered);
+
   const stats = useMemo(() => ({
     total: clients.length,
     active: clients.filter((c) => c.is_active).length,
