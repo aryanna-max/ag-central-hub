@@ -1,4 +1,6 @@
 import { useMemo, useState, useRef } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import MobileHome from "@/components/mobile/MobileHome";
 import {
   Bell, CheckCircle2, AlertTriangle, Clock, Zap,
   Map as MapIcon, Receipt, FolderKanban,
