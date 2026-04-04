@@ -849,10 +849,10 @@ export type Database = {
       }
       field_expense_sheets: {
         Row: {
+          approval_comments: Json | null
+          approval_token: string | null
           approved_at: string | null
           approved_by_id: string | null
-          approval_token: string | null
-          approval_comments: any[] | null
           codigo: string | null
           created_at: string
           id: string
@@ -869,10 +869,10 @@ export type Database = {
           week_year: number
         }
         Insert: {
+          approval_comments?: Json | null
+          approval_token?: string | null
           approved_at?: string | null
           approved_by_id?: string | null
-          approval_token?: string | null
-          approval_comments?: any[] | null
           codigo?: string | null
           created_at?: string
           id?: string
@@ -889,10 +889,10 @@ export type Database = {
           week_year: number
         }
         Update: {
+          approval_comments?: Json | null
+          approval_token?: string | null
           approved_at?: string | null
           approved_by_id?: string | null
-          approval_token?: string | null
-          approval_comments?: any[] | null
           codigo?: string | null
           created_at?: string
           id?: string
@@ -1640,8 +1640,6 @@ export type Database = {
           needs_tech_prep: boolean | null
           notes: string | null
           numero: string | null
-          parent_project_id: string | null
-          show_in_operational: boolean
           referencia_contrato: string | null
           responsible_campo_id: string | null
           responsible_comercial_id: string | null
@@ -1651,6 +1649,7 @@ export type Database = {
           rua: string | null
           scope_description: string | null
           service: string | null
+          show_in_operational: boolean
           start_date: string | null
           status: Database["public"]["Enums"]["project_status"]
           tipo_documento: string
@@ -1693,8 +1692,6 @@ export type Database = {
           needs_tech_prep?: boolean | null
           notes?: string | null
           numero?: string | null
-          parent_project_id?: string | null
-          show_in_operational?: boolean
           referencia_contrato?: string | null
           responsible_campo_id?: string | null
           responsible_comercial_id?: string | null
@@ -1704,6 +1701,7 @@ export type Database = {
           rua?: string | null
           scope_description?: string | null
           service?: string | null
+          show_in_operational?: boolean
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           tipo_documento?: string
@@ -1746,8 +1744,6 @@ export type Database = {
           needs_tech_prep?: boolean | null
           notes?: string | null
           numero?: string | null
-          parent_project_id?: string | null
-          show_in_operational?: boolean
           referencia_contrato?: string | null
           responsible_campo_id?: string | null
           responsible_comercial_id?: string | null
@@ -1757,6 +1753,7 @@ export type Database = {
           rua?: string | null
           scope_description?: string | null
           service?: string | null
+          show_in_operational?: boolean
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           tipo_documento?: string
@@ -1775,13 +1772,6 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "projects_parent_project_id_fkey"
-            columns: ["parent_project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
