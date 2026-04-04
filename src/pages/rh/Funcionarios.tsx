@@ -102,9 +102,10 @@ export default function Funcionarios() {
     return matchesSearch && matchesStatus && matchesRole;
   });
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const { sorted: sortedFiltered, sortKey, sortDir, handleSort } = useSortableTable(filtered);
+  const totalPages = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const paginated = sortedFiltered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   // Summary counts
   const totalCount = employees.length;
