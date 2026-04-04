@@ -137,6 +137,8 @@ export default function MobileDailySchedule() {
         </Badge>
       </div>
 
+      {/* Import Badge here since we moved it */}
+
       {/* Day selector */}
       <DaySelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
