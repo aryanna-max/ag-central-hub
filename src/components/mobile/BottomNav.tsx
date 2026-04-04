@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 const items = [
   { icon: Home, label: "Início", path: "/" },
   { icon: Briefcase, label: "Negócios", path: "/comercial" },
-  { icon: MapPin, label: "Campo", path: "/operacional" },
+  { icon: MapPin, label: "Campo", path: "/operacional/escala" },
   { icon: DollarSign, label: "Faturamento", path: "/financeiro" },
 ];
 
