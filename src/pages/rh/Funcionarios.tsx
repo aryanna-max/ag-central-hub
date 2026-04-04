@@ -281,8 +281,9 @@ export default function Funcionarios() {
 
       {/* Table */}
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Lista de Funcionários</CardTitle>
+          <ColumnToggle columns={EMP_COLUMNS} visibleColumns={visibleColumns} onToggle={toggleColumn} />
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -291,60 +292,62 @@ export default function Funcionarios() {
             <p className="text-muted-foreground text-center py-8">Nenhum funcionário encontrado.</p>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                     <TableHead>Matrícula</TableHead>
-                     <TableHead>Tipo</TableHead>
-                     <TableHead>Nome</TableHead>
-                     <TableHead>Função</TableHead>
-                     <TableHead>Admissão</TableHead>
-                     <TableHead>Status</TableHead>
-                    <TableHead className="w-[50px]" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginated.map((emp) => {
-                    const st = statusConfig[emp.status] || statusConfig.disponivel;
-                    return (
-                      <TableRow key={emp.id}>
-                         <TableCell className="font-mono text-xs text-muted-foreground">{emp.matricula || "—"}</TableCell>
-                         <TableCell>{getTypeBadge(emp.matricula)}</TableCell>
-                         <TableCell className="font-medium">{emp.name}</TableCell>
-                        <TableCell>{emp.role}</TableCell>
-                        <TableCell>
-                          {emp.admission_date
-                            ? format(new Date(emp.admission_date + "T00:00:00"), "dd/MM/yyyy")
-                            : "—"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={st.className}>{st.label}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openEdit(emp)}>
-                                <Pencil className="w-4 h-4 mr-2" /> Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => openStatusChange(emp)}>
-                                <RefreshCw className="w-4 h-4 mr-2" /> Alterar Status
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive" onClick={() => setDeleteEmp(emp)}>
-                                <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+              <div className="overflow-x-auto scrollbar-thin">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                       {isVisible("matricula") && <TableHead>Matrícula</TableHead>}
+                       {isVisible("tipo") && <TableHead>Tipo</TableHead>}
+                       {isVisible("nome") && <TableHead>Nome</TableHead>}
+                       {isVisible("funcao") && <TableHead>Função</TableHead>}
+                       {isVisible("admissao") && <TableHead>Admissão</TableHead>}
+                       {isVisible("status") && <TableHead>Status</TableHead>}
+                      <TableHead className="w-[50px]" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginated.map((emp) => {
+                      const st = statusConfig[emp.status] || statusConfig.disponivel;
+                      return (
+                        <TableRow key={emp.id}>
+                           {isVisible("matricula") && <TableCell className="font-mono text-xs text-muted-foreground">{emp.matricula || "—"}</TableCell>}
+                           {isVisible("tipo") && <TableCell>{getTypeBadge(emp.matricula)}</TableCell>}
+                           {isVisible("nome") && <TableCell className="font-medium">{emp.name}</TableCell>}
+                          {isVisible("funcao") && <TableCell>{emp.role}</TableCell>}
+                          {isVisible("admissao") && <TableCell>
+                            {emp.admission_date
+                              ? format(new Date(emp.admission_date + "T00:00:00"), "dd/MM/yyyy")
+                              : "—"}
+                          </TableCell>}
+                          {isVisible("status") && <TableCell>
+                            <Badge className={st.className}>{st.label}</Badge>
+                          </TableCell>}
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => openEdit(emp)}>
+                                  <Pencil className="w-4 h-4 mr-2" /> Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => openStatusChange(emp)}>
+                                  <RefreshCw className="w-4 h-4 mr-2" /> Alterar Status
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={() => setDeleteEmp(emp)}>
+                                  <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
 
               {totalPages > 1 && (
                 <div className="mt-4">
