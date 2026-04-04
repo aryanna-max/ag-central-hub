@@ -68,6 +68,18 @@ export default function Leads() {
   const [lossReason, setLossReason] = useState("");
   const [conversionLead, setConversionLead] = useState<Lead | null>(null);
 
+  const LEAD_COLUMNS: ColumnDef[] = [
+    { key: "codigo", label: "Código" },
+    { key: "empresa", label: "Empresa/Nome" },
+    { key: "origem", label: "Origem" },
+    { key: "servico", label: "Serviço" },
+    { key: "valor", label: "Valor" },
+    { key: "responsavel", label: "Responsável" },
+    { key: "status", label: "Status" },
+    { key: "data", label: "Data" },
+  ];
+  const { visibleColumns, toggle: toggleColumn, isVisible } = useColumnVisibility(LEAD_COLUMNS);
+
   const getEmployeeName = (id: string | null) => {
     if (!id) return "—";
     return employees.find((e) => e.id === id)?.name || "—";
