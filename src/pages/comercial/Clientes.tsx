@@ -141,15 +141,15 @@ export default function Clientes() {
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-16">Código</TableHead>
-                      <TableHead>Nome / Razão Social</TableHead>
-                      <TableHead>CNPJ/CPF</TableHead>
-                      <TableHead>Cidade/UF</TableHead>
+                     <TableRow>
+                      <SortableTableHead className="w-16" sortKey="codigo" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Código</SortableTableHead>
+                      <SortableTableHead sortKey="name" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Nome / Razão Social</SortableTableHead>
+                      <SortableTableHead sortKey="cnpj" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>CNPJ/CPF</SortableTableHead>
+                      <SortableTableHead sortKey="city" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Cidade/UF</SortableTableHead>
                       <TableHead>Contato</TableHead>
-                      <TableHead>Segmento</TableHead>
+                      <SortableTableHead sortKey="segmento" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Segmento</SortableTableHead>
                       <TableHead className="text-center">Projetos</TableHead>
-                      <TableHead>Status</TableHead>
+                      <SortableTableHead sortKey="is_active" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Status</SortableTableHead>
                       <TableHead className="w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
