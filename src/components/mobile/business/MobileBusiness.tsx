@@ -42,6 +42,7 @@ export default function MobileBusiness() {
   const [selectedProposal, setSelectedProposal] = useState<any>(null);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [newProposalOpen, setNewProposalOpen] = useState(false);
+  const [proposalInitial, setProposalInitial] = useState<{ clientId?: string; title?: string }>({});
 
   const { data: leads = [] } = useLeads();
   const { data: clients = [] } = useClients();
@@ -211,20 +212,71 @@ export default function MobileBusiness() {
       ) : null}
 
       <Sheet open={!!selectedLead} onOpenChange={(open) => !open && setSelectedLead(null)}>
-        <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{selectedLead?.company || selectedLead?.name || "Lead"}</SheetTitle>
-            <SheetDescription>Detalhes do lead e estágio atual do funil.</SheetDescription>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[90vh] flex flex-col p-0">
+          <SheetHeader className="px-5 pt-5 pb-3 border-b">
+            <SheetTitle className="text-base leading-tight">{selectedLead?.company || selectedLead?.name || "Lead"}</SheetTitle>
+            <SheetDescription className="text-xs">{selectedLead?.codigo || "Lead"}</SheetDescription>
           </SheetHeader>
           {selectedLead ? (
-            <div className="space-y-4 text-sm">
-              <Badge variant="outline">{selectedLead.status}</Badge>
-              <div><p className="text-muted-foreground">Origem</p><p className="font-medium">{selectedLead.origin || "—"}</p></div>
-              <div><p className="text-muted-foreground">Serviço</p><p className="font-medium">{selectedLead.servico || "—"}</p></div>
-              <div><p className="text-muted-foreground">Valor estimado</p><p className="font-medium">{selectedLead.valor ? selectedLead.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—"}</p></div>
-              <div><p className="text-muted-foreground">Observações</p><p className="font-medium whitespace-pre-wrap">{selectedLead.notes || "Sem observações"}</p></div>
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 text-sm">
+              {(() => {
+                const s = STATUS_STYLES[selectedLead.status] || STATUS_STYLES.novo;
+                return (
+                  <span className="inline-flex px-3 py-1 rounded-full text-xs font-semibold" style={{ background: s.bg, color: s.fg }}>
+                    {s.label}
+                  </span>
+                );
+              })()}
+              {selectedLead.servico && (
+                <div className="rounded-xl bg-muted/50 px-4 py-3">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-0.5">Serviço</p>
+                  <p className="font-medium">{selectedLead.servico}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-muted/50 px-4 py-3">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-0.5">Origem</p>
+                  <p className="font-medium capitalize">{selectedLead.origin || "—"}</p>
+                </div>
+                <div className="rounded-xl bg-muted/50 px-4 py-3">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-0.5">Valor est.</p>
+                  <p className="font-medium">{selectedLead.valor ? selectedLead.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—"}</p>
+                </div>
+              </div>
+              {selectedLead.location && (
+                <div className="rounded-xl bg-muted/50 px-4 py-3">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-0.5">Local</p>
+                  <p className="font-medium">{selectedLead.location}</p>
+                </div>
+              )}
+              {selectedLead.notes && (
+                <div className="rounded-xl bg-muted/50 px-4 py-3">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-0.5">Observações</p>
+                  <p className="font-medium whitespace-pre-wrap">{selectedLead.notes}</p>
+                </div>
+              )}
             </div>
           ) : null}
+          {selectedLead && !["convertido", "perdido"].includes(selectedLead.status) && (
+            <div className="px-5 py-4 border-t">
+              <button
+                onClick={() => {
+                  const lead = selectedLead;
+                  setSelectedLead(null);
+                  setProposalInitial({
+                    clientId: lead.client_id || undefined,
+                    title: lead.company ? `Proposta ${lead.company}` : lead.servico ? `Proposta — ${lead.servico}` : undefined,
+                  });
+                  setNewProposalOpen(true);
+                  setTab("propostas");
+                }}
+                className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                Criar Proposta
+              </button>
+            </div>
+          )}
         </SheetContent>
       </Sheet>
 
@@ -263,7 +315,13 @@ export default function MobileBusiness() {
         </SheetContent>
       </Sheet>
 
-      <NewProposalDrawer open={newProposalOpen} onOpenChange={setNewProposalOpen} clients={clients} />
+      <NewProposalDrawer
+        open={newProposalOpen}
+        onOpenChange={(open) => { setNewProposalOpen(open); if (!open) setProposalInitial({}); }}
+        clients={clients}
+        initialClientId={proposalInitial.clientId}
+        initialTitle={proposalInitial.title}
+      />
     </div>
   );
 }

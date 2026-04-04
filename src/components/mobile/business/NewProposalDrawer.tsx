@@ -15,6 +15,8 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   clients: any[];
+  initialClientId?: string;
+  initialTitle?: string;
 }
 
 interface ServiceItem {
@@ -34,13 +36,13 @@ async function generateCode() {
   return `${year}-P-${String((count || 0) + 1).padStart(3, "0")}`;
 }
 
-export default function NewProposalDrawer({ open, onOpenChange, clients }: Props) {
+export default function NewProposalDrawer({ open, onOpenChange, clients, initialClientId, initialTitle }: Props) {
   const qc = useQueryClient();
   const [code, setCode] = useState("");
-  const [clientId, setClientId] = useState("");
+  const [clientId, setClientId] = useState(initialClientId || "");
   const [contact, setContact] = useState("");
   const [location, setLocation] = useState("");
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(initialTitle || "");
   const [modality, setModality] = useState("Pontual");
   const [validityDate, setValidityDate] = useState(() => {
     const date = new Date();
@@ -59,7 +61,9 @@ export default function NewProposalDrawer({ open, onOpenChange, clients }: Props
   useEffect(() => {
     if (!open) return;
     generateCode().then(setCode).catch(() => setCode(""));
-  }, [open]);
+    if (initialClientId) setClientId(initialClientId);
+    if (initialTitle) setTitle(initialTitle);
+  }, [open, initialClientId, initialTitle]);
 
   useEffect(() => {
     if (!selectedClient) return;
@@ -108,10 +112,10 @@ export default function NewProposalDrawer({ open, onOpenChange, clients }: Props
       qc.invalidateQueries({ queryKey: ["proposals"] });
       toast.success("Proposta salva!");
       onOpenChange(false);
-      setClientId("");
+      setClientId(initialClientId || "");
       setContact("");
       setLocation("");
-      setTitle("");
+      setTitle(initialTitle || "");
       setModality("Pontual");
       setNotes("");
       setServices([defaultService()]);
@@ -127,7 +131,7 @@ export default function NewProposalDrawer({ open, onOpenChange, clients }: Props
           <DrawerDescription>Crie um rascunho ou salve e envie diretamente.</DrawerDescription>
         </DrawerHeader>
 
-        <div className="px-4 pb-4 overflow-y-auto space-y-4">
+        <div className="px-4 pb-4 overflow-y-auto space-y-4" data-vaul-no-drag>
           <div>
             <Label>Código</Label>
             <Input value={code} readOnly />

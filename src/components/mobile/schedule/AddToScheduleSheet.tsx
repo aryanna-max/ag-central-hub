@@ -22,8 +22,8 @@ interface Props {
 }
 
 export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dateStr }: Props) {
-  const [projectId, setProjectId] = useState("");
-  const [vehicleId, setVehicleId] = useState("");
+  const [projectId, setProjectId] = useState("none");
+  const [vehicleId, setVehicleId] = useState("none");
   const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
@@ -76,11 +76,14 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
         return;
       }
 
+      const resolvedProjectId = projectId !== "none" ? projectId : undefined;
+      const resolvedVehicleId = vehicleId !== "none" ? vehicleId : undefined;
+
       const assignment = await addAssignment.mutateAsync({
         daily_schedule_id: scheduleId,
         team_id: firstTeam.id,
-        project_id: projectId || undefined,
-        vehicle_id: vehicleId || undefined,
+        project_id: resolvedProjectId,
+        vehicle_id: resolvedVehicleId,
         date: dateStr,
       });
 
@@ -89,15 +92,15 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
           daily_schedule_id: scheduleId,
           employee_id: empId,
           team_id: firstTeam.id,
-          project_id: projectId || undefined,
-          vehicle_id: vehicleId || undefined,
+          project_id: resolvedProjectId,
+          vehicle_id: resolvedVehicleId,
           daily_team_assignment_id: assignment.id,
         });
       }
 
       toast.success("Equipe adicionada à escala!");
-      setProjectId("");
-      setVehicleId("");
+      setProjectId("none");
+      setVehicleId("none");
       setSelectedEmployees(new Set());
       setSearch("");
       onOpenChange(false);
@@ -124,6 +127,7 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
                 <SelectValue placeholder="Selecionar projeto..." />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="none">— Sem projeto —</SelectItem>
                 {operationalProjects.map(p => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.codigo ? `${p.codigo} — ` : ""}{p.name}
@@ -136,12 +140,12 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
           {/* Vehicle */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-muted-foreground uppercase">Veículo (opcional)</Label>
-            <Select value={vehicleId} onValueChange={(val) => setVehicleId(val === "__none__" ? "" : val)}>
+            <Select value={vehicleId} onValueChange={setVehicleId}>
               <SelectTrigger className="h-11">
                 <SelectValue placeholder="Sem veículo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__">Sem veículo</SelectItem>
+                <SelectItem value="none">Sem veículo</SelectItem>
                 {(vehicles || []).map((v: any) => (
                   <SelectItem key={v.id} value={v.id}>
                     {v.model} ({v.plate})
