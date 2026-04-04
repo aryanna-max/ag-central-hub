@@ -155,23 +155,31 @@ export default function ClienteHistorico() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Projetos</h2>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px] h-9"><SelectValue placeholder="Filtrar status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos</SelectItem>
-              {Object.entries(statusLabel).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <ColumnToggle columns={PROJ_COLUMNS} visibleColumns={visibleColumns} onToggle={toggleColumn} />
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px] h-9"><SelectValue placeholder="Filtrar status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {Object.entries(statusLabel).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="rounded-md border overflow-x-auto">
+        <div className="rounded-md border overflow-x-auto scrollbar-thin">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead><TableHead>Código</TableHead><TableHead>Serviço</TableHead>
-                <TableHead>Status</TableHead><TableHead className="text-right">Valor</TableHead>
-                <TableHead>Tipo Fat.</TableHead><TableHead>Início</TableHead><TableHead>Responsável</TableHead>
+                {isVisible("nome") && <TableHead>Nome</TableHead>}
+                {isVisible("codigo") && <TableHead>Código</TableHead>}
+                {isVisible("servico") && <TableHead>Serviço</TableHead>}
+                {isVisible("status") && <TableHead>Status</TableHead>}
+                {isVisible("valor") && <TableHead className="text-right">Valor</TableHead>}
+                {isVisible("billing") && <TableHead>Tipo Fat.</TableHead>}
+                {isVisible("inicio") && <TableHead>Início</TableHead>}
+                {isVisible("responsavel") && <TableHead>Responsável</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -179,18 +187,18 @@ export default function ClienteHistorico() {
                 <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum projeto encontrado.</TableCell></TableRow>
               ) : filtered.map(p => (
                 <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.name}</TableCell>
-                  <TableCell className="font-mono text-xs">{p.codigo || "—"}</TableCell>
-                  <TableCell className="text-sm">{p.service || "—"}</TableCell>
-                  <TableCell><Badge className={statusColor[p.status] || ""}>{statusLabel[p.status] || p.status}</Badge></TableCell>
-                  <TableCell className="text-right">{fmt(p.contract_value)}</TableCell>
-                  <TableCell>
+                  {isVisible("nome") && <TableCell className="font-medium">{p.name}</TableCell>}
+                  {isVisible("codigo") && <TableCell className="font-mono text-xs">{p.codigo || "—"}</TableCell>}
+                  {isVisible("servico") && <TableCell className="text-sm">{p.service || "—"}</TableCell>}
+                  {isVisible("status") && <TableCell><Badge className={statusColor[p.status] || ""}>{statusLabel[p.status] || p.status}</Badge></TableCell>}
+                  {isVisible("valor") && <TableCell className="text-right">{fmt(p.contract_value)}</TableCell>}
+                  {isVisible("billing") && <TableCell>
                     {p.billing_type ? (
                       <Badge className={billingColor[p.billing_type] || "bg-gray-100 text-gray-800"}>{billingLabel[p.billing_type] || p.billing_type}</Badge>
                     ) : "—"}
-                  </TableCell>
-                  <TableCell className="text-sm">{p.start_date ? format(parseISO(p.start_date), "dd/MM/yyyy") : "—"}</TableCell>
-                  <TableCell className="text-sm">{p.responsible_id ? empMap.get(p.responsible_id) || "—" : "—"}</TableCell>
+                  </TableCell>}
+                  {isVisible("inicio") && <TableCell className="text-sm">{p.start_date ? format(parseISO(p.start_date), "dd/MM/yyyy") : "—"}</TableCell>}
+                  {isVisible("responsavel") && <TableCell className="text-sm">{p.responsible_id ? empMap.get(p.responsible_id) || "—" : "—"}</TableCell>}
                 </TableRow>
               ))}
             </TableBody>
