@@ -19,11 +19,11 @@ interface SidebarItem {
 
 const navigation: SidebarItem[] = [
   {
-    label: "Dashboard", path: "/", icon: Radar,
+    label: "Radar", path: "/", icon: Radar,
     allowedRoles: ["master", "diretor"],
   },
   {
-    label: "Comercial", path: "/comercial", icon: Briefcase,
+    label: "Negócios", path: "/comercial", icon: Briefcase,
     allowedRoles: ["master", "diretor", "comercial"],
     children: [
       { label: "Leads", path: "/comercial/leads", icon: Target },
@@ -32,7 +32,7 @@ const navigation: SidebarItem[] = [
     ],
   },
   {
-    label: "Operacional", path: "/operacional", icon: Map,
+    label: "Campo", path: "/operacional", icon: Map,
     allowedRoles: ["master", "diretor", "operacional"],
     children: [
       { label: "Projetos em Campo", path: "/operacional/projetos-campo", icon: FolderKanban },
@@ -42,7 +42,7 @@ const navigation: SidebarItem[] = [
     ],
   },
   {
-    label: "Sala Técnica", path: "/sala-tecnica", icon: PenTool,
+    label: "Prancheta", path: "/sala-tecnica", icon: PenTool,
     allowedRoles: ["master", "diretor", "sala_tecnica"],
     children: [
       { label: "Projetos", path: "/sala-tecnica", icon: FolderKanban },
@@ -55,7 +55,7 @@ const navigation: SidebarItem[] = [
     allowedRoles: ["master", "diretor", "financeiro"],
   },
   {
-    label: "RH", path: "/rh", icon: Users,
+    label: "Pessoas", path: "/rh", icon: Users,
     allowedRoles: ["master", "diretor", "financeiro"],
     children: [
       { label: "Funcionários", path: "/rh/funcionarios", icon: UserPlus },

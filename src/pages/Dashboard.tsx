@@ -43,11 +43,11 @@ const BILLING_LABELS: Record<string, string> = {
 // ─── Kanban groups ───
 const GROUPS = [
   {
-    key: "campo", label: "🏕️ Operacional", color: "#1A9E7C",
+    key: "campo", label: "🏕️ Campo", color: "#1A9E7C",
     columns: ["aguardando_campo", "em_campo", "campo_concluido"],
   },
   {
-    key: "prancheta", label: "📐 Sala Técnica", color: "#2D6E8E",
+    key: "prancheta", label: "📐 Prancheta", color: "#2D6E8E",
     columns: ["aguardando_processamento", "em_processamento", "revisao", "aprovado"],
   },
   {

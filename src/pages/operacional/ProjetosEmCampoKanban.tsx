@@ -38,10 +38,10 @@ const COLUMNS = [
 ] as const;
 
 const HISTORY_BADGE: Record<string, { label: string; className: string }> = {
-  aguardando_processamento: { label: "Sala Técnica", className: "bg-blue-100 text-blue-800" },
-  em_processamento: { label: "Sala Técnica", className: "bg-blue-100 text-blue-800" },
-  revisao: { label: "Sala Técnica", className: "bg-blue-100 text-blue-800" },
-  aprovado: { label: "Sala Técnica", className: "bg-blue-100 text-blue-800" },
+  aguardando_processamento: { label: "Prancheta", className: "bg-blue-100 text-blue-800" },
+  em_processamento: { label: "Prancheta", className: "bg-blue-100 text-blue-800" },
+  revisao: { label: "Prancheta", className: "bg-blue-100 text-blue-800" },
+  aprovado: { label: "Prancheta", className: "bg-blue-100 text-blue-800" },
   entregue: { label: "Concluído", className: "bg-emerald-100 text-emerald-800" },
   faturamento: { label: "Concluído", className: "bg-emerald-100 text-emerald-800" },
   pago: { label: "Concluído", className: "bg-emerald-100 text-emerald-800" },

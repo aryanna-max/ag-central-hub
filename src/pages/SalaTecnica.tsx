@@ -30,7 +30,7 @@ export default function SalaTecnica() {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Monitor className="w-5 h-5 text-primary" />
-        <h1 className="text-xl font-bold">Sala Técnica</h1>
+        <h1 className="text-xl font-bold">Prancheta</h1>
       </div>
 
       {!location.pathname.includes("/projetos/") && (

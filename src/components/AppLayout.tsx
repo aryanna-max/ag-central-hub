@@ -11,10 +11,10 @@ export default function AppLayout() {
   const roleLabel: Record<string, string> = {
     master: "Master",
     diretor: "Diretor",
-    operacional: "Operacional",
-    sala_tecnica: "Sala Técnica",
-    comercial: "Comercial",
-    financeiro: "Financeiro",
+    operacional: "Campo",
+    sala_tecnica: "Prancheta",
+    comercial: "Negócios",
+    financeiro: "Faturamento",
   };
 
   const initials = profile?.full_name
