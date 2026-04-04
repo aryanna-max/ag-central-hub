@@ -109,6 +109,8 @@ export default function Leads() {
     });
   }, [leads, clients, search, statusFilter, originFilter, responsibleFilter]);
 
+  const { sorted: sortedFiltered, sortKey, sortDir, handleSort } = useSortableTable(filtered);
+
   // Projects without lead
   const projectsWithoutLead = useMemo(() => {
     return projects.filter(
