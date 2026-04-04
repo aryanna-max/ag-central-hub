@@ -49,7 +49,16 @@ export default function Funcionarios() {
   const [roleFilter, setRoleFilter] = useState<string>("todos");
   const [page, setPage] = useState(1);
 
-  // New employee dialog
+  const EMP_COLUMNS: ColumnDef[] = [
+    { key: "matricula", label: "Matrícula" },
+    { key: "tipo", label: "Tipo" },
+    { key: "nome", label: "Nome" },
+    { key: "funcao", label: "Função" },
+    { key: "admissao", label: "Admissão" },
+    { key: "status", label: "Status" },
+  ];
+  const { visibleColumns, toggle: toggleColumn, isVisible } = useColumnVisibility(EMP_COLUMNS);
+
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState("");
