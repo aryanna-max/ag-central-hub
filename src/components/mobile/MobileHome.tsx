@@ -33,7 +33,7 @@ function fmtBRL(v: number) {
 
 const moduleCards = [
   { icon: Radar, label: "Radar", desc: "Visão panorâmica de tudo", path: "/", color: "#2D6A8E", bg: "#E8F4FD" },
-  { icon: Map, label: "Campo", desc: "Escalas, veículos, despesas", path: "/operacional", color: "#8AB41D", bg: "#E8F5E9" },
+  { icon: Map, label: "Campo", desc: "Escalas, veículos, despesas", path: "/operacional/escala", color: "#8AB41D", bg: "#E8F5E9" },
   { icon: PenTool, label: "Prancheta", desc: "Sala Técnica — tarefas", path: "/sala-tecnica", color: "#E67E22", bg: "#FFF3E0" },
   { icon: DollarSign, label: "Faturamento", desc: "Medições, NFs, pipeline", path: "/financeiro", color: "#9B59B6", bg: "#F3E5F5" },
   { icon: Briefcase, label: "Negócios", desc: "Leads, propostas e clientes", path: "/comercial", color: "#2F9E8E", bg: "#E0F7FA" },
