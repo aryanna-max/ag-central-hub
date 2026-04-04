@@ -178,7 +178,7 @@ export default function Leads() {
 
   // ─── KANBAN VIEW ───
   const renderKanban = () => (
-    <div className="flex gap-3 overflow-x-auto pb-4">
+    <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-thin -mx-2 px-2">
       {LEAD_STATUSES.map((status) => {
         const columnLeads = filtered.filter((l) => l.status === status);
         return (
@@ -189,7 +189,7 @@ export default function Leads() {
                 <Badge variant="outline" className="text-xs h-5 px-1.5">{columnLeads.length}</Badge>
               </div>
             </div>
-            <div className="bg-muted/30 rounded-b-lg p-2 space-y-2 min-h-[100px]">
+            <div className="bg-muted/30 rounded-b-lg p-2 space-y-2 min-h-[100px] max-h-[60vh] overflow-y-auto scrollbar-thin">
               {columnLeads.map((lead) => (
                 <Card
                   key={lead.id}
