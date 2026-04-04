@@ -136,12 +136,12 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
           {/* Vehicle */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-muted-foreground uppercase">Veículo (opcional)</Label>
-            <Select value={vehicleId} onValueChange={setVehicleId}>
+            <Select value={vehicleId} onValueChange={(val) => setVehicleId(val === "__none__" ? "" : val)}>
               <SelectTrigger className="h-11">
                 <SelectValue placeholder="Sem veículo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sem veículo</SelectItem>
+                <SelectItem value="__none__">Sem veículo</SelectItem>
                 {(vehicles || []).map((v: any) => (
                   <SelectItem key={v.id} value={v.id}>
                     {v.model} ({v.plate})
