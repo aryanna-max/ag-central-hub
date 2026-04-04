@@ -134,7 +134,7 @@ export default function PlanningReportsTab() {
           <Filter className="w-4 h-4 text-muted-foreground" />
           <div>
             <label className="text-xs text-muted-foreground">Início</label>
-            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} min=MARCO_ZERO className="w-36 h-8" />
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} min={MARCO_ZERO} className="w-36 h-8" />
           </div>
           <div>
             <label className="text-xs text-muted-foreground">Fim</label>
