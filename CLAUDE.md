@@ -10,6 +10,22 @@ Sistema de gestão interna da **AG Topografia**, empresa de topografia e cartogr
 
 ---
 
+## Meta de Qualidade — Nota Arquitetural
+
+**Objetivo:** chegar a **10/10**
+**Ponto de partida:** 2.8/10 (antes das correções de abril/2026)
+**Estado atual:** ~4.5/10 (após simplificação de leads, mobile layer, correções de bugs)
+
+| Faixa | Marco | Status |
+|-------|-------|--------|
+| **5-6** | SQL Fases 1-4 executadas (campos sujos, tabelas novas, tabelas mortas) | Pendente |
+| **6-7** | Sala Técnica funcional, Financeiro com pipeline real, execution_status em todos os módulos | Pendente |
+| **7-8** | Alertas automáticos (email Alcione), aprovação despesas via WhatsApp, relatórios por módulo | Pendente |
+| **8-9** | Dados 100% limpos, clientes deduplicados, ViaCEP, histórico de status | Pendente |
+| **9-10** | Import/export estável, mobile polido, filtros avançados, zero bugs, performance otimizada | Pendente |
+
+---
+
 ## REGRAS CRÍTICAS
 
 ### Supabase MCP — SEM ACESSO
