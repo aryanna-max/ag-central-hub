@@ -193,17 +193,25 @@ export default function MobileDailySchedule() {
           {/* Action bar */}
           {!isClosed && (
             <div
-              className="fixed bottom-[64px] left-0 right-0 px-4 py-3 z-40 border-t border-border/40"
+              className="fixed bottom-[64px] left-0 right-0 px-4 py-3 z-40 border-t border-border/40 flex gap-3"
               style={{
                 background: "hsl(var(--background) / 0.95)",
                 backdropFilter: "blur(12px)",
               }}
             >
+              <Button
+                onClick={() => setAddSheetOpen(true)}
+                className="flex-1 gap-2"
+                variant="default"
+              >
+                <Plus className="w-4 h-4" />
+                Adicionar
+              </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" className="w-full gap-2">
+                  <Button variant="destructive" className="gap-2">
                     <Lock className="w-4 h-4" />
-                    Fechar Escala
+                    Fechar
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>

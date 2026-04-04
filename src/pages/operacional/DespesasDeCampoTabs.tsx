@@ -141,7 +141,10 @@ function ExpenseReportsTab() {
 }
 
 export default function DespesasDeCampoTabs() {
+  const isMobile = useIsMobile();
   const [tab, setTab] = useState("despesas");
+
+  if (isMobile) return <MobileExpenses />;
 
   return (
     <div className="space-y-6">
