@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Phone, Mail, Building2, User, MessageSquare, PhoneCall, Video, MapPin, Send, FileText, DollarSign, Plus, Check, X } from "lucide-react";
 import {
   useLeadInteractions, useAddLeadInteraction, useUpdateLead,
-  STATUS_LABELS, STATUS_COLORS, ORIGIN_LABELS,
+  STATUS_LABELS, STATUS_COLORS, ORIGIN_LABELS, ACTIVE_STATUSES, HISTORY_STATUSES,
   type Lead, type LeadInteractionType, type LeadStatus,
 } from "@/hooks/useLeads";
 import {
@@ -196,16 +196,22 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
               {lead.codigo && <span className="text-xs font-mono text-primary">{lead.codigo}</span>}
               <span>{lead.company || lead.name}</span>
             </div>
-            <Select value={lead.status} onValueChange={handleStatusChange} disabled={updateLead.isPending}>
-              <SelectTrigger className={`w-auto h-6 text-xs border-0 px-2.5 py-0 rounded-full ${STATUS_COLORS[lead.status] || ""}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {HISTORY_STATUSES.includes(lead.status) ? (
+              <Badge className={`text-xs ${STATUS_COLORS[lead.status] || ""}`}>
+                {STATUS_LABELS[lead.status]} — Histórico
+              </Badge>
+            ) : (
+              <Select value={lead.status} onValueChange={handleStatusChange} disabled={updateLead.isPending}>
+                <SelectTrigger className={`w-auto h-6 text-xs border-0 px-2.5 py-0 rounded-full ${STATUS_COLORS[lead.status] || ""}`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACTIVE_STATUSES.map((s) => (
+                    <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </DialogTitle>
         </DialogHeader>
 

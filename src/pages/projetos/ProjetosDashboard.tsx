@@ -2,8 +2,9 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
-import { useProjects, type Project, type ProjectStatus } from "@/hooks/useProjects";
+import { useProjects, type Project } from "@/hooks/useProjects";
 import { useClients } from "@/hooks/useClients";
+import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
@@ -11,22 +12,30 @@ import { FolderKanban, DollarSign, Clock, FileText, Bell } from "lucide-react";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const STATUS_LABELS: Record<ProjectStatus, string> = {
-  planejamento: "Planejamento",
-  execucao: "Execução",
-  entrega: "Entrega",
+const EXEC_STATUS_LABELS: Record<string, string> = {
+  aguardando_campo: "Aguardando campo",
+  em_campo: "Em campo",
+  campo_concluido: "Campo concluído",
+  aguardando_processamento: "Aguardando proc.",
+  em_processamento: "Em processamento",
+  revisao: "Em revisão",
+  aprovado: "Aprovado",
+  entregue: "Entregue",
   faturamento: "Faturamento",
-  concluido: "Concluído",
-  pausado: "Pausado",
+  pago: "Pago",
 };
 
-const STATUS_COLORS: Record<ProjectStatus, string> = {
-  planejamento: "bg-blue-100 text-blue-800",
-  execucao: "bg-amber-100 text-amber-800",
-  entrega: "bg-purple-100 text-purple-800",
-  faturamento: "bg-emerald-100 text-emerald-800",
-  concluido: "bg-muted text-muted-foreground",
-  pausado: "bg-rose-100 text-rose-800",
+const EXEC_STATUS_COLORS: Record<string, string> = {
+  aguardando_campo: "bg-emerald-100 text-emerald-800",
+  em_campo: "bg-emerald-200 text-emerald-900",
+  campo_concluido: "bg-teal-100 text-teal-800",
+  aguardando_processamento: "bg-blue-100 text-blue-800",
+  em_processamento: "bg-blue-200 text-blue-900",
+  revisao: "bg-indigo-100 text-indigo-800",
+  aprovado: "bg-violet-100 text-violet-800",
+  entregue: "bg-amber-100 text-amber-800",
+  faturamento: "bg-orange-100 text-orange-800",
+  pago: "bg-muted text-muted-foreground",
 };
 
 const PIE_COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "#f59e0b", "#8b5cf6", "#10b981", "#ef4444", "#6366f1", "#ec4899"];
@@ -34,6 +43,8 @@ const PIE_COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "#f59e0b", "
 export default function ProjetosDashboard() {
   const { data: projects = [] } = useProjects();
   const { data: clients = [] } = useClients();
+  const { role } = useAuth();
+  const canSeeFinancials = role === "master" || role === "diretor" || role === "financeiro";
 
   const { data: measurements = [] } = useQuery({
     queryKey: ["all-measurements-dashboard"],
@@ -59,7 +70,7 @@ export default function ProjetosDashboard() {
   });
 
   const activeProjects = useMemo(
-    () => projects.filter((p) => !["concluido", "pausado"].includes(p.status)),
+    () => projects.filter((p) => p.execution_status && p.execution_status !== "pago"),
     [projects]
   );
 
@@ -144,11 +155,11 @@ export default function ProjetosDashboard() {
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   const kpis = [
-    { label: "Projetos Ativos", value: activeProjects.length, icon: FolderKanban, color: "text-primary" },
-    { label: "Receita Contratada", value: formatCurrency(receitaContratada), icon: DollarSign, color: "text-emerald-600" },
-    { label: "A Receber", value: formatCurrency(aReceber), icon: Clock, color: "text-amber-600" },
-    { label: "Medições Pendentes", value: medicoesPendentes, icon: FileText, color: "text-blue-600" },
-  ];
+    { label: "Projetos Ativos", value: activeProjects.length, icon: FolderKanban, color: "text-primary", financial: false },
+    { label: "Receita Contratada", value: formatCurrency(receitaContratada), icon: DollarSign, color: "text-emerald-600", financial: true },
+    { label: "A Receber", value: formatCurrency(aReceber), icon: Clock, color: "text-amber-600", financial: true },
+    { label: "Medições Pendentes", value: medicoesPendentes, icon: FileText, color: "text-blue-600", financial: true },
+  ].filter((kpi) => !kpi.financial || canSeeFinancials);
 
   return (
     <div className="space-y-6">
@@ -183,9 +194,9 @@ export default function ProjetosDashboard() {
                 <TableHead>Cliente</TableHead>
                 <TableHead>Serviço</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Valor Contrato</TableHead>
-                <TableHead className="text-right">Total Medido</TableHead>
-                <TableHead className="text-right">A Receber</TableHead>
+                {canSeeFinancials && <TableHead className="text-right">Valor Contrato</TableHead>}
+                {canSeeFinancials && <TableHead className="text-right">Total Medido</TableHead>}
+                {canSeeFinancials && <TableHead className="text-right">A Receber</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -209,13 +220,13 @@ export default function ProjetosDashboard() {
                     </TableCell>
                     <TableCell>{p.service || "—"}</TableCell>
                     <TableCell>
-                      <Badge className={STATUS_COLORS[p.status]} variant="secondary">
-                        {STATUS_LABELS[p.status]}
+                      <Badge className={EXEC_STATUS_COLORS[p.execution_status || ""] || "bg-muted text-muted-foreground"} variant="secondary">
+                        {EXEC_STATUS_LABELS[p.execution_status || ""] || p.execution_status || "—"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">{contrato ? formatCurrency(contrato) : "—"}</TableCell>
-                    <TableCell className="text-right">{medido ? formatCurrency(medido) : "—"}</TableCell>
-                    <TableCell className="text-right">{aReceberRow ? formatCurrency(aReceberRow) : "—"}</TableCell>
+                    {canSeeFinancials && <TableCell className="text-right">{contrato ? formatCurrency(contrato) : "—"}</TableCell>}
+                    {canSeeFinancials && <TableCell className="text-right">{medido ? formatCurrency(medido) : "—"}</TableCell>}
+                    {canSeeFinancials && <TableCell className="text-right">{aReceberRow ? formatCurrency(aReceberRow) : "—"}</TableCell>}
                   </TableRow>
                 );
               })}
@@ -259,7 +270,7 @@ export default function ProjetosDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        {canSeeFinancials && <Card>
           <CardHeader>
             <CardTitle className="text-lg">Faturamento (6 meses)</CardTitle>
           </CardHeader>
@@ -277,7 +288,7 @@ export default function ProjetosDashboard() {
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
-        </Card>
+        </Card>}
 
         <Card>
           <CardHeader>

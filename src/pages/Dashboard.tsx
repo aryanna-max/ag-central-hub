@@ -1,5 +1,6 @@
 import { useMemo, useState, useRef } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
 import MobileHome from "@/components/mobile/MobileHome";
 import {
   Bell, CheckCircle2, AlertTriangle, Clock, Zap,
@@ -77,9 +78,11 @@ type KpiFilter = "em_campo" | "prazo_critico" | "a_faturar" | "ativos" | null;
 
 export default function Dashboard() {
   const isMobile = useIsMobile();
+  const { role } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const kanbanRef = useRef<HTMLDivElement>(null);
+  const canSeeFinancials = role === "master" || role === "diretor" || role === "financeiro";
 
   const { data: projects = [] } = useProjects();
   const { data: clients = [] } = useClients();
@@ -422,17 +425,19 @@ export default function Dashboard() {
           active={kpiFilter === "prazo_critico"}
           onClick={() => handleKpiClick("prazo_critico")}
         />
-        <KpiCard
-          icon={<Receipt className="h-6 w-6" />}
-          label="A faturar"
-          value={aFaturarCount}
-          subtitle={aFaturarValue > 0 ? fmtBRL(aFaturarValue) : "aguardando NF/Recibo"}
-          gradient="from-amber-500 to-orange-600"
-          iconBg="bg-amber-100 dark:bg-amber-900"
-          iconColor="text-amber-600 dark:text-amber-400"
-          active={kpiFilter === "a_faturar"}
-          onClick={() => handleKpiClick("a_faturar")}
-        />
+        {canSeeFinancials && (
+          <KpiCard
+            icon={<Receipt className="h-6 w-6" />}
+            label="A faturar"
+            value={aFaturarCount}
+            subtitle={aFaturarValue > 0 ? fmtBRL(aFaturarValue) : "aguardando NF/Recibo"}
+            gradient="from-amber-500 to-orange-600"
+            iconBg="bg-amber-100 dark:bg-amber-900"
+            iconColor="text-amber-600 dark:text-amber-400"
+            active={kpiFilter === "a_faturar"}
+            onClick={() => handleKpiClick("a_faturar")}
+          />
+        )}
         <KpiCard
           icon={<FolderKanban className="h-6 w-6" />}
           label="Ativos"
@@ -536,17 +541,19 @@ export default function Dashboard() {
             </SelectContent>
           </Select>
 
-          <Select value={billingFilter} onValueChange={setBillingFilter}>
-            <SelectTrigger className="w-[160px] h-8 text-xs">
-              <SelectValue placeholder="Faturamento" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos tipos</SelectItem>
-              {Object.entries(BILLING_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {canSeeFinancials && (
+            <Select value={billingFilter} onValueChange={setBillingFilter}>
+              <SelectTrigger className="w-[160px] h-8 text-xs">
+                <SelectValue placeholder="Faturamento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos tipos</SelectItem>
+                {Object.entries(BILLING_LABELS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {/* Kanban board */}
@@ -606,6 +613,7 @@ export default function Dashboard() {
                           hasAlert={alertProjectIds.has(p.id)}
                           onClick={() => navigate(`/projetos/${p.id}`)}
                           fmtBRL={fmtBRL}
+                          canSeeFinancials={canSeeFinancials}
                         />
                       ))}
                     </div>
@@ -668,13 +676,14 @@ function KpiCard({
 
 // ─── Project Card (redesenhado) ───
 function ProjectCard({
-  project, clientName, hasAlert, onClick, fmtBRL,
+  project, clientName, hasAlert, onClick, fmtBRL, canSeeFinancials = true,
 }: {
   project: Project;
   clientName: string;
   hasAlert: boolean;
   onClick: () => void;
   fmtBRL: (v: number) => string;
+  canSeeFinancials?: boolean;
 }) {
   const p = project;
   const billingLabel = BILLING_LABELS[p.billing_type] || p.billing_type;
@@ -714,18 +723,20 @@ function ProjectCard({
         />
       )}
 
-      <div className="flex flex-wrap gap-1 pt-0.5">
-        {p.billing_type ? (
-          <Badge variant="outline" className="text-[9px] h-4 px-1">{billingLabel}</Badge>
-        ) : (
-          <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-[9px] h-4 px-1">⚠ Definir faturamento</Badge>
-        )}
-        {p.contract_value > 0 && (
-          <Badge variant="secondary" className="text-[9px] h-4 px-1 font-semibold">
-            {fmtBRL(Number(p.contract_value))}
-          </Badge>
-        )}
-      </div>
+      {canSeeFinancials && (
+        <div className="flex flex-wrap gap-1 pt-0.5">
+          {p.billing_type ? (
+            <Badge variant="outline" className="text-[9px] h-4 px-1">{billingLabel}</Badge>
+          ) : (
+            <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-[9px] h-4 px-1">⚠ Definir faturamento</Badge>
+          )}
+          {p.contract_value > 0 && (
+            <Badge variant="secondary" className="text-[9px] h-4 px-1 font-semibold">
+              {fmtBRL(Number(p.contract_value))}
+            </Badge>
+          )}
+        </div>
+      )}
     </div>
   );
 }

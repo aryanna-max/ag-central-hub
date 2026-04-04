@@ -38,19 +38,12 @@ const COLUMNS: Col[] = [
   { key: "entregue", label: "Entregue", readonly: true },
 ];
 
-const BILLING_BADGES: Record<string, { label: string; cls: string }> = {
-  entrega_nf: { label: "NF na entrega", cls: "bg-emerald-50 text-emerald-700 border-emerald-300" },
-  entrega_recibo: { label: "Recibo na entrega", cls: "bg-emerald-50 text-emerald-700 border-emerald-300" },
-  medicao_mensal: { label: "Por medição", cls: "bg-blue-50 text-blue-700 border-blue-300" },
-  misto: { label: "Misto", cls: "bg-yellow-50 text-yellow-700 border-yellow-300" },
-};
 
 interface ProjectRow {
   id: string;
   codigo: string | null;
   name: string;
   execution_status: string | null;
-  billing_type: string | null;
   delivery_deadline: string | null;
   field_completed_at: string | null;
   delivery_days_estimated: number | null;
@@ -90,7 +83,7 @@ export default function STKanban() {
       const validStatuses = COLUMNS.map(c => c.key) as string[];
       const { data: rows, error } = await supabase
         .from("projects")
-        .select("id, codigo, name, execution_status, billing_type, delivery_deadline, field_completed_at, delivery_days_estimated, delivered_at, client_id, is_active, needs_tech_prep, responsible_tecnico_id, responsible_campo_id")
+        .select("id, codigo, name, execution_status, delivery_deadline, field_completed_at, delivery_days_estimated, delivered_at, client_id, is_active, needs_tech_prep, responsible_tecnico_id, responsible_campo_id")
         .in("execution_status", validStatuses as any)
         .eq("is_active", true)
         .order("name");
@@ -141,7 +134,6 @@ export default function STKanban() {
           codigo: r.codigo,
           name: r.name,
           execution_status: r.execution_status,
-          billing_type: r.billing_type,
           delivery_deadline: r.delivery_deadline,
           field_completed_at: r.field_completed_at,
           delivery_days_estimated: r.delivery_days_estimated,
@@ -249,13 +241,6 @@ export default function STKanban() {
     setQuickTaskForm({ title: "", assigned_to_id: "", due_date: null });
     refetch();
     qc.invalidateQueries({ queryKey: ["technical_tasks"] });
-  };
-
-  const billingBadge = (bt: string | null) => {
-    if (!bt) return <Badge variant="destructive" className="text-[10px]">⚠ Faturamento indefinido</Badge>;
-    const b = BILLING_BADGES[bt];
-    if (!b) return <Badge variant="outline" className="text-[10px]">{bt}</Badge>;
-    return <Badge variant="outline" className={`text-[10px] ${b.cls}`}>{b.label}</Badge>;
   };
 
   return (
@@ -371,8 +356,6 @@ export default function STKanban() {
                         <span className="text-[9px] text-muted-foreground">+{p.task_assignee_names.length - 3}</span>
                       )}
                     </div>
-
-                    {billingBadge(p.billing_type)}
 
                     {/* Quick actions */}
                     <div className="flex gap-1 pt-0.5">
