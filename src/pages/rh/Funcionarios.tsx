@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Employee } from "@/hooks/useEmployees";
 import { FIELD_ROLES, isFieldRole, isTechRole } from "@/lib/fieldRoles";
 import ColumnToggle, { useColumnVisibility, type ColumnDef } from "@/components/ColumnToggle";
+import { SortableTableHead, useSortableTable } from "@/components/ui/sortable-table-head";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   disponivel: { label: "Disponível", className: "bg-green-600 text-white" },
