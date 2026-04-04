@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Building2, FolderKanban, Briefcase, DollarSign, Users } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import ColumnToggle, { useColumnVisibility, type ColumnDef } from "@/components/ColumnToggle";
 
 const fmt = (v: number | null) => v != null ? `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—";
 
