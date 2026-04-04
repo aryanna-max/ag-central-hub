@@ -233,15 +233,15 @@ export default function Leads() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {isVisible("codigo") && <TableHead>Código</TableHead>}
-                  {isVisible("empresa") && <TableHead>Empresa/Nome</TableHead>}
-                  {isVisible("origem") && <TableHead>Origem</TableHead>}
-                  {isVisible("servico") && <TableHead>Serviço</TableHead>}
-                  {isVisible("valor") && <TableHead>Valor</TableHead>}
-                  {isVisible("responsavel") && <TableHead>Responsável</TableHead>}
-                  {isVisible("status") && <TableHead>Status</TableHead>}
-                  {isVisible("data") && <TableHead>Data</TableHead>}
-                  <TableHead className="w-10" />
+                  {isVisible("codigo") && <SortableTableHead sortKey="codigo" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Código</SortableTableHead>}
+                  {isVisible("empresa") && <SortableTableHead sortKey="company" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Empresa/Nome</SortableTableHead>}
+                  {isVisible("origem") && <SortableTableHead sortKey="origin" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Origem</SortableTableHead>}
+                  {isVisible("servico") && <SortableTableHead sortKey="servico" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Serviço</SortableTableHead>}
+                  {isVisible("valor") && <SortableTableHead sortKey="valor" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Valor</SortableTableHead>}
+                  {isVisible("responsavel") && <SortableTableHead sortKey="responsible_id" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Responsável</SortableTableHead>}
+                  {isVisible("status") && <SortableTableHead sortKey="status" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Status</SortableTableHead>}
+                  {isVisible("data") && <SortableTableHead sortKey="created_at" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Data</SortableTableHead>}
+                  <SortableTableHead className="w-10" />
                 </TableRow>
               </TableHeader>
               <TableBody>
