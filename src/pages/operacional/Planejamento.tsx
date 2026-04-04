@@ -5,9 +5,16 @@ import EscalaDiaria from "./EscalaDiaria";
 import EscalaMensal from "./EscalaMensal";
 import Equipes from "./Equipes";
 import PlanningReportsTab from "@/components/operacional/PlanningReportsTab";
+import { useIsMobile } from "@/hooks/use-mobile";
+import MobileDailySchedule from "@/components/mobile/schedule/MobileDailySchedule";
 
 export default function Planejamento() {
   const [tab, setTab] = useState("hoje");
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return <MobileDailySchedule />;
+  }
 
   return (
     <div className="p-6 space-y-6">
