@@ -312,7 +312,7 @@ Cliente único: `Direcional Engenharia` (id: e6720b0d-a82b-4483-bb84-c5363bf8c95
 | BRK Ambiental — Projetos | BRK | `entrega_nf` | Projetos pontuais |
 | HBR — Tabaiares | HBR | `medicao_mensal` | R$18.500/mês, recorrente perfeito |
 | HBR — demais projetos | HBR | `entrega_nf` | Santa Clara, Camaragibe, Parque Gourmet etc. |
-| Engeko | ENGKO | `medicao_mensal` | R$19.500/mês, recorrente perfeito |
+| Engeko | EGK | `medicao_mensal` | R$19.500/mês, recorrente perfeito |
 | Pernambuco Construtora / Porto de Pedra | PCPE | `medicao_mensal` | R$19.500/mês |
 | JME | JME | `medicao_mensal` | Apex — arquivo de medição mensal confirmado |
 | Flamboyant | FLMB | `medicao_mensal` | Castanhal/PA — arquivo de medição JAN/FEV confirmado |
