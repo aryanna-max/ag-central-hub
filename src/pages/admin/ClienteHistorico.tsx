@@ -47,6 +47,18 @@ export default function ClienteHistorico() {
   const { data: leads } = useLeads();
   const [statusFilter, setStatusFilter] = useState<string>("todos");
 
+  const PROJ_COLUMNS: ColumnDef[] = [
+    { key: "nome", label: "Nome" },
+    { key: "codigo", label: "Código" },
+    { key: "servico", label: "Serviço" },
+    { key: "status", label: "Status" },
+    { key: "valor", label: "Valor" },
+    { key: "billing", label: "Tipo Fat." },
+    { key: "inicio", label: "Início" },
+    { key: "responsavel", label: "Responsável" },
+  ];
+  const { visibleColumns, toggle: toggleColumn, isVisible } = useColumnVisibility(PROJ_COLUMNS);
+
   const client = useMemo(() => (clients || []).find(c => c.id === clientId), [clients, clientId]);
   const empMap = useMemo(() => new Map((employees || []).map(e => [e.id, e.name])), [employees]);
 
