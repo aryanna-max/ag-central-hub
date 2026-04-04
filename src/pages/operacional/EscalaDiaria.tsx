@@ -73,6 +73,7 @@ export default function EscalaDiaria() {
     project_id: "",
     employee_ids: [] as string[],
     vehicle_id: "",
+    team_id: "",
     benefits: { cafe: false, almoco: false, janta: false, vt: false },
   });
   const [empSearch, setEmpSearch] = useState("");
@@ -276,7 +277,7 @@ export default function EscalaDiaria() {
 
       qc.invalidateQueries({ queryKey: ["daily-schedule"] });
       setShowAddModal(false);
-      setAddForm({ project_id: "", employee_ids: [], vehicle_id: "", benefits: { cafe: false, almoco: false, janta: false, vt: false } });
+      setAddForm({ project_id: "", employee_ids: [], vehicle_id: "", team_id: "", benefits: { cafe: false, almoco: false, janta: false, vt: false } });
       setEmpSearch("");
       toast.success(`${empIds.length} funcionário(s) adicionado(s) à escala!`);
     } catch {
