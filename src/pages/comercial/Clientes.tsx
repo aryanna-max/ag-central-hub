@@ -154,7 +154,7 @@ export default function Clientes() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map((client) => {
+                    {sortedFiltered.map((client) => {
                       const projCount = getClientProjects(client).length;
                       return (
                         <TableRow key={client.id} className="cursor-pointer hover:bg-muted/50">

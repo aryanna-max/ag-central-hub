@@ -141,7 +141,7 @@ export default function Veiculos() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map((v: any) => (
+                    {sortedFiltered.map((v: any) => (
                       <TableRow key={v.id} className="cursor-pointer" onClick={() => openDetail(v)}>
                         <TableCell className="font-medium">{v.plate}</TableCell>
                         <TableCell>{v.model}</TableCell>
