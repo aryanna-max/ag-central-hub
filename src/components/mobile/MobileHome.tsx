@@ -95,8 +95,16 @@ export default function MobileHome() {
       .reduce((s, p) => s + (p.contract_value || 0), 0);
   }, [projects]);
 
-  const teamMap = useMemo(() => new Map(teams.map(t => [t.id, t])), [teams]);
-  const projectMap = useMemo(() => new Map(projects.map(p => [p.id, p])), [projects]);
+  const teamMap = useMemo(() => {
+    const m = new globalThis.Map<string, any>();
+    teams.forEach(t => m.set(t.id, t));
+    return m;
+  }, [teams]);
+  const projectMap = useMemo(() => {
+    const m = new globalThis.Map<string, any>();
+    projects.forEach(p => m.set(p.id, p));
+    return m;
+  }, [projects]);
 
   const teamColors = ["#8AB41D", "#2D6A8E", "#2F9E8E", "#E67E22", "#9B59B6", "#E74C3C"];
 
