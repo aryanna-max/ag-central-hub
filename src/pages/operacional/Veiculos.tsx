@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { SortableTableHead, useSortableTable } from "@/components/ui/sortable-table-head";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useVehicles, useDeleteVehicle } from "@/hooks/useVehicles";
 import VehicleEditDialog from "@/components/operacional/VehicleEditDialog";
@@ -53,6 +54,8 @@ export default function Veiculos() {
       return true;
     });
   }, [vehicles, filterStatus, filterSearch]);
+
+  const { sorted: sortedFiltered, sortKey, sortDir, handleSort } = useSortableTable(filtered);
 
   const openNew = () => { setSelectedVehicle(null); setEditOpen(true); };
   const openEdit = (v: any, e: React.MouseEvent) => { e.stopPropagation(); setSelectedVehicle(v); setEditOpen(true); };
@@ -129,18 +132,18 @@ export default function Veiculos() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Placa</TableHead>
-                      <TableHead>Modelo</TableHead>
-                      <TableHead>Marca</TableHead>
-                      <TableHead>Ano</TableHead>
-                      <TableHead>KM Atual</TableHead>
-                      <TableHead>Responsável</TableHead>
-                      <TableHead>Status</TableHead>
+                      <SortableTableHead sortKey="plate" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Placa</SortableTableHead>
+                      <SortableTableHead sortKey="model" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Modelo</SortableTableHead>
+                      <SortableTableHead sortKey="brand" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Marca</SortableTableHead>
+                      <SortableTableHead sortKey="year" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Ano</SortableTableHead>
+                      <SortableTableHead sortKey="km_current" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>KM Atual</SortableTableHead>
+                      <SortableTableHead>Responsável</SortableTableHead>
+                      <SortableTableHead sortKey="status" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Status</SortableTableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map((v: any) => (
+                    {sortedFiltered.map((v: any) => (
                       <TableRow key={v.id} className="cursor-pointer" onClick={() => openDetail(v)}>
                         <TableCell className="font-medium">{v.plate}</TableCell>
                         <TableCell>{v.model}</TableCell>

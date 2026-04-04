@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarDays, Lock, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import AddToScheduleSheet from "./AddToScheduleSheet";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useDailySchedule, useCloseDailySchedule, useCreateDailySchedule, usePreFillFromMonthly, useUpdateAttendance } from "@/hooks/useDailySchedule";
@@ -16,6 +17,7 @@ type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
 
 export default function MobileDailySchedule() {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [addSheetOpen, setAddSheetOpen] = useState(false);
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
   const { data: schedule, isLoading } = useDailySchedule(dateStr);
@@ -111,6 +113,15 @@ export default function MobileDailySchedule() {
 
   return (
     <div className="pb-40">
+      {/* Add to Schedule Sheet */}
+      {schedule && !isClosed && (
+        <AddToScheduleSheet
+          open={addSheetOpen}
+          onOpenChange={setAddSheetOpen}
+          scheduleId={schedule.id}
+          dateStr={dateStr}
+        />
+      )}
       {/* Header */}
       <div className="px-4 pt-4 pb-3 flex items-center justify-between">
         <div>
@@ -126,6 +137,8 @@ export default function MobileDailySchedule() {
           {isClosed ? "Fechada" : "Aberta"}
         </Badge>
       </div>
+
+      
 
       {/* Day selector */}
       <DaySelector selectedDate={selectedDate} onSelect={setSelectedDate} />
@@ -181,17 +194,25 @@ export default function MobileDailySchedule() {
           {/* Action bar */}
           {!isClosed && (
             <div
-              className="fixed bottom-[64px] left-0 right-0 px-4 py-3 z-40 border-t border-border/40"
+              className="fixed bottom-[64px] left-0 right-0 px-4 py-3 z-40 border-t border-border/40 flex gap-3"
               style={{
                 background: "hsl(var(--background) / 0.95)",
                 backdropFilter: "blur(12px)",
               }}
             >
+              <Button
+                onClick={() => setAddSheetOpen(true)}
+                className="flex-1 gap-2"
+                variant="default"
+              >
+                <Plus className="w-4 h-4" />
+                Adicionar
+              </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" className="w-full gap-2">
+                  <Button variant="destructive" className="gap-2">
                     <Lock className="w-4 h-4" />
-                    Fechar Escala
+                    Fechar
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>

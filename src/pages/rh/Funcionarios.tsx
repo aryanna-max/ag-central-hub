@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Employee } from "@/hooks/useEmployees";
 import { FIELD_ROLES, isFieldRole, isTechRole } from "@/lib/fieldRoles";
 import ColumnToggle, { useColumnVisibility, type ColumnDef } from "@/components/ColumnToggle";
+import { SortableTableHead, useSortableTable } from "@/components/ui/sortable-table-head";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   disponivel: { label: "Disponível", className: "bg-green-600 text-white" },
@@ -101,9 +102,10 @@ export default function Funcionarios() {
     return matchesSearch && matchesStatus && matchesRole;
   });
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const { sorted: sortedFiltered, sortKey, sortDir, handleSort } = useSortableTable(filtered);
+  const totalPages = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const paginated = sortedFiltered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   // Summary counts
   const totalCount = employees.length;
@@ -296,12 +298,12 @@ export default function Funcionarios() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                       {isVisible("matricula") && <TableHead>Matrícula</TableHead>}
-                       {isVisible("tipo") && <TableHead>Tipo</TableHead>}
-                       {isVisible("nome") && <TableHead>Nome</TableHead>}
-                       {isVisible("funcao") && <TableHead>Função</TableHead>}
-                       {isVisible("admissao") && <TableHead>Admissão</TableHead>}
-                       {isVisible("status") && <TableHead>Status</TableHead>}
+                       {isVisible("matricula") && <SortableTableHead sortKey="matricula" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Matrícula</SortableTableHead>}
+                       {isVisible("tipo") && <SortableTableHead>Tipo</SortableTableHead>}
+                       {isVisible("nome") && <SortableTableHead sortKey="name" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Nome</SortableTableHead>}
+                       {isVisible("funcao") && <SortableTableHead sortKey="role" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Função</SortableTableHead>}
+                       {isVisible("admissao") && <SortableTableHead sortKey="admission_date" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Admissão</SortableTableHead>}
+                       {isVisible("status") && <SortableTableHead sortKey="status" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Status</SortableTableHead>}
                       <TableHead className="w-[50px]" />
                     </TableRow>
                   </TableHeader>

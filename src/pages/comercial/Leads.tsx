@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, ArrowRightLeft, Target, LayoutGrid, List, FolderKanban, AlertTriangle } from "lucide-react";
 import ColumnToggle, { useColumnVisibility, type ColumnDef } from "@/components/ColumnToggle";
+import { SortableTableHead, useSortableTable } from "@/components/ui/sortable-table-head";
 import LeadConversionDialog from "./LeadConversionDialog";
 import {
   useLeads, useDeleteLead, useUpdateLead,
@@ -107,6 +108,8 @@ export default function Leads() {
       return matchSearch && matchStatus && matchOrigin && matchResp;
     });
   }, [leads, clients, search, statusFilter, originFilter, responsibleFilter]);
+
+  const { sorted: sortedFiltered, sortKey, sortDir, handleSort } = useSortableTable(filtered);
 
   // Projects without lead
   const projectsWithoutLead = useMemo(() => {
@@ -230,19 +233,19 @@ export default function Leads() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {isVisible("codigo") && <TableHead>Código</TableHead>}
-                  {isVisible("empresa") && <TableHead>Empresa/Nome</TableHead>}
-                  {isVisible("origem") && <TableHead>Origem</TableHead>}
-                  {isVisible("servico") && <TableHead>Serviço</TableHead>}
-                  {isVisible("valor") && <TableHead>Valor</TableHead>}
-                  {isVisible("responsavel") && <TableHead>Responsável</TableHead>}
-                  {isVisible("status") && <TableHead>Status</TableHead>}
-                  {isVisible("data") && <TableHead>Data</TableHead>}
-                  <TableHead className="w-10" />
+                  {isVisible("codigo") && <SortableTableHead sortKey="codigo" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Código</SortableTableHead>}
+                  {isVisible("empresa") && <SortableTableHead sortKey="company" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Empresa/Nome</SortableTableHead>}
+                  {isVisible("origem") && <SortableTableHead sortKey="origin" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Origem</SortableTableHead>}
+                  {isVisible("servico") && <SortableTableHead sortKey="servico" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Serviço</SortableTableHead>}
+                  {isVisible("valor") && <SortableTableHead sortKey="valor" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Valor</SortableTableHead>}
+                  {isVisible("responsavel") && <SortableTableHead sortKey="responsible_id" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Responsável</SortableTableHead>}
+                  {isVisible("status") && <SortableTableHead sortKey="status" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Status</SortableTableHead>}
+                  {isVisible("data") && <SortableTableHead sortKey="created_at" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Data</SortableTableHead>}
+                  <SortableTableHead className="w-10" />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((lead) => (
+                {sortedFiltered.map((lead) => (
                   <TableRow key={lead.id} className="cursor-pointer" onClick={() => setDetailLead(lead)}>
                     {isVisible("codigo") && <TableCell className="font-mono text-xs font-bold text-primary">{lead.codigo || "—"}</TableCell>}
                     {isVisible("empresa") && <TableCell className="font-medium">{getDisplayName(lead, clients)}</TableCell>}

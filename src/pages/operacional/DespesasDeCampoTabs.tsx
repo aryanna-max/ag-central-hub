@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { DollarSign } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useIsMobile } from "@/hooks/use-mobile";
+import MobileExpenses from "@/components/mobile/expenses/MobileExpenses";
 import DespesasDeCampo from "./DespesasDeCampo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
@@ -139,7 +141,10 @@ function ExpenseReportsTab() {
 }
 
 export default function DespesasDeCampoTabs() {
+  const isMobile = useIsMobile();
   const [tab, setTab] = useState("despesas");
+
+  if (isMobile) return <MobileExpenses />;
 
   return (
     <div className="space-y-6">

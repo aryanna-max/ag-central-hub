@@ -10,6 +10,8 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SortableTableHead, useSortableTable } from "@/components/ui/sortable-table-head";
+import ColumnToggle, { useColumnVisibility, type ColumnDef } from "@/components/ColumnToggle";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import {
@@ -57,6 +59,8 @@ export default function Clientes() {
         c.codigo?.toLowerCase().includes(q)
     );
   }, [clients, search]);
+
+  const { sorted: sortedFiltered, sortKey, sortDir, handleSort } = useSortableTable(filtered);
 
   const stats = useMemo(() => ({
     total: clients.length,
@@ -137,20 +141,20 @@ export default function Clientes() {
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-16">Código</TableHead>
-                      <TableHead>Nome / Razão Social</TableHead>
-                      <TableHead>CNPJ/CPF</TableHead>
-                      <TableHead>Cidade/UF</TableHead>
+                     <TableRow>
+                      <SortableTableHead className="w-16" sortKey="codigo" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Código</SortableTableHead>
+                      <SortableTableHead sortKey="name" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Nome / Razão Social</SortableTableHead>
+                      <SortableTableHead sortKey="cnpj" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>CNPJ/CPF</SortableTableHead>
+                      <SortableTableHead sortKey="city" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Cidade/UF</SortableTableHead>
                       <TableHead>Contato</TableHead>
-                      <TableHead>Segmento</TableHead>
+                      <SortableTableHead sortKey="segmento" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Segmento</SortableTableHead>
                       <TableHead className="text-center">Projetos</TableHead>
-                      <TableHead>Status</TableHead>
+                      <SortableTableHead sortKey="is_active" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Status</SortableTableHead>
                       <TableHead className="w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map((client) => {
+                    {sortedFiltered.map((client) => {
                       const projCount = getClientProjects(client).length;
                       return (
                         <TableRow key={client.id} className="cursor-pointer hover:bg-muted/50">
