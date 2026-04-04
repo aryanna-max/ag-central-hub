@@ -77,8 +77,6 @@ type KpiFilter = "em_campo" | "prazo_critico" | "a_faturar" | "ativos" | null;
 
 export default function Dashboard() {
   const isMobile = useIsMobile();
-  if (isMobile) return <MobileHome />;
-
   const navigate = useNavigate();
   const qc = useQueryClient();
   const kanbanRef = useRef<HTMLDivElement>(null);
