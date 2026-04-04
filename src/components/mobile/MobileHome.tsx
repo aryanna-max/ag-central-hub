@@ -63,17 +63,19 @@ export default function MobileHome() {
     queryKey: ["mobile-today-schedules"],
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
+      const { data: schedules } = await supabase
+        .from("daily_schedules")
+        .select("id")
+        .eq("schedule_date", today)
+        .eq("is_legacy", false);
+      const ids = (schedules || []).map(d => d.id);
+      if (ids.length === 0) return [];
       const { data, error } = await supabase
         .from("daily_team_assignments")
-        .select(`
-          id, team_id, project_id, notes,
-          daily_schedule_id
-        `)
-        .in("daily_schedule_id", 
-          (await supabase.from("daily_schedules").select("id").eq("schedule_date", today).eq("is_legacy", false)).data?.map(d => d.id) || []
-        );
+        .select("id, team_id, project_id, notes, daily_schedule_id")
+        .in("daily_schedule_id", ids);
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
