@@ -2513,6 +2513,7 @@ export type Database = {
         | "proposta_enviada"
         | "aprovado"
         | "perdido"
+        | "em_negociacao"
       measurement_status:
         | "rascunho"
         | "aguardando_aprovacao"
@@ -2761,6 +2762,7 @@ export const Constants = {
         "proposta_enviada",
         "aprovado",
         "perdido",
+        "em_negociacao",
       ],
       measurement_status: [
         "rascunho",
