@@ -27,6 +27,17 @@ const LEAD_SEGMENT_COLORS: Record<string, string> = {
   aprovado: "#27AE60",
 };
 
+const LEAD_STATUS_STYLES: Record<string, { label: string; bg: string; fg: string }> = {
+  novo: { label: "Novo", bg: "rgba(45, 106, 142, 0.12)", fg: "#2D6A8E" },
+  em_contato: { label: "Em contato", bg: "rgba(47, 158, 142, 0.12)", fg: "#2F9E8E" },
+  qualificado: { label: "Qualificado", bg: "rgba(47, 158, 142, 0.12)", fg: "#2F9E8E" },
+  proposta_enviada: { label: "Proposta enviada", bg: "rgba(233, 168, 37, 0.14)", fg: "#B7791F" },
+  aprovado: { label: "Aprovado", bg: "rgba(138, 180, 29, 0.16)", fg: "#6B8E12" },
+  convertido: { label: "Convertido", bg: "rgba(39, 174, 96, 0.16)", fg: "#1F8A4D" },
+  perdido: { label: "Perdido", bg: "rgba(231, 76, 60, 0.14)", fg: "#C0392B" },
+  descartado: { label: "Descartado", bg: "rgba(153, 153, 153, 0.14)", fg: "#666666" },
+};
+
 const PROPOSAL_STATUS_LABELS: Record<string, string> = {
   rascunho: "Rascunho",
   enviada: "Enviada",
@@ -220,7 +231,7 @@ export default function MobileBusiness() {
           {selectedLead ? (
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 text-sm">
               {(() => {
-                const s = STATUS_STYLES[selectedLead.status] || STATUS_STYLES.novo;
+                const s = LEAD_STATUS_STYLES[selectedLead.status] || LEAD_STATUS_STYLES.novo;
                 return (
                   <span className="inline-flex px-3 py-1 rounded-full text-xs font-semibold" style={{ background: s.bg, color: s.fg }}>
                     {s.label}
