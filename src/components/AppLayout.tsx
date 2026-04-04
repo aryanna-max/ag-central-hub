@@ -4,9 +4,12 @@ import { Search, LogOut } from "lucide-react";
 import NotificationsPanel from "./NotificationsPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
+import BottomNav from "./mobile/BottomNav";
 
 export default function AppLayout() {
   const { profile, role, signOut } = useAuth();
+  const isMobile = useIsMobile();
 
   const roleLabel: Record<string, string> = {
     master: "Master",
@@ -20,6 +23,17 @@ export default function AppLayout() {
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
     : "AG";
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <main className="flex-1 overflow-auto pb-20">
+          <Outlet />
+        </main>
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">

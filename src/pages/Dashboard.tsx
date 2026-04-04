@@ -1,4 +1,6 @@
 import { useMemo, useState, useRef } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import MobileHome from "@/components/mobile/MobileHome";
 import {
   Bell, CheckCircle2, AlertTriangle, Clock, Zap,
   Map as MapIcon, Receipt, FolderKanban,
@@ -74,6 +76,7 @@ const EXEC_STATUS_COLORS: Record<string, string> = {
 type KpiFilter = "em_campo" | "prazo_critico" | "a_faturar" | "ativos" | null;
 
 export default function Dashboard() {
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const kanbanRef = useRef<HTMLDivElement>(null);
@@ -287,6 +290,8 @@ export default function Dashboard() {
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
   // ─── RENDER ───
+  if (isMobile) return <MobileHome />;
+
   return (
     <div className="space-y-6 p-4 md:p-6 max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between">
