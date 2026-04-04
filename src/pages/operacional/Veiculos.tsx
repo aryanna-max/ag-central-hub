@@ -55,6 +55,8 @@ export default function Veiculos() {
     });
   }, [vehicles, filterStatus, filterSearch]);
 
+  const { sorted: sortedFiltered, sortKey, sortDir, handleSort } = useSortableTable(filtered);
+
   const openNew = () => { setSelectedVehicle(null); setEditOpen(true); };
   const openEdit = (v: any, e: React.MouseEvent) => { e.stopPropagation(); setSelectedVehicle(v); setEditOpen(true); };
   const openDetail = (v: any) => { setSelectedVehicle(v); setDetailOpen(true); };
