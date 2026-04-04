@@ -69,6 +69,7 @@ export default function ProjetosEmCampoKanban() {
         .from("projects")
         .select("id, codigo, name, client_id, execution_status, field_deadline, field_started_at, field_days_estimated, field_completed_at, billing_type, is_active")
         .eq("is_active", true)
+        .eq("show_in_operational", true)
         .in("execution_status", ["aguardando_campo", "em_campo", "campo_concluido"])
         .order("name");
       if (error) throw error;
@@ -93,6 +94,7 @@ export default function ProjetosEmCampoKanban() {
       const { data, error } = await supabase
         .from("projects")
         .select("id, codigo, name, client_id, execution_status, field_started_at, field_completed_at")
+        .eq("show_in_operational", true)
         .not("execution_status", "in", '("aguardando_campo","em_campo","campo_concluido")')
         .not("field_started_at", "is", null)
         .gte("field_started_at", "2026-03-31")
