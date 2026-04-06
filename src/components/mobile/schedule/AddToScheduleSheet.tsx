@@ -36,7 +36,7 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
   const addEntry = useAddDailyEntry();
 
   const operationalProjects = useMemo(() =>
-    projects.filter(p => (p as any).show_in_operational === true && p.status !== "concluido" && p.status !== "pausado"),
+    projects.filter(p => p.show_in_operational === true && p.status !== "concluido" && p.status !== "pausado"),
     [projects]
   );
 

@@ -35,7 +35,6 @@ import MonthlyDayEditDialog from "@/components/operacional/MonthlyDayEditDialog"
 import EmployeeAvailabilityKanban from "@/components/operacional/EmployeeAvailabilityKanban";
 import DailyReportDialog from "@/components/operacional/DailyReportDialog";
 import { useUpdateMonthlySchedule } from "@/hooks/useMonthlySchedules";
-import { useScheduleConfirmation, useConfirmSchedule } from "@/hooks/useScheduleConfirmations";
 import { useAuth } from "@/contexts/AuthContext";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
@@ -108,8 +107,6 @@ export default function EscalaDiaria() {
   const closeSchedule = useCloseDailySchedule();
   const preFill = usePreFillFromMonthly();
   const updateMonthly = useUpdateMonthlySchedule();
-  const { data: confirmation } = useScheduleConfirmation(selectedDate);
-  const confirmSchedule = useConfirmSchedule();
   const { user, role } = useAuth();
 
   const isClosed = schedule?.is_closed;
@@ -131,16 +128,6 @@ export default function EscalaDiaria() {
       (e) => e.name.toLowerCase().includes(q) || (e.matricula || "").toLowerCase().includes(q)
     );
   }, [activeEmployees, empSearch]);
-
-  const handleConfirmSchedule = async () => {
-    if (!user?.id) return;
-    try {
-      await confirmSchedule.mutateAsync({ date: selectedDate, userId: user.id });
-      toast.success("Escala confirmada!");
-    } catch {
-      toast.error("Erro ao confirmar escala");
-    }
-  };
 
   const handleCreateSchedule = async () => {
     try {

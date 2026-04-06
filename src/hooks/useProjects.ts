@@ -44,7 +44,7 @@ export interface Project {
   location: string | null;
   latitude: number | null;
   longitude: number | null;
-  parent_project_id: string | null;
+  show_in_operational: boolean;
   execution_status: string | null;
   needs_tech_prep: boolean | null;
   billing_type: string | null;

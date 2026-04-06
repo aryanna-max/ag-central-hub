@@ -55,6 +55,14 @@ const navigation: SidebarItem[] = [
     allowedRoles: ["master", "diretor", "financeiro", "operacional"],
   },
   {
+    label: "Projetos", path: "/projetos", icon: FolderKanban,
+    allowedRoles: ["master", "diretor", "operacional", "sala_tecnica", "comercial", "financeiro"],
+    children: [
+      { label: "Kanban", path: "/projetos/kanban", icon: FolderKanban },
+      { label: "Dashboard", path: "/projetos/dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
     label: "Pessoas", path: "/rh", icon: Users,
     allowedRoles: ["master", "diretor", "financeiro", "operacional"],
     children: [
