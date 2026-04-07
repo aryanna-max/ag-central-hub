@@ -25,6 +25,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+import { getExecutionStatusAlerts } from "@/lib/executionStatusAlerts";
+
 // ── Execution status groups ──
 type ExecStatus = string;
 
@@ -597,9 +599,54 @@ export default function Projetos() {
                   </div>
                   <div>
                     <Label>Status Execução</Label>
+<<<<<<< Updated upstream
                     <Badge className={EXEC_STATUS_BADGE[(selectedProject as any).execution_status] || "bg-muted"}>
                       {(selectedProject as any).execution_status || "—"}
                     </Badge>
+=======
+                    <Select
+                      value={(editForm as any).execution_status || ""}
+                      onValueChange={async (val) => {
+                        const prev = (editForm as any).execution_status;
+                        setEditForm({ ...editForm, execution_status: val } as any);
+                        // Gravar histórico imediatamente
+                        if (prev && prev !== val) {
+                          await supabase.from("project_status_history").insert({
+                            project_id: selectedProject.id,
+                            from_status: prev,
+                            to_status: val,
+                            modulo: "projetos",
+                            changed_by_id: user?.id || null,
+                          });
+                          // Gerar alertas automáticos por transição
+                          const alerts = getExecutionStatusAlerts(prev, val, {
+                            id: selectedProject.id,
+                            codigo: selectedProject.codigo,
+                            name: selectedProject.name,
+                            client_name: selectedProject.clients?.name || selectedProject.client_name,
+                            billing_type: (selectedProject as any).billing_type,
+                            contract_value: selectedProject.contract_value,
+                          });
+                          if (alerts.length > 0) {
+                            await supabase.from("alerts").insert(alerts as any);
+                          }
+                        }
+                      }}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent>
+                        {ALL_EXEC_STATUSES.map((s) => {
+                          const group = GROUPS.find(g => g.columns.some(c => c.key === s));
+                          const col = group?.columns.find(c => c.key === s);
+                          return (
+                            <SelectItem key={s} value={s}>
+                              {group?.emoji} {col?.label || s}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+>>>>>>> Stashed changes
                   </div>
                   <div>
                     <Label>Tipo de Faturamento *</Label>

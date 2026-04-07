@@ -246,6 +246,15 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
           reference_type: "project",
           reference_id: project.id,
         },
+        {
+          alert_type: "novo_projeto",
+          priority: "importante",
+          recipient: "sala_tecnica",
+          title: `Novo projeto — ${displayName}`,
+          message: `Projeto ${finalCode} criado. Preparar para recebimento.`,
+          reference_type: "project",
+          reference_id: project.id,
+        },
       ];
 
       await createAlerts.mutateAsync(alerts);
