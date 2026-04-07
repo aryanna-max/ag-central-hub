@@ -405,6 +405,15 @@ Arquivos na pasta `Sistema AG/`:
 | 25 | Filtro de projetos no Operacional | **Default com toggle** — por padrão mostra só execution_status IN (aguardando_campo, em_campo). Checkbox "Mostrar todos" libera lista completa |
 | 26 | RH cards de resumo | **Por setor** — Total, Campo (FIELD_ROLES), Sala Técnica (TECH_ROLES), Administrativo (restante) |
 
+## Decisões fechadas (07/04/2026)
+
+| # | Decisão | Resolução |
+|---|---|---|
+| 27 | Fluxo de status para contratos recorrentes (medicao_mensal, fixo_mensal) | **Dois relógios:** execution_status do PROJETO = estado operacional (fica `em_campo` enquanto contrato ativo). Ciclo financeiro mensal = na MEDIÇÃO (rascunho → aprovada → nf_emitida → paga, repete todo mês). Encerramento via `end_date` + ação manual. Faturamento UI mostra status da última medição, não execution_status. Implementar na fase F-FIN. |
+| 28 | Kanban de leads — coluna "Convertido" | **Removida do Kanban.** Leads convertidos visíveis apenas na seção "Projetos Convertidos" abaixo. Kanban mostra: Novo, Em negociação, Proposta enviada. "Perdido" = histórico com toggle. |
+| 29 | Lead convertido — ativo ou histórico | **Ativo.** "convertido" está em ACTIVE_STATUSES (conta nos filtros), mas NÃO em KANBAN_STATUSES (não aparece como coluna). Apenas "perdido" é histórico. |
+| 30 | Todos os leads devem ter código | **Sim.** Formato ANO-L-SEQ (2026-L-001). Gerado na criação ou retroativamente por SQL. |
+
 ## Servidor — estado atual (02/04/2026)
 
 Pastas: **ADMINISTRATIVO**, **OPERACIONAL**, **SALA TÉCNICA** — mas os arquivos estão **misturados entre ADM e OPERACIONAL** por herança do período em que Marcelo acumulava financeiro + operacional.
