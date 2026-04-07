@@ -1,13 +1,16 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
-import { useProjects, type Project } from "@/hooks/useProjects";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useProjects, useUpdateProject, type Project } from "@/hooks/useProjects";
 import { useClients } from "@/hooks/useClients";
 import { useAuth } from "@/contexts/AuthContext";
 import { canSeeFinancials as checkFinancials } from "@/lib/constants";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { FolderKanban, DollarSign, Clock, FileText, Bell } from "lucide-react";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
@@ -41,11 +44,31 @@ const EXEC_STATUS_COLORS: Record<string, string> = {
 
 const PIE_COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "#f59e0b", "#8b5cf6", "#10b981", "#ef4444", "#6366f1", "#ec4899"];
 
+const ALL_EXEC_STATUSES = Object.keys(EXEC_STATUS_LABELS);
+
 export default function ProjetosDashboard() {
   const { data: projects = [] } = useProjects();
   const { data: clients = [] } = useClients();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const canSeeFinancials = checkFinancials(role);
+  const updateProject = useUpdateProject();
+  const navigate = useNavigate();
+
+  const handleStatusChange = async (project: Project, newStatus: string) => {
+    try {
+      await updateProject.mutateAsync({ id: project.id, execution_status: newStatus } as any);
+      await supabase.from("project_status_history").insert({
+        project_id: project.id,
+        from_status: project.execution_status,
+        to_status: newStatus,
+        modulo: "projetos",
+        changed_by_id: user?.id || null,
+      });
+      toast.success(`${project.codigo || project.name} → ${EXEC_STATUS_LABELS[newStatus] || newStatus}`);
+    } catch {
+      toast.error("Erro ao alterar status");
+    }
+  };
 
   const { data: measurements = [] } = useQuery({
     queryKey: ["all-measurements-dashboard"],
@@ -208,7 +231,11 @@ export default function ProjetosDashboard() {
                 const contrato = p.contract_value || 0;
                 return (
                   <TableRow key={p.id}>
-                    <TableCell className="font-mono text-xs font-bold text-primary">{p.codigo || "—"}</TableCell>
+                    <TableCell>
+                      <button onClick={() => navigate(`/projetos/${p.id}`)} className="font-mono text-xs font-bold text-primary hover:underline">
+                        {p.codigo || "—"}
+                      </button>
+                    </TableCell>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>
                       {(() => {
@@ -221,9 +248,21 @@ export default function ProjetosDashboard() {
                     </TableCell>
                     <TableCell>{p.service || "—"}</TableCell>
                     <TableCell>
-                      <Badge className={EXEC_STATUS_COLORS[p.execution_status || ""] || "bg-muted text-muted-foreground"} variant="secondary">
-                        {EXEC_STATUS_LABELS[p.execution_status || ""] || p.execution_status || "—"}
-                      </Badge>
+                      <Select
+                        value={p.execution_status || ""}
+                        onValueChange={(v) => handleStatusChange(p, v)}
+                      >
+                        <SelectTrigger className="h-7 w-[140px] text-[10px] border-0 bg-transparent p-0">
+                          <Badge className={EXEC_STATUS_COLORS[p.execution_status || ""] || "bg-muted text-muted-foreground"} variant="secondary">
+                            {EXEC_STATUS_LABELS[p.execution_status || ""] || p.execution_status || "—"}
+                          </Badge>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ALL_EXEC_STATUSES.map((s) => (
+                            <SelectItem key={s} value={s}>{EXEC_STATUS_LABELS[s]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     {canSeeFinancials && <TableCell className="text-right">{contrato ? formatCurrency(contrato) : "—"}</TableCell>}
                     {canSeeFinancials && <TableCell className="text-right">{medido ? formatCurrency(medido) : "—"}</TableCell>}

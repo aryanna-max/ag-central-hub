@@ -306,6 +306,7 @@ export default function Projetos() {
         contato_engenheiro: editForm.contato_engenheiro,
         contato_financeiro: editForm.contato_financeiro,
         billing_type: (editForm as any).billing_type,
+        execution_status: (editForm as any).execution_status,
       });
       toast.success("Projeto atualizado");
       setSelectedProject(null);
@@ -606,9 +607,36 @@ export default function Projetos() {
                   </div>
                   <div>
                     <Label>Status Execução</Label>
-                    <Badge className={EXEC_STATUS_BADGE[(selectedProject as any).execution_status] || "bg-muted"}>
-                      {(selectedProject as any).execution_status || "—"}
-                    </Badge>
+                    <Select
+                      value={(editForm as any).execution_status || ""}
+                      onValueChange={async (val) => {
+                        const prev = (editForm as any).execution_status;
+                        setEditForm({ ...editForm, execution_status: val } as any);
+                        // Gravar histórico imediatamente
+                        if (prev && prev !== val) {
+                          await supabase.from("project_status_history").insert({
+                            project_id: selectedProject.id,
+                            from_status: prev,
+                            to_status: val,
+                            modulo: "projetos",
+                            changed_by_id: user?.id || null,
+                          });
+                        }
+                      }}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent>
+                        {ALL_EXEC_STATUSES.map((s) => {
+                          const group = GROUPS.find(g => g.columns.some(c => c.key === s));
+                          const col = group?.columns.find(c => c.key === s);
+                          return (
+                            <SelectItem key={s} value={s}>
+                              {group?.emoji} {col?.label || s}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label>Tipo de Faturamento *</Label>
