@@ -136,7 +136,8 @@ export default function Leads() {
     );
   }, [projects]);
 
-  const projectsFromLeads = useMemo(() => activeProjects.filter(p => p.lead_id), [activeProjects]);
+  const allVisibleProjects = useMemo(() => projects.filter(p => p.is_active !== false), [projects]);
+  const projectsFromLeads = useMemo(() => allVisibleProjects.filter(p => p.lead_id), [allVisibleProjects]);
   const projectsWithoutLead = useMemo(() => activeProjects.filter(p => !p.lead_id), [activeProjects]);
 
   // ─── KPIs ───
