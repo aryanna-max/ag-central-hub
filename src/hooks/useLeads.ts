@@ -13,9 +13,9 @@ export function normalizeLeadStatus(raw: string): LeadStatus {
   return raw as LeadStatus;
 }
 
-/** Status ativos (editáveis) vs históricos (bloqueados) */
-export const ACTIVE_STATUSES: LeadStatus[] = ["novo", "em_negociacao", "proposta_enviada"];
-export const HISTORY_STATUSES: LeadStatus[] = ["convertido", "perdido"];
+/** Status ativos (visíveis por padrão) vs históricos (ocultos por padrão) */
+export const ACTIVE_STATUSES: LeadStatus[] = ["novo", "em_negociacao", "proposta_enviada", "convertido"];
+export const HISTORY_STATUSES: LeadStatus[] = ["perdido"];
 
 export const ALLOWED_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
   novo: ["em_negociacao", "perdido"],
