@@ -28,6 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useNavigate } from "react-router-dom";
+import { isRecurringBilling } from "@/lib/statusConstants";
 
 interface Project {
   id: string;
@@ -272,6 +273,7 @@ export default function ProjetosEmCampoKanban() {
     const crew = entriesByProject[p.id] || [];
     const noScale = section === "em_campo" && crew.length === 0;
     const occCount = occurrenceCounts[p.id] || 0;
+    const recurring = isRecurringBilling(p.billing_type);
 
     return (
       <Card key={p.id} className="hover:shadow-md transition-shadow">
@@ -284,7 +286,10 @@ export default function ProjetosEmCampoKanban() {
                 <p className="text-xs text-muted-foreground truncate">{clientsMap[p.client_id]}</p>
               )}
             </div>
-            <div className="flex flex-col gap-1 shrink-0">
+            <div className="flex flex-col gap-1 shrink-0 items-end">
+              {recurring && (
+                <Badge className="bg-blue-100 text-blue-700 text-[10px]">Contrato ativo</Badge>
+              )}
               {occCount > 0 && (
                 <Badge className="bg-amber-100 text-amber-800 text-[10px]">Ocorrência ({occCount})</Badge>
               )}
@@ -324,9 +329,11 @@ export default function ProjetosEmCampoKanban() {
                 <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setOccurrenceProject(p)}>
                   <AlertCircle className="w-3 h-3" /> Ocorrência
                 </Button>
-                <Button size="sm" className="h-7 text-xs gap-1 flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => setFinalizarProject(p)}>
-                  <CheckCircle className="w-3 h-3" /> Finalizar Campo
-                </Button>
+                {!recurring && (
+                  <Button size="sm" className="h-7 text-xs gap-1 flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => setFinalizarProject(p)}>
+                    <CheckCircle className="w-3 h-3" /> Finalizar Campo
+                  </Button>
+                )}
               </>
             )}
           </div>

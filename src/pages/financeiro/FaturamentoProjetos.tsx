@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { EXEC_STATUS_LABELS, EXEC_STATUS_COLORS } from "@/lib/statusConstants";
+import { EXEC_STATUS_LABELS, EXEC_STATUS_COLORS, MEASUREMENT_STATUS_LABELS, isRecurringBilling } from "@/lib/statusConstants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,6 +68,29 @@ export default function FaturamentoProjetos() {
       return data || [];
     },
   });
+
+  // Fetch latest measurement per project (for recurring projects)
+  const { data: measurements = [] } = useQuery({
+    queryKey: ["faturamento-measurements"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("measurements")
+        .select("id, project_id, period_start, period_end, status, valor_nf")
+        .order("period_end", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const latestMeasurementByProject = useMemo(() => {
+    const map: Record<string, { period_start: string; period_end: string; status: string; valor_nf: number | null }> = {};
+    for (const m of measurements) {
+      if (m.project_id && !map[m.project_id]) {
+        map[m.project_id] = m;
+      }
+    }
+    return map;
+  }, [measurements]);
 
   const filtered = useMemo(() => {
     let list = projectsRaw;
@@ -140,7 +163,7 @@ export default function FaturamentoProjetos() {
                   <TableHead>Cliente</TableHead>
                   <TableHead>Tipo Fat.</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Status / Medição</TableHead>
                   <TableHead>Entregue em</TableHead>
                 </TableRow>
               </TableHeader>
@@ -153,6 +176,8 @@ export default function FaturamentoProjetos() {
                   filtered.map((p: any) => {
                     const billing = p.billing_type ? billingLabels[p.billing_type] : null;
                     const exec = p.execution_status ? execLabels[p.execution_status] : null;
+                    const recurring = isRecurringBilling(p.billing_type);
+                    const lastMeas = recurring ? latestMeasurementByProject[p.id] : null;
                     const isExpanded = expandedId === p.id;
 
                     return (
@@ -173,7 +198,16 @@ export default function FaturamentoProjetos() {
                               </TableCell>
                               <TableCell className="text-right">{fmtCurrency(p.contract_value)}</TableCell>
                               <TableCell>
-                                {exec ? (
+                                {recurring && lastMeas ? (
+                                  <div className="space-y-0.5">
+                                    <Badge variant="outline" className="text-[10px] bg-blue-100 text-blue-700">
+                                      {format(new Date(lastMeas.period_end + "T12:00:00"), "MMM/yy")}: {MEASUREMENT_STATUS_LABELS[lastMeas.status] || lastMeas.status}
+                                    </Badge>
+                                    {lastMeas.valor_nf != null && (
+                                      <p className="text-[10px] text-muted-foreground">{fmtCurrency(lastMeas.valor_nf)}</p>
+                                    )}
+                                  </div>
+                                ) : exec ? (
                                   <Badge variant="outline" className={`text-[10px] ${exec.color}`}>{exec.label}</Badge>
                                 ) : "—"}
                               </TableCell>

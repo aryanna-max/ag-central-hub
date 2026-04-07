@@ -34,7 +34,7 @@ import { toast } from "sonner";
 import { exportCsv } from "@/lib/exportCsv";
 import LeadFormDialog from "./LeadFormDialog";
 import LeadDetailDialog from "./LeadDetailDialog";
-import { EXEC_STATUS_LABELS, EXEC_STATUS_COLORS } from "@/lib/statusConstants";
+import { EXEC_STATUS_LABELS, EXEC_STATUS_COLORS, isProjectFinalized, isRecurringBilling } from "@/lib/statusConstants";
 
 const EXEC_STATUS_BADGE: Record<string, { label: string; color: string }> = Object.fromEntries(
   Object.entries(EXEC_STATUS_LABELS).map(([k, label]) => [k, { label, color: EXEC_STATUS_COLORS[k] || "bg-muted" }])
@@ -311,11 +311,11 @@ export default function Leads() {
                   ? projects.find((p) => p.id === lead.converted_project_id)
                   : projects.find((p) => p.lead_id === lead.id);
                 const execBadge = linkedProject?.execution_status ? EXEC_STATUS_BADGE[linkedProject.execution_status] : null;
-                const isProjectFinalized = linkedProject && ["entregue", "faturamento", "pago", "concluido"].includes(linkedProject.execution_status || "");
+                const finalized = linkedProject && isProjectFinalized(linkedProject.execution_status, linkedProject.billing_type, linkedProject.is_active);
                 return (
                   <Card
                     key={lead.id}
-                    className={`cursor-pointer hover:shadow-md transition-shadow ${isHistory ? "border-dashed" : ""} ${isProjectFinalized ? "opacity-60" : ""}`}
+                    className={`cursor-pointer hover:shadow-md transition-shadow ${isHistory ? "border-dashed" : ""} ${finalized ? "opacity-60" : ""}`}
                     onClick={() => setDetailLead(lead)}
                   >
                     <CardContent className="p-3 space-y-1.5">
@@ -344,7 +344,7 @@ export default function Leads() {
                             {execBadge && (
                               <Badge className={`${execBadge.color} text-[9px] h-4`}>{execBadge.label}</Badge>
                             )}
-                            {isProjectFinalized && (
+                            {finalized && (
                               <Badge className="bg-green-200 text-green-800 text-[9px] h-4">Finalizado</Badge>
                             )}
                           </div>
@@ -464,12 +464,11 @@ export default function Leads() {
 
   // ─── PROJECT CARD (for active projects section) ───
 
-  const FINALIZED_EXEC = ["entregue", "faturamento", "pago", "concluido"];
-
   const renderProjectCard = (p: any) => {
     const execBadge = p.execution_status ? EXEC_STATUS_BADGE[p.execution_status] : null;
     const clientName = p.clients?.name || p.client || "—";
-    const isFinalized = FINALIZED_EXEC.includes(p.execution_status || "");
+    const isFinalized = isProjectFinalized(p.execution_status, p.billing_type, p.is_active);
+    const isRecurring = isRecurringBilling(p.billing_type);
     return (
       <Card key={p.id} className={`hover:shadow-md transition-shadow cursor-pointer ${isFinalized ? "opacity-50" : ""}`} onClick={() => navigate(`/projetos/${p.id}`)}>
         <CardContent className="p-3 space-y-1.5">
@@ -477,6 +476,7 @@ export default function Leads() {
             <span className="text-xs font-mono font-bold text-primary hover:underline">{p.codigo || "—"}</span>
             <div className="flex gap-1">
               {execBadge && <Badge className={`${execBadge.color} text-[9px] h-4`}>{execBadge.label}</Badge>}
+              {isRecurring && <Badge className="bg-blue-100 text-blue-700 text-[9px] h-4">Recorrente</Badge>}
               {isFinalized && <Badge className="bg-green-200 text-green-800 text-[9px] h-4">Finalizado</Badge>}
               {!p.lead_id && <Badge variant="outline" className="text-[9px] h-4 text-amber-600 border-amber-300">Sem lead</Badge>}
             </div>

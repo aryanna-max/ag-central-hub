@@ -164,6 +164,34 @@ export const DASHBOARD_GROUPS = [
 
 export const DASHBOARD_ALL_COLUMNS = DASHBOARD_GROUPS.flatMap((g) => g.columns);
 
+// ─── Recurring Billing (Decisão #27) ───
+// Contratos recorrentes: execution_status do PROJETO fica em_campo.
+// Ciclo financeiro mensal roda na tabela measurements.
+
+export const RECURRING_BILLING_TYPES = ["medicao_mensal", "fixo_mensal"] as const;
+
+export function isRecurringBilling(billingType: string | null | undefined): boolean {
+  return RECURRING_BILLING_TYPES.includes(billingType as any);
+}
+
+/**
+ * Determina se um projeto está "finalizado" para fins de UI (opacity, badges).
+ * - Pontual: entregue/faturamento/pago = finalizado
+ * - Recorrente: só finalizado quando is_active = false (contrato encerrou)
+ */
+export const FINALIZED_STATUSES = ["entregue", "faturamento", "pago"] as const;
+
+export function isProjectFinalized(
+  executionStatus: string | null | undefined,
+  billingType: string | null | undefined,
+  isActive?: boolean,
+): boolean {
+  if (isRecurringBilling(billingType)) {
+    return isActive === false;
+  }
+  return FINALIZED_STATUSES.includes(executionStatus as any);
+}
+
 // ─── Measurement Status ───
 
 export const MEASUREMENT_STATUS_LABELS: Record<string, string> = {

@@ -30,7 +30,7 @@ import { toast } from "sonner";
 import {
   EXEC_STATUS_LABELS, EXEC_STATUS_COLORS, EXEC_STATUS_GROUPS as GROUPS,
   ALL_KANBAN_STATUSES as ALL_EXEC_STATUSES, BILLING_LABELS as BILLING_LABELS_PLAIN,
-  BILLING_COLORS,
+  BILLING_COLORS, isRecurringBilling,
   type KanbanGroup as GroupDef, type KanbanColumn as ColumnDef,
 } from "@/lib/statusConstants";
 
@@ -390,6 +390,7 @@ export default function Projetos() {
                         {items.map((project) => {
                           const clientName = getClientDisplay(project);
                           const bt = BILLING_LABELS[(project as any).billing_type] || null;
+                          const recurring = isRecurringBilling((project as any).billing_type);
                           const hasAlert = alertsByProject[project.id];
                           return (
                             <Card
@@ -416,11 +417,14 @@ export default function Projetos() {
                                   label="Entrega"
                                 />
                                 <div className="flex items-center gap-1 flex-wrap">
-                                  {bt ? (
-                                    <Badge className={bt.className + " text-[10px]"}>{bt.label}</Badge>
-                                  ) : (
-                                    <Badge className="bg-red-100 text-red-800 text-[10px]">⚠ Definir faturamento</Badge>
+                                  {recurring && (
+                                    <Badge className="bg-blue-100 text-blue-700 text-[10px]">Recorrente</Badge>
                                   )}
+                                  {bt && !recurring ? (
+                                    <Badge className={bt.className + " text-[10px]"}>{bt.label}</Badge>
+                                  ) : !bt ? (
+                                    <Badge className="bg-red-100 text-red-800 text-[10px]">Definir faturamento</Badge>
+                                  ) : null}
                                   {canSeeValues && project.contract_value != null && (
                                     <span className="text-[10px] font-semibold text-foreground">
                                       {formatCurrency(project.contract_value)}
