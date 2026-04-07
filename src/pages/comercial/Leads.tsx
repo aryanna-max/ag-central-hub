@@ -17,7 +17,7 @@ import { SortableTableHead, useSortableTable } from "@/components/ui/sortable-ta
 import LeadConversionDialog from "./LeadConversionDialog";
 import {
   useLeads, useDeleteLead, useUpdateLead,
-  LEAD_STATUSES, ACTIVE_STATUSES, HISTORY_STATUSES, ALLOWED_TRANSITIONS,
+  LEAD_STATUSES, ACTIVE_STATUSES, KANBAN_STATUSES, HISTORY_STATUSES, ALLOWED_TRANSITIONS,
   STATUS_LABELS, STATUS_COLORS, ORIGIN_LABELS, ORIGIN_COLORS,
   type Lead, type LeadStatus, type LeadOrigin,
 } from "@/hooks/useLeads";
@@ -143,7 +143,7 @@ export default function Leads() {
   // ─── KPIs ───
 
   const stats = useMemo(() => {
-    const activeLeads = leads.filter((l) => ACTIVE_STATUSES.includes(l.status));
+    const activeLeads = leads.filter((l) => KANBAN_STATUSES.includes(l.status));
     const allActiveProjects = activeProjects;
 
     const totalValue = allActiveProjects.reduce((sum, p) => sum + (p.contract_value || 0), 0);
@@ -285,8 +285,8 @@ export default function Leads() {
   // ─── KANBAN VIEW ───
 
   const kanbanStatuses = useMemo(() => {
-    if (showHistory) return LEAD_STATUSES;
-    return ACTIVE_STATUSES;
+    if (showHistory) return [...KANBAN_STATUSES, "perdido"] as LeadStatus[];
+    return KANBAN_STATUSES;
   }, [showHistory]);
 
   const renderKanban = () => (
@@ -464,16 +464,20 @@ export default function Leads() {
 
   // ─── PROJECT CARD (for active projects section) ───
 
+  const FINALIZED_EXEC = ["entregue", "faturamento", "pago", "concluido"];
+
   const renderProjectCard = (p: any) => {
     const execBadge = p.execution_status ? EXEC_STATUS_BADGE[p.execution_status] : null;
     const clientName = p.clients?.name || p.client || "—";
+    const isFinalized = FINALIZED_EXEC.includes(p.execution_status || "");
     return (
-      <Card key={p.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/projetos/${p.id}`)}>
+      <Card key={p.id} className={`hover:shadow-md transition-shadow cursor-pointer ${isFinalized ? "opacity-50" : ""}`} onClick={() => navigate(`/projetos/${p.id}`)}>
         <CardContent className="p-3 space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono font-bold text-primary hover:underline">{p.codigo || "—"}</span>
             <div className="flex gap-1">
               {execBadge && <Badge className={`${execBadge.color} text-[9px] h-4`}>{execBadge.label}</Badge>}
+              {isFinalized && <Badge className="bg-green-200 text-green-800 text-[9px] h-4">Finalizado</Badge>}
               {!p.lead_id && <Badge variant="outline" className="text-[9px] h-4 text-amber-600 border-amber-300">Sem lead</Badge>}
             </div>
           </div>
