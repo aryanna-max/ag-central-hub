@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Search, Plus, Users, MoreVertical, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { ALL_EMPLOYEE_ROLES } from "@/lib/fieldRoles";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -398,7 +399,14 @@ export default function Funcionarios() {
             </div>
             <div>
               <Label>Função</Label>
-              <Input value={newRole} onChange={(e) => setNewRole(e.target.value)} placeholder="Ex: Topógrafo I" />
+              <Select value={newRole} onValueChange={setNewRole}>
+                <SelectTrigger><SelectValue placeholder="Selecione a função..." /></SelectTrigger>
+                <SelectContent>
+                  {ALL_EMPLOYEE_ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Data de Admissão</Label>
@@ -467,7 +475,14 @@ export default function Funcionarios() {
             </div>
             <div>
               <Label>Função</Label>
-              <Input value={editRole} onChange={(e) => setEditRole(e.target.value)} />
+              <Select value={editRole} onValueChange={setEditRole}>
+                <SelectTrigger><SelectValue placeholder="Selecione a função..." /></SelectTrigger>
+                <SelectContent>
+                  {ALL_EMPLOYEE_ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Data de Admissão</Label>

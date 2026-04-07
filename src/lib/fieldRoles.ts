@@ -13,6 +13,35 @@ export const FIELD_ROLES = [
   "Estagiário",
 ] as const;
 
+/** All employee roles — used in the RH form dropdown */
+export const ALL_EMPLOYEE_ROLES = [
+  // Campo
+  "Topógrafo",
+  "Topógrafo I",
+  "Topógrafo II",
+  "Topógrafo III",
+  "Topógrafo III A",
+  "Topógrafo IV",
+  "Ajudante de Topografia",
+  "Auxiliar de Topografia",
+  "Auxiliar",
+  "Motorista",
+  "Estagiário",
+  // Sala Técnica
+  "Desenhista",
+  "Cadista",
+  "Projetista",
+  "Técnico em Geoprocessamento",
+  // Administrativo
+  "Administrativo",
+  "Financeiro",
+  "Comercial",
+  "RH",
+  "Diretor",
+  "Gerente Operacional",
+  "Líder Sala Técnica",
+] as const;
+
 const fieldRolesLower = new Set(FIELD_ROLES.map((r) => r.toLowerCase()));
 
 /** Keywords that identify a field role (case-insensitive partial match) */
