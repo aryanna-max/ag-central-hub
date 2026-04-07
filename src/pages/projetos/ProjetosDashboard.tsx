@@ -14,7 +14,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { FolderKanban, DollarSign, Clock, FileText, Bell, Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { exportCsv } from "@/lib/exportCsv";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
