@@ -26,6 +26,7 @@ export const ALL_EMPLOYEE_ROLES = [
   "Cadista",
   "Projetista",
   "Técnico em Geoprocessamento",
+  "Estagiário",
   // Administrativo
   "Administrativo",
   "Financeiro",
@@ -36,7 +37,6 @@ export const ALL_EMPLOYEE_ROLES = [
   "Líder Sala Técnica",
   "Auxiliar",
   "Motorista",
-  "Estagiário",
 ] as const;
 
 const fieldRolesLower = new Set(FIELD_ROLES.map((r) => r.toLowerCase()));
