@@ -8,7 +8,6 @@ import { useUpdateProject } from "@/hooks/useProjects";
 import { useCreateTechnicalTask } from "@/hooks/useTechnicalTasks";
 import { useEmployees } from "@/hooks/useEmployees";
 import { TECH_ROLES } from "@/lib/fieldRoles";
-import { SERVICE_TYPES } from "@/lib/serviceTypes";
 import DeadlineBadge from "@/components/DeadlineBadge";
 import { ClipboardList, Bell, Plus, Zap, Package, Users, Send } from "lucide-react";
 import { toast } from "sonner";
@@ -418,7 +417,7 @@ export default function STKanban() {
   const renderCard = (p: ProjectRow, column: "preparation" | "inProgress" | "ready") => {
     const autoTag = getAutoTag(p);
     const execTag = EXEC_STATUS_TAGS[p.execution_status || ""];
-    const serviceLabel = SERVICE_TYPES.find(s => s.value === p.service)?.label || p.service;
+    const serviceLabel = p.service;
     const allDone = p.task_total > 0 && p.task_done === p.task_total;
 
     return (

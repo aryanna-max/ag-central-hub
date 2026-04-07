@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, ArrowRightLeft, Target, LayoutGrid, List, FolderKanban, AlertTriangle } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, ArrowRightLeft, Target, LayoutGrid, List, FolderKanban, AlertTriangle, TrendingUp, DollarSign, Briefcase } from "lucide-react";
 import ColumnToggle, { useColumnVisibility, type ColumnDef } from "@/components/ColumnToggle";
 import { SortableTableHead, useSortableTable } from "@/components/ui/sortable-table-head";
 import LeadConversionDialog from "./LeadConversionDialog";
@@ -24,11 +24,27 @@ import {
 import { useClients } from "@/hooks/useClients";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useProjects } from "@/hooks/useProjects";
+import { useCreateAlerts, type AlertInsert } from "@/hooks/useAlerts";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import LeadFormDialog from "./LeadFormDialog";
 import LeadDetailDialog from "./LeadDetailDialog";
+
+// ─── execution_status labels for project cards ───
+
+const EXEC_STATUS_BADGE: Record<string, { label: string; color: string }> = {
+  planejamento: { label: "Planejamento", color: "bg-gray-100 text-gray-700" },
+  aguardando_campo: { label: "Aguardando campo", color: "bg-muted text-muted-foreground" },
+  em_campo: { label: "Em campo", color: "bg-emerald-100 text-emerald-700" },
+  aguardando_processamento: { label: "Aguardando proc.", color: "bg-blue-100 text-blue-700" },
+  em_processamento: { label: "Em processamento", color: "bg-indigo-100 text-indigo-700" },
+  revisao: { label: "Em revisão", color: "bg-purple-100 text-purple-700" },
+  aprovado: { label: "Aprovado", color: "bg-emerald-100 text-emerald-700" },
+  entregue: { label: "Entregue", color: "bg-green-100 text-green-700" },
+  faturamento: { label: "Faturamento", color: "bg-amber-100 text-amber-700" },
+  pago: { label: "Pago", color: "bg-green-200 text-green-800" },
+};
 
 function getDisplayName(lead: Lead, clients: { id: string; name: string }[]) {
   if (lead.client_id) {
@@ -45,6 +61,7 @@ export default function Leads() {
   const { data: projects = [] } = useProjects();
   const deleteLead = useDeleteLead();
   const updateLead = useUpdateLead();
+  const createAlerts = useCreateAlerts();
   const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
@@ -97,7 +114,6 @@ export default function Leads() {
       const matchStatus = statusFilter === "all" || l.status === statusFilter;
       const matchOrigin = originFilter === "all" || l.origin === originFilter;
       const matchResp = responsibleFilter === "all" || l.responsible_id === responsibleFilter;
-      // Se não está mostrando histórico, esconder convertido e perdido
       const matchHistory = showHistory || ACTIVE_STATUSES.includes(l.status);
       return matchSearch && matchStatus && matchOrigin && matchResp && matchHistory;
     });
@@ -105,20 +121,44 @@ export default function Leads() {
 
   const { sorted: sortedFiltered, sortKey, sortDir, handleSort } = useSortableTable(filtered);
 
-  // Projects without lead
-  const projectsWithoutLead = useMemo(() => {
+  // ─── Active projects (post-conversion + without lead) ───
+
+  const activeProjects = useMemo(() => {
     return projects.filter(
-      (p) => !p.lead_id && p.status !== "concluido" && p.status !== "pausado"
+      (p) => p.is_active !== false && p.status !== "concluido" && p.status !== "pausado"
     );
   }, [projects]);
 
-  const stats = useMemo(() => ({
-    total: leads.filter((l) => ACTIVE_STATUSES.includes(l.status)).length,
-    novos: leads.filter((l) => l.status === "novo").length,
-    negociando: leads.filter((l) => l.status === "em_negociacao").length,
-    propostas: leads.filter((l) => l.status === "proposta_enviada").length,
-    convertidos: leads.filter((l) => l.status === "convertido").length,
-  }), [leads]);
+  const projectsFromLeads = useMemo(() => {
+    return activeProjects.filter(p => p.lead_id);
+  }, [activeProjects]);
+
+  const projectsWithoutLead = useMemo(() => {
+    return activeProjects.filter(p => !p.lead_id);
+  }, [activeProjects]);
+
+  // ─── KPIs ───
+
+  const stats = useMemo(() => {
+    const activeLeads = leads.filter((l) => ACTIVE_STATUSES.includes(l.status));
+    const allActiveProjects = activeProjects;
+
+    const totalValue = allActiveProjects.reduce((sum, p) => sum + (p.contract_value || 0), 0);
+    const leadValue = activeLeads.reduce((sum, l) => sum + (l.valor || 0), 0);
+
+    return {
+      leadsAtivos: activeLeads.length,
+      novos: leads.filter((l) => l.status === "novo").length,
+      negociando: leads.filter((l) => l.status === "em_negociacao").length,
+      propostas: leads.filter((l) => l.status === "proposta_enviada").length,
+      projetosAtivos: allActiveProjects.length,
+      valorCarteira: totalValue + leadValue,
+      emCampo: allActiveProjects.filter(p => p.execution_status === "em_campo").length,
+      entregues: allActiveProjects.filter(p => p.execution_status === "entregue" || p.execution_status === "faturamento").length,
+    };
+  }, [leads, activeProjects]);
+
+  // ─── Handlers ───
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -140,6 +180,21 @@ export default function Leads() {
     }
     try {
       await updateLead.mutateAsync({ id: lead.id, status: newStatus });
+
+      // Generate alert for status change
+      const displayName = getDisplayName(lead, clients);
+      const alertRecipient = newStatus === "proposta_enviada" ? "diretoria" : "comercial";
+      const alert: AlertInsert = {
+        alert_type: "lead_status_change",
+        priority: newStatus === "proposta_enviada" ? "importante" : "informacao",
+        recipient: alertRecipient,
+        title: `Lead ${lead.codigo || displayName} → ${STATUS_LABELS[newStatus]}`,
+        message: `${displayName}: ${STATUS_LABELS[lead.status]} → ${STATUS_LABELS[newStatus]}.${lead.servico ? ` Serviço: ${lead.servico}.` : ""}`,
+        reference_type: "lead",
+        reference_id: lead.id,
+      };
+      await createAlerts.mutateAsync([alert]);
+
       toast.success(`Status alterado para ${STATUS_LABELS[newStatus]}`);
     } catch { toast.error("Erro ao alterar status"); }
   };
@@ -155,6 +210,19 @@ export default function Leads() {
         status: "perdido" as any,
         notes: `${lossDialog.notes || ""}\n\n[PERDIDO] ${format(new Date(), "dd/MM/yyyy", { locale: ptBR })}: ${lossReason}`.trim(),
       });
+
+      // Alert for lost lead
+      const displayName = getDisplayName(lossDialog, clients);
+      await createAlerts.mutateAsync([{
+        alert_type: "lead_perdido",
+        priority: "informacao",
+        recipient: "comercial",
+        title: `Lead perdido — ${lossDialog.codigo || displayName}`,
+        message: `Motivo: ${lossReason}.${lossDialog.valor ? ` Valor: R$ ${lossDialog.valor.toLocaleString("pt-BR")}.` : ""}`,
+        reference_type: "lead",
+        reference_id: lossDialog.id,
+      }]);
+
       toast.success("Lead marcado como perdido");
     } catch { toast.error("Erro ao alterar status"); }
     setLossDialog(null);
@@ -174,6 +242,7 @@ export default function Leads() {
     v != null ? `R$ ${Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 0 })}` : "—";
 
   // ─── KANBAN VIEW ───
+
   const kanbanStatuses = useMemo(() => {
     if (showHistory) return LEAD_STATUSES;
     return ACTIVE_STATUSES;
@@ -200,6 +269,7 @@ export default function Leads() {
                 const linkedProject = lead.converted_project_id
                   ? projects.find((p) => p.id === lead.converted_project_id)
                   : projects.find((p) => p.lead_id === lead.id);
+                const execBadge = linkedProject?.execution_status ? EXEC_STATUS_BADGE[linkedProject.execution_status] : null;
                 return (
                   <Card
                     key={lead.id}
@@ -219,14 +289,19 @@ export default function Leads() {
                       {lead.responsible_id && (
                         <p className="text-xs text-muted-foreground">{getEmployeeName(lead.responsible_id)}</p>
                       )}
-                      {isHistory && linkedProject && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); navigate(`/projetos/${linkedProject.id}`); }}
-                          className="text-xs text-primary font-medium hover:underline flex items-center gap-1 mt-1"
-                        >
-                          <FolderKanban className="w-3 h-3" />
-                          {linkedProject.codigo || linkedProject.name}
-                        </button>
+                      {linkedProject && (
+                        <div className="pt-1 space-y-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigate(`/projetos/${linkedProject.id}`); }}
+                            className="text-xs text-primary font-mono font-bold hover:underline flex items-center gap-1"
+                          >
+                            <FolderKanban className="w-3 h-3" />
+                            {linkedProject.codigo || linkedProject.name}
+                          </button>
+                          {execBadge && (
+                            <Badge className={`${execBadge.color} text-[9px] h-4`}>{execBadge.label}</Badge>
+                          )}
+                        </div>
                       )}
                     </CardContent>
                   </Card>
@@ -240,104 +315,131 @@ export default function Leads() {
   );
 
   // ─── TABLE VIEW ───
+
   const renderTable = () => (
-    <Card>
-      <CardContent className="p-0">
-        {filtered.length === 0 ? (
-          <p className="text-center text-muted-foreground py-10">Nenhum lead encontrado.</p>
-        ) : (
-          <div className="overflow-x-auto scrollbar-thin">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {isVisible("codigo") && <SortableTableHead sortKey="codigo" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Código</SortableTableHead>}
-                  {isVisible("empresa") && <SortableTableHead sortKey="company" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Empresa/Nome</SortableTableHead>}
-                  {isVisible("origem") && <SortableTableHead sortKey="origin" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Origem</SortableTableHead>}
-                  {isVisible("servico") && <SortableTableHead sortKey="servico" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Serviço</SortableTableHead>}
-                  {isVisible("valor") && <SortableTableHead sortKey="valor" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Valor</SortableTableHead>}
-                  {isVisible("responsavel") && <SortableTableHead sortKey="responsible_id" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Responsável</SortableTableHead>}
-                  {isVisible("status") && <SortableTableHead sortKey="status" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Status</SortableTableHead>}
-                  {isVisible("data") && <SortableTableHead sortKey="created_at" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Data</SortableTableHead>}
-                  <SortableTableHead className="w-10" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedFiltered.map((lead) => (
-                  <TableRow key={lead.id} className="cursor-pointer" onClick={() => setDetailLead(lead)}>
-                    {isVisible("codigo") && <TableCell className="font-mono text-xs font-bold text-primary">{lead.codigo || "—"}</TableCell>}
-                    {isVisible("empresa") && <TableCell className="font-medium">{getDisplayName(lead, clients)}</TableCell>}
-                    {isVisible("origem") && <TableCell>{originBadge(lead.origin)}</TableCell>}
-                    {isVisible("servico") && <TableCell className="text-sm">{lead.servico || "—"}</TableCell>}
-                    {isVisible("valor") && <TableCell className="text-sm">{formatValue(lead.valor)}</TableCell>}
-                    {isVisible("responsavel") && <TableCell className="text-sm">{getEmployeeName(lead.responsible_id)}</TableCell>}
-                    {isVisible("status") && (
-                      <TableCell>
-                        <Badge className={`text-xs ${STATUS_COLORS[lead.status]}`}>{STATUS_LABELS[lead.status]}</Badge>
-                        {HISTORY_STATUSES.includes(lead.status) && (
-                          <Badge variant="outline" className="text-[9px] ml-1 h-4 px-1">Histórico</Badge>
-                        )}
-                      </TableCell>
-                    )}
-                    {isVisible("data") && <TableCell className="text-xs text-muted-foreground">{format(new Date(lead.created_at), "dd/MM/yy", { locale: ptBR })}</TableCell>}
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {HISTORY_STATUSES.includes(lead.status) ? (
-                            <>
-                              {(() => {
-                                const linkedProject = lead.converted_project_id
-                                  ? projects.find((p) => p.id === lead.converted_project_id)
-                                  : projects.find((p) => p.lead_id === lead.id);
-                                return linkedProject ? (
-                                  <DropdownMenuItem onClick={() => navigate(`/projetos/${linkedProject.id}`)}>
-                                    <FolderKanban className="w-4 h-4 mr-2" /> Ver Projeto
-                                  </DropdownMenuItem>
-                                ) : null;
-                              })()}
-                              <DropdownMenuItem disabled className="text-muted-foreground text-xs">
-                                Lead histórico — somente leitura
-                              </DropdownMenuItem>
-                            </>
-                          ) : (
-                            <>
-                              <DropdownMenuItem onClick={() => { setEditingLead(lead); setFormOpen(true); }}>
-                                <Pencil className="w-4 h-4 mr-2" /> Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>
-                                  <ArrowRightLeft className="w-4 h-4 mr-2" /> Alterar Status
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent>
-                                  {(ALLOWED_TRANSITIONS[lead.status] || []).map((s) => (
-                                    <DropdownMenuItem key={s} onClick={() => handleStatusChange(lead, s)}>
-                                      <Badge className={`${STATUS_COLORS[s]} text-xs mr-2`}>{STATUS_LABELS[s]}</Badge>
-                                    </DropdownMenuItem>
-                                  ))}
-                                </DropdownMenuSubContent>
-                              </DropdownMenuSub>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(lead.id)}>
-                                <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {isVisible("codigo") && <SortableTableHead sortKey="codigo" currentSort={sortKey} direction={sortDir} onSort={handleSort}>Código</SortableTableHead>}
+            {isVisible("empresa") && <SortableTableHead sortKey="company" currentSort={sortKey} direction={sortDir} onSort={handleSort}>Empresa/Nome</SortableTableHead>}
+            {isVisible("origem") && <TableHead className="text-xs">Origem</TableHead>}
+            {isVisible("servico") && <TableHead className="text-xs">Serviço</TableHead>}
+            {isVisible("valor") && <SortableTableHead sortKey="valor" currentSort={sortKey} direction={sortDir} onSort={handleSort}>Valor</SortableTableHead>}
+            {isVisible("responsavel") && <TableHead className="text-xs">Responsável</TableHead>}
+            {isVisible("status") && <TableHead className="text-xs">Status</TableHead>}
+            <TableHead className="text-xs">Projeto</TableHead>
+            {isVisible("data") && <SortableTableHead sortKey="created_at" currentSort={sortKey} direction={sortDir} onSort={handleSort}>Data</SortableTableHead>}
+            <TableHead className="text-xs w-10" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sortedFiltered.map((lead) => {
+            const linkedProject = lead.converted_project_id
+              ? projects.find((p) => p.id === lead.converted_project_id)
+              : projects.find((p) => p.lead_id === lead.id);
+            const execBadge = linkedProject?.execution_status ? EXEC_STATUS_BADGE[linkedProject.execution_status] : null;
+            const isHist = HISTORY_STATUSES.includes(lead.status);
+            return (
+              <TableRow
+                key={lead.id}
+                className={`cursor-pointer ${isHist ? "opacity-60" : ""}`}
+                onClick={() => setDetailLead(lead)}
+              >
+                {isVisible("codigo") && <TableCell className="text-xs font-mono font-bold text-primary">{lead.codigo || "—"}</TableCell>}
+                {isVisible("empresa") && <TableCell className="text-xs font-medium max-w-[200px] truncate">{getDisplayName(lead, clients)}</TableCell>}
+                {isVisible("origem") && <TableCell>{originBadge(lead.origin)}</TableCell>}
+                {isVisible("servico") && <TableCell className="text-xs max-w-[150px] truncate text-muted-foreground">{lead.servico || "—"}</TableCell>}
+                {isVisible("valor") && <TableCell className="text-xs font-semibold">{formatValue(lead.valor)}</TableCell>}
+                {isVisible("responsavel") && <TableCell className="text-xs text-muted-foreground">{getEmployeeName(lead.responsible_id)}</TableCell>}
+                {isVisible("status") && (
+                  <TableCell>
+                    <Badge className={`text-[10px] ${STATUS_COLORS[lead.status]}`}>{STATUS_LABELS[lead.status]}</Badge>
+                  </TableCell>
+                )}
+                <TableCell>
+                  {linkedProject && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); navigate(`/projetos/${linkedProject.id}`); }}
+                        className="text-[10px] text-primary font-mono font-bold hover:underline"
+                      >
+                        {linkedProject.codigo || "—"}
+                      </button>
+                      {execBadge && <Badge className={`${execBadge.color} text-[8px] h-3.5`}>{execBadge.label}</Badge>}
+                    </div>
+                  )}
+                </TableCell>
+                {isVisible("data") && (
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    {lead.created_at ? format(new Date(lead.created_at), "dd/MM/yy") : "—"}
+                  </TableCell>
+                )}
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {!isHist && (
+                        <>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingLead(lead); setFormOpen(true); }}>
+                            <Pencil className="w-3 h-3 mr-2" /> Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger><ArrowRightLeft className="w-3 h-3 mr-2" /> Mover para</DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent>
+                              {LEAD_STATUSES.filter((s) => s !== lead.status).map((s) => (
+                                <DropdownMenuItem key={s} onClick={(e) => { e.stopPropagation(); handleStatusChange(lead, s); }}>
+                                  {STATUS_LABELS[s]}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuSubContent>
+                          </DropdownMenuSub>
+                          <DropdownMenuSeparator />
+                        </>
+                      )}
+                      <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteId(lead.id); }}>
+                        <Trash2 className="w-3 h-3 mr-2" /> Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
   );
+
+  // ─── PROJECT CARD (for active projects section) ───
+
+  const renderProjectCard = (p: any) => {
+    const execBadge = p.execution_status ? EXEC_STATUS_BADGE[p.execution_status] : null;
+    const clientName = p.clients?.name || p.client || "—";
+    return (
+      <Card key={p.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/projetos/${p.id}`)}>
+        <CardContent className="p-3 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono font-bold text-primary hover:underline">{p.codigo || "—"}</span>
+            <div className="flex gap-1">
+              {execBadge && <Badge className={`${execBadge.color} text-[9px] h-4`}>{execBadge.label}</Badge>}
+              {!p.lead_id && <Badge variant="outline" className="text-[9px] h-4 text-amber-600 border-amber-300">Sem lead</Badge>}
+            </div>
+          </div>
+          <p className="text-sm font-medium leading-tight">{p.name}</p>
+          <p className="text-xs text-muted-foreground">{clientName}</p>
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold">{p.contract_value ? formatValue(p.contract_value) : "—"}</span>
+            {p.service && <span className="text-muted-foreground truncate max-w-[120px]">{p.service}</span>}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -345,31 +447,59 @@ export default function Leads() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Target className="w-6 h-6 text-primary" /> Leads
+            <Target className="w-6 h-6 text-primary" /> Radar Comercial
           </h1>
-          <p className="text-muted-foreground text-sm">Funil comercial — captação até conversão</p>
+          <p className="text-muted-foreground text-sm">Pipeline completo — leads até faturamento</p>
         </div>
         <Button onClick={() => { setEditingLead(null); setFormOpen(true); }}>
           <Plus className="w-4 h-4 mr-2" /> Novo Lead
         </Button>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {[
-          { label: "Ativos", value: stats.total, color: "text-foreground" },
-          { label: "Novos", value: stats.novos, color: "text-blue-600" },
-          { label: "Em negociação", value: stats.negociando, color: "text-emerald-600" },
-          { label: "Propostas", value: stats.propostas, color: "text-amber-600" },
-          { label: "Convertidos", value: stats.convertidos, color: "text-green-600" },
-        ].map((kpi) => (
-          <Card key={kpi.label}>
-            <CardContent className="p-3">
-              <p className="text-xs text-muted-foreground">{kpi.label}</p>
-              <p className={`text-xl font-bold ${kpi.color}`}>{kpi.value}</p>
-            </CardContent>
-          </Card>
-        ))}
+      {/* KPIs — 2 rows */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card>
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <Target className="w-4 h-4 text-blue-500" />
+              <p className="text-xs text-muted-foreground">Leads Ativos</p>
+            </div>
+            <p className="text-xl font-bold text-blue-600">{stats.leadsAtivos}</p>
+            <p className="text-[10px] text-muted-foreground">{stats.novos} novos · {stats.negociando} negociando · {stats.propostas} propostas</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <Briefcase className="w-4 h-4 text-emerald-500" />
+              <p className="text-xs text-muted-foreground">Projetos Ativos</p>
+            </div>
+            <p className="text-xl font-bold text-emerald-600">{stats.projetosAtivos}</p>
+            <p className="text-[10px] text-muted-foreground">{stats.emCampo} em campo · {stats.entregues} entregues</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-amber-500" />
+              <p className="text-xs text-muted-foreground">Valor Carteira</p>
+            </div>
+            <p className="text-xl font-bold text-amber-600">{formatValue(stats.valorCarteira)}</p>
+            <p className="text-[10px] text-muted-foreground">Leads + projetos ativos</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-green-500" />
+              <p className="text-xs text-muted-foreground">Conversão</p>
+            </div>
+            <p className="text-xl font-bold text-green-600">
+              {leads.length > 0 ? Math.round((leads.filter(l => l.status === "convertido").length / leads.length) * 100) : 0}%
+            </p>
+            <p className="text-[10px] text-muted-foreground">{leads.filter(l => l.status === "convertido").length} convertidos de {leads.length}</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filters + View Toggle */}
@@ -414,20 +544,10 @@ export default function Leads() {
           {showHistory ? "Esconder" : "Mostrar"} histórico
         </Button>
         <div className="flex border rounded-md">
-          <Button
-            variant={viewMode === "kanban" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("kanban")}
-            className="rounded-r-none"
-          >
+          <Button variant={viewMode === "kanban" ? "default" : "ghost"} size="sm" onClick={() => setViewMode("kanban")} className="rounded-r-none">
             <LayoutGrid className="w-4 h-4" />
           </Button>
-          <Button
-            variant={viewMode === "list" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("list")}
-            className="rounded-l-none"
-          >
+          <Button variant={viewMode === "list" ? "default" : "ghost"} size="sm" onClick={() => setViewMode("list")} className="rounded-l-none">
             <List className="w-4 h-4" />
           </Button>
         </div>
@@ -436,33 +556,31 @@ export default function Leads() {
         )}
       </div>
 
-      {/* Content */}
+      {/* Lead Pipeline */}
       {isLoading ? (
         <p className="text-center text-muted-foreground py-10">Carregando...</p>
       ) : viewMode === "kanban" ? renderKanban() : renderTable()}
 
-      {/* Projects without lead */}
+      {/* Projetos Ativos — rastreabilidade pós-conversão */}
+      {projectsFromLeads.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <FolderKanban className="w-4 h-4" /> Projetos Convertidos ({projectsFromLeads.length})
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {projectsFromLeads.map(renderProjectCard)}
+          </div>
+        </div>
+      )}
+
+      {/* Projetos sem lead */}
       {projectsWithoutLead.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-amber-500" />
-            Projetos sem lead ({projectsWithoutLead.length})
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-amber-600 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" /> Projetos sem lead ({projectsWithoutLead.length})
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {projectsWithoutLead.map((p) => (
-              <Card key={p.id}>
-                <CardContent className="p-3 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold text-primary">{p.codigo || "—"}</span>
-                    <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Sem lead</Badge>
-                  </div>
-                  <p className="text-sm font-medium">{p.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {p.clients?.name || p.client || "—"}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {projectsWithoutLead.map(renderProjectCard)}
           </div>
         </div>
       )}
