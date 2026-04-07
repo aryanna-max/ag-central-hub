@@ -725,7 +725,7 @@ export default function Leads() {
         open={!!conversionLead}
         onOpenChange={(o) => { if (!o) setConversionLead(null); }}
         lead={conversionLead}
-        onConverted={() => navigate("/projetos")}
+        onConverted={() => navigate("/projetos/kanban")}
       />
 
       {/* Loss reason dialog */}

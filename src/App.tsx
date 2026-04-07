@@ -83,6 +83,7 @@ function AppRoutes() {
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/comercial/*" element={<Comercial />} />
+        <Route path="/projetos" element={<Navigate to="/projetos/kanban" replace />} />
         <Route path="/projetos/kanban" element={<Projetos />} />
         <Route path="/projetos/dashboard" element={<ProjetosDashboard />} />
         <Route path="/projetos/:projectId" element={<ProjetoHistorico />} />
