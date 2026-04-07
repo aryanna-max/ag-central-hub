@@ -26,13 +26,6 @@ import { format, differenceInCalendarDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 
-const BILLING_BADGES: Record<string, { label: string; cls: string }> = {
-  entrega_nf: { label: "NF na entrega", cls: "bg-emerald-50 text-emerald-700 border-emerald-300" },
-  entrega_recibo: { label: "Recibo na entrega", cls: "bg-emerald-50 text-emerald-700 border-emerald-300" },
-  medicao_mensal: { label: "Por medição", cls: "bg-blue-50 text-blue-700 border-blue-300" },
-  misto: { label: "Misto", cls: "bg-yellow-50 text-yellow-700 border-yellow-300" },
-};
-
 const TASK_STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   pendente: { label: "Pendente", cls: "bg-muted text-muted-foreground" },
   em_andamento: { label: "Em andamento", cls: "bg-blue-50 text-blue-700 border-blue-300" },
@@ -50,6 +43,8 @@ export default function STProjectDetail() {
   const [taskForm, setTaskForm] = useState({ title: "", assigned_to_id: "", due_date: null as Date | null, description: "" });
   const [concludeTaskId, setConcludeTaskId] = useState<string | null>(null);
   const [concludeNote, setConcludeNote] = useState("");
+  const [returnToFieldOpen, setReturnToFieldOpen] = useState(false);
+  const [returnReason, setReturnReason] = useState("");
 
   const queryClient = useQueryClient();
 
@@ -172,13 +167,6 @@ export default function STProjectDetail() {
     setConcludeNote("");
   };
 
-  const bt = project.billing_type;
-  const billingBadge = !bt
-    ? <Badge variant="destructive" className="text-[10px]">⚠ Faturamento indefinido</Badge>
-    : BILLING_BADGES[bt]
-      ? <Badge variant="outline" className={`text-[10px] ${BILLING_BADGES[bt].cls}`}>{BILLING_BADGES[bt].label}</Badge>
-      : <Badge variant="outline" className="text-[10px]">{bt}</Badge>;
-
   return (
     <div className="space-y-6">
       <Button variant="ghost" size="sm" onClick={() => navigate("/sala-tecnica")}>
@@ -195,7 +183,11 @@ export default function STProjectDetail() {
               {project.clients?.name && <p className="text-xs text-muted-foreground">{project.clients.name}</p>}
             </div>
             <div className="flex items-center gap-2">
-              {billingBadge}
+              {project.execution_status && !["planejamento", "aguardando_campo", "em_campo"].includes(project.execution_status) && (
+                <Button size="sm" variant="destructive" className="text-xs" onClick={() => setReturnToFieldOpen(true)}>
+                  Retornar a Campo
+                </Button>
+              )}
               <Button size="sm" variant="outline" onClick={copyToClipboard}>
                 <Copy className="w-3.5 h-3.5 mr-1" /> Copiar dados para RRT/ART
               </Button>
@@ -252,6 +244,123 @@ export default function STProjectDetail() {
           />
         </CardContent>
       </Card>
+
+      {/* Dados RRT */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Dados RRT</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+            <div>
+              <p className="text-muted-foreground">Tipo de serviço</p>
+              <p className="font-medium">{project.service || "—"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Contratante</p>
+              <p className="font-medium">{project.clients?.name || "—"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">CNPJ</p>
+              <p className="font-medium">{project.cnpj_tomador || project.clients?.cnpj || "—"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Local da obra</p>
+              <p className="font-medium">{address || "—"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Município/UF</p>
+              <p className="font-medium">{[project.cidade, project.estado].filter(Boolean).join("/") || "—"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Área (m²)</p>
+              <p className="font-medium">{project.area_m2 ? `${Number(project.area_m2).toLocaleString("pt-BR")} m²` : "—"}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs border-t pt-3">
+            <div>
+              <p className="text-muted-foreground">Nº RRT</p>
+              <p className="font-medium">{project.rrt_numero || "Não emitido"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Data emissão</p>
+              <p className="font-medium">{project.rrt_emitido_em ? format(new Date(project.rrt_emitido_em + "T12:00:00"), "dd/MM/yyyy") : "—"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Escopo</p>
+              <p className="font-medium truncate">{project.scope_description || "—"}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Indicadores de Tempo */}
+      {(project.field_started_at || project.field_completed_at) && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Indicadores de Tempo</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+              {/* Campo */}
+              {(() => {
+                const started = project.field_started_at ? new Date(project.field_started_at) : null;
+                const completed = project.field_completed_at ? new Date(project.field_completed_at) : null;
+                const estimated = project.field_days_estimated;
+                const realDays = started && completed ? differenceInCalendarDays(completed, started) : null;
+                const deviation = realDays != null && estimated ? realDays - estimated : null;
+                return (
+                  <div className="space-y-1">
+                    <p className="text-muted-foreground font-semibold uppercase tracking-wider text-[10px]">Campo</p>
+                    <p>Previsto: <strong>{estimated ?? "—"}d</strong></p>
+                    <p>Real: <strong>{realDays ?? "em andamento"}{realDays != null ? "d" : ""}</strong></p>
+                    {deviation != null && (
+                      <Badge className={deviation <= 0 ? "bg-emerald-100 text-emerald-700 text-[10px]" : "bg-red-100 text-red-700 text-[10px]"}>
+                        {deviation <= 0 ? `${Math.abs(deviation)}d adiantado` : `${deviation}d atrasado`}
+                      </Badge>
+                    )}
+                  </div>
+                );
+              })()}
+              {/* Processamento */}
+              {project.field_completed_at && (() => {
+                const started = new Date(project.field_completed_at);
+                const delivered = project.delivered_at ? new Date(project.delivered_at) : null;
+                const estimated = project.delivery_days_estimated;
+                const realDays = delivered ? differenceInCalendarDays(delivered, started) : null;
+                const deviation = realDays != null && estimated ? realDays - estimated : null;
+                return (
+                  <div className="space-y-1">
+                    <p className="text-muted-foreground font-semibold uppercase tracking-wider text-[10px]">Processamento</p>
+                    <p>Previsto: <strong>{estimated ?? "—"}d</strong></p>
+                    <p>Real: <strong>{realDays ?? "em andamento"}{realDays != null ? "d" : ""}</strong></p>
+                    {deviation != null && (
+                      <Badge className={deviation <= 0 ? "bg-emerald-100 text-emerald-700 text-[10px]" : "bg-red-100 text-red-700 text-[10px]"}>
+                        {deviation <= 0 ? `${Math.abs(deviation)}d adiantado` : `${deviation}d atrasado`}
+                      </Badge>
+                    )}
+                  </div>
+                );
+              })()}
+              {/* Total */}
+              {(() => {
+                const started = project.field_started_at ? new Date(project.field_started_at) : null;
+                const delivered = project.delivered_at ? new Date(project.delivered_at) : null;
+                const totalEstimated = (project.field_days_estimated || 0) + (project.delivery_days_estimated || 0);
+                const totalReal = started && delivered ? differenceInCalendarDays(delivered, started) : null;
+                if (!started) return null;
+                return (
+                  <div className="space-y-1">
+                    <p className="text-muted-foreground font-semibold uppercase tracking-wider text-[10px]">Total</p>
+                    <p>Previsto: <strong>{totalEstimated || "—"}d</strong></p>
+                    <p>Real: <strong>{totalReal ?? "em andamento"}{totalReal != null ? "d" : ""}</strong></p>
+                  </div>
+                );
+              })()}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Scope */}
       <Card>
@@ -400,6 +509,61 @@ export default function STProjectDetail() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setConcludeTaskId(null)}>Cancelar</Button>
             <Button onClick={handleConcludeTask}>Concluir</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Return to Field Dialog */}
+      <Dialog open={returnToFieldOpen} onOpenChange={(o) => { if (!o) { setReturnToFieldOpen(false); setReturnReason(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Retornar a Campo — {project?.codigo}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label className="text-xs">Motivo do retrabalho *</Label>
+            <Textarea
+              value={returnReason}
+              onChange={e => setReturnReason(e.target.value)}
+              placeholder="Descreva por que o projeto precisa voltar a campo..."
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setReturnToFieldOpen(false); setReturnReason(""); }}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              disabled={!returnReason.trim()}
+              onClick={async () => {
+                if (!project || !returnReason.trim()) return;
+                try {
+                  await supabase.from("projects").update({ execution_status: "aguardando_campo" as any }).eq("id", project.id);
+                  await supabase.from("project_status_history").insert({
+                    project_id: project.id,
+                    from_status: project.execution_status,
+                    to_status: "aguardando_campo",
+                    modulo: "sala_tecnica",
+                    changed_by_id: user?.id || null,
+                    notes: `RETRABALHO: ${returnReason.trim()}`,
+                  });
+                  await supabase.from("alerts").insert({
+                    alert_type: "retrabalho_campo",
+                    priority: "importante",
+                    recipient: "operacional",
+                    title: `Retrabalho — ${project.codigo || project.name}`,
+                    message: `Projeto ${project.name} precisa retornar a campo: ${returnReason.trim()}`,
+                    reference_type: "project",
+                    reference_id: project.id,
+                  } as any);
+                  toast.success("Projeto retornado a campo — Operacional notificado");
+                  setReturnToFieldOpen(false);
+                  setReturnReason("");
+                  queryClient.invalidateQueries({ queryKey: ["st_project_detail", id] });
+                } catch {
+                  toast.error("Erro ao retornar a campo");
+                }
+              }}
+            >
+              Confirmar Retorno
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
