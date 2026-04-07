@@ -23,8 +23,11 @@ import {
 } from "@/hooks/useLeads";
 import { useClients } from "@/hooks/useClients";
 import { useEmployees } from "@/hooks/useEmployees";
-import { useProjects } from "@/hooks/useProjects";
+import { useProjects, useUpdateProject } from "@/hooks/useProjects";
 import { useCreateAlerts, type AlertInsert } from "@/hooks/useAlerts";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -61,8 +64,12 @@ export default function Leads() {
   const { data: projects = [] } = useProjects();
   const deleteLead = useDeleteLead();
   const updateLead = useUpdateLead();
+  const updateProject = useUpdateProject();
   const createAlerts = useCreateAlerts();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [showFinalized, setShowFinalized] = useState(false);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -121,21 +128,25 @@ export default function Leads() {
 
   const { sorted: sortedFiltered, sortKey, sortDir, handleSort } = useSortableTable(filtered);
 
-  // ─── Active projects (post-conversion + without lead) ───
+  // ─── Projects split: active (not yet delivered) vs finalized ───
+
+  const NOT_DELIVERED = ["planejamento", "aguardando_campo", "em_campo", "aguardando_processamento", "em_processamento", "revisao", "aprovado"];
+  const FINALIZED = ["entregue", "faturamento", "pago"];
 
   const activeProjects = useMemo(() => {
     return projects.filter(
-      (p) => p.is_active !== false && p.status !== "concluido" && p.status !== "pausado"
+      (p) => p.is_active !== false && NOT_DELIVERED.includes(p.execution_status || "")
     );
   }, [projects]);
 
-  const projectsFromLeads = useMemo(() => {
-    return activeProjects.filter(p => p.lead_id);
-  }, [activeProjects]);
+  const finalizedProjects = useMemo(() => {
+    return projects.filter(
+      (p) => p.is_active !== false && FINALIZED.includes(p.execution_status || "")
+    );
+  }, [projects]);
 
-  const projectsWithoutLead = useMemo(() => {
-    return activeProjects.filter(p => !p.lead_id);
-  }, [activeProjects]);
+  const projectsFromLeads = useMemo(() => activeProjects.filter(p => p.lead_id), [activeProjects]);
+  const projectsWithoutLead = useMemo(() => activeProjects.filter(p => !p.lead_id), [activeProjects]);
 
   // ─── KPIs ───
 
@@ -154,7 +165,7 @@ export default function Leads() {
       projetosAtivos: allActiveProjects.length,
       valorCarteira: totalValue + leadValue,
       emCampo: allActiveProjects.filter(p => p.execution_status === "em_campo").length,
-      entregues: allActiveProjects.filter(p => p.execution_status === "entregue" || p.execution_status === "faturamento").length,
+      finalizados: finalizedProjects.length,
     };
   }, [leads, activeProjects]);
 
@@ -227,6 +238,44 @@ export default function Leads() {
     } catch { toast.error("Erro ao alterar status"); }
     setLossDialog(null);
     setLossReason("");
+  };
+
+  const handleProjectStatusChange = async (projectId: string, currentStatus: string, newStatus: string) => {
+    try {
+      const finalStatus = newStatus === "concluido_final" ? "pago" : newStatus;
+      const updates: any = { execution_status: finalStatus };
+      if (finalStatus === "pago" || newStatus === "concluido_final") {
+        updates.status = "concluido";
+        updates.is_active = false;
+      }
+      await updateProject.mutateAsync({ id: projectId, ...updates });
+      await supabase.from("project_status_history").insert({
+        project_id: projectId,
+        from_status: currentStatus,
+        to_status: finalStatus,
+        modulo: "comercial",
+        changed_by_id: user?.id || null,
+      });
+      // Alert financeiro when marking pago
+      if (finalStatus === "pago") {
+        const proj = projects.find(p => p.id === projectId);
+        if (proj) {
+          await createAlerts.mutateAsync([{
+            alert_type: "projeto_pago",
+            priority: "importante",
+            recipient: "financeiro",
+            title: `Pagamento confirmado — ${proj.codigo || proj.name}`,
+            message: `Conferir conta bancária. Valor: ${proj.contract_value ? formatValue(proj.contract_value) : "não informado"}.`,
+            reference_type: "project",
+            reference_id: projectId,
+          }]);
+        }
+      }
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      toast.success(`Status alterado para ${EXEC_STATUS_BADGE[finalStatus]?.label || finalStatus}`);
+    } catch {
+      toast.error("Erro ao alterar status");
+    }
   };
 
   const originBadge = (origin: string | null) => {
@@ -475,7 +524,7 @@ export default function Leads() {
               <p className="text-xs text-muted-foreground">Projetos Ativos</p>
             </div>
             <p className="text-xl font-bold text-emerald-600">{stats.projetosAtivos}</p>
-            <p className="text-[10px] text-muted-foreground">{stats.emCampo} em campo · {stats.entregues} entregues</p>
+            <p className="text-[10px] text-muted-foreground">{stats.emCampo} em campo · {stats.finalizados} finalizados</p>
           </CardContent>
         </Card>
         <Card>
@@ -582,6 +631,76 @@ export default function Leads() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {projectsWithoutLead.map(renderProjectCard)}
           </div>
+        </div>
+      )}
+
+      {/* Finalizados — lista com ações de status */}
+      {finalizedProjects.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <Briefcase className="w-4 h-4" /> Finalizados ({finalizedProjects.length})
+            </h2>
+            <Button size="sm" variant="ghost" className="text-xs" onClick={() => setShowFinalized(!showFinalized)}>
+              {showFinalized ? "Esconder" : "Mostrar"}
+            </Button>
+          </div>
+          {showFinalized && (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Código</TableHead>
+                    <TableHead className="text-xs">Projeto</TableHead>
+                    <TableHead className="text-xs">Cliente</TableHead>
+                    <TableHead className="text-xs">Valor</TableHead>
+                    <TableHead className="text-xs">Status</TableHead>
+                    <TableHead className="text-xs w-[120px]">Ação</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {finalizedProjects.map((p) => {
+                    const execBadge = p.execution_status ? EXEC_STATUS_BADGE[p.execution_status] : null;
+                    const clientName = p.clients?.name || p.client || "—";
+                    const statusOptions = ["entregue", "faturamento", "pago"].filter(s => s !== p.execution_status);
+                    return (
+                      <TableRow key={p.id}>
+                        <TableCell>
+                          <button onClick={() => navigate(`/projetos/${p.id}`)} className="text-xs font-mono font-bold text-primary hover:underline">
+                            {p.codigo || "—"}
+                          </button>
+                        </TableCell>
+                        <TableCell className="text-xs max-w-[180px] truncate">{p.name}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground max-w-[140px] truncate">{clientName}</TableCell>
+                        <TableCell className="text-xs font-semibold">{p.contract_value ? formatValue(p.contract_value) : "—"}</TableCell>
+                        <TableCell>
+                          {execBadge && <Badge className={`${execBadge.color} text-[10px]`}>{execBadge.label}</Badge>}
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value=""
+                            onValueChange={(v) => handleProjectStatusChange(p.id, p.execution_status || "", v)}
+                          >
+                            <SelectTrigger className="h-7 text-[10px] w-[110px]">
+                              <SelectValue placeholder="Alterar..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {statusOptions.map((s) => (
+                                <SelectItem key={s} value={s}>
+                                  {EXEC_STATUS_BADGE[s]?.label || s}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="concluido_final">Concluir projeto</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </div>
       )}
 
