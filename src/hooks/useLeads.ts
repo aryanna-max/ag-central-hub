@@ -17,6 +17,14 @@ export function normalizeLeadStatus(raw: string): LeadStatus {
 export const ACTIVE_STATUSES: LeadStatus[] = ["novo", "em_negociacao", "proposta_enviada"];
 export const HISTORY_STATUSES: LeadStatus[] = ["convertido", "perdido"];
 
+export const ALLOWED_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
+  novo: ["em_negociacao", "perdido"],
+  em_negociacao: ["proposta_enviada", "perdido"],
+  proposta_enviada: ["convertido", "perdido"],
+  convertido: [],
+  perdido: [],
+};
+
 export const ORIGIN_LABELS: Record<LeadOrigin, string> = {
   indicacao: "Indicação",
   whatsapp: "WhatsApp",

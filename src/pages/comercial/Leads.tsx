@@ -17,7 +17,7 @@ import { SortableTableHead, useSortableTable } from "@/components/ui/sortable-ta
 import LeadConversionDialog from "./LeadConversionDialog";
 import {
   useLeads, useDeleteLead, useUpdateLead,
-  LEAD_STATUSES, ACTIVE_STATUSES, HISTORY_STATUSES,
+  LEAD_STATUSES, ACTIVE_STATUSES, HISTORY_STATUSES, ALLOWED_TRANSITIONS,
   STATUS_LABELS, STATUS_COLORS, ORIGIN_LABELS, ORIGIN_COLORS,
   type Lead, type LeadStatus, type LeadOrigin,
 } from "@/hooks/useLeads";
@@ -29,14 +29,6 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import LeadFormDialog from "./LeadFormDialog";
 import LeadDetailDialog from "./LeadDetailDialog";
-
-const ALLOWED_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
-  novo: ["em_negociacao", "perdido"],
-  em_negociacao: ["proposta_enviada", "perdido"],
-  proposta_enviada: ["convertido", "perdido"],
-  convertido: [],
-  perdido: [],
-};
 
 function getDisplayName(lead: Lead, clients: { id: string; name: string }[]) {
   if (lead.client_id) {

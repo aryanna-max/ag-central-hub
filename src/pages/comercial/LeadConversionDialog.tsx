@@ -200,19 +200,18 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
         isExistingClient ? existingClient!.codigo! : clientCodigo.toUpperCase()
       );
 
-      // Step 3: Create project
+      // Step 3: Create project (só FK, sem campos texto duplicados)
       const project = await createProject.mutateAsync({
         name: projectName,
+        codigo: finalCode,
         client_id: clientId,
-        client: isExistingClient ? existingClient?.name : clientName,
-        client_cnpj: cnpjTomador || null,
+        cnpj_tomador: cnpjTomador || null,
         contract_value: contractValue,
         empresa_faturadora: empresaFaturadora,
         billing_type: billingType,
         status: "planejamento",
         lead_id: lead.id,
         start_date: new Date().toISOString().split("T")[0],
-        client_codigo: isExistingClient ? existingClient!.codigo! : clientCodigo.toUpperCase(),
       } as any);
 
       // Step 4: Update lead

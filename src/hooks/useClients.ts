@@ -142,6 +142,21 @@ export function useDeleteClient() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      // Verificar dependências antes de deletar
+      const { count: projectCount } = await supabase
+        .from("projects")
+        .select("id", { count: "exact", head: true })
+        .eq("client_id", id);
+      if (projectCount && projectCount > 0) {
+        throw new Error(`Cliente tem ${projectCount} projeto(s) vinculado(s). Remova os projetos primeiro.`);
+      }
+      const { count: leadCount } = await supabase
+        .from("leads")
+        .select("id", { count: "exact", head: true })
+        .eq("client_id", id);
+      if (leadCount && leadCount > 0) {
+        throw new Error(`Cliente tem ${leadCount} lead(s) vinculado(s). Remova os leads primeiro.`);
+      }
       const { error } = await supabase.from("clients").delete().eq("id", id);
       if (error) throw error;
     },

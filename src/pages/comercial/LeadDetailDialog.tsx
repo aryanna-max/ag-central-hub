@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Phone, Mail, Building2, User, MessageSquare, PhoneCall, Video, MapPin, Send, FileText, DollarSign, Plus, Check, X } from "lucide-react";
 import {
   useLeadInteractions, useAddLeadInteraction, useUpdateLead,
-  STATUS_LABELS, STATUS_COLORS, ORIGIN_LABELS, ACTIVE_STATUSES, HISTORY_STATUSES,
+  STATUS_LABELS, STATUS_COLORS, ORIGIN_LABELS, ACTIVE_STATUSES, HISTORY_STATUSES, ALLOWED_TRANSITIONS,
   type Lead, type LeadInteractionType, type LeadStatus,
 } from "@/hooks/useLeads";
 import {
@@ -206,7 +206,8 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ACTIVE_STATUSES.map((s) => (
+                  <SelectItem value={lead.status}>{STATUS_LABELS[lead.status]}</SelectItem>
+                  {(ALLOWED_TRANSITIONS[lead.status] || []).map((s) => (
                     <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
                   ))}
                 </SelectContent>
