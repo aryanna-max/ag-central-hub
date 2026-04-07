@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -205,6 +206,7 @@ function ProjectMeasurementsTab({ projectId, contractValue }: { projectId: strin
 }
 
 export default function Projetos() {
+  const navigate = useNavigate();
   const { data: projects = [], isLoading } = useProjects();
   const { data: employees = [] } = useEmployees();
   const { data: clients = [] } = useClients();
@@ -456,7 +458,7 @@ export default function Projetos() {
                           return (
                             <Card
                               key={project.id}
-                              onClick={() => openSheet(project)}
+                              onClick={() => navigate(`/projetos/${project.id}`)}
                               className="cursor-pointer hover:shadow-md transition-shadow border"
                             >
                               <CardContent className="p-2.5 space-y-1.5">
