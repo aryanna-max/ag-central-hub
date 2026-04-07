@@ -15,7 +15,7 @@ export function normalizeLeadStatus(raw: string): LeadStatus {
 
 /** Status ativos (visíveis por padrão) vs históricos (ocultos por padrão) */
 export const ACTIVE_STATUSES: LeadStatus[] = ["novo", "em_negociacao", "proposta_enviada", "convertido"];
-export const KANBAN_STATUSES: LeadStatus[] = ["novo", "em_negociacao", "proposta_enviada"];
+export const KANBAN_STATUSES: LeadStatus[] = ["novo", "em_negociacao", "proposta_enviada", "convertido"];
 export const HISTORY_STATUSES: LeadStatus[] = ["perdido"];
 
 export const ALLOWED_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {

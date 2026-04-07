@@ -56,9 +56,10 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lead: Lead | null;
+  onConvert?: (lead: Lead) => void;
 }
 
-export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
+export default function LeadDetailDialog({ open, onOpenChange, lead, onConvert }: Props) {
   const { data: interactions = [] } = useLeadInteractions(lead?.id);
   const { data: allProposals = [] } = useProposals();
   const { data: employees = [] } = useEmployees();
@@ -92,6 +93,11 @@ export default function LeadDetailDialog({ open, onOpenChange, lead }: Props) {
   const handleStatusChange = async (newStatus: string) => {
     const status = newStatus as LeadStatus;
     if (status === lead.status) return;
+    if (status === "convertido") {
+      // Fechar dialog de detalhe e abrir dialog de conversão via callback
+      onConvert?.(lead);
+      return;
+    }
     try {
       await updateLead.mutateAsync({ id: lead.id, status });
       toast.success(`Status alterado para ${STATUS_LABELS[status]}`);

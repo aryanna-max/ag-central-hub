@@ -715,7 +715,12 @@ export default function Leads() {
 
       {/* Dialogs */}
       <LeadFormDialog open={formOpen} onOpenChange={setFormOpen} lead={editingLead} />
-      <LeadDetailDialog open={!!detailLead} onOpenChange={(o) => !o && setDetailLead(null)} lead={detailLead} />
+      <LeadDetailDialog
+        open={!!detailLead}
+        onOpenChange={(o) => !o && setDetailLead(null)}
+        lead={detailLead}
+        onConvert={(lead) => { setDetailLead(null); setConversionLead(lead); }}
+      />
       <LeadConversionDialog
         open={!!conversionLead}
         onOpenChange={(o) => { if (!o) setConversionLead(null); }}
