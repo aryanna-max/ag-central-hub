@@ -1,0 +1,1 @@
+UPDATE alerts SET resolved = true, resolved_at = now(), read = true WHERE alert_status = 'resolvido' AND resolved = false;
