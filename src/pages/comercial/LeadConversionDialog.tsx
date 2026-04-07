@@ -199,6 +199,7 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
         empresa_faturadora: empresaFaturadora,
         billing_type: billingType,
         status: "planejamento",
+        execution_status: "aguardando_processamento",
         lead_id: lead.id,
         start_date: new Date().toISOString().split("T")[0],
         client_codigo: isExistingClient ? existingClient!.codigo! : clientCodigo.toUpperCase(),

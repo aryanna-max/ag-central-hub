@@ -17,6 +17,7 @@ export function useLeadConversion() {
       responsible_id: lead.responsible_id,
       lead_id: lead.id,
       status: "planejamento",
+      execution_status: "aguardando_processamento",
     });
 
     // Create 3 alerts
