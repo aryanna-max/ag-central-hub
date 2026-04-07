@@ -34,21 +34,11 @@ import { toast } from "sonner";
 import { exportCsv } from "@/lib/exportCsv";
 import LeadFormDialog from "./LeadFormDialog";
 import LeadDetailDialog from "./LeadDetailDialog";
+import { EXEC_STATUS_LABELS, EXEC_STATUS_COLORS } from "@/lib/statusConstants";
 
-// ─── execution_status labels for project cards ───
-
-const EXEC_STATUS_BADGE: Record<string, { label: string; color: string }> = {
-  planejamento: { label: "Planejamento", color: "bg-gray-100 text-gray-700" },
-  aguardando_campo: { label: "Aguardando campo", color: "bg-muted text-muted-foreground" },
-  em_campo: { label: "Em campo", color: "bg-emerald-100 text-emerald-700" },
-  aguardando_processamento: { label: "Aguardando proc.", color: "bg-blue-100 text-blue-700" },
-  em_processamento: { label: "Em processamento", color: "bg-indigo-100 text-indigo-700" },
-  revisao: { label: "Em revisão", color: "bg-purple-100 text-purple-700" },
-  aprovado: { label: "Aprovado", color: "bg-emerald-100 text-emerald-700" },
-  entregue: { label: "Entregue", color: "bg-green-100 text-green-700" },
-  faturamento: { label: "Faturamento", color: "bg-amber-100 text-amber-700" },
-  pago: { label: "Pago", color: "bg-green-200 text-green-800" },
-};
+const EXEC_STATUS_BADGE: Record<string, { label: string; color: string }> = Object.fromEntries(
+  Object.entries(EXEC_STATUS_LABELS).map(([k, label]) => [k, { label, color: EXEC_STATUS_COLORS[k] || "bg-muted" }])
+);
 
 function getDisplayName(lead: Lead, clients: { id: string; name: string }[]) {
   if (lead.client_id) {

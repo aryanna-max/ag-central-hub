@@ -2,6 +2,10 @@ import { useMemo, useState, useRef } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { canSeeFinancials as checkFinancials } from "@/lib/constants";
+import {
+  EXEC_STATUS_LABELS, EXEC_STATUS_CHART_COLORS as EXEC_STATUS_COLORS,
+  BILLING_LABELS, DASHBOARD_GROUPS as GROUPS, DASHBOARD_ALL_COLUMNS as ALL_COLUMNS,
+} from "@/lib/statusConstants";
 import MobileHome from "@/components/mobile/MobileHome";
 import {
   Bell, CheckCircle2, AlertTriangle, Clock, Zap,
@@ -21,59 +25,6 @@ import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import DeadlineBadge from "@/components/DeadlineBadge";
 import { cn } from "@/lib/utils";
-
-// ─── Execution status labels & colors ───
-const EXEC_STATUS_LABELS: Record<string, string> = {
-  aguardando_campo: "Aguardando campo",
-  em_campo: "Em campo",
-  campo_concluido: "Campo concluído",
-  aguardando_processamento: "Aguardando proc.",
-  em_processamento: "Em processamento",
-  revisao: "Em revisão",
-  aprovado: "Aprovado",
-  entregue: "Entregue",
-  faturamento: "Faturamento",
-  pago: "Pago",
-};
-
-const BILLING_LABELS: Record<string, string> = {
-  medicao_mensal: "Por medição",
-  entrega_nf: "NF na entrega",
-  entrega_recibo: "Recibo na entrega",
-  misto: "Misto",
-  sem_documento: "Sem documento",
-};
-
-// ─── Kanban groups ───
-const GROUPS = [
-  {
-    key: "campo", label: "🏕️ Campo", color: "#1A9E7C",
-    columns: ["aguardando_campo", "em_campo", "campo_concluido"],
-  },
-  {
-    key: "prancheta", label: "📐 Prancheta", color: "#2D6E8E",
-    columns: ["aguardando_processamento", "em_processamento", "revisao", "aprovado"],
-  },
-  {
-    key: "financeiro", label: "💰 Financeiro", color: "#f97316",
-    columns: ["entregue", "faturamento", "pago"],
-  },
-];
-
-const ALL_COLUMNS = GROUPS.flatMap((g) => g.columns);
-
-const EXEC_STATUS_COLORS: Record<string, string> = {
-  aguardando_campo: "hsl(160, 70%, 40%)",
-  em_campo: "hsl(160, 60%, 35%)",
-  campo_concluido: "hsl(160, 50%, 45%)",
-  aguardando_processamento: "hsl(200, 55%, 40%)",
-  em_processamento: "hsl(200, 50%, 45%)",
-  revisao: "hsl(200, 45%, 50%)",
-  aprovado: "hsl(200, 60%, 35%)",
-  entregue: "hsl(30, 90%, 50%)",
-  faturamento: "hsl(30, 80%, 45%)",
-  pago: "hsl(30, 70%, 40%)",
-};
 
 type KpiFilter = "em_campo" | "prazo_critico" | "a_faturar" | "ativos" | null;
 

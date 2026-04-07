@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { EXEC_STATUS_LABELS, EXEC_STATUS_COLORS } from "@/lib/statusConstants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,18 +25,9 @@ const billingLabels: Record<string, { label: string; color: string }> = {
   sem_documento: { label: "Sem Documento", color: "bg-gray-100 text-gray-800" },
 };
 
-const execLabels: Record<string, { label: string; color: string }> = {
-  aguardando_campo: { label: "Aguardando Campo", color: "bg-gray-100 text-gray-800" },
-  em_campo: { label: "Em Campo", color: "bg-blue-100 text-blue-800" },
-  campo_concluido: { label: "Campo Concluído", color: "bg-cyan-100 text-cyan-800" },
-  aguardando_processamento: { label: "Aguardando Processamento", color: "bg-amber-100 text-amber-800" },
-  em_processamento: { label: "Em Processamento", color: "bg-orange-100 text-orange-800" },
-  revisao: { label: "Revisão", color: "bg-yellow-100 text-yellow-800" },
-  aprovado: { label: "Aprovado", color: "bg-lime-100 text-lime-800" },
-  entregue: { label: "Entregue", color: "bg-emerald-100 text-emerald-800" },
-  faturamento: { label: "Faturamento", color: "bg-indigo-100 text-indigo-800" },
-  pago: { label: "Pago", color: "bg-green-100 text-green-800" },
-};
+const execLabels: Record<string, { label: string; color: string }> = Object.fromEntries(
+  Object.entries(EXEC_STATUS_LABELS).map(([k, label]) => [k, { label, color: EXEC_STATUS_COLORS[k] || "bg-muted" }])
+);
 
 type QuickFilter = "a_faturar" | "medicao_aberta" | "pagos_mes" | "todos";
 

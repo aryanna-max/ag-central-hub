@@ -27,33 +27,16 @@ import {
 import { format, parseISO, differenceInDays } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  EXEC_STATUS_LABELS, EXEC_STATUS_COLORS, EXECUTION_STATUSES,
+  PROJECT_STATUS_LABELS, BILLING_LABELS, MEASUREMENT_STATUS_LABELS,
+} from "@/lib/statusConstants";
 
-const EXEC_LABELS: Record<string, string> = {
-  aguardando_campo: "Aguardando Campo", em_campo: "Em Campo",
-  campo_concluido: "Campo Concluído", aguardando_processamento: "Aguardando Processamento",
-  em_processamento: "Em Processamento", revisao: "Revisão",
-  aprovado: "Aprovado", entregue: "Entregue", faturamento: "Faturamento", pago: "Pago",
-};
-const EXEC_COLORS: Record<string, string> = {
-  aguardando_campo: "bg-emerald-100 text-emerald-800", em_campo: "bg-green-100 text-green-800",
-  campo_concluido: "bg-teal-100 text-teal-800", aguardando_processamento: "bg-sky-100 text-sky-800",
-  em_processamento: "bg-blue-100 text-blue-800", revisao: "bg-indigo-100 text-indigo-800",
-  aprovado: "bg-violet-100 text-violet-800", entregue: "bg-orange-100 text-orange-800",
-  faturamento: "bg-amber-100 text-amber-800", pago: "bg-emerald-100 text-emerald-800",
-};
-const ALL_EXEC = Object.keys(EXEC_LABELS);
-const STATUS_LABELS: Record<string, string> = {
-  planejamento: "Planejamento", execucao: "Execução", entrega: "Entrega",
-  faturamento: "Faturamento", concluido: "Concluído", pausado: "Pausado",
-};
-const BILLING_LABELS: Record<string, string> = {
-  medicao_mensal: "Medição Mensal", entrega_nf: "NF na Entrega",
-  entrega_recibo: "Recibo na Entrega", sem_documento: "Sem Documento",
-};
-const MEAS_STATUS: Record<string, string> = {
-  rascunho: "Rascunho", aguardando_aprovacao: "Aguardando", aprovada: "Aprovada",
-  nf_emitida: "NF Emitida", paga: "Paga", cancelada: "Cancelada",
-};
+const EXEC_LABELS = EXEC_STATUS_LABELS;
+const EXEC_COLORS = EXEC_STATUS_COLORS;
+const ALL_EXEC = EXECUTION_STATUSES as unknown as string[];
+const STATUS_LABELS = PROJECT_STATUS_LABELS;
+const MEAS_STATUS = MEASUREMENT_STATUS_LABELS;
 
 const fmtBRL = (v: number | null) =>
   v != null ? v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—";

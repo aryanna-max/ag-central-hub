@@ -27,81 +27,17 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// ── Execution status groups ──
-type ExecStatus = string;
+import {
+  EXEC_STATUS_LABELS, EXEC_STATUS_COLORS, EXEC_STATUS_GROUPS as GROUPS,
+  ALL_KANBAN_STATUSES as ALL_EXEC_STATUSES, BILLING_LABELS as BILLING_LABELS_PLAIN,
+  BILLING_COLORS,
+  type KanbanGroup as GroupDef, type KanbanColumn as ColumnDef,
+} from "@/lib/statusConstants";
 
-interface ColumnDef {
-  key: ExecStatus;
-  label: string;
-}
-
-interface GroupDef {
-  key: string;
-  label: string;
-  emoji: string;
-  borderColor: string;
-  columns: ColumnDef[];
-}
-
-const GROUPS: GroupDef[] = [
-  {
-    key: "campo",
-    label: "Campo",
-    emoji: "🏕️",
-    borderColor: "border-[#1A9E7C]",
-    columns: [
-      { key: "aguardando_campo", label: "Aguardando campo" },
-      { key: "em_campo", label: "Em campo" },
-      { key: "campo_concluido", label: "Campo concluído" },
-    ],
-  },
-  {
-    key: "prancheta",
-    label: "Prancheta",
-    emoji: "📐",
-    borderColor: "border-[#2D6E8E]",
-    columns: [
-      { key: "aguardando_processamento", label: "Aguardando proc." },
-      { key: "em_processamento", label: "Em processamento" },
-      { key: "revisao", label: "Em revisão" },
-      { key: "aprovado", label: "Aprovado" },
-    ],
-  },
-  {
-    key: "financeiro",
-    label: "Financeiro",
-    emoji: "💰",
-    borderColor: "border-[#f97316]",
-    columns: [
-      { key: "entregue", label: "Entregue" },
-      { key: "faturamento", label: "Faturamento" },
-      { key: "pago", label: "Pago" },
-    ],
-  },
-];
-
-const ALL_EXEC_STATUSES = GROUPS.flatMap((g) => g.columns.map((c) => c.key));
-
-const BILLING_LABELS: Record<string, { label: string; className: string }> = {
-  entrega_nf: { label: "NF na entrega", className: "bg-emerald-100 text-emerald-800" },
-  entrega_recibo: { label: "Recibo na entrega", className: "bg-emerald-100 text-emerald-800" },
-  medicao_mensal: { label: "Por medição", className: "bg-blue-100 text-blue-800" },
-  misto: { label: "Misto", className: "bg-amber-100 text-amber-800" },
-  sem_documento: { label: "Sem documento", className: "bg-muted text-muted-foreground" },
-};
-
-const EXEC_STATUS_BADGE: Record<string, string> = {
-  aguardando_campo: "bg-muted text-muted-foreground",
-  em_campo: "bg-emerald-100 text-emerald-800",
-  campo_concluido: "bg-blue-100 text-blue-800",
-  aguardando_processamento: "bg-slate-100 text-slate-700",
-  em_processamento: "bg-blue-100 text-blue-800",
-  revisao: "bg-purple-100 text-purple-800",
-  aprovado: "bg-emerald-100 text-emerald-800",
-  entregue: "bg-green-100 text-green-800",
-  faturamento: "bg-amber-100 text-amber-800",
-  pago: "bg-emerald-200 text-emerald-900",
-};
+const EXEC_STATUS_BADGE = EXEC_STATUS_COLORS;
+const BILLING_LABELS: Record<string, { label: string; className: string }> = Object.fromEntries(
+  Object.entries(BILLING_LABELS_PLAIN).map(([k, label]) => [k, { label, className: BILLING_COLORS[k] || "bg-muted" }])
+);
 
 // ── Legacy project_status columns (keep for side panel) ──
 const STATUS_BADGE_COLORS: Record<ProjectStatus, string> = {

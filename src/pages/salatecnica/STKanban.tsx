@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { EXEC_STATUS_LABELS, EXEC_STATUS_COLORS } from "@/lib/statusConstants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -74,14 +75,9 @@ interface Technician {
 
 // ─── Helpers ───
 
-const EXEC_STATUS_TAGS: Record<string, { label: string; color: string }> = {
-  planejamento: { label: "Planejamento", color: "bg-gray-100 text-gray-700" },
-  aguardando_campo: { label: "Aguardando campo", color: "bg-muted text-muted-foreground" },
-  em_campo: { label: "Em campo", color: "bg-emerald-100 text-emerald-700" },
-  aguardando_processamento: { label: "Campo concluído", color: "bg-blue-100 text-blue-700" },
-  em_processamento: { label: "Em processamento", color: "bg-indigo-100 text-indigo-700" },
-  revisao: { label: "Em revisão", color: "bg-purple-100 text-purple-700" },
-};
+const EXEC_STATUS_TAGS: Record<string, { label: string; color: string }> = Object.fromEntries(
+  Object.entries(EXEC_STATUS_LABELS).map(([k, label]) => [k, { label, color: EXEC_STATUS_COLORS[k] || "bg-muted" }])
+);
 
 function getInitials(name: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();

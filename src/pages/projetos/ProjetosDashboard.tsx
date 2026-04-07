@@ -17,36 +17,11 @@ import { FolderKanban, DollarSign, Clock, FileText, Bell, Download } from "lucid
 import { exportCsv } from "@/lib/exportCsv";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-const EXEC_STATUS_LABELS: Record<string, string> = {
-  aguardando_campo: "Aguardando campo",
-  em_campo: "Em campo",
-  campo_concluido: "Campo concluído",
-  aguardando_processamento: "Aguardando proc.",
-  em_processamento: "Em processamento",
-  revisao: "Em revisão",
-  aprovado: "Aprovado",
-  entregue: "Entregue",
-  faturamento: "Faturamento",
-  pago: "Pago",
-};
-
-const EXEC_STATUS_COLORS: Record<string, string> = {
-  aguardando_campo: "bg-emerald-100 text-emerald-800",
-  em_campo: "bg-emerald-200 text-emerald-900",
-  campo_concluido: "bg-teal-100 text-teal-800",
-  aguardando_processamento: "bg-blue-100 text-blue-800",
-  em_processamento: "bg-blue-200 text-blue-900",
-  revisao: "bg-indigo-100 text-indigo-800",
-  aprovado: "bg-violet-100 text-violet-800",
-  entregue: "bg-amber-100 text-amber-800",
-  faturamento: "bg-orange-100 text-orange-800",
-  pago: "bg-muted text-muted-foreground",
-};
+import { EXEC_STATUS_LABELS, EXEC_STATUS_COLORS, EXECUTION_STATUSES } from "@/lib/statusConstants";
 
 const PIE_COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "#f59e0b", "#8b5cf6", "#10b981", "#ef4444", "#6366f1", "#ec4899"];
 
-const ALL_EXEC_STATUSES = Object.keys(EXEC_STATUS_LABELS);
+const ALL_EXEC_STATUSES = EXECUTION_STATUSES as unknown as string[];
 
 export default function ProjetosDashboard() {
   const { data: projects = [] } = useProjects();
