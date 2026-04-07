@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
-import { FIELD_ROLES } from "@/lib/fieldRoles";
+import { FIELD_ROLES, isFieldRole } from "@/lib/fieldRoles";
 
 export type Employee = Tables<"employees">;
 export type EmployeeInsert = TablesInsert<"employees">;
@@ -27,13 +27,14 @@ export function useEmployeesWithAbsences(date?: string) {
   return useQuery({
     queryKey: ["employees-with-absences", targetDate],
     queryFn: async () => {
-      const { data: employees, error: empError } = await supabase
+      const { data: allEmployees, error: empError } = await supabase
         .from("employees")
         .select("*")
         .neq("status", "desligado")
-        .in("role", [...FIELD_ROLES])
         .order("name");
       if (empError) throw empError;
+      // Filter field roles client-side for case-insensitive partial matching
+      const employees = (allEmployees || []).filter((e) => isFieldRole(e.role));
 
       // Try to fetch absences from employee_absences table (may not exist in types)
       let absences: any[] = [];

@@ -7,14 +7,22 @@ export const FIELD_ROLES = [
   "Topógrafo III A",
   "Topógrafo IV",
   "Ajudante de Topografia",
+  "Auxiliar de Topografia",
+  "Auxiliar",
+  "Motorista",
+  "Estagiário",
 ] as const;
 
 const fieldRolesLower = new Set(FIELD_ROLES.map((r) => r.toLowerCase()));
 
+/** Keywords that identify a field role (case-insensitive partial match) */
+const FIELD_KEYWORDS = ["topógrafo", "topografo", "ajudante", "auxiliar", "motorista", "estagiário", "estagiario"];
+
 /** Returns true if the given role is a field (campo) role */
 export function isFieldRole(role?: string | null): boolean {
   if (!role) return false;
-  return fieldRolesLower.has(role.toLowerCase());
+  const lower = role.toLowerCase();
+  return fieldRolesLower.has(lower) || FIELD_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
 /** Returns true if the role is a topógrafo variant */
