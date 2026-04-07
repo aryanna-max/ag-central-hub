@@ -77,6 +77,26 @@ export function useAddTeamAssignment() {
           project_id: assignment.project_id,
           vehicle_id: assignment.vehicle_id || null,
         });
+
+        // Auto-transição: aguardando_campo → em_campo ao alocar na escala
+        const { data: proj } = await supabase
+          .from("projects")
+          .select("execution_status")
+          .eq("id", assignment.project_id)
+          .single();
+        if (proj?.execution_status === "aguardando_campo") {
+          await supabase.from("projects").update({
+            execution_status: "em_campo" as any,
+            field_started_at: date,
+          }).eq("id", assignment.project_id);
+          await supabase.from("project_status_history").insert({
+            project_id: assignment.project_id,
+            from_status: "aguardando_campo",
+            to_status: "em_campo",
+            modulo: "operacional",
+            notes: "Auto: alocado na escala diária",
+          });
+        }
       }
 
       return data;

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarDays, Plus, Lock, Printer, Trash2, Pencil, CheckCircle, AlertTriangle, X, Users, Save } from "lucide-react";
@@ -59,6 +60,7 @@ function useProjectsList(showAll = false) {
 }
 
 export default function EscalaDiaria() {
+  const navigate = useNavigate();
   const tomorrow = format(addDays(new Date(), 1), "yyyy-MM-dd");
   const today = format(new Date(), "yyyy-MM-dd");
   const [selectedDate, setSelectedDate] = useState(tomorrow);
@@ -342,6 +344,16 @@ export default function EscalaDiaria() {
     try {
       await closeSchedule.mutateAsync(schedule.id);
       toast.success("Escala fechada!");
+      // Lembrete: algum projeto finalizou campo?
+      setTimeout(() => {
+        toast("Algum projeto finalizou campo hoje?", {
+          duration: 10000,
+          action: {
+            label: "Ver projetos",
+            onClick: () => navigate("/operacional/projetos-campo"),
+          },
+        });
+      }, 1500);
     } catch {
       toast.error("Erro ao fechar escala");
     }
