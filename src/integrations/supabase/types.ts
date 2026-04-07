@@ -2504,6 +2504,10 @@ export type Database = {
         | "rede_social"
         | "licitacao"
         | "outros"
+        | "site_instagram"
+        | "cliente_recorrente"
+        | "contrato_ativo"
+        | "outro"
       lead_status:
         | "novo"
         | "em_contato"
@@ -2752,6 +2756,10 @@ export const Constants = {
         "rede_social",
         "licitacao",
         "outros",
+        "site_instagram",
+        "cliente_recorrente",
+        "contrato_ativo",
+        "outro",
       ],
       lead_status: [
         "novo",

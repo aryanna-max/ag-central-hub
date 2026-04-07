@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useAlerts, type Alert } from "./useAlerts";
+import { useUnresolvedAlerts, type Alert } from "./useAlerts";
 
 const RECIPIENT_TO_MODULE: Record<string, string> = {
   financeiro: "/financeiro",
@@ -10,7 +10,7 @@ const RECIPIENT_TO_MODULE: Record<string, string> = {
 };
 
 export function useModuleAlertCounts() {
-  const { data: allAlerts = [] } = useAlerts();
+  const { data: allAlerts = [] } = useUnresolvedAlerts();
 
   return useMemo(() => {
     const counts: Record<string, number> = {};

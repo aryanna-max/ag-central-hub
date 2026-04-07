@@ -145,7 +145,7 @@ export function useResolveAlert() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, resolved_by }: { id: string; resolved_by?: string }) => {
-      const updates: any = { resolved: true, resolved_at: new Date().toISOString(), read: true };
+      const updates: any = { resolved: true, resolved_at: new Date().toISOString(), read: true, alert_status: "resolvido" };
       if (resolved_by) updates.resolved_by = resolved_by;
       const { error } = await supabase.from("alerts").update(updates).eq("id", id);
       if (error) throw error;
