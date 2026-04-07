@@ -596,24 +596,28 @@ export default function EscalaDiaria() {
                   </TableHeader>
                   <TableBody>
                     {assignments.map((a: any, idx: number) => {
-                      const teamMembers = a.teams?.team_members || [];
-                      const topografo = teamMembers.find((m: any) => m.role === "topografo");
-                      const auxiliares = teamMembers.filter((m: any) => m.role !== "topografo");
-                      const teamEntries = (schedule.entries || []).filter((e: any) => e.team_id === a.team_id);
+                      // Show actually assigned employees from daily_schedule_entries, not preset group members
+                      let teamEntries = (schedule.entries || []).filter((e: any) => e.daily_team_assignment_id === a.id);
+                      // Fallback: if entries don't have daily_team_assignment_id, match by project_id
+                      if (teamEntries.length === 0) {
+                        teamEntries = (schedule.entries || []).filter((e: any) => !e.daily_team_assignment_id && e.project_id === a.project_id);
+                      }
+                      const topografoEntry = teamEntries.find((e: any) => isTopografo(e.employees?.role));
+                      const auxiliarEntries = teamEntries.filter((e: any) => !isTopografo(e.employees?.role));
 
                       return (
                         <TableRow key={a.id} className="border-b">
                           <TableCell className="font-bold text-center">{idx + 1}</TableCell>
                           <TableCell>
-                            <span className="font-bold text-sm uppercase">{topografo?.employees?.name || "—"}</span>
+                            <span className="font-bold text-sm uppercase">{topografoEntry?.employees?.name || "—"}</span>
                           </TableCell>
                           <TableCell>
                             <div className="space-y-0.5">
-                              {auxiliares.length === 0 ? (
+                              {auxiliarEntries.length === 0 ? (
                                 <span className="text-muted-foreground text-sm">—</span>
                               ) : (
-                                auxiliares.map((aux: any) => (
-                                  <p key={aux.id} className="text-sm">{aux.employees?.name}</p>
+                                auxiliarEntries.map((entry: any) => (
+                                  <p key={entry.id} className="text-sm">{entry.employees?.name}</p>
                                 ))
                               )}
                             </div>
