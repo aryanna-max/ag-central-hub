@@ -1,0 +1,77 @@
+EXPORTACAO DO CHAT — AG Central Hub
+Data: 2026-04-07
+=====================================
+
+## PERGUNTA DO USUARIO
+
+Liste todos os arquivos .md na raiz do projeto e mostre o conteudo de cada um.
+
+---
+
+## RESPOSTA
+
+Arquivos .md encontrados na raiz do projeto:
+
+1. README.md
+2. CLAUDE.md
+3. DIAGNOSTICO_SISTEMA.md
+4. ARQUITETURA_SISTEMA.md
+
+---
+
+### 1. README.md (3 linhas)
+
+Apenas o placeholder padrao do Lovable:
+
+# Welcome to your Lovable project
+TODO: Document your project here
+
+---
+
+### 2. CLAUDE.md (407 linhas)
+
+Documento principal de contexto para o Claude Code. Contem:
+- Descricao do projeto (AG Topografia, stack, IDs)
+- Meta de qualidade arquitetural (de 2.8 -> 10/10, atualmente ~5.2)
+- Regras criticas: sem acesso ao Supabase MCP, nao desperdicar creditos Lovable
+- 7 modulos: Comercial, Operacional, Sala Tecnica, Financeiro, Projetos, RH, Diretoria
+- Decisoes arquiteturais (26 fechadas + 7 pendentes): status duplo, teams como grupos rapidos, propostas sem lead, custos sem rateio, etc.
+- Schema do banco: 31 tabelas existentes, 6 a criar, 3 a eliminar
+- Campos sujos a limpar (texto -> FK)
+- Codigos padronizados (projetos, propostas, leads, NFs)
+- Limpeza de clientes duplicados (Direcional, Simproja)
+- Billing types por cliente
+- Fases de migracao SQL (0-4)
+- Frontend: sidebar colapsavel, regras de UI
+
+---
+
+### 3. DIAGNOSTICO_SISTEMA.md (252 linhas)
+
+Relatorio de diagnostico v2.0 (03/04/2026). Contem:
+- Sumario: todos os 9 modulos com status "Funcional"
+- Alteracoes realizadas: 3 fases (filtros criticos, integridade de dados, melhorias) — ~26 itens concluidos
+- Features novas: show_in_operational, aprovacao externa, diarias automaticas, SystemSettings
+- Import/Export: regras de seguranca (o que pode e nao pode importar)
+- Estado do banco: contagens atualizadas, enums migrados, 6 tabelas novas criadas
+- Mapa de dependencias entre modulos (diagrama ASCII)
+- Divida tecnica: ~70 casts "as any" nos hooks
+- Pendencias de dados: veiculos, equipes, BRK, testes mobile
+
+---
+
+### 4. ARQUITETURA_SISTEMA.md (325 linhas)
+
+Documento de arquitetura tecnica. Contem:
+- Stack completa (React + TS + Vite + ShadcnUI + Tailwind + Supabase)
+- Estrutura de pastas detalhada (src/ com components, pages, hooks, lib, integrations)
+- Rotas: Radar, Negocios, Campo, Prancheta, Faturamento, Pessoas, Admin + pagina publica /aprovacao/:token
+- 37 tabelas do banco com FKs principais
+- Enums completos (11 enums)
+- 5 fluxos principais: funil comercial, escala operacional, folha de despesa, processamento tecnico, faturamento
+- Regras de negocio (BRK, status duplo, filtros por modulo, veiculos, aprovacao sem login)
+- Constantes centralizadas (fieldRoles.ts, serviceTypes.ts)
+- Decisoes arquiteturais fechadas (14-26)
+
+=====================================
+FIM DA EXPORTACAO
