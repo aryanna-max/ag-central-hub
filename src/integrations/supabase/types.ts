@@ -1604,6 +1604,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          area_m2: number | null
           bairro: string | null
           billing_type: string | null
           cep: string | null
@@ -1646,6 +1647,9 @@ export type Database = {
           responsible_diretor_id: string | null
           responsible_id: string | null
           responsible_tecnico_id: string | null
+          rrt_emitido_em: string | null
+          rrt_numero: string | null
+          rrt_profissional_id: string | null
           rua: string | null
           scope_description: string | null
           service: string | null
@@ -1656,6 +1660,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          area_m2?: number | null
           bairro?: string | null
           billing_type?: string | null
           cep?: string | null
@@ -1698,6 +1703,9 @@ export type Database = {
           responsible_diretor_id?: string | null
           responsible_id?: string | null
           responsible_tecnico_id?: string | null
+          rrt_emitido_em?: string | null
+          rrt_numero?: string | null
+          rrt_profissional_id?: string | null
           rua?: string | null
           scope_description?: string | null
           service?: string | null
@@ -1708,6 +1716,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          area_m2?: number | null
           bairro?: string | null
           billing_type?: string | null
           cep?: string | null
@@ -1750,6 +1759,9 @@ export type Database = {
           responsible_diretor_id?: string | null
           responsible_id?: string | null
           responsible_tecnico_id?: string | null
+          rrt_emitido_em?: string | null
+          rrt_numero?: string | null
+          rrt_profissional_id?: string | null
           rua?: string | null
           scope_description?: string | null
           service?: string | null
@@ -1807,6 +1819,13 @@ export type Database = {
             columns: ["responsible_tecnico_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_rrt_profissional_id_fkey"
+            columns: ["rrt_profissional_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
