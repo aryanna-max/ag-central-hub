@@ -369,8 +369,7 @@ export default function Equipes() {
                 <button
                   key={emp.id}
                   onClick={() => handleAddMember(emp.id)}
-                  disabled={emp.availability !== "disponivel"}
-                  className="flex items-center justify-between w-full p-3 rounded-lg text-left hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center justify-between w-full p-3 rounded-lg text-left hover:bg-muted/50 transition-colors"
                 >
                   <div>
                     <p className="text-sm font-medium">{emp.name}</p>
