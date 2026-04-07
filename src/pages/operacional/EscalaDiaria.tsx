@@ -70,6 +70,7 @@ export default function EscalaDiaria() {
     project_id: "",
     employee_ids: [] as string[],
     vehicle_id: "",
+    team_id: "",
     benefits: { cafe: false, almoco: false, janta: false, vt: false },
   });
   const [empSearch, setEmpSearch] = useState("");
@@ -225,7 +226,7 @@ export default function EscalaDiaria() {
         .from("daily_team_assignments")
         .insert({
           daily_schedule_id: schedule.id,
-          team_id: (teams || [])[0]?.id || schedule.id,
+          team_id: addForm.team_id || (teams || [])[0]?.id || schedule.id,
           project_id: addForm.project_id,
           vehicle_id: addForm.vehicle_id || null,
         })
@@ -260,7 +261,7 @@ export default function EscalaDiaria() {
 
       qc.invalidateQueries({ queryKey: ["daily-schedule"] });
       setShowAddModal(false);
-      setAddForm({ project_id: "", employee_ids: [], vehicle_id: "", benefits: { cafe: false, almoco: false, janta: false, vt: false } });
+      setAddForm({ project_id: "", employee_ids: [], vehicle_id: "", team_id: "", benefits: { cafe: false, almoco: false, janta: false, vt: false } });
       setEmpSearch("");
       toast.success(`${empIds.length} funcionário(s) adicionado(s) à escala!`);
     } catch {
@@ -272,7 +273,7 @@ export default function EscalaDiaria() {
     const team = (teams || []).find((t: any) => t.id === teamId);
     if (!team) return;
     const memberIds = ((team as any).team_members || []).map((m: any) => m.employee_id);
-    setAddForm((prev) => ({ ...prev, employee_ids: memberIds }));
+    setAddForm((prev) => ({ ...prev, employee_ids: memberIds, team_id: teamId }));
     // Also pre-fill project and vehicle from team defaults
     if ((team as any).default_project_id) {
       setAddForm((prev) => ({ ...prev, project_id: (team as any).default_project_id }));
