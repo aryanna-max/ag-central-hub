@@ -8,7 +8,6 @@ export const FIELD_ROLES = [
   "Topógrafo IV",
   "Ajudante de Topografia",
   "Auxiliar de Topografia",
-  "Auxiliar",
 ] as const;
 
 /** All employee roles — used in the RH form dropdown */
@@ -22,7 +21,6 @@ export const ALL_EMPLOYEE_ROLES = [
   "Topógrafo IV",
   "Ajudante de Topografia",
   "Auxiliar de Topografia",
-  "Auxiliar",
   // Sala Técnica
   "Desenhista",
   "Cadista",
@@ -36,6 +34,7 @@ export const ALL_EMPLOYEE_ROLES = [
   "Diretor",
   "Gerente Operacional",
   "Líder Sala Técnica",
+  "Auxiliar",
   "Motorista",
   "Estagiário",
 ] as const;
@@ -43,7 +42,7 @@ export const ALL_EMPLOYEE_ROLES = [
 const fieldRolesLower = new Set(FIELD_ROLES.map((r) => r.toLowerCase()));
 
 /** Keywords that identify a field role (case-insensitive partial match) */
-const FIELD_KEYWORDS = ["topógrafo", "topografo", "ajudante", "auxiliar"];
+const FIELD_KEYWORDS = ["topógrafo", "topografo", "ajudante", "auxiliar de topografia"];
 
 /** Returns true if the given role is a field (campo) role */
 export function isFieldRole(role?: string | null): boolean {
