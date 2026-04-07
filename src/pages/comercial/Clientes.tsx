@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Building2, Search, Mail, Phone, FileText, Plus, MoreHorizontal, Pencil, Trash2, UserPlus, Users, FolderOpen, Eye, Ban } from "lucide-react";
+import { Building2, Search, Mail, Phone, FileText, Plus, MoreHorizontal, Pencil, Trash2, UserPlus, Users, FolderOpen, Eye, Ban, Download } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,7 @@ import {
 import { useProjects, type Project } from "@/hooks/useProjects";
 import ClientFormDialog from "./ClientFormDialog";
 import { toast } from "sonner";
+import { exportCsv } from "@/lib/exportCsv";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -98,9 +99,16 @@ export default function Clientes() {
           <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
           <p className="text-muted-foreground">Empresas que já contrataram a AG</p>
         </div>
-        <Button onClick={() => { setEditingClient(null); setFormOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" /> Novo Cliente
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => {
+            const rows = filtered.map((c: any) => [c.codigo || "", c.name, c.cnpj || "", c.phone || "", c.email || "", c.cidade || "", c.estado || "", c.segmento || "", c.is_active ? "Ativo" : "Inativo"]);
+            exportCsv(["Código", "Nome", "CNPJ", "Telefone", "Email", "Cidade", "UF", "Segmento", "Status"], rows, "clientes.csv");
+            toast.success(`${rows.length} clientes exportados`);
+          }}><Download className="w-4 h-4 mr-1" /> Exportar</Button>
+          <Button onClick={() => { setEditingClient(null); setFormOpen(true); }}>
+            <Plus className="w-4 h-4 mr-2" /> Novo Cliente
+          </Button>
+        </div>
       </div>
 
       {/* KPIs */}

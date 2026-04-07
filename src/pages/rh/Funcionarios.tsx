@@ -12,8 +12,9 @@ import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Search, Plus, Users, MoreVertical, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { Search, Plus, Users, MoreVertical, Pencil, RefreshCw, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
+import { exportCsv } from "@/lib/exportCsv";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Employee } from "@/hooks/useEmployees";
@@ -225,9 +226,16 @@ export default function Funcionarios() {
             {filtered.length} funcionário{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Button onClick={() => setShowNew(true)}>
-          <Plus className="w-4 h-4 mr-1" /> Novo Funcionário
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => {
+            const rows = filtered.map((e: any) => [e.matricula || "", e.name, e.role || "", e.cpf || "", e.admission_date || "", e.status || "", e.has_vt ? "Sim" : "Não"]);
+            exportCsv(["Matrícula", "Nome", "Função", "CPF", "Admissão", "Status", "VT"], rows, "funcionarios.csv");
+            toast.success(`${rows.length} funcionários exportados`);
+          }}><Download className="w-4 h-4 mr-1" /> Exportar</Button>
+          <Button onClick={() => setShowNew(true)}>
+            <Plus className="w-4 h-4 mr-1" /> Novo Funcionário
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}

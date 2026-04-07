@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Car, Plus, Trash2, Pencil, Eye, Filter, Printer } from "lucide-react";
+import { Car, Plus, Trash2, Pencil, Eye, Filter, Printer, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import VehicleDetailDialog from "@/components/operacional/VehicleDetailDialog";
 import DiariasVeiculos from "./DiariasVeiculos";
 import VehicleReportsTab from "@/components/operacional/VehicleReportsTab";
 import { toast } from "sonner";
+import { exportCsv } from "@/lib/exportCsv";
 
 const statusColors: Record<string, string> = {
   disponivel: "bg-green-600 text-white",
@@ -74,9 +75,11 @@ export default function Veiculos() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => window.print()} className="gap-2">
-            <Printer className="w-4 h-4" /> Imprimir
-          </Button>
+          <Button variant="outline" size="sm" onClick={() => {
+            const rows = filtered.map((v: any) => [v.plate || "", v.model || "", v.brand || "", String(v.year || ""), String(v.km_current || ""), v.responsible_employee?.name || "", v.status || "", v.is_rented ? "Alugado" : "Próprio"]);
+            exportCsv(["Placa", "Modelo", "Marca", "Ano", "KM", "Responsável", "Status", "Tipo"], rows, "veiculos.csv");
+            toast.success(`${rows.length} veículos exportados`);
+          }} className="gap-2"><Download className="w-4 h-4" /> Exportar</Button>
           <Button onClick={openNew} className="gap-2">
             <Plus className="w-4 h-4" /> Novo Veículo
           </Button>

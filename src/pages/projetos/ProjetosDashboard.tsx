@@ -12,7 +12,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
-import { FolderKanban, DollarSign, Clock, FileText, Bell } from "lucide-react";
+import { FolderKanban, DollarSign, Clock, FileText, Bell, Download } from "lucide-react";
+import { exportCsv } from "@/lib/exportCsv";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -206,8 +207,16 @@ export default function ProjetosDashboard() {
 
       {/* Tabela de Projetos */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Projetos</CardTitle>
+          <Button variant="outline" size="sm" onClick={() => {
+            const rows = projects.map((p: any) => {
+              const cl = clients.find((c: any) => c.id === p.client_id);
+              return [p.codigo || "", p.name, cl?.name || p.client || "", p.service || "", EXEC_STATUS_LABELS[p.execution_status || ""] || p.execution_status || "", p.contract_value ? String(p.contract_value) : "", p.billing_type || ""];
+            });
+            exportCsv(["Código", "Nome", "Cliente", "Serviço", "Status Execução", "Valor Contrato", "Tipo Faturamento"], rows, "projetos.csv");
+            toast.success(`${rows.length} projetos exportados`);
+          }}><Download className="w-4 h-4 mr-1" /> Exportar</Button>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>

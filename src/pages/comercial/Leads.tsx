@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, ArrowRightLeft, Target, LayoutGrid, List, FolderKanban, AlertTriangle, TrendingUp, DollarSign, Briefcase } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, ArrowRightLeft, Target, LayoutGrid, List, FolderKanban, AlertTriangle, TrendingUp, DollarSign, Briefcase, Download } from "lucide-react";
 import ColumnToggle, { useColumnVisibility, type ColumnDef } from "@/components/ColumnToggle";
 import { SortableTableHead, useSortableTable } from "@/components/ui/sortable-table-head";
 import LeadConversionDialog from "./LeadConversionDialog";
@@ -31,6 +31,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { exportCsv } from "@/lib/exportCsv";
 import LeadFormDialog from "./LeadFormDialog";
 import LeadDetailDialog from "./LeadDetailDialog";
 
@@ -500,9 +501,16 @@ export default function Leads() {
           </h1>
           <p className="text-muted-foreground text-sm">Pipeline completo — leads até faturamento</p>
         </div>
-        <Button onClick={() => { setEditingLead(null); setFormOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" /> Novo Lead
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => {
+            const rows = leads.map((l: any) => [l.codigo || "", getDisplayName(l, clients), l.origin || "", l.servico || "", l.valor ? String(l.valor) : "", getEmployeeName(l.responsible_id), STATUS_LABELS[l.status] || l.status, l.created_at ? format(new Date(l.created_at), "dd/MM/yyyy") : ""]);
+            exportCsv(["Código", "Empresa", "Origem", "Serviço", "Valor", "Responsável", "Status", "Data"], rows, "leads.csv");
+            toast.success(`${rows.length} leads exportados`);
+          }}><Download className="w-4 h-4 mr-1" /> Exportar</Button>
+          <Button onClick={() => { setEditingLead(null); setFormOpen(true); }}>
+            <Plus className="w-4 h-4 mr-2" /> Novo Lead
+          </Button>
+        </div>
       </div>
 
       {/* KPIs — 2 rows */}

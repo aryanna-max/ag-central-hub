@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Search, Plus, History } from "lucide-react";
+import { Building2, Search, Plus, History, Download } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useClients, useCreateClient, useUpdateClient, type Client } from "@/hooks/useClients";
 import { toast } from "sonner";
+import { exportCsv } from "@/lib/exportCsv";
 
 const TIPOS = ["Construtora", "Incorporadora", "Empresa privada", "Órgão público", "Pessoa física"] as const;
 
@@ -104,7 +105,14 @@ export default function AdminClientes() {
           </h1>
           <p className="text-muted-foreground text-sm">Cadastro e gestão de clientes</p>
         </div>
-        <Button onClick={openNew}><Plus className="w-4 h-4 mr-1" /> Novo Cliente</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => {
+            const rows = filtered.map((c: any) => [c.codigo || "", c.name, c.cnpj || "", c.tipo || "", c.contato_engenheiro || "", c.contato_financeiro || "", c.is_active ? "Ativo" : "Inativo"]);
+            exportCsv(["Código", "Nome", "CNPJ", "Tipo", "Contato Eng.", "Contato Fin.", "Status"], rows, "clientes.csv");
+            toast.success(`${rows.length} clientes exportados`);
+          }}><Download className="w-4 h-4 mr-1" /> Exportar</Button>
+          <Button onClick={openNew}><Plus className="w-4 h-4 mr-1" /> Novo Cliente</Button>
+        </div>
       </div>
 
       <Card>
