@@ -310,10 +310,11 @@ export default function Leads() {
                   ? projects.find((p) => p.id === lead.converted_project_id)
                   : projects.find((p) => p.lead_id === lead.id);
                 const execBadge = linkedProject?.execution_status ? EXEC_STATUS_BADGE[linkedProject.execution_status] : null;
+                const isProjectFinalized = linkedProject && ["entregue", "faturamento", "pago", "concluido"].includes(linkedProject.execution_status || "");
                 return (
                   <Card
                     key={lead.id}
-                    className={`cursor-pointer hover:shadow-md transition-shadow ${isHistory ? "border-dashed" : ""}`}
+                    className={`cursor-pointer hover:shadow-md transition-shadow ${isHistory ? "border-dashed" : ""} ${isProjectFinalized ? "opacity-60" : ""}`}
                     onClick={() => setDetailLead(lead)}
                   >
                     <CardContent className="p-3 space-y-1.5">
@@ -338,9 +339,14 @@ export default function Leads() {
                             <FolderKanban className="w-3 h-3" />
                             {linkedProject.codigo || linkedProject.name}
                           </button>
-                          {execBadge && (
-                            <Badge className={`${execBadge.color} text-[9px] h-4`}>{execBadge.label}</Badge>
-                          )}
+                          <div className="flex gap-1">
+                            {execBadge && (
+                              <Badge className={`${execBadge.color} text-[9px] h-4`}>{execBadge.label}</Badge>
+                            )}
+                            {isProjectFinalized && (
+                              <Badge className="bg-green-200 text-green-800 text-[9px] h-4">Finalizado</Badge>
+                            )}
+                          </div>
                         </div>
                       )}
                     </CardContent>
