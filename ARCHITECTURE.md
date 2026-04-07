@@ -1,8 +1,8 @@
-# Arquitetura - AG Central Hub
+# Arquitetura Tecnica - AG Central Hub
 
-## Visao Geral
-
-Sistema de gestao empresarial para operacoes de campo, projetos e vendas. Construido com React + TypeScript no frontend e Supabase (PostgreSQL) como backend. Atende equipes de topografia e engenharia com modulos para comercial, operacional, financeiro, RH e sala tecnica.
+> **Complemento tecnico** do `ARQUITETURA_SISTEMA.md` (regras de negocio, fluxos, pessoas-chave).
+> Em caso de conflito, `CLAUDE.md` prevalece sobre ambos.
+> Atualizado: 07/04/2026
 
 ---
 
@@ -22,6 +22,7 @@ Sistema de gestao empresarial para operacoes de campo, projetos e vendas. Constr
 | Formularios     | React Hook Form + Zod                         |
 | Testes          | Vitest + Playwright                           |
 | Fila de emails  | pgmq (PostgreSQL Message Queue)               |
+| Hospedagem      | Lovable (deploy + Supabase integrado)         |
 
 ---
 
@@ -29,37 +30,76 @@ Sistema de gestao empresarial para operacoes de campo, projetos e vendas. Constr
 
 ```
 src/
-  pages/            # Componentes de pagina (nivel de rota)
-    auth/           #   Login, senha, recuperacao
-    comercial/      #   Leads, clientes
-    operacional/    #   Equipes, escalas, medicoes, despesas, veiculos
-    projetos/       #   Dashboard e formularios de projetos
-    propostas/      #   Criacao e detalhe de propostas
-    financeiro/     #   Dashboard financeiro
-    rh/             #   Funcionarios, ausencias
-    admin/          #   Usuarios, cadastros (somente master)
-  components/       # Componentes reutilizaveis
-    ui/             #   60+ componentes shadcn/ui
-    operacional/    #   Componentes especificos do modulo operacional
-    projetos/       #   Componentes especificos de projetos
-  hooks/            # Custom hooks (TanStack Query para CRUD)
-  contexts/         # AuthContext (autenticacao e perfil)
+  App.tsx                # Rotas principais
+  main.tsx               # Entry point React
+  components/
+    AppLayout.tsx         # Layout: sidebar + header + outlet
+    AppSidebar.tsx        # Menu lateral colapsavel com badges
+    NotificationsPanel.tsx
+    ui/                   # 60+ componentes shadcn/ui
+    operacional/          # Componentes do modulo Campo
+    projetos/             # Componentes de projetos
+  pages/
+    Dashboard.tsx         # Radar — visao panoramica
+    Comercial.tsx         # Router Negocios
+    comercial/            # Leads (Kanban+Lista), Clientes
+    Operacional.tsx       # Router Campo
+    operacional/          # ProjetosEmCampoKanban, Escala, Despesas, Veiculos
+    SalaTecnica.tsx       # Router Prancheta
+    salatecnica/          # STKanban, STProjectDetail
+    Financeiro.tsx        # Router Faturamento
+    financeiro/           # Dashboard financeiro
+    Propostas.tsx         # Propostas
+    propostas/            # Form, AI, Detail dialogs
+    RH.tsx                # Router Pessoas
+    rh/                   # Funcionarios, Ausencias
+    projetos/             # Dashboard, Kanban, Historico
+    admin/                # Usuarios, Cadastros, Configuracoes
+    AprovacaoExterna.tsx  # Pagina publica /aprovacao/:token
+    auth/                 # Login, ForgotPassword, ResetPassword, ChangePassword
+  hooks/                  # Custom hooks (TanStack Query)
+    useLeads.ts           # CRUD leads + interacoes + migracao 5 status
+    useProposals.ts       # CRUD propostas
+    useClients.ts         # CRUD clientes
+    useProjects.ts        # CRUD projetos + status duplo
+    useProjectServices.ts # Servicos dentro de projetos
+    useEmployees.ts       # CRUD funcionarios + disponibilidade
+    useDailySchedule.ts   # Escala diaria + diarias automaticas
+    useMonthlySchedules.ts # Escala mensal + sync bidirecional
+    useTeams.ts           # Grupos rapidos
+    useVehicles.ts        # Veiculos + useActiveVehicles()
+    useExpenseSheets.ts   # Folhas de despesa semanais
+    useMeasurements.ts    # Medicoes mensais
+    useAlerts.ts          # Alertas entre modulos + polling 30s
+    useModuleAlertCounts.ts # Contagem de alertas por modulo (badges)
+    useTechnicalTasks.ts  # Tarefas da Sala Tecnica (CRUD)
+    useScopeItems.ts      # Itens de escopo de projeto (CRUD)
+    useLeadConversion.ts  # Conversao lead → cliente + projeto + alertas
+    useProjectAuthorizations.ts
+    useFieldPayments.ts   # Pagamentos de campo
+    use-mobile.tsx        # Deteccao de dispositivo movel
+    use-toast.ts          # Toast notifications
+  contexts/
+    AuthContext.tsx        # Autenticacao, perfil, role, isMaster
   integrations/
-    supabase/       #   Cliente e tipos do banco (types.ts auto-gerado)
-  lib/              # Utilitarios e constantes (fieldRoles, utils)
-  assets/           # Imagens e arquivos estaticos
-  test/             # Configuracao de testes
+    supabase/
+      client.ts           # Cliente Supabase configurado
+      types.ts            # Tipos gerados do banco (FONTE DE VERDADE do schema)
+  lib/
+    fieldRoles.ts         # FIELD_ROLES, TECH_ROLES, isCommercialDirector()
+    serviceTypes.ts       # SERVICE_TYPES (15 tipos de servico)
+    utils.ts              # Utilidades gerais
 
 supabase/
-  functions/        # Edge Functions (Deno)
-    _shared/        #   Templates de email compartilhados
-    auth-email-hook/    # Hook de emails de autenticacao
-    create-user/        # Criacao de usuarios (somente master)
-    generate-proposal/  # Geracao de PDF de propostas
-    import-schedules/   # Importacao em lote de escalas
-    process-email-queue/ # Processador da fila de emails
-    seed-users/         # Populacao inicial de dados
-  migrations/       # 20+ arquivos de migracao SQL
+  functions/              # Edge Functions (Deno)
+    _shared/              #   Templates de email compartilhados
+    auth-email-hook/      #   Hook de emails de autenticacao
+    create-user/          #   Criacao de usuarios (somente master)
+    generate-proposal/    #   Geracao de PDF de propostas
+    import-schedules/     #   Importacao em lote de escalas
+    process-email-queue/  #   Processador da fila pgmq
+    seed-users/           #   Populacao inicial de dados
+  migrations/             # 20+ arquivos de migracao SQL
 ```
 
 ---
@@ -69,136 +109,139 @@ supabase/
 ```
 App (QueryClientProvider → AuthProvider → BrowserRouter → Toaster)
 │
-├── Rotas publicas (sem autenticacao)
-│   ├── /login                    AuthRoute → Login
-│   ├── /forgot-password          AuthRoute → ForgotPassword
-│   ├── /reset-password           ResetPassword
-│   └── /change-password          ChangePasswordRoute → ChangePassword
+├── Rotas publicas
+│   ├── /login                         Login
+│   ├── /forgot-password               ForgotPassword
+│   ├── /reset-password                ResetPassword
+│   ├── /change-password               ChangePassword (so se must_change_password)
+│   └── /aprovacao/:token              AprovacaoExterna (publica, sem login)
 │
 └── Rotas protegidas (ProtectedRoute → AppLayout → Outlet)
-    ├── /                         Dashboard
-    ├── /comercial/*              Comercial
-    │   ├── /comercial/leads      Leads (Kanban + Lista)
-    │   └── /comercial/clientes   Clientes
-    ├── /propostas                Propostas
+    │
+    ├── /                              Dashboard (Radar)
+    │
+    ├── /comercial/*                   Comercial (Negocios)
+    │   ├── /comercial/leads           Leads (Kanban + Lista)
+    │   └── /comercial/clientes        Clientes
+    │
+    ├── /propostas                     Propostas
+    │
     ├── /projetos/*
-    │   ├── /projetos/kanban      Projetos (Kanban)
-    │   └── /projetos/dashboard   ProjetosDashboard
-    ├── /operacional/*
-    │   ├── /operacional/dashboard        DashboardOperacional
-    │   ├── /operacional/equipes          Equipes
-    │   ├── /operacional/escala-diaria    EscalaDiaria
-    │   ├── /operacional/escala           EscalaMensal
-    │   ├── /operacional/medicoes         Medicoes
-    │   ├── /operacional/despesas-de-campo DespesasDeCampo
-    │   ├── /operacional/veiculos         Veiculos
-    │   └── /operacional/diarias-veiculos DiariasVeiculos
-    ├── /sala-tecnica/*
-    │   ├── /sala-tecnica/arquivos        (placeholder)
-    │   └── /sala-tecnica/entregas        (placeholder)
-    ├── /financeiro/*
-    │   ├── /financeiro/dashboard         FinanceiroDashboard
-    │   ├── /financeiro/faturamento       (placeholder)
-    │   ├── /financeiro/pagamentos        (placeholder)
-    │   └── /financeiro/contas            (placeholder)
-    ├── /rh/*
-    │   ├── /rh/funcionarios              Funcionarios
-    │   ├── /rh/ausencias                 RelatorioAusencias
-    │   ├── /rh/documentos                (placeholder)
-    │   └── /rh/exames                    (placeholder)
+    │   ├── /projetos/kanban           Projetos (Kanban 6 colunas)
+    │   └── /projetos/dashboard        ProjetosDashboard
+    │
+    ├── /operacional/*                 Operacional (Campo)
+    │   ├── /operacional/projetos-campo   ProjetosEmCampoKanban (default)
+    │   ├── /operacional/escala           Planejamento (escalas)
+    │   ├── /operacional/despesas-de-campo DespesasDeCampoTabs
+    │   └── /operacional/veiculos         Veiculos
+    │
+    ├── /sala-tecnica/*                Sala Tecnica (Prancheta)
+    │   ├── /sala-tecnica/             STKanban (default)
+    │   ├── /sala-tecnica/equipe       Painel de tecnicos
+    │   ├── /sala-tecnica/minhas-tarefas MinhasTarefas
+    │   └── /sala-tecnica/alertas      Alertas da Prancheta
+    │
+    ├── /financeiro/*                  Financeiro (Faturamento)
+    │   └── /financeiro/dashboard      FinanceiroDashboard
+    │
+    ├── /rh/*                          RH (Pessoas)
+    │   ├── /rh/funcionarios           Funcionarios
+    │   └── /rh/ausencias              RelatorioAusencias
+    │
     └── /admin/* (somente master)
-        ├── /admin/usuarios               UserManagement
-        ├── /admin/cadastros              CadastrosBase
-        └── /admin/clientes               Clientes
+        ├── /admin/usuarios            UserManagement
+        ├── /admin/cadastros           CadastrosBase
+        └── /admin/clientes            Clientes
 ```
-
-**Protecao de rotas:**
-- `ProtectedRoute`: redireciona para `/login` se nao autenticado; redireciona para `/change-password` se `must_change_password = true`
-- `AuthRoute`: redireciona para `/` se ja autenticado
-- `ChangePasswordRoute`: acessivel somente quando `must_change_password = true`
 
 ---
 
-## Modulos do Sistema
+## Implementacao dos Modulos
 
-### 1. Dashboard (`/`)
-Painel principal com KPIs de projetos, leads, propostas, alertas e despesas. Visao diferenciada para diretores.
+### Operacional — ProjetosEmCampoKanban (redesign 07/04/2026)
 
-### 2. Comercial (`/comercial`)
-- **Leads**: Kanban + lista com maquina de estados (novo → qualificado → proposta_enviada → aprovado → convertido/perdido). Conversao de lead cria projeto + alertas automaticamente.
-- **Clientes**: Cadastro com CNPJ, segmento e contato
+Kanban de 3 colunas para projetos em fase de campo:
 
-### 3. Propostas (`/propostas`)
-Criacao de propostas com itens de linha, calculo de custos com desconto, geracao assistida por IA. Status: rascunho → enviada → aprovada/rejeitada → convertida.
+| Coluna | execution_status | Acoes |
+|--------|-----------------|-------|
+| Aguardando Campo | `aguardando_campo` | Botao "Iniciar Campo" → `em_campo` + log historico |
+| Em Campo | `em_campo` | Mostra equipe do dia, countdown de prazo, ocorrencias |
+| Campo Concluido | `campo_concluido` | Botao "Finalizar" → `aguardando_processamento` + alerta Prancheta |
 
-### 4. Projetos (`/projetos`)
-Kanban de 6 colunas: Planejamento → Execucao → Entrega → Faturamento → Concluido/Pausado. Servicos com beneficios, medicoes e modos de faturamento (fixo_mensal, diarias, esporadico).
+Cada card mostra:
+- Equipe alocada hoje (de daily_schedule_entries)
+- Prazo de campo com countdown
+- Rastreamento de ocorrencias (retrabalho, clima, equipamento)
+- Alerta "Sem escala hoje" se projeto nao tem alocacao
 
-### 5. Operacional (`/operacional`)
-- **Equipes**: Criacao e atribuicao de membros com roles de campo
-- **Escala Diaria**: Alocacao de funcionarios/veiculos por dia, check-in/out, relatorio diario
-- **Escala Mensal**: Planejamento mensal com sincronizacao para escalas diarias
-- **Medicoes**: Registros de medicao com status (rascunho → aguardando_nf → nf_emitida → pago/cancelado)
-- **Despesas de Campo**: Planilhas de despesas com itens detalhados
-- **Veiculos**: Cadastro, manutencao, alocacao e diarias
+Auto-transicao: botoes no card disparam mudanca de `execution_status` + criam entrada em `project_status_history`.
 
-### 6. Financeiro (`/financeiro`)
-Dashboard de faturamento, pagamentos e acompanhamento por projeto.
+### Sala Tecnica — STKanban (redesign 07/04/2026)
 
-### 7. RH (`/rh`)
-Cadastro de funcionarios com cargos (variantes de Topografo definidas em `lib/fieldRoles.ts`), ausencias (ferias, licenca_medica, afastamento, falta).
+Kanban de 3 colunas com painel lateral de tecnicos:
 
-### 8. Sala Tecnica (`/sala-tecnica`)
-Modulo placeholder para gestao de arquivos tecnicos e entregas.
+| Coluna | Descricao |
+|--------|-----------|
+| Em preparacao | Projetos recem-chegados do campo |
+| Em andamento | Processamento tecnico ativo |
+| Pronto | Revisao concluida, pronto para entrega |
 
-### 9. Admin (`/admin`) - somente role master
-Gestao de usuarios (criacao via Edge Function), cadastros base e clientes.
+**Painel de Tecnicos** (25% da largura): mostra disponibilidade e carga de trabalho. Drag-and-drop para atribuir tecnicos a projetos.
+
+**STProjectDetail**: visao detalhada do projeto com:
+- Edicao inline de scope items (project_scope_items)
+- Criacao/gestao de tarefas tecnicas (technical_tasks)
+- Secao RRT (Registro de Responsabilidade Tecnica)
+- Indicadores de tempo e retrabalho
+- Opcao de retorno ao campo
+
+### Leads — Funil Simplificado (07/04/2026)
+
+O banco mantem 8 valores no enum `lead_status`, mas o **frontend usa apenas 5 status**:
+
+| Status UI | Valor(es) no banco |
+|-----------|--------------------|
+| Novo | `novo` |
+| Em Negociacao | `em_contato`, `qualificado` (migrados no frontend) |
+| Proposta Enviada | `proposta_enviada` |
+| Convertido | `convertido`, `aprovado` (migrados no frontend) |
+| Perdido | `perdido`, `descartado` (migrados no frontend) |
+
+Hook `useLeads.ts` normaliza os status antigos automaticamente nas queries. Transicoes permitidas: `novo → em_negociacao → proposta_enviada → convertido/perdido`.
 
 ---
 
-## Autenticacao e Autorizacao
+## Autenticacao
 
-### Fluxo de Autenticacao
+### Fluxo
 
 ```
-Login (email/senha)
-  ↓
-Supabase Auth (onAuthStateChange)
-  ↓
-Carrega profile + user_roles em paralelo (Promise.all)
-  ↓
-must_change_password? → /change-password
-  ↓
-Sessao ativa (localStorage, auto-refresh)
-  ↓
-AuthContext disponibiliza: user, session, profile, role, isMaster
+Login (email/senha) → Supabase Auth
+  → onAuthStateChange
+  → Promise.all([fetch profile, fetch user_roles])
+  → must_change_password? → /change-password
+  → Sessao ativa (localStorage, auto-refresh)
+  → AuthContext: { user, session, profile, role, isMaster }
 ```
 
 ### Criacao de Usuarios (Edge Function `create-user`)
-1. Verifica header Authorization do chamador
-2. Confirma role `master` via tabela user_roles
+1. Verifica Authorization header do chamador
+2. Confirma role `master` via user_roles
 3. Cria usuario via Supabase Admin API (`email_confirm: true`)
 4. Insere profile com `must_change_password: true`
-5. Atribui role na tabela user_roles
+5. Atribui role
 
-### Roles e Acesso
-
-| Role           | Acesso                                    |
-|----------------|-------------------------------------------|
-| master         | Acesso total + Admin + criacao de usuarios|
-| diretor        | Dashboard estrategico                     |
-| operacional    | Operacoes de campo, equipes, escalas      |
-| comercial      | Leads, clientes, propostas                |
-| financeiro     | Dados financeiros                         |
-| sala_tecnica   | Entregas tecnicas                         |
+### Protecao de Rotas
+- `ProtectedRoute`: redireciona `/login` se nao autenticado; `/change-password` se must_change_password
+- `AuthRoute`: redireciona `/` se ja autenticado
+- `/aprovacao/:token`: publica, sem autenticacao
 
 ---
 
 ## Padroes de Dados (TanStack Query)
 
 ### Chaves de Query
-
-Hierarquicas para invalidacao granular:
 
 ```typescript
 ["projects"]                          // Colecao raiz
@@ -208,11 +251,10 @@ Hierarquicas para invalidacao granular:
 ["lead_interactions", leadId]         // Recurso aninhado
 ["monthly-schedules", month, year]    // Parametrizado por tempo
 ["alerts", "unread_count"]            // Agregacao
+["operacional-alerts"]                // Alertas nao resolvidos do operacional
 ```
 
 ### Padrao de Mutations
-
-Todas as mutations seguem o mesmo padrao com invalidacao automatica:
 
 ```typescript
 export function useCreateProject() {
@@ -231,7 +273,7 @@ export function useCreateProject() {
 
 ### Invalidacao Seletiva
 
-Updates invalidam tanto a colecao quanto o recurso individual:
+Updates invalidam colecao + recurso individual:
 
 ```typescript
 onSuccess: (_, vars) => {
@@ -242,7 +284,7 @@ onSuccess: (_, vars) => {
 
 ### Composicao de Mutations
 
-Operacoes complexas orquestram multiplas mutations. Exemplo: conversao de lead cria projeto + alertas em sequencia via `useLeadConversion()`.
+`useLeadConversion()` orquestra multiplas mutations em sequencia: cria cliente (se novo) → cria projeto → cria alertas para Campo/Prancheta/Faturamento.
 
 ### Estrategias de Refresh
 
@@ -251,17 +293,15 @@ Operacoes complexas orquestram multiplas mutations. Exemplo: conversao de lead c
 | Projetos        | `staleTime: 0`, `refetchOnMount: "always"`  |
 | Alertas         | `refetchInterval: 30000` (polling 30s)      |
 | Confirmacoes    | `refetchInterval: 30000` (polling 30s)      |
-| Demais entidades| Default TanStack (staleTime ~5min)           |
+| Demais entidades| Default TanStack (~5min staleTime)           |
 
 ### Queries Condicionais
-
-Queries dependentes usam flag `enabled` para evitar fetches desnecessarios:
 
 ```typescript
 export function useLeadById(id: string | undefined) {
   return useQuery({
     queryKey: ["leads", id],
-    enabled: !!id,
+    enabled: !!id,  // So busca quando id existe
     queryFn: async () => { ... }
   });
 }
@@ -275,7 +315,7 @@ export function useLeadById(id: string | undefined) {
 
 ```
 AppLayout (flex row, min-h-screen)
-├── AppSidebar (largura 16px|64px, colapsavel)
+├── AppSidebar (16px|64px, colapsavel)
 │   ├── Logo
 │   ├── Navegacao principal (hierarquica com icones)
 │   │   └── Badges de alerta por modulo (useModuleAlertCounts)
@@ -292,126 +332,69 @@ AppLayout (flex row, min-h-screen)
 
 ### Padrao de Formularios
 
-Consistente em todo o sistema:
 - `Dialog` ou `Drawer` do shadcn/ui como container
-- `React Hook Form` para gerenciamento de estado do formulario
+- `React Hook Form` para estado do formulario
 - `Zod` para validacao de schema
-- Mesmo componente para criacao e edicao (modo controlado por props)
-
-### Responsividade
-
-- Hook `use-mobile` detecta dispositivos moveis
-- Sidebar colapsa automaticamente
-- Layouts adaptaveis com grid Tailwind
+- Mesmo componente para criacao e edicao
 
 ---
 
-## Banco de Dados (Supabase/PostgreSQL)
+## Sistema de Alertas
 
-### Tabelas Principais
+### Fluxo Inter-Modulo
 
-| Tabela                          | Descricao                                |
-|---------------------------------|------------------------------------------|
-| profiles                        | Perfis de usuario (fk auth.users)        |
-| user_roles                      | Atribuicao de roles por usuario          |
-| employees                       | Cadastro de funcionarios (CPF, cargo)    |
-| teams / team_members            | Equipes e membros (CASCADE delete)       |
-| projects                        | Projetos (status, valor, datas, billing) |
-| project_services                | Servicos dentro de projetos              |
-| project_benefits                | Beneficios por servico                   |
-| clients                         | Clientes (CNPJ, segmento, endereco)     |
-| leads                           | Leads comerciais com interacoes          |
-| proposals / proposal_items      | Propostas e itens de linha               |
-| measurements                    | Medicoes de campo por projeto            |
-| daily_schedules                 | Escalas diarias (cabecalho)              |
-| daily_schedule_entries          | Presenca individual (check-in/out)       |
-| daily_team_assignments          | Atribuicao equipe→dia (projeto, veiculo) |
-| monthly_schedules               | Escalas mensais de planejamento          |
-| field_expense_sheets/items      | Planilhas de despesas de campo           |
-| vehicles                        | Frota de veiculos                        |
-| vehicle_payment_history         | Historico de pagamentos de veiculos      |
-| employee_project_authorizations | Autorizacoes de funcionarios por projeto |
-| alerts                          | Alertas do sistema (prioridade, modulo)  |
-| schedule_confirmations          | Confirmacoes de escala                   |
-
-### Enums
-
-```sql
-employee_status:    disponivel | ferias | licenca | afastado | desligado
-vehicle_status:     disponivel | em_uso | manutencao | indisponivel
-attendance_status:  presente | falta | justificado | atrasado
-alert_priority:     urgente | importante | informacao
-alert_recipient:    operacional | comercial | financeiro | rh | sala_tecnica | diretoria | todos
-app_role:           master | diretor | operacional | sala_tecnica | comercial | financeiro
-absence_type:       ferias | licenca_medica | licenca_maternidade | licenca_paternidade | afastamento | falta | outros
-billing_mode:       fixo_mensal | diarias | esporadico
+```
+Operacional → Prancheta: campo_concluido (auto, ao finalizar campo)
+Prancheta → Faturamento: projeto entregue (auto, ao concluir processamento)
+Qualquer modulo → Financeiro: email automatico para Alcione
 ```
 
-### Padroes de Schema
-
-**RLS (Row Level Security):**
-Habilitado em todas as tabelas. Atualmente com politicas permissivas para usuarios autenticados (a ser refinado por role):
-```sql
-CREATE POLICY "Authenticated users full access"
-  ON public.employees FOR ALL TO authenticated
-  USING (true) WITH CHECK (true);
-```
-
-**Triggers de updated_at:**
-Todas as tabelas com coluna `updated_at` possuem trigger automatico:
-```sql
-CREATE TRIGGER update_clients_updated_at
-  BEFORE UPDATE ON public.clients
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-```
-
-**Restricoes compostas:**
-```sql
--- Um registro por funcionario por dia
-UNIQUE(daily_schedule_id, employee_id)
--- Um membro por equipe
-UNIQUE(team_id, employee_id)
-```
-
-**Cascading deletes:**
-Membros de equipe e entradas de escala usam `ON DELETE CASCADE` para manter integridade referencial.
+### Implementacao
+- Tabela `alerts` com `alert_recipient` (enum por modulo)
+- `useAlerts()`: queries filtradas por modulo com polling 30s
+- `useModuleAlertCounts()`: contagem de nao-resolvidos para badges na sidebar
+- Resolucao: botao "Resolver" marca `resolved = true`
+- STKanban mostra icone de sino (bell) em cards com `has_active_alert`
 
 ---
 
-## Infraestrutura de Email
+## Banco de Dados — Tabelas Complementares
 
-### Arquitetura da Fila (pgmq)
+> Tabelas principais documentadas em `ARQUITETURA_SISTEMA.md`. Aqui apenas as nao listadas la.
+
+| Tabela | Funcao |
+|--------|--------|
+| technical_tasks | Tarefas da Sala Tecnica (status: pendente, em_andamento, concluida, cancelada) |
+| project_scope_items | Itens de escopo por projeto (ART/RRT, com is_completed) |
+| field_expense_discounts | Descontos aplicados em folhas de despesa |
+| system_settings | Configuracoes do sistema (key-value) |
+| calendar_events | Eventos de calendario (com google_event_id) |
+| email_send_log | Log de envio de emails |
+| email_send_state | Estado de rate limiting da fila |
+| suppressed_emails | Emails bloqueados (bounce, complaint, unsubscribe) |
+
+### Views
+
+| View | Funcao |
+|------|--------|
+| vw_prazos_criticos | Projetos com prazos proximos/vencidos |
+| vw_tarefas_dia | Tarefas tecnicas do dia com dados do tecnico |
+
+---
+
+## Infraestrutura de Email (pgmq)
 
 ```
-Supabase Edge Function (process-email-queue)
-  ↓
-pgmq (PostgreSQL Message Queue)
-  ├── auth_emails       (TTL 15min, alta prioridade)
-  └── transactional_emails (TTL 60min)
-  ↓
-Envio com rate limiting
-  ↓
-email_send_log (auditoria)
-  ↓
-Falhas → Dead Letter Queue (DLQ)
+Edge Function (process-email-queue)
+  → pgmq (filas PostgreSQL nativas)
+    ├── auth_emails         (TTL 15min, alta prioridade)
+    └── transactional_emails (TTL 60min)
+  → Envio com rate limiting (batch_size, delay_ms em email_send_state)
+  → email_send_log (auditoria: pending/sent/failed/dlq)
+  → Falhas → Dead Letter Queue
 ```
 
-### Tabelas de Suporte
-
-| Tabela               | Descricao                                         |
-|----------------------|---------------------------------------------------|
-| email_send_log       | Log de envio (status: pending/sent/failed/dlq)    |
-| email_send_state     | Estado de rate limiting (batch_size, delay_ms)     |
-| suppressed_emails    | Emails suprimidos (bounce, complaint, unsubscribe) |
-| email_unsubscribe_tokens | Tokens de unsubscribe                         |
-
-### Seguranca
-
-Funcoes de fila restritas a `service_role` com `SECURITY DEFINER`:
-```sql
-REVOKE EXECUTE ON FUNCTION public.enqueue_email FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.enqueue_email TO service_role;
-```
+Funcoes de fila restritas a `service_role` com `SECURITY DEFINER`.
 
 ---
 
@@ -428,11 +411,36 @@ GRANT EXECUTE ON FUNCTION public.enqueue_email TO service_role;
 
 ---
 
+## Padroes de Schema
+
+### RLS (Row Level Security)
+Habilitado em todas as tabelas. Politicas atuais permissivas para `authenticated`:
+```sql
+CREATE POLICY "Authenticated users full access"
+  ON public.employees FOR ALL TO authenticated
+  USING (true) WITH CHECK (true);
+```
+**Divida tecnica**: refinar por role.
+
+### Triggers de updated_at
+Todas as tabelas com `updated_at` possuem trigger automatico via `update_updated_at_column()`.
+
+### Restricoes Compostas
+```sql
+UNIQUE(daily_schedule_id, employee_id)  -- 1 entrada por funcionario/dia
+UNIQUE(team_id, employee_id)            -- 1 membro por equipe
+```
+
+### Cascading Deletes
+`team_members`, `daily_schedule_entries`, `proposal_items` usam `ON DELETE CASCADE`.
+
+---
+
 ## Variaveis de Ambiente
 
 ```
 VITE_SUPABASE_URL              # URL da instancia Supabase
-VITE_SUPABASE_PUBLISHABLE_KEY  # Chave publica (anon key) do Supabase
+VITE_SUPABASE_PUBLISHABLE_KEY  # Chave publica (anon key)
 ```
 
 ---
@@ -451,17 +459,21 @@ npm run preview    # Preview do build de producao
 
 ---
 
-## Decisoes Arquiteturais e Dividas Tecnicas
+## Nota Arquitetural
 
-### Decisoes
+**Estado atual: ~5.2/10** (07/04/2026)
 
-1. **TanStack Query como camada de dados**: Toda comunicacao com Supabase passa por hooks dedicados, centralizando cache, invalidacao e tratamento de erros.
-2. **shadcn/ui + Radix**: Componentes acessiveis e composiveis sem lock-in de biblioteca UI.
-3. **Edge Functions para operacoes privilegiadas**: Criacao de usuarios e processamento de email requerem `service_role`, isolados em funcoes serverless.
-4. **pgmq para emails**: Fila nativa do PostgreSQL evita dependencia externa para processamento assincrono.
+| Faixa | Marco | Status |
+|-------|-------|--------|
+| 5-6   | SQL Fases 1-4 (campos sujos, tabelas novas/mortas) | Em andamento |
+| 6-7   | Sala Tecnica funcional, Financeiro pipeline, execution_status em todos | Parcial (ST redesenhada) |
+| 7-8   | Alertas automaticos, aprovacao despesas WhatsApp, relatorios | Pendente |
+| 8-9   | Dados limpos, clientes deduplicados, ViaCEP, historico status | Pendente |
+| 9-10  | Import/export, mobile polido, filtros avancados, zero bugs | Pendente |
 
-### Dividas Tecnicas
-
-1. **RLS permissivo**: Politicas atuais concedem acesso total a usuarios autenticados. Necessita refinamento por role.
-2. **Modulos placeholder**: Sala Tecnica, partes de Financeiro e RH (documentos, exames) ainda sao placeholders.
-3. **Tipos auto-gerados**: `types.ts` depende de regeneracao quando schema muda (`supabase gen types`).
+### Dividas Tecnicas Principais
+1. **RLS permissivo** — todas as tabelas com acesso total para authenticated
+2. **Lead enum desalinhado** — banco tem 8 valores, frontend usa 5 (migracao no hook)
+3. **Modulos placeholder** — partes de Financeiro e RH (documentos, exames)
+4. **Campos sujos** — texto livre onde deveria ter FK (projects.responsible, etc.)
+5. **Tabelas mortas** — attendance, schedule_confirmations, email_unsubscribe_tokens a eliminar
