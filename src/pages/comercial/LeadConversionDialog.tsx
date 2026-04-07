@@ -210,9 +210,14 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
         empresa_faturadora: empresaFaturadora,
         billing_type: billingType,
         status: "planejamento",
+        execution_status: "aguardando_campo",
         lead_id: lead.id,
         start_date: new Date().toISOString().split("T")[0],
       } as any);
+
+      if (!project?.id) {
+        throw new Error("Projeto não foi criado — resposta vazia do banco");
+      }
 
       // Step 4: Update lead
       await updateLead.mutateAsync({
@@ -264,7 +269,9 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
       onOpenChange(false);
       onConverted?.();
     } catch (err: any) {
-      toast.error(err?.message || "Erro ao converter lead");
+      console.error("Erro na conversão de lead:", err);
+      const msg = err?.message || "Erro desconhecido";
+      toast.error(`Erro ao converter: ${msg}`, { duration: 8000 });
     } finally {
       setIsPending(false);
     }
