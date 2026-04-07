@@ -1,147 +1,186 @@
 # ARQUITETURA DO SISTEMA AG CENTRAL HUB
-
-## O que e este sistema
-
-Sistema de gestao interna da **AG Topografia**, empresa de topografia e cartografia em Pernambuco. Gerencia o ciclo completo: captacao de clientes (Comercial) → execucao de campo (Operacional) → processamento tecnico (Sala Tecnica) → faturamento (Financeiro).
-
-**URL:** Hospedado no Lovable (lovable.dev)
-**Repositorio:** github.com/aryanna-max/ag-central-hub
+> Versão: 2.0 | Atualizado: 07/04/2026
+> Consultar quando implementar ou modificar módulos.
+> Em caso de conflito com outros documentos, CLAUDE.md prevalece.
 
 ---
 
-## Stack tecnica
+## 1. VISÃO GERAL
 
-- **Frontend:** React + TypeScript + Vite
-- **UI:** ShadcnUI + TailwindCSS
-- **Backend:** Supabase (PostgreSQL + Auth + RLS)
-- **Hospedagem:** Lovable (gerencia deploy e Supabase integrado)
-- **Estado:** React Query (TanStack Query) para cache e sync
-- **Roteamento:** React Router v6
+Sistema de gestão interna da **AG Topografia e Construções** (Gonzaga e Berlim Construções Ltda, CNPJ 16.841.054/0001-10), Aliança/PE.
+
+**Dois CNPJs ativos:**
+- Gonzaga e Berlim Construções Ltda — CNPJ 16.841.054/0001-10
+- AG Cartografia — CNPJ 48.282.440/0001-05
+
+**O sistema gerencia o ciclo completo:**
+```
+Captação (Negócios) → Campo (Operacional) → Processamento (Prancheta) → Faturamento
+```
 
 ---
 
-## Estrutura de pastas
+## 2. STACK TÉCNICA
+
+| Camada | Tecnologia |
+|---|---|
+| Frontend | React + TypeScript + Vite |
+| UI | ShadcnUI + TailwindCSS |
+| Backend | Supabase (PostgreSQL + Auth + RLS) |
+| Estado | TanStack Query (React Query) |
+| Roteamento | React Router v6 |
+| Hospedagem | Lovable (gerencia deploy + Supabase integrado) |
+
+---
+
+## 3. ESTRUTURA DE PASTAS
 
 ```
 src/
 ├── App.tsx                    # Rotas principais
 ├── components/
-│   ├── AppSidebar.tsx         # Menu lateral colapsavel
-│   ├── AppLayout.tsx          # Layout com sidebar + conteudo
-│   ├── ui/                    # Componentes ShadcnUI (Button, Card, etc)
-│   └── operacional/           # Componentes especificos do modulo
+│   ├── AppSidebar.tsx         # Menu lateral colapsável
+│   ├── AppLayout.tsx          # Layout com sidebar + conteúdo
+│   ├── ui/                    # Componentes ShadcnUI
+│   ├── operacional/           # Componentes do módulo Campo
+│   └── mobile/                # Componentes mobile (fase futura)
 ├── pages/
-│   ├── Dashboard.tsx          # Radar — visao panoramica
-│   ├── Comercial.tsx          # Router do modulo Negocios
+│   ├── Dashboard.tsx          # Radar — visão panorâmica
+│   ├── Comercial.tsx          # Router Negócios
 │   ├── comercial/             # Leads, Propostas, Clientes
-│   ├── Operacional.tsx        # Router do modulo Campo
-│   ├── operacional/           # Escalas, Veiculos, Equipes, Despesas
-│   ├── SalaTecnica.tsx        # Router do modulo Prancheta
+│   ├── Operacional.tsx        # Router Campo
+│   ├── operacional/           # Escalas, Veículos, Equipes, Despesas
+│   ├── SalaTecnica.tsx        # Router Prancheta
 │   ├── salatecnica/           # Kanban, Tarefas, Alertas
-│   ├── Financeiro.tsx         # Router do modulo Faturamento
-│   ├── financeiro/            # Medicoes, Pipeline, Relatorios
-│   ├── RH.tsx                 # Router do modulo Pessoas
-│   ├── rh/                    # Funcionarios, Ausencias
-│   ├── projetos/              # Dashboard, Kanban, Historico
-│   ├── admin/                 # Usuarios, Cadastros, Configuracoes
-│   ├── AprovacaoExterna.tsx   # Pagina publica /aprovacao/:token
+│   ├── Financeiro.tsx         # Router Faturamento
+│   ├── financeiro/            # Medições, Pipeline, Relatórios
+│   ├── RH.tsx                 # Router Pessoas
+│   ├── rh/                    # Funcionários, Férias, Ausências
+│   ├── projetos/              # Hub central de projetos
+│   ├── admin/                 # Usuários, Cadastros, Configurações
+│   ├── AprovacaoExterna.tsx   # Página pública /aprovacao/:token
 │   └── auth/                  # Login, Reset Password
 ├── hooks/
-│   ├── useLeads.ts            # CRUD leads + interacoes
-│   ├── useProposals.ts        # CRUD propostas
-│   ├── useClients.ts          # CRUD clientes
-│   ├── useProjects.ts         # CRUD projetos
-│   ├── useProjectServices.ts  # Servicos dentro de projetos
-│   ├── useEmployees.ts        # CRUD funcionarios + disponibilidade
-│   ├── useDailySchedule.ts    # Escala diaria + diarias automaticas
-│   ├── useMonthlySchedules.ts # Escala mensal + sync bidirecional
-│   ├── useTeams.ts            # Grupos rapidos
-│   ├── useVehicles.ts         # Veiculos + useActiveVehicles()
-│   ├── useExpenseSheets.ts    # Folhas de despesa semanais
-│   ├── useMeasurements.ts     # Medicoes mensais
-│   ├── useAlerts.ts           # Alertas entre modulos
-│   ├── useTechnicalTasks.ts   # Tarefas da Sala Tecnica
-│   └── useScopeItems.ts       # Itens de escopo de projeto
+│   ├── useLeads.ts
+│   ├── useProposals.ts
+│   ├── useClients.ts
+│   ├── useProjects.ts
+│   ├── useProjectServices.ts
+│   ├── useEmployees.ts
+│   ├── useDailySchedule.ts
+│   ├── useMonthlySchedules.ts
+│   ├── useTeams.ts
+│   ├── useVehicles.ts         # + useActiveVehicles() para dropdowns
+│   ├── useExpenseSheets.ts
+│   ├── useMeasurements.ts
+│   ├── useAlerts.ts
+│   ├── useModuleAlertCounts.ts
+│   ├── useTechnicalTasks.ts
+│   ├── useScopeItems.ts
+│   ├── useCepAutofill.ts
+│   ├── useLeadConversion.ts
+│   ├── useProjectAuthorizations.ts
+│   ├── use-mobile.tsx         # useIsMobile() — detecção de tela
+│   └── use-toast.ts
 ├── lib/
 │   ├── fieldRoles.ts          # FIELD_ROLES, TECH_ROLES, isCommercialDirector()
-│   ├── serviceTypes.ts        # SERVICE_TYPES (15 tipos de servico)
-│   └── utils.ts               # Utilidades gerais
+│   ├── serviceTypes.ts        # SERVICE_TYPES (15 tipos de serviço)
+│   └── utils.ts
 ├── integrations/
 │   └── supabase/
-│       ├── client.ts          # Cliente Supabase configurado
-│       └── types.ts           # Tipos gerados do banco (fonte de verdade)
+│       ├── client.ts
+│       └── types.ts           # ← FONTE DE VERDADE DO SCHEMA
 └── contexts/
-    └── AuthContext.tsx         # Autenticacao e roles
+    └── AuthContext.tsx
 ```
 
 ---
 
-## Modulos do sistema
+## 4. ROTAS
 
-### Nomes de exibicao vs rotas internas
-
-| Sidebar | Rota interna | Funcao |
-|---------|-------------|--------|
-| Radar | `/` | Dashboard panoramico — Diretoria |
-| Negocios | `/comercial/*` | Leads, Propostas, Clientes — Comercial |
-| Campo | `/operacional/*` | Escalas, Veiculos, Equipes, Despesas — Operacional |
-| Prancheta | `/sala-tecnica/*` | Kanban tecnico, Tarefas, Alertas — Sala Tecnica |
-| Faturamento | `/financeiro/*` | Medicoes, Pipeline, Relatorios — Financeiro |
-| Pessoas | `/rh/*` | Funcionarios, Ferias, Ausencias — RH |
-| Admin | `/admin/*` | Usuarios, Cadastros Base, Configuracoes — Master |
-
-### Pagina publica (sem login)
-| Rota | Funcao |
-|------|--------|
-| `/aprovacao/:token` | Aprovacao de folha de despesa via celular |
+| Label UI | Rota | Acesso |
+|---|---|---|
+| Radar | `/` | diretor, master |
+| Negócios | `/comercial/*` | comercial, diretor, master |
+| Campo | `/operacional/*` | operacional, diretor, master |
+| Prancheta | `/sala-tecnica/*` | sala_tecnica, diretor, master |
+| Faturamento | `/financeiro/*` | financeiro, diretor, master |
+| Pessoas | `/rh/*` | financeiro, master |
+| Base | `/admin/*` | master |
+| Aprovação externa | `/aprovacao/:token` | **pública, sem login** |
 
 ---
 
-## Banco de dados — 37 tabelas
+## 5. BANCO DE DADOS — 40 TABELAS
 
 ### Tabelas principais
 
-| Tabela | Funcao | FKs principais |
-|--------|--------|---------------|
+| Tabela | Função | FKs principais |
+|---|---|---|
 | leads | Funil comercial | client_id, responsible_id |
-| lead_interactions | Historico de contatos | lead_id |
-| clients | Cadastro de clientes | lead_id |
+| lead_interactions | Histórico de contatos | lead_id |
+| clients | Cadastro de clientes | — |
 | client_contacts | Contatos por cliente | client_id |
 | proposals | Propostas comerciais | lead_id, client_id, responsible_id |
 | proposal_items | Itens da proposta | proposal_id |
-| projects | Projetos (hub central) | client_id, lead_id, responsible_id |
-| project_services | Servicos dentro do projeto | project_id, proposal_id |
+| projects | Hub central | client_id, lead_id, responsible_id |
+| project_services | Serviços dentro do projeto | project_id, proposal_id |
 | project_scope_items | Itens de escopo (ART/RRT) | project_id |
-| project_status_history | Log de mudancas de status | project_id |
-| employees | Funcionarios | — |
-| employee_vacations | Periodos de ferias | employee_id |
-| teams | Grupos rapidos (presets) | leader_id, default_vehicle_id, default_project_id |
+| project_status_history | Log de mudanças de status | project_id |
+| project_benefits | Benefícios por projeto | project_id |
+| employees | Funcionários | — |
+| employee_vacations | Períodos de férias | employee_id |
+| employee_project_authorizations | Autorizações por projeto | employee_id, project_id |
+| teams | Grupos rápidos (presets) | leader_id, default_vehicle_id, default_project_id |
 | team_members | Membros dos grupos | team_id, employee_id |
-| daily_schedules | Escala do dia | — |
-| daily_schedule_entries | Funcionario no dia | daily_schedule_id, employee_id, project_id |
+| daily_schedules | Escala do dia | project_id, created_by_id |
+| daily_schedule_entries | Funcionário no dia | daily_schedule_id, employee_id, project_id |
 | daily_team_assignments | Grupo alocado no dia | daily_schedule_id, team_id, project_id |
-| monthly_schedules | Previsao mensal | team_id, project_id, vehicle_id |
-| vehicles | Frota de veiculos | responsible_employee_id |
-| vehicle_payment_history | Diarias automaticas por mes | vehicle_id |
+| monthly_schedules | Previsão mensal | team_id, project_id, vehicle_id |
+| vehicles | Frota | responsible_employee_id |
+| vehicle_payment_history | Diárias automáticas | vehicle_id |
 | field_expense_sheets | Folha semanal de despesa | approval_token |
 | field_expense_items | Itens da folha | sheet_id, employee_id, project_id |
-| measurements | Medicoes mensais | project_id |
+| field_expense_discounts | Descontos nas folhas | sheet_id |
+| measurements | Medições mensais | project_id, project_service_id |
 | invoices | NFs e recibos | project_id |
 | invoice_items | Itens da NF | invoice_id, project_service_id |
-| technical_tasks | Tarefas da Sala Tecnica | project_id, assigned_to_id, scope_item_id |
-| alerts | Alertas entre modulos | — |
-| profiles | Perfis de usuario (Supabase Auth) | — |
-| user_roles | Roles por usuario | user_id |
-| system_settings | Configuracoes do sistema | — |
+| technical_tasks | Tarefas da Prancheta | project_id, assigned_to_id, scope_item_id |
+| alerts | Alertas entre módulos | — |
+| calendar_events | Eventos de calendário | created_by |
+| profiles | Perfis de usuário (Auth) | — |
+| user_roles | Roles por usuário | user_id |
+| system_settings | Configurações do sistema | — |
+| email_send_log | Log de emails enviados | — |
+| email_send_state | Estado da fila de emails | — |
+| suppressed_emails | Emails bloqueados | — |
 
-### Enums do banco
+Views: `vw_prazos_criticos`, `vw_tarefas_dia`
+
+### Colunas críticas em `projects`
+```
+execution_status, needs_tech_prep, show_in_operational,
+billing_type,
+field_started_at, field_deadline, delivery_deadline,
+field_completed_at, delivered_at,
+field_days_estimated, delivery_days_estimated,
+scope_description, cep, rua, bairro, numero, cidade, estado,
+client_id, lead_id, responsible_id,
+responsible_comercial_id, responsible_diretor_id,
+responsible_campo_id, responsible_tecnico_id
+```
+
+---
+
+## 6. ENUMS COMPLETOS
 
 | Enum | Valores |
-|------|---------|
-| lead_status | novo, em_contato, qualificado, proposta_enviada, aprovado, convertido, perdido, descartado |
-| execution_status | aguardando_campo, em_campo, campo_concluido, aguardando_processamento, em_processamento, revisao, aprovado, entregue, faturamento, pago |
+|---|---|
+| execution_status | aguardando_campo → em_campo → campo_concluido → aguardando_processamento → em_processamento → revisao → aprovado → entregue → faturamento → pago |
 | project_status | planejamento, execucao, entrega, faturamento, concluido, pausado |
+| lead_status | novo, em_contato, qualificado, proposta_enviada, aprovado, convertido, perdido, descartado |
 | proposal_status | rascunho, enviada, aprovada, rejeitada, expirada |
+| measurement_status | rascunho, aguardando_aprovacao, aprovada, nf_emitida, paga, cancelada |
 | employee_status | disponivel, ferias, licenca, afastado, desligado |
 | vehicle_status | disponivel, em_uso, manutencao, indisponivel |
 | billing_mode | fixo_mensal, diarias, esporadico |
@@ -149,176 +188,160 @@ src/
 | tipo_documento | nf, recibo |
 | removal_reason | campo_concluido, pausa_temporaria, reagendado, clima, equipamento, falta_equipe |
 | app_role | master, diretor, operacional, sala_tecnica, comercial, financeiro |
+| alert_recipient | operacional, comercial, financeiro, rh, sala_tecnica, diretoria, todos |
 
 ---
 
-## Fluxos principais do sistema
+## 7. FLUXOS PRINCIPAIS
 
-### 1. Funil Comercial (Negocios)
+### Fluxo 1 — Funil Comercial
 ```
 Lead novo
-  → Em contato → Qualificado
-    → Proposta enviada (cria proposta, status auto)
-      → Aprovado (proposta aprovada)
-        → Convertido (cria projeto + cliente)
-  ou → Perdido (com motivo obrigatorio)
+  → em_contato → qualificado
+  → proposta_enviada (cria proposta, status automático)
+  → aprovado (proposta aprovada pelo cliente)
+  → convertido (cria projeto + cliente se novo)
+  ou → perdido (motivo obrigatório)
+
+Projeto criado:
+  → Tarefa automática: criar pasta servidor F:\Dados\Dados\AG\OPERACIONAL\{ANO}\{CÓDIGO}\
+  → Alerta para Campo (operacional) + Prancheta (sala_tecnica) + Faturamento (financeiro)
 ```
 
-### 2. Escala Operacional (Campo)
+### Fluxo 2 — Escala Operacional
 ```
-Vespera (~17h):
-  Gerente Operacional abre Escala Diaria
-    → Cria escala de amanha (pre-preenche da mensal se houver)
-    → Ajusta equipes/funcionarios/veiculos/projeto
-    → Exporta relatorio → envia PNG/PDF no grupo WhatsApp
+Véspera (~17h) — Marcelo:
+  Abre Escala Diária de amanhã
+  → Pré-preenche da mensal (se houver)
+  → Ajusta equipes/funcionários/veículos/projeto
+  → Exporta relatório → envia PNG no grupo WhatsApp
 
-Dia real:
-  Gerente Operacional abre escala do dia
-    → Ajusta trocas (quem faltou, veiculo quebrou)
-    → Marca presenca
-    → Fecha escala = dado real, travado
-    → Diarias de veiculos geradas automaticamente
+Dia real — Marcelo:
+  Ajusta trocas (quem faltou, veículo quebrou)
+  → Fecha escala = dado real, travado (is_closed = true)
+  → Diárias de veículos geradas automaticamente (vehicle_payment_history)
 ```
 
-### 3. Folha de Despesa Semanal
+### Fluxo 3 — Folha de Despesa Semanal
 ```
-Gerente Operacional cria folha semanal
-  → Adiciona itens (funcionario + despesa extra)
-  → Submete para aprovacao
-  → Copia link → cola no WhatsApp da Diretoria
-    → Diretoria Comercial abre no celular (sem login)
-      → Aprova → Financeiro recebe email
-      → Questiona (com comentario) → Gerente Operacional corrige
-        → Mesmo link mostra versao atualizada
+Marcelo cria folha semanal
+  → Adiciona itens (funcionário + despesa extra)
+  → Submete → Copia link → Cola no WhatsApp da Diretoria
+  → Diretores abrem no celular (sem login) → /aprovacao/:token
+  → Aprovam ou Questionam (com comentário)
+  → Alcione recebe email automático
+  → Faturamento espelha alerta no sistema
 ```
 
-### 4. Processamento Tecnico (Prancheta)
+### Fluxo 4 — Processamento Técnico (Prancheta)
 ```
 Projeto com execution_status = campo_concluido
-  → Aparece no Kanban da Sala Tecnica
-    → Distribui tarefas para tecnicos
-      → aguardando_processamento → em_processamento → revisao → aprovado
-        → Entregue (verifica scope items pendentes)
+  → Aparece no Kanban da Prancheta
+  → Emanuel distribui tarefas para técnicos
+  → aguardando_processamento → em_processamento → revisao → aprovado
+  → Entregue (verifica scope items pendentes — BLOQUEIA se houver)
 ```
 
-### 5. Faturamento
+### Fluxo 5 — Faturamento
 ```
-Projeto entregue
-  → Criar medicao (se medicao_mensal)
-  → Registrar NF → cria invoice automaticamente
-    → NF emitida → Pago
+Projeto entregue:
+  → billing_type = entrega_nf: criar invoice → registrar NF → pago
+  → billing_type = medicao_mensal: criar medição mensal → aprovar → NF → pago
+
+Email automático para Alcione (financeiro@agtopografia.com.br):
+  Contém: cliente, projeto, valor, CNPJ tomador, dados bancários
+  Alcione emite NF sem precisar abrir o sistema
 ```
 
 ---
 
-## Regras de negocio importantes
-
-### BRK — Contrato especifico
-- BRK e um contrato guarda-chuva com valor mensal
-- Gerente Operacional ve apenas "BRK Obras" e "BRK Projetos" (show_in_operational=true)
-- Demais projetos BRK (por tomador/CNPJ) sao visiveis apenas no Financeiro
-- Distribuicao de custos entre tomadores e problema do Financeiro
-
-### Projetos — Status duplo
-- `project_status`: planejamento → execucao → entrega → faturamento → concluido (interno)
-- `execution_status`: 10 valores de aguardando_campo ate pago (visivel na UI)
-- execution_status e o primario na interface. project_status fica de-enfatizado
-
-### Filtros por modulo
-- **Operacional**: projetos com execution_status IN (aguardando_campo, em_campo) + show_in_operational=true
-- **Sala Tecnica**: projetos com execution_status IN (campo_concluido, aguardando_processamento, em_processamento, revisao)
-- **Financeiro**: projetos com execution_status IN (aprovado, entregue, faturamento) ou billing_type=medicao_mensal
-- **Dashboard**: todos os projetos ativos
-
-### Escala mensal = opcional
-- Facilitador de pre-preenchimento, nao obrigacao
-- Se Gerente Operacional preencheu, escala diaria vem pronta
-- Se nao preencheu, monta do zero na vespera
-
-### Veiculos — diarias automaticas
-- Ao fechar escala diaria, sistema conta veiculos alocados
-- Cria/atualiza vehicle_payment_history (1 diaria por veiculo por dia)
-- total_value = days_count * daily_rate
-
-### Aprovacao de despesas — sem login
-- Pagina publica /aprovacao/:token
-- Mobile-first, botoes grandes
-- Aprovar ou Questionar (com comentario)
-- Link sempre mostra dados atualizados
-
----
-
-## Pessoas-chave (funcoes, nao nomes)
-
-| Funcao | Quem | O que faz no sistema |
-|--------|------|---------------------|
-| Diretora Administrativa | Aryanna | Dona do sistema, acessa tudo |
-| Gerente Operacional | — | Escalas diarias, veiculos, despesas de campo |
-| Lider Sala Tecnica | Emanuel Macedo | Distribui tarefas tecnicas |
-| Financeiro | — | Recebe alertas por email, NAO acessa o sistema |
-| Diretores Comerciais | Sergio, Ciro | Aprovam despesas, gerenciam leads/propostas |
-
----
-
-## Constantes centralizadas
+## 8. CONSTANTES CENTRALIZADAS
 
 ### src/lib/fieldRoles.ts
-- `FIELD_ROLES`: Topografo (I-IV), Ajudante de Topografia
-- `TECH_ROLES`: Cadista, Cartografo, Tecnico de Saneamento, etc.
+- `FIELD_ROLES`: Topógrafo I-IV, Ajudante de Topografia
+- `TECH_ROLES`: Cadista, Cartógrafo, Técnico de Saneamento, etc.
 - `isFieldRole()`, `isTechRole()`, `isTopografo()`
-- `isCommercialDirector()`: filtra Sergio e Ciro por nome
+- `isCommercialDirector()`: filtra Sérgio e Ciro
 
 ### src/lib/serviceTypes.ts
-- `SERVICE_TYPES`: 15 tipos de servico (Levantamento, Georreferenciamento, etc.)
-- Usado em: Leads, Propostas, Projetos
+```
+SERVICE_TYPES (15 opções):
+Levantamento Topográfico Planialtimétrico
+Levantamento Topográfico Planialtimétrico Cadastral Georreferenciado
+Levantamento Cadastral Urbano
+Levantamento Altimétrico
+Levantamento Planimétrico
+Levantamento para Projeto de Engenharia
+Georreferenciamento
+Cartografia
+Implantação de Lotes
+Acompanhamento de Obras
+Locação de Equipe
+Locação de Equipe Mensal
+Masterplan
+Processamento de Dados
+Outros
+```
 
 ---
 
-## Import/Export — Regras
+## 9. REGRAS DE FRONTEND
+
+- Sidebar colapsável — recolhe para strip de ícones
+- Tabelas com scroll horizontal (`overflow-x: auto`)
+- Títulos de colunas são filtros de ordenação
+- Filtros de visualização em todas as telas
+- **Prancheta NUNCA vê valores financeiros**
+- Cada módulo tem seu próprio Kanban/view
+- Colunas vazias do Kanban colapsam para faixa fina — não somem
+- Projetos sem lead aparecem no Negócios com tag "Sem lead"
+- Mobile-first no Radar (diretores acessam pelo celular)
+- Cada módulo tem botão **"Enviar para Financeiro"** (gera email + alerta)
+- Aryanna (master) vê botões Editar/Apagar em todas as telas estratégicas
+
+---
+
+## 10. IMPORT/EXPORT — REGRAS DE SEGURANÇA
 
 ### Pode importar via planilha + SQL
-- Veiculos (tabela vazia)
-- Equipes/Grupos (tabela vazia)
-- Clientes novos (verificar duplicidade por CNPJ)
+| Cadastro | Planilha modelo |
+|---|---|
+| Veículos | PLANILHA_VEICULOS.csv |
+| Equipes/Grupos | PLANILHA_EQUIPES.csv |
+| Membros de Equipe | PLANILHA_MEMBROS_EQUIPE.csv |
+| Clientes novos | PLANILHA_CLIENTES.csv (verificar CNPJ antes) |
 
 ### NUNCA importar
-- Projetos (muitas FKs em cascata)
-- Leads (vinculados a clientes, propostas, projetos)
-- Propostas (vinculadas a leads e clientes)
-- Escalas (geradas pelo fluxo operacional)
+- Projetos — muitas FKs em cascata
+- Leads — vinculados a clientes, propostas, projetos
+- Propostas — vinculadas a leads e clientes
+- Escalas — geradas pelo fluxo operacional
+- Medições — vinculadas a projetos e invoices
 
-### Planilhas modelo disponiveis no repo
-- PLANILHA_VEICULOS.csv
-- PLANILHA_EQUIPES.csv
-- PLANILHA_MEMBROS_EQUIPE.csv
-- PLANILHA_CLIENTES.csv
+### Processo seguro
+1. Preencher CSV modelo
+2. Enviar para Claude gerar SQL de INSERT com verificação de duplicidade
+3. Rodar SQL no SQL Editor do Lovable
+4. Verificar contagens pós-importação
 
 ---
 
-## Supabase — Acesso
+## 11. SUPABASE — ACESSO
 
-**IMPORTANTE:** O Supabase MCP NAO tem acesso a este projeto (permission denied). O Lovable gerencia o Supabase internamente.
-
-- Alteracoes no banco: preparar SQL para colar no SQL Editor do Lovable
-- Para verificar schema: ler src/integrations/supabase/types.ts
+⚠️ **O Supabase MCP NÃO tem acesso a este projeto** (permission denied).
+- Alterações no banco: preparar SQL para colar no SQL Editor do Lovable
+- Para verificar schema: ler `src/integrations/supabase/types.ts`
 - Supabase Project ID: bphgtvwgsgaqaxmkrtqj
 
 ---
 
-## Decisoes arquiteturais fechadas (sessao 03-04/04/2026)
+## 12. PESSOAS-CHAVE
 
-| # | Decisao | Resolucao |
-|---|---------|-----------|
-| 14 | Oportunidades vs Leads | Oportunidades eliminado — usar apenas Leads |
-| 15 | Status duplo na UI | execution_status primario, project_status interno |
-| 16 | NF gerada fora ou dentro | Fora por enquanto — avaliar integracao futura |
-| 17 | Sergio e Ciro | Diretores Comerciais — aprovam folhas |
-| 18 | BRK no Operacional | show_in_operational controla visibilidade |
-| 19 | Escala mensal | Opcional — facilitador de pre-preenchimento |
-| 20 | Confirmacao de escala | Eliminada — so existe fechamento |
-| 21 | Diarias de veiculos | Automaticas ao fechar escala |
-| 22 | Aprovacao de despesas | Via link externo (WhatsApp), sem login |
-| 23 | Labels dos modulos | Nomes criativos: Radar, Negocios, Campo, Prancheta, Pessoas |
-| 24 | Import/Export | Import via planilha+SQL, nunca projetos/leads/escalas |
-| 25 | Filtro projetos Operacional | Default com toggle "Mostrar todos" |
-| 26 | RH cards de resumo | Por setor: Campo, Sala Tecnica, Administrativo |
+| Função | Quem | O que faz no sistema |
+|---|---|---|
+| Diretora | Aryanna | Dona do sistema, acessa tudo, botões admin |
+| Diretor | Sérgio | Aprova despesas, gerencia comercial |
+| Diretor | Ciro | Aprova despesas, gerencia comercial |
+| Gerente Operacional | Marcelo | Escalas diárias, veículos, despesas de campo |
+| Líder Prancheta | Emanuel Macedo | Distribui tarefas técnicas |
+| RH + Financeiro | Alcione | Acesso eventual para dúvidas. Foco = email automático |
