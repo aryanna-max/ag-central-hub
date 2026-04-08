@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarDays, Lock, Plus } from "lucide-react";
+import { CalendarDays, Lock, Plus, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import AddToScheduleSheet from "./AddToScheduleSheet";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useDailySchedule, useCloseDailySchedule, useCreateDailySchedule, usePre
 import DaySelector from "./DaySelector";
 import ScheduleStats from "./ScheduleStats";
 import TeamCard from "./TeamCard";
+import MobileScheduleReportSheet from "./MobileScheduleReportSheet";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -18,6 +19,7 @@ type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
 export default function MobileDailySchedule() {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [addSheetOpen, setAddSheetOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
   const { data: schedule, isLoading } = useDailySchedule(dateStr);
@@ -133,9 +135,16 @@ export default function MobileDailySchedule() {
             {format(selectedDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
           </p>
         </div>
-        <Badge variant={isClosed ? "secondary" : "default"} className={isClosed ? "bg-muted" : "bg-accent text-accent-foreground"}>
-          {isClosed ? "Fechada" : "Aberta"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {schedule && teamGroups.length > 0 && (
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReportOpen(true)}>
+              <FileText className="w-4 h-4" />
+            </Button>
+          )}
+          <Badge variant={isClosed ? "secondary" : "default"} className={isClosed ? "bg-muted" : "bg-accent text-accent-foreground"}>
+            {isClosed ? "Fechada" : "Aberta"}
+          </Badge>
+        </div>
       </div>
 
       
@@ -231,6 +240,15 @@ export default function MobileDailySchedule() {
             </div>
           )}
         </>
+      )}
+      {/* Report Sheet */}
+      {schedule && (
+        <MobileScheduleReportSheet
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          date={dateStr}
+          teamGroups={teamGroups}
+        />
       )}
     </div>
   );
