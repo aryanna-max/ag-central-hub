@@ -19,6 +19,7 @@ type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
 export default function MobileDailySchedule() {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [addSheetOpen, setAddSheetOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
   const { data: schedule, isLoading } = useDailySchedule(dateStr);
