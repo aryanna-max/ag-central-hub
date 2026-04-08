@@ -135,9 +135,16 @@ export default function MobileDailySchedule() {
             {format(selectedDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
           </p>
         </div>
-        <Badge variant={isClosed ? "secondary" : "default"} className={isClosed ? "bg-muted" : "bg-accent text-accent-foreground"}>
-          {isClosed ? "Fechada" : "Aberta"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {schedule && teamGroups.length > 0 && (
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReportOpen(true)}>
+              <FileText className="w-4 h-4" />
+            </Button>
+          )}
+          <Badge variant={isClosed ? "secondary" : "default"} className={isClosed ? "bg-muted" : "bg-accent text-accent-foreground"}>
+            {isClosed ? "Fechada" : "Aberta"}
+          </Badge>
+        </div>
       </div>
 
       
