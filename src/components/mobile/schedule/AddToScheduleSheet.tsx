@@ -71,10 +71,9 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
     }
     setSaving(true);
     try {
-      // Find or use first team as placeholder
-      const firstTeam = teams[0];
-      if (!firstTeam) {
-        toast.error("Nenhum grupo disponível");
+      const teamId = selectedTeamId || teams[0]?.id;
+      if (!teamId) {
+        toast.error("Selecione um grupo primeiro");
         return;
       }
 
@@ -83,7 +82,7 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
 
       const assignment = await addAssignment.mutateAsync({
         daily_schedule_id: scheduleId,
-        team_id: firstTeam.id,
+        team_id: teamId,
         project_id: resolvedProjectId,
         vehicle_id: resolvedVehicleId,
         date: dateStr,
