@@ -161,7 +161,7 @@ export default function Dashboard() {
   const kanbanProjects = useMemo(() => {
     return projects.filter((p) => {
       const es = p.execution_status;
-      if (!es || !ALL_COLUMNS.includes(es)) return false;
+      if (!es || !ALL_COLUMNS.includes(es as any)) return false;
       if (kpiFilter === "em_campo" && es !== "em_campo") return false;
       if (kpiFilter === "a_faturar") {
         if (es !== "entregue") return false;

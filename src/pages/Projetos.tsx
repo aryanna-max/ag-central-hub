@@ -561,7 +561,7 @@ export default function Projetos() {
                             from_status: prev,
                             to_status: val,
                             modulo: "projetos",
-                            changed_by_id: user?.id || null,
+                            changed_by_id: null,
                           });
                         }
                       }}
