@@ -166,7 +166,11 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
                   <button
                     key={t.id}
                     onClick={() => loadGroup(t)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-primary/10 text-primary active:scale-95 transition-transform"
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium active:scale-95 transition-transform ${
+                      selectedTeamId === t.id
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-primary/10 text-primary"
+                    }`}
                   >
                     <Users className="w-3.5 h-3.5" />
                     {t.name}
