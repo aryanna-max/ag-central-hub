@@ -25,6 +25,7 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
   const [projectId, setProjectId] = useState("none");
   const [vehicleId, setVehicleId] = useState("none");
   const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
 
