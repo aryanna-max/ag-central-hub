@@ -103,6 +103,7 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
       setProjectId("none");
       setVehicleId("none");
       setSelectedEmployees(new Set());
+      setSelectedTeamId(null);
       setSearch("");
       onOpenChange(false);
     } catch (err: any) {
