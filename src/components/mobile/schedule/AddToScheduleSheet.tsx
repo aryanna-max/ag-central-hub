@@ -25,6 +25,7 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
   const [projectId, setProjectId] = useState("none");
   const [vehicleId, setVehicleId] = useState("none");
   const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -59,6 +60,7 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
     const ids = new Set(selectedEmployees);
     members.forEach((m: any) => ids.add(m.employee_id));
     setSelectedEmployees(ids);
+    setSelectedTeamId(team.id);
     toast.success(`${members.length} membros de "${team.name}" adicionados`);
   };
 
@@ -69,10 +71,9 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
     }
     setSaving(true);
     try {
-      // Find or use first team as placeholder
-      const firstTeam = teams[0];
-      if (!firstTeam) {
-        toast.error("Nenhum grupo disponível");
+      const teamId = selectedTeamId || teams[0]?.id;
+      if (!teamId) {
+        toast.error("Selecione um grupo primeiro");
         return;
       }
 
@@ -81,7 +82,7 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
 
       const assignment = await addAssignment.mutateAsync({
         daily_schedule_id: scheduleId,
-        team_id: firstTeam.id,
+        team_id: teamId,
         project_id: resolvedProjectId,
         vehicle_id: resolvedVehicleId,
         date: dateStr,
@@ -91,7 +92,7 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
         await addEntry.mutateAsync({
           daily_schedule_id: scheduleId,
           employee_id: empId,
-          team_id: firstTeam.id,
+          team_id: teamId,
           project_id: resolvedProjectId,
           vehicle_id: resolvedVehicleId,
           daily_team_assignment_id: assignment.id,
@@ -102,6 +103,7 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
       setProjectId("none");
       setVehicleId("none");
       setSelectedEmployees(new Set());
+      setSelectedTeamId(null);
       setSearch("");
       onOpenChange(false);
     } catch (err: any) {
@@ -164,7 +166,11 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
                   <button
                     key={t.id}
                     onClick={() => loadGroup(t)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-primary/10 text-primary active:scale-95 transition-transform"
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium active:scale-95 transition-transform ${
+                      selectedTeamId === t.id
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-primary/10 text-primary"
+                    }`}
                   >
                     <Users className="w-3.5 h-3.5" />
                     {t.name}
