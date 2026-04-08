@@ -92,7 +92,7 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
         await addEntry.mutateAsync({
           daily_schedule_id: scheduleId,
           employee_id: empId,
-          team_id: firstTeam.id,
+          team_id: teamId,
           project_id: resolvedProjectId,
           vehicle_id: resolvedVehicleId,
           daily_team_assignment_id: assignment.id,
