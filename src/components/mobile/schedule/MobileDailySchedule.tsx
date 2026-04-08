@@ -241,6 +241,15 @@ export default function MobileDailySchedule() {
           )}
         </>
       )}
+      {/* Report Sheet */}
+      {schedule && (
+        <MobileScheduleReportSheet
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          date={dateStr}
+          teamGroups={teamGroups}
+        />
+      )}
     </div>
   );
 }
