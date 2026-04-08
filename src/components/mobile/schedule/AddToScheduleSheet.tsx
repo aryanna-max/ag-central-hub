@@ -60,6 +60,7 @@ export default function AddToScheduleSheet({ open, onOpenChange, scheduleId, dat
     const ids = new Set(selectedEmployees);
     members.forEach((m: any) => ids.add(m.employee_id));
     setSelectedEmployees(ids);
+    setSelectedTeamId(team.id);
     toast.success(`${members.length} membros de "${team.name}" adicionados`);
   };
 
