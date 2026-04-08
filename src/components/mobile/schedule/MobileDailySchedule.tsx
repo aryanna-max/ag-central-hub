@@ -10,6 +10,7 @@ import { useDailySchedule, useCloseDailySchedule, useCreateDailySchedule, usePre
 import DaySelector from "./DaySelector";
 import ScheduleStats from "./ScheduleStats";
 import TeamCard from "./TeamCard";
+import MobileScheduleReportSheet from "./MobileScheduleReportSheet";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 
