@@ -368,15 +368,15 @@ export default function Leads() {
       <Table>
         <TableHeader>
           <TableRow>
-            {isVisible("codigo") && <SortableTableHead sortKey="codigo" currentSort={sortKey} direction={sortDir} onSort={handleSort}>Código</SortableTableHead>}
-            {isVisible("empresa") && <SortableTableHead sortKey="company" currentSort={sortKey} direction={sortDir} onSort={handleSort}>Empresa/Nome</SortableTableHead>}
+            {isVisible("codigo") && <SortableTableHead sortKey="codigo" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Código</SortableTableHead>}
+            {isVisible("empresa") && <SortableTableHead sortKey="company" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Empresa/Nome</SortableTableHead>}
             {isVisible("origem") && <TableHead className="text-xs">Origem</TableHead>}
             {isVisible("servico") && <TableHead className="text-xs">Serviço</TableHead>}
-            {isVisible("valor") && <SortableTableHead sortKey="valor" currentSort={sortKey} direction={sortDir} onSort={handleSort}>Valor</SortableTableHead>}
+            {isVisible("valor") && <SortableTableHead sortKey="valor" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Valor</SortableTableHead>}
             {isVisible("responsavel") && <TableHead className="text-xs">Responsável</TableHead>}
             {isVisible("status") && <TableHead className="text-xs">Status</TableHead>}
             <TableHead className="text-xs">Projeto</TableHead>
-            {isVisible("data") && <SortableTableHead sortKey="created_at" currentSort={sortKey} direction={sortDir} onSort={handleSort}>Data</SortableTableHead>}
+            {isVisible("data") && <SortableTableHead sortKey="created_at" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Data</SortableTableHead>}
             <TableHead className="text-xs w-10" />
           </TableRow>
         </TableHeader>
