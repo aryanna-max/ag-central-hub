@@ -51,7 +51,7 @@ export default function FaturamentoProjetos() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, codigo, name, billing_type, contract_value, execution_status, delivered_at, empresa_faturadora, cnpj_tomador, instrucao_faturamento_variavel, contato_financeiro, conta_bancaria, referencia_contrato, client_id, is_active, updated_at")
+        .select("id, codigo, name, billing_type, contract_value, execution_status, delivered_at, empresa_faturadora, cnpj_tomador, instrucao_faturamento_variavel, conta_bancaria, referencia_contrato, client_id, is_active, updated_at")
         .eq("is_active", true)
         .order("codigo");
       if (error) throw error;
@@ -213,7 +213,7 @@ export default function FaturamentoProjetos() {
                                   <div>
                                     <span className="text-muted-foreground">Contato financeiro:</span>{" "}
                                     <span className="font-medium">
-                                      {expandedContacts.find((c) => c.tipo === "financeiro")?.nome || p.contato_financeiro || "—"}
+                                      {expandedContacts.find((c) => c.tipo === "financeiro")?.nome || "—"}
                                     </span>
                                   </div>
                                   <div>

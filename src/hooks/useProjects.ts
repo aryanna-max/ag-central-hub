@@ -36,7 +36,6 @@ export interface Project {
   cnpj_tomador: string | null;
   empresa_emissora: string | null;
   conta_bancaria: string | null;
-  contato_financeiro: string | null;
   modalidade_faturamento: string | null;
   referencia_contrato: string | null;
   instrucao_faturamento_variavel: boolean | null;

@@ -1606,8 +1606,6 @@ export type Database = {
           cnpj_tomador: string | null
           codigo: string | null
           conta_bancaria: string | null
-          contato_engenheiro: string | null
-          contato_financeiro: string | null
           contract_value: number | null
           created_at: string
           delivered_at: string | null
@@ -1658,8 +1656,6 @@ export type Database = {
           cnpj_tomador?: string | null
           codigo?: string | null
           conta_bancaria?: string | null
-          contato_engenheiro?: string | null
-          contato_financeiro?: string | null
           contract_value?: number | null
           created_at?: string
           delivered_at?: string | null
@@ -1710,8 +1706,6 @@ export type Database = {
           cnpj_tomador?: string | null
           codigo?: string | null
           conta_bancaria?: string | null
-          contato_engenheiro?: string | null
-          contato_financeiro?: string | null
           contract_value?: number | null
           created_at?: string
           delivered_at?: string | null
