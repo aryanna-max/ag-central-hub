@@ -27,15 +27,6 @@ import { toast } from "sonner";
 import LeadFormDialog from "./LeadFormDialog";
 import LeadDetailDialog from "./LeadDetailDialog";
 
-const ALLOWED_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
-  novo: ["em_contato", "qualificado", "perdido"],
-  em_contato: ["qualificado", "perdido"],
-  qualificado: ["proposta_enviada", "perdido"],
-  proposta_enviada: ["aprovado", "perdido"],
-  aprovado: ["convertido", "perdido"],
-  convertido: [],
-  perdido: [],
-};
 
 function getDisplayName(lead: Lead, clients: { id: string; name: string }[]) {
   if (lead.client_id) {
@@ -123,11 +114,6 @@ export default function Leads() {
     if (newStatus === lead.status) return;
     if (newStatus === "perdido") { setLossDialog(lead); return; }
     if (newStatus === "convertido") { setConversionLead(lead); return; }
-    const allowed = ALLOWED_TRANSITIONS[lead.status];
-    if (!allowed?.includes(newStatus)) {
-      toast.error(`Transição não permitida: ${STATUS_LABELS[lead.status]} → ${STATUS_LABELS[newStatus]}`);
-      return;
-    }
     try {
       await updateLead.mutateAsync({ id: lead.id, status: newStatus });
       toast.success(`Status alterado para ${STATUS_LABELS[newStatus]}`);
