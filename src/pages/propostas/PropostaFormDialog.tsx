@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, Save } from "lucide-react";
 import { useCreateProposal, useUpdateProposal, useSaveProposalItems, generateNextCode, Proposal } from "@/hooks/useProposals";
 import { useClients } from "@/hooks/useClients";
+import { useEmployees } from "@/hooks/useEmployees";
 import { SERVICOS } from "@/hooks/useOpportunities";
 import { toast } from "sonner";
 
@@ -27,13 +28,13 @@ interface Props {
   prefill?: Partial<Proposal> & { items?: ProposalItemRow[] };
 }
 
-const RESPONSAVEIS = ["Aryanna", "Sérgio", "Ciro"];
-
 export default function PropostaFormDialog({ open, onOpenChange, proposal, prefill }: Props) {
   const create = useCreateProposal();
   const update = useUpdateProposal();
   const saveItems = useSaveProposalItems();
   const { data: clients } = useClients();
+  const { data: employees = [] } = useEmployees();
+  const responsaveis = employees.filter((e) => e.status !== "desligado");
 
   const [form, setForm] = useState({
     code: "",
@@ -229,8 +230,8 @@ export default function PropostaFormDialog({ open, onOpenChange, proposal, prefi
             <Select value={form.responsible_id} onValueChange={(v) => setForm({ ...form, responsible_id: v })}>
               <SelectTrigger><SelectValue placeholder="Responsável" /></SelectTrigger>
               <SelectContent>
-                {RESPONSAVEIS.map((r) => (
-                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                {responsaveis.map((e) => (
+                  <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

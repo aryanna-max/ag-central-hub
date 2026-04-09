@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Search, Plus, Users, MoreVertical, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { ALL_EMPLOYEE_ROLES } from "@/lib/fieldRoles";
+import { formatCpf } from "@/lib/masks";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -390,7 +391,7 @@ export default function Funcionarios() {
             </div>
             <div>
               <Label>CPF</Label>
-              <Input value={newCpf} onChange={(e) => setNewCpf(e.target.value)} placeholder="000.000.000-00" />
+              <Input value={newCpf} onChange={(e) => setNewCpf(formatCpf(e.target.value))} placeholder="000.000.000-00" maxLength={14} />
             </div>
             <div>
               <Label>Matrícula</Label>

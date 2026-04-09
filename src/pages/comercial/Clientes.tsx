@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { formatPhone } from "@/lib/masks";
 import { Building2, Search, Mail, Phone, FileText, Plus, MoreHorizontal, Pencil, Trash2, UserPlus, Users, FolderOpen, Eye, Ban } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -411,7 +412,7 @@ function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | n
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Telefone</Label>
-                <Input value={contactForm.telefone || ""} onChange={(e) => setContactForm({ ...contactForm, telefone: e.target.value })} className="h-8 text-sm" />
+                <Input value={contactForm.telefone || ""} onChange={(e) => setContactForm({ ...contactForm, telefone: formatPhone(e.target.value) })} className="h-8 text-sm" maxLength={15} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">E-mail</Label>
