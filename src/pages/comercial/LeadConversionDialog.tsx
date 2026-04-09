@@ -13,6 +13,7 @@ import { useUpdateLead, type Lead } from "@/hooks/useLeads";
 import { useCreateAlerts, type AlertInsert } from "@/hooks/useAlerts";
 import { useEmployees } from "@/hooks/useEmployees";
 import { isDirector } from "@/lib/fieldRoles";
+import { useCreateProjectContacts } from "@/hooks/useProjectContacts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -53,6 +54,7 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
   const createProject = useCreateProject();
   const updateLead = useUpdateLead();
   const createAlerts = useCreateAlerts();
+  const createContacts = useCreateProjectContacts();
   const directorId = employees.find((e) => e.status !== "desligado" && isDirector(e.role))?.id || null;
 
   const isExistingClient = lead?.origin === "cliente_recorrente" || lead?.origin === "contrato_ativo";
@@ -209,6 +211,25 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
         client_codigo: isExistingClient ? existingClient!.codigo! : clientCodigo.toUpperCase(),
         responsible_comercial_id: directorId,
       } as any);
+
+      // Step 3b: Inherit contacts from client (only if not SPE)
+      const sourceClient = isExistingClient ? existingClient : null;
+      if (sourceClient) {
+        const isSPE = cnpjTomador && sourceClient.cnpj && cnpjTomador !== sourceClient.cnpj;
+        if (!isSPE) {
+          const contactsToCreate: { project_id: string; tipo: "cliente" | "financeiro"; nome: string }[] = [];
+          const clienteContact = (sourceClient as any).contato_cliente || sourceClient.contato_engenheiro;
+          if (clienteContact) {
+            contactsToCreate.push({ project_id: project.id, tipo: "cliente", nome: clienteContact });
+          }
+          if (sourceClient.contato_financeiro) {
+            contactsToCreate.push({ project_id: project.id, tipo: "financeiro", nome: sourceClient.contato_financeiro });
+          }
+          if (contactsToCreate.length > 0) {
+            await createContacts.mutateAsync(contactsToCreate);
+          }
+        }
+      }
 
       // Step 4: Update lead
       await updateLead.mutateAsync({

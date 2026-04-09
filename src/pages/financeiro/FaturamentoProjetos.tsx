@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useProjectContacts } from "@/hooks/useProjectContacts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,7 @@ export default function FaturamentoProjetos() {
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("todos");
   const [filterClient, setFilterClient] = useState("todos");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const { data: expandedContacts = [] } = useProjectContacts(expandedId);
 
   const { data: projectsRaw = [], isLoading } = useQuery({
     queryKey: ["faturamento-projetos"],
@@ -210,7 +212,9 @@ export default function FaturamentoProjetos() {
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground">Contato financeiro:</span>{" "}
-                                    <span className="font-medium">{p.contato_financeiro || "—"}</span>
+                                    <span className="font-medium">
+                                      {expandedContacts.find((c) => c.tipo === "financeiro")?.nome || p.contato_financeiro || "—"}
+                                    </span>
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground">Conta bancária:</span>{" "}

@@ -5,6 +5,7 @@ import { useClients } from "@/hooks/useClients";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useMeasurements } from "@/hooks/useMeasurements";
 import { useProjectServices } from "@/hooks/useProjectServices";
+import { useProjectContacts } from "@/hooks/useProjectContacts";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -62,6 +63,7 @@ export default function ProjetoHistorico() {
   const { data: employees = [] } = useEmployees();
   const { data: measurements = [] } = useMeasurements();
   const { data: services = [] } = useProjectServices(projectId || "");
+  const { data: projectContacts = [] } = useProjectContacts(projectId || null);
 
   // Status history
   const { data: statusHistory = [] } = useQuery({
@@ -276,18 +278,17 @@ export default function ProjetoHistorico() {
               <p className="font-medium">{p.conta_bancaria || "—"}</p>
             </div>
           </div>
-          {(p.contato_engenheiro || p.contato_financeiro) && (
+          {projectContacts.length > 0 && (
             <>
               <Separator className="my-3" />
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Contatos</p>
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-xs text-muted-foreground">Contato Engenheiro</p>
-                  <p className="font-medium">{p.contato_engenheiro || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Contato Financeiro</p>
-                  <p className="font-medium">{p.contato_financeiro || "—"}</p>
-                </div>
+                {projectContacts.map((c) => (
+                  <div key={c.id}>
+                    <p className="text-xs text-muted-foreground capitalize">{c.tipo}</p>
+                    <p className="font-medium">{c.nome}{c.telefone ? ` — ${c.telefone}` : ""}</p>
+                  </div>
+                ))}
               </div>
             </>
           )}

@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useScopeItems, useCreateScopeItem, useUpdateScopeItem } from "@/hooks/useScopeItems";
 import { useTechnicalTasksByProject, useCreateTechnicalTask, useUpdateTechnicalTask } from "@/hooks/useTechnicalTasks";
 import { useEmployees } from "@/hooks/useEmployees";
+import { useProjectContacts } from "@/hooks/useProjectContacts";
 import DeadlineBadge from "@/components/DeadlineBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -69,6 +70,8 @@ export default function STProjectDetail() {
   const { data: scopeItems = [] } = useScopeItems(id || null);
   const { data: tasks = [] } = useTechnicalTasksByProject(id || null);
   const { data: employees = [] } = useEmployees();
+  const { data: projectContacts = [] } = useProjectContacts(id || null);
+  const contatoCliente = projectContacts.find((c) => c.tipo === "cliente")?.nome;
   const createScope = useCreateScopeItem();
   const updateScope = useUpdateScopeItem();
   const createTask = useCreateTechnicalTask();
@@ -89,7 +92,7 @@ export default function STProjectDetail() {
       `Endereço: ${address || "—"}`,
       `Serviço: ${project.service || "—"}`,
       `Código: ${project.codigo || "—"}`,
-      `Responsável: ${project.contato_engenheiro || "—"}`,
+      `Responsável: ${contatoCliente || "—"}`,
     ].join("\n");
     navigator.clipboard.writeText(text);
     toast.success("Dados copiados para a área de transferência");
@@ -175,7 +178,7 @@ export default function STProjectDetail() {
             {project.cnpj_tomador && <div><strong>CNPJ Tomador:</strong> {project.cnpj_tomador}</div>}
             {address && <div><strong>Endereço:</strong> {address}</div>}
             {project.service && <div><strong>Serviço:</strong> {project.service}</div>}
-            {project.contato_engenheiro && <div><strong>Resp. Técnico:</strong> {project.contato_engenheiro}</div>}
+            {contatoCliente && <div><strong>Contato Cliente:</strong> {contatoCliente}</div>}
           </div>
           <DeadlineBadge
             deadline={project.delivery_deadline ? new Date(project.delivery_deadline) : null}

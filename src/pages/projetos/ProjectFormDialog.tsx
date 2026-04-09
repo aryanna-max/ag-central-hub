@@ -10,6 +10,7 @@ import { useCreateProject } from "@/hooks/useProjects";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useCepAutofill } from "@/hooks/useCepAutofill";
 import { isDirector } from "@/lib/fieldRoles";
+import { useCreateProjectContacts } from "@/hooks/useProjectContacts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatCnpj, formatCep } from "@/lib/masks";
@@ -34,6 +35,7 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
   const { data: clients = [] } = useClients();
   const { data: employees = [] } = useEmployees();
   const createProject = useCreateProject();
+  const createContacts = useCreateProjectContacts();
   const directorId = employees.find((e) => e.status !== "desligado" && isDirector(e.role))?.id || null;
 
   const [clientId, setClientId] = useState("");
@@ -98,7 +100,7 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
 
     setIsPending(true);
     try {
-      await createProject.mutateAsync({
+      const project = await createProject.mutateAsync({
         name: projectName,
         client_id: clientId,
         client: selectedClient?.name || null,
@@ -118,6 +120,24 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
         cidade: cidade || null,
         estado: estado || null,
       } as any);
+
+      // Inherit contacts from client if NOT an SPE (cnpj_tomador empty or matches client CNPJ)
+      const isSPE = cnpjTomador && selectedClient?.cnpj && cnpjTomador !== selectedClient.cnpj;
+      if (!isSPE && selectedClient) {
+        const contactsToCreate: { project_id: string; tipo: "cliente" | "financeiro"; nome: string }[] = [];
+        // contato_engenheiro will be renamed to contato_cliente in DB
+        const clienteContact = (selectedClient as any).contato_cliente || selectedClient.contato_engenheiro;
+        if (clienteContact) {
+          contactsToCreate.push({ project_id: (project as any).id, tipo: "cliente", nome: clienteContact });
+        }
+        if (selectedClient.contato_financeiro) {
+          contactsToCreate.push({ project_id: (project as any).id, tipo: "financeiro", nome: selectedClient.contato_financeiro });
+        }
+        if (contactsToCreate.length > 0) {
+          await createContacts.mutateAsync(contactsToCreate);
+        }
+      }
+
       toast.success(`Projeto ${projectCode} criado`);
       onOpenChange(false);
     } catch (err: any) {

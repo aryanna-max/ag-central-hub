@@ -187,7 +187,7 @@ export default function AdminClientes() {
                 </SelectContent>
               </Select>
             </div>
-            <div><Label>Engenheiro Responsável</Label><Input value={form.contato_engenheiro} onChange={(e) => setForm({ ...form, contato_engenheiro: e.target.value })} /></div>
+            <div><Label>Contato do Cliente</Label><Input value={form.contato_engenheiro} onChange={(e) => setForm({ ...form, contato_engenheiro: e.target.value })} /></div>
             <div><Label>Contato Financeiro</Label><Input value={form.contato_financeiro} onChange={(e) => setForm({ ...form, contato_financeiro: e.target.value })} /></div>
             <div><Label>Observações</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} /></div>
           </div>

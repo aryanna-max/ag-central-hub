@@ -19,6 +19,8 @@ import { useClients } from "@/hooks/useClients";
 import { useProjectServices } from "@/hooks/useProjectServices";
 import MeasurementFormDialog from "@/components/operacional/MeasurementFormDialog";
 import ProjectServicesSection from "@/components/projetos/ProjectServicesSection";
+import ProjectContactsEditor, { type ContactRow } from "@/components/projetos/ProjectContactsEditor";
+import { useProjectContacts, useUpsertProjectContacts } from "@/hooks/useProjectContacts";
 import DeadlineBadge from "@/components/DeadlineBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -211,8 +213,11 @@ export default function Projetos() {
   const { data: clients = [] } = useClients();
   const { role } = useAuth();
   const updateProject = useUpdateProject();
+  const upsertContacts = useUpsertProjectContacts();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [editForm, setEditForm] = useState<Partial<Project>>({});
+  const [contactRows, setContactRows] = useState<ContactRow[]>([]);
+  const { data: projectContacts = [] } = useProjectContacts(selectedProject?.id);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [visibleGroups, setVisibleGroups] = useState<Record<string, boolean>>({
     campo: true, prancheta: true, financeiro: true,
@@ -295,7 +300,9 @@ export default function Projetos() {
         client_id: editForm.client_id,
         service: editForm.service,
         contract_value: editForm.contract_value,
-        responsible_id: editForm.responsible_id,
+        responsible_comercial_id: (editForm as any).responsible_comercial_id,
+        responsible_campo_id: (editForm as any).responsible_campo_id,
+        responsible_tecnico_id: (editForm as any).responsible_tecnico_id,
         notes: editForm.notes,
         start_date: editForm.start_date,
         end_date: editForm.end_date,
@@ -304,9 +311,14 @@ export default function Projetos() {
         conta_bancaria: editForm.conta_bancaria,
         referencia_contrato: editForm.referencia_contrato,
         instrucao_faturamento_variavel: editForm.instrucao_faturamento_variavel,
-        contato_engenheiro: editForm.contato_engenheiro,
-        contato_financeiro: editForm.contato_financeiro,
         billing_type: (editForm as any).billing_type,
+      });
+      // Save contacts to project_contacts table
+      await upsertContacts.mutateAsync({
+        projectId: selectedProject.id,
+        contacts: contactRows
+          .filter((r) => r.nome.trim())
+          .map((r) => ({ tipo: r.tipo, nome: r.nome, telefone: r.telefone || null, email: r.email || null })),
       });
       toast.success("Projeto atualizado");
       setSelectedProject(null);
@@ -563,19 +575,49 @@ export default function Projetos() {
                       onChange={(e) => setEditForm({ ...editForm, contract_value: e.target.value ? Number(e.target.value) : null })}
                     />
                   </div>
-                  <div>
-                    <Label>Responsável</Label>
-                    <Select
-                      value={editForm.responsible_id || ""}
-                      onValueChange={(val) => setEditForm({ ...editForm, responsible_id: val })}
-                    >
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {employees.filter((e) => e.status !== "desligado").map((emp) => (
-                          <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <Label className="text-xs">Resp. Comercial</Label>
+                      <Select
+                        value={(editForm as any).responsible_comercial_id || ""}
+                        onValueChange={(val) => setEditForm({ ...editForm, responsible_comercial_id: val } as any)}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                        <SelectContent>
+                          {employees.filter((e) => e.status !== "desligado").map((emp) => (
+                            <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Resp. Campo</Label>
+                      <Select
+                        value={(editForm as any).responsible_campo_id || ""}
+                        onValueChange={(val) => setEditForm({ ...editForm, responsible_campo_id: val } as any)}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                        <SelectContent>
+                          {employees.filter((e) => e.status !== "desligado").map((emp) => (
+                            <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Resp. Técnico</Label>
+                      <Select
+                        value={(editForm as any).responsible_tecnico_id || ""}
+                        onValueChange={(val) => setEditForm({ ...editForm, responsible_tecnico_id: val } as any)}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                        <SelectContent>
+                          {employees.filter((e) => e.status !== "desligado").map((emp) => (
+                            <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div>
                     <Label>Empresa Faturadora</Label>
@@ -599,17 +641,11 @@ export default function Projetos() {
                   </div>
                   <div>
                     <Label>Status Execução</Label>
-<<<<<<< Updated upstream
-                    <Badge className={EXEC_STATUS_BADGE[(selectedProject as any).execution_status] || "bg-muted"}>
-                      {(selectedProject as any).execution_status || "—"}
-                    </Badge>
-=======
                     <Select
                       value={(editForm as any).execution_status || ""}
                       onValueChange={async (val) => {
                         const prev = (editForm as any).execution_status;
                         setEditForm({ ...editForm, execution_status: val } as any);
-                        // Gravar histórico imediatamente
                         if (prev && prev !== val) {
                           await supabase.from("project_status_history").insert({
                             project_id: selectedProject.id,
@@ -618,7 +654,6 @@ export default function Projetos() {
                             modulo: "projetos",
                             changed_by_id: user?.id || null,
                           });
-                          // Gerar alertas automáticos por transição
                           const alerts = getExecutionStatusAlerts(prev, val, {
                             id: selectedProject.id,
                             codigo: selectedProject.codigo,
@@ -646,7 +681,6 @@ export default function Projetos() {
                         })}
                       </SelectContent>
                     </Select>
->>>>>>> Stashed changes
                   </div>
                   <div>
                     <Label>Tipo de Faturamento *</Label>
@@ -662,13 +696,18 @@ export default function Projetos() {
                     </Select>
                   </div>
                   <Separator className="my-2" />
+                  <ProjectContactsEditor
+                    contacts={projectContacts}
+                    onChange={setContactRows}
+                  />
+                  <Separator className="my-2" />
                   <div>
                     <Label>Observações</Label>
                     <Textarea value={editForm.notes || ""} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={3} />
                   </div>
                   <div className="flex gap-2 pt-2">
-                    <Button onClick={handleSave} disabled={updateProject.isPending} className="flex-1">
-                      {updateProject.isPending ? "Salvando..." : "Salvar"}
+                    <Button onClick={handleSave} disabled={updateProject.isPending || upsertContacts.isPending} className="flex-1">
+                      {(updateProject.isPending || upsertContacts.isPending) ? "Salvando..." : "Salvar"}
                     </Button>
                     <Button variant="outline" onClick={() => setSelectedProject(null)}>Cancelar</Button>
                   </div>
