@@ -218,9 +218,8 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
         const isSPE = cnpjTomador && sourceClient.cnpj && cnpjTomador !== sourceClient.cnpj;
         if (!isSPE) {
           const contactsToCreate: { project_id: string; tipo: "cliente" | "financeiro"; nome: string }[] = [];
-          const clienteContact = (sourceClient as any).contato_cliente || sourceClient.contato_engenheiro;
-          if (clienteContact) {
-            contactsToCreate.push({ project_id: project.id, tipo: "cliente", nome: clienteContact });
+          if (sourceClient.contato_cliente) {
+            contactsToCreate.push({ project_id: project.id, tipo: "cliente", nome: sourceClient.contato_cliente });
           }
           if (sourceClient.contato_financeiro) {
             contactsToCreate.push({ project_id: project.id, tipo: "financeiro", nome: sourceClient.contato_financeiro });

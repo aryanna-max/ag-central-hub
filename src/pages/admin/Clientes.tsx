@@ -26,7 +26,7 @@ export default function AdminClientes() {
   const [editClient, setEditClient] = useState<Client | null>(null);
 
   const [form, setForm] = useState({
-    codigo: "", name: "", cnpj: "", tipo: "", contato_engenheiro: "", contato_financeiro: "", notes: "",
+    codigo: "", name: "", cnpj: "", tipo: "", contato_cliente: "", contato_financeiro: "", notes: "",
   });
 
   const filtered = useMemo(() => {
@@ -40,7 +40,7 @@ export default function AdminClientes() {
 
   const openNew = () => {
     setEditClient(null);
-    setForm({ codigo: "", name: "", cnpj: "", tipo: "", contato_engenheiro: "", contato_financeiro: "", notes: "" });
+    setForm({ codigo: "", name: "", cnpj: "", tipo: "", contato_cliente: "", contato_financeiro: "", notes: "" });
     setFormOpen(true);
   };
 
@@ -51,7 +51,7 @@ export default function AdminClientes() {
       name: c.name,
       cnpj: c.cnpj || "",
       tipo: c.tipo || "",
-      contato_engenheiro: c.contato_engenheiro || "",
+      contato_cliente: c.contato_cliente || "",
       contato_financeiro: c.contato_financeiro || "",
       notes: c.notes || "",
     });
@@ -77,7 +77,7 @@ export default function AdminClientes() {
         name: form.name,
         cnpj: form.cnpj || null,
         tipo: form.tipo || null,
-        contato_engenheiro: form.contato_engenheiro || null,
+        contato_cliente: form.contato_cliente || null,
         contato_financeiro: form.contato_financeiro || null,
         notes: form.notes || null,
       };
@@ -187,7 +187,7 @@ export default function AdminClientes() {
                 </SelectContent>
               </Select>
             </div>
-            <div><Label>Contato do Cliente</Label><Input value={form.contato_engenheiro} onChange={(e) => setForm({ ...form, contato_engenheiro: e.target.value })} /></div>
+            <div><Label>Contato do Cliente</Label><Input value={form.contato_cliente} onChange={(e) => setForm({ ...form, contato_cliente: e.target.value })} /></div>
             <div><Label>Contato Financeiro</Label><Input value={form.contato_financeiro} onChange={(e) => setForm({ ...form, contato_financeiro: e.target.value })} /></div>
             <div><Label>Observações</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} /></div>
           </div>

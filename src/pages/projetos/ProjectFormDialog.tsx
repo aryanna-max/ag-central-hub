@@ -125,10 +125,8 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
       const isSPE = cnpjTomador && selectedClient?.cnpj && cnpjTomador !== selectedClient.cnpj;
       if (!isSPE && selectedClient) {
         const contactsToCreate: { project_id: string; tipo: "cliente" | "financeiro"; nome: string }[] = [];
-        // contato_engenheiro will be renamed to contato_cliente in DB
-        const clienteContact = (selectedClient as any).contato_cliente || selectedClient.contato_engenheiro;
-        if (clienteContact) {
-          contactsToCreate.push({ project_id: (project as any).id, tipo: "cliente", nome: clienteContact });
+        if (selectedClient.contato_cliente) {
+          contactsToCreate.push({ project_id: (project as any).id, tipo: "cliente", nome: selectedClient.contato_cliente });
         }
         if (selectedClient.contato_financeiro) {
           contactsToCreate.push({ project_id: (project as any).id, tipo: "financeiro", nome: selectedClient.contato_financeiro });

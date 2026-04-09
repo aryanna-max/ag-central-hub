@@ -23,7 +23,7 @@ export interface Client {
   state: string | null;
   segmento: string | null;
   tipo: string | null;
-  contato_engenheiro: string | null;
+  contato_cliente: string | null;
   contato_financeiro: string | null;
   notes: string | null;
   is_active: boolean;
@@ -49,7 +49,7 @@ export interface ClientInsert {
   state?: string | null;
   segmento?: string | null;
   tipo?: string | null;
-  contato_engenheiro?: string | null;
+  contato_cliente?: string | null;
   contato_financeiro?: string | null;
   notes?: string | null;
   is_active?: boolean;
