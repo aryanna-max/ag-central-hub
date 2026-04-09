@@ -7,7 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useClients, type Client } from "@/hooks/useClients";
 import { useCreateProject } from "@/hooks/useProjects";
+import { useEmployees } from "@/hooks/useEmployees";
 import { useCepAutofill } from "@/hooks/useCepAutofill";
+import { isDirector } from "@/lib/fieldRoles";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatCnpj, formatCep } from "@/lib/masks";
@@ -30,7 +32,9 @@ interface Props {
 
 export default function ProjectFormDialog({ open, onOpenChange }: Props) {
   const { data: clients = [] } = useClients();
+  const { data: employees = [] } = useEmployees();
   const createProject = useCreateProject();
+  const directorId = employees.find((e) => e.status !== "desligado" && isDirector(e.role))?.id || null;
 
   const [clientId, setClientId] = useState("");
   const [projectName, setProjectName] = useState("");
@@ -106,6 +110,7 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
         start_date: new Date().toISOString().split("T")[0],
         is_active: true,
         client_codigo: selectedClient!.codigo!,
+        responsible_comercial_id: directorId,
         cep: cep || null,
         rua: rua || null,
         bairro: bairro || null,

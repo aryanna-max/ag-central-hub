@@ -57,3 +57,10 @@ export function isTopografo(role?: string | null): boolean {
   const lower = role.toLowerCase();
   return lower.includes("topógrafo") || lower.includes("topografo");
 }
+
+/** Returns true if the role is a director */
+export function isDirector(role?: string | null): boolean {
+  if (!role) return false;
+  const lower = role.toLowerCase();
+  return lower === "diretor" || lower === "diretor(a)";
+}

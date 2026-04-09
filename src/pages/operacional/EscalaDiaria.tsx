@@ -259,6 +259,34 @@ export default function EscalaDiaria() {
         }
       }
 
+      // Auto-assign responsible_campo_id if a topógrafo was added
+      const topografoId = empIds.find((eid) => {
+        const emp = activeEmployees.find((e) => e.id === eid);
+        return isTopografo(emp?.role);
+      });
+      if (topografoId && addForm.project_id) {
+        const { data: proj } = await supabase
+          .from("projects")
+          .select("responsible_campo_id")
+          .eq("id", addForm.project_id)
+          .single();
+        if (proj && proj.responsible_campo_id !== topografoId) {
+          const prevId = proj.responsible_campo_id;
+          await supabase.from("projects").update({ responsible_campo_id: topografoId } as any).eq("id", addForm.project_id);
+          if (prevId && prevId !== topografoId) {
+            const prevEmp = activeEmployees.find((e) => e.id === prevId);
+            const newEmp = activeEmployees.find((e) => e.id === topografoId);
+            await supabase.from("project_status_history").insert({
+              project_id: addForm.project_id,
+              from_status: "execucao",
+              to_status: "execucao",
+              modulo: "operacional",
+              notes: `Responsável campo alterado: ${prevEmp?.name || "anterior"} → ${newEmp?.name || "novo"}`,
+            } as any);
+          }
+        }
+      }
+
       qc.invalidateQueries({ queryKey: ["daily-schedule"] });
       setShowAddModal(false);
       setAddForm({ project_id: "", employee_ids: [], vehicle_id: "", team_id: "", benefits: { cafe: false, almoco: false, janta: false, vt: false } });

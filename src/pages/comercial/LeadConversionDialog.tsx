@@ -11,6 +11,8 @@ import { useClients, useCreateClient, type Client } from "@/hooks/useClients";
 import { useCreateProject, useProjects } from "@/hooks/useProjects";
 import { useUpdateLead, type Lead } from "@/hooks/useLeads";
 import { useCreateAlerts, type AlertInsert } from "@/hooks/useAlerts";
+import { useEmployees } from "@/hooks/useEmployees";
+import { isDirector } from "@/lib/fieldRoles";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -46,10 +48,12 @@ interface Props {
 
 export default function LeadConversionDialog({ open, onOpenChange, lead, onConverted }: Props) {
   const { data: clients = [] } = useClients();
+  const { data: employees = [] } = useEmployees();
   const createClient = useCreateClient();
   const createProject = useCreateProject();
   const updateLead = useUpdateLead();
   const createAlerts = useCreateAlerts();
+  const directorId = employees.find((e) => e.status !== "desligado" && isDirector(e.role))?.id || null;
 
   const isExistingClient = lead?.origin === "cliente_recorrente" || lead?.origin === "contrato_ativo";
 
@@ -203,6 +207,7 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
         lead_id: lead.id,
         start_date: new Date().toISOString().split("T")[0],
         client_codigo: isExistingClient ? existingClient!.codigo! : clientCodigo.toUpperCase(),
+        responsible_comercial_id: directorId,
       } as any);
 
       // Step 4: Update lead
