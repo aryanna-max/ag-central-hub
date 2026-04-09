@@ -353,15 +353,15 @@ function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | n
   const deleteContact = useDeleteClientContact();
 
   const [showAddContact, setShowAddContact] = useState(false);
-  const [contactForm, setContactForm] = useState<Omit<ClientContactInsert, "client_id">>({ contact_name: "" });
+  const [contactForm, setContactForm] = useState<Omit<ClientContactInsert, "client_id">>({ nome: "" });
 
   if (!client) return null;
 
   const handleAddContact = async () => {
-    if (!contactForm.contact_name.trim()) return;
+    if (!contactForm.nome.trim()) return;
     try {
       await createContact.mutateAsync({ ...contactForm, client_id: client.id });
-      setContactForm({ contact_name: "" });
+      setContactForm({ nome: "" });
       setShowAddContact(false);
       toast.success("Contato adicionado");
     } catch {
@@ -380,11 +380,12 @@ function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | n
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="w-5 h-5" />
             {client.name}
+            {client.codigo && <Badge variant="outline" className="font-mono text-xs ml-1">{client.codigo}</Badge>}
             <Badge variant={client.is_active ? "default" : "secondary"} className="text-xs ml-2">
               {client.is_active ? "Ativo" : "Inativo"}
             </Badge>
@@ -415,42 +416,63 @@ function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | n
         </div>
 
         {showAddContact && (
-          <div className="grid grid-cols-4 gap-2 items-end">
-            <div className="space-y-1">
-              <Label className="text-xs">Nome *</Label>
-              <Input value={contactForm.contact_name} onChange={(e) => setContactForm({ ...contactForm, contact_name: e.target.value })} className="h-8 text-sm" />
+          <div className="space-y-2 border rounded-md p-3 bg-muted/30">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Nome *</Label>
+                <Input value={contactForm.nome} onChange={(e) => setContactForm({ ...contactForm, nome: e.target.value })} className="h-8 text-sm" placeholder="Nome do contato" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Cargo</Label>
+                <Input value={contactForm.cargo || ""} onChange={(e) => setContactForm({ ...contactForm, cargo: e.target.value })} className="h-8 text-sm" placeholder="Ex: Engenheiro" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Telefone</Label>
+                <Input value={contactForm.telefone || ""} onChange={(e) => setContactForm({ ...contactForm, telefone: e.target.value })} className="h-8 text-sm" placeholder="(81) 99999-0000" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">E-mail</Label>
+                <Input value={contactForm.email || ""} onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })} className="h-8 text-sm" placeholder="email@empresa.com" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Área</Label>
+                <Input value={contactForm.area || ""} onChange={(e) => setContactForm({ ...contactForm, area: e.target.value })} className="h-8 text-sm" placeholder="Ex: Obras, Financeiro" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Notas</Label>
+                <Input value={contactForm.notas || ""} onChange={(e) => setContactForm({ ...contactForm, notas: e.target.value })} className="h-8 text-sm" placeholder="Observações" />
+              </div>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Telefone</Label>
-              <Input value={contactForm.contact_phone || ""} onChange={(e) => setContactForm({ ...contactForm, contact_phone: e.target.value })} className="h-8 text-sm" />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setShowAddContact(false)}>Cancelar</Button>
+              <Button size="sm" onClick={handleAddContact} disabled={createContact.isPending}>Salvar</Button>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">E-mail</Label>
-              <Input value={contactForm.contact_email || ""} onChange={(e) => setContactForm({ ...contactForm, contact_email: e.target.value })} className="h-8 text-sm" />
-            </div>
-            <Button size="sm" onClick={handleAddContact} disabled={createContact.isPending}>Salvar</Button>
           </div>
         )}
 
-        <ScrollArea className="max-h-28">
+        <ScrollArea className="flex-1 max-h-60">
           {contacts.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-2">Nenhum contato cadastrado.</p>
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhum contato cadastrado.</p>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-2">
               {contacts.map((c) => (
-                <div key={c.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm">
-                  <div>
-                    <span className="font-medium">{c.contact_name}</span>
-                    {c.role && <span className="text-xs text-muted-foreground ml-2">({c.role})</span>}
-                    {c.is_primary && <Badge className="ml-2 text-[10px] h-4">Principal</Badge>}
+                <div key={c.id} className="flex items-start justify-between p-3 rounded-md bg-muted/50 text-sm">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{c.nome}</span>
+                      {c.cargo && <Badge variant="outline" className="text-[10px] h-4">{c.cargo}</Badge>}
+                      {c.tipo === "principal" && <Badge className="text-[10px] h-4">Principal</Badge>}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                      {c.telefone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{c.telefone}</span>}
+                      {c.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{c.email}</span>}
+                      {c.area && <span>Área: {c.area}</span>}
+                    </div>
+                    {c.notas && <p className="text-xs text-muted-foreground italic mt-1">{c.notas}</p>}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    {c.contact_phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{c.contact_phone}</span>}
-                    {c.contact_email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{c.contact_email}</span>}
-                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleDeleteContact(c.id)}>
-                      <Trash2 className="w-3 h-3 text-destructive" />
-                    </Button>
-                  </div>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => handleDeleteContact(c.id)}>
+                    <Trash2 className="w-3 h-3 text-destructive" />
+                  </Button>
                 </div>
               ))}
             </div>
