@@ -154,6 +154,66 @@ export type Database = {
           },
         ]
       }
+      client_contacts: {
+        Row: {
+          area: string | null
+          cargo: string | null
+          client_id: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          nome: string
+          notas: string | null
+          project_id: string | null
+          telefone: string | null
+          tipo: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          area?: string | null
+          cargo?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nome: string
+          notas?: string | null
+          project_id?: string | null
+          telefone?: string | null
+          tipo?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          area?: string | null
+          cargo?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nome?: string
+          notas?: string | null
+          project_id?: string | null
+          telefone?: string | null
+          tipo?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_contacts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
