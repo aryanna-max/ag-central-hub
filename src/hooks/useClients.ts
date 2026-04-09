@@ -65,21 +65,28 @@ export interface ClientInsert {
 export interface ClientContact {
   id: string;
   client_id: string;
-  contact_name: string;
-  contact_phone: string | null;
-  contact_email: string | null;
-  role: string | null;
-  is_primary: boolean;
+  project_id: string | null;
+  nome: string;
+  telefone: string | null;
+  email: string | null;
+  cargo: string | null;
+  area: string | null;
+  tipo: string | null;
+  notas: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export interface ClientContactInsert {
   client_id: string;
-  contact_name: string;
-  contact_phone?: string | null;
-  contact_email?: string | null;
-  role?: string | null;
-  is_primary?: boolean;
+  project_id?: string | null;
+  nome: string;
+  telefone?: string | null;
+  email?: string | null;
+  cargo?: string | null;
+  area?: string | null;
+  tipo?: string | null;
+  notas?: string | null;
 }
 
 export function useClients() {
@@ -108,7 +115,7 @@ export function useClientContacts(clientId: string | undefined) {
         .from("client_contacts" as any)
         .select("*")
         .eq("client_id", clientId!)
-        .order("is_primary", { ascending: false });
+        .order("created_at", { ascending: true });
       if (error) throw error;
       return data as unknown as ClientContact[];
     },

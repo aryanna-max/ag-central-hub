@@ -341,15 +341,15 @@ function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | n
   const deleteContact = useDeleteClientContact();
 
   const [showAddContact, setShowAddContact] = useState(false);
-  const [contactForm, setContactForm] = useState<Omit<ClientContactInsert, "client_id">>({ contact_name: "" });
+  const [contactForm, setContactForm] = useState<Omit<ClientContactInsert, "client_id">>({ nome: "" });
 
   if (!client) return null;
 
   const handleAddContact = async () => {
-    if (!contactForm.contact_name.trim()) return;
+    if (!contactForm.nome.trim()) return;
     try {
       await createContact.mutateAsync({ ...contactForm, client_id: client.id });
-      setContactForm({ contact_name: "" });
+      setContactForm({ nome: "" });
       setShowAddContact(false);
       toast.success("Contato adicionado");
     } catch {
@@ -403,20 +403,32 @@ function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | n
         </div>
 
         {showAddContact && (
-          <div className="grid grid-cols-4 gap-2 items-end">
-            <div className="space-y-1">
-              <Label className="text-xs">Nome *</Label>
-              <Input value={contactForm.contact_name} onChange={(e) => setContactForm({ ...contactForm, contact_name: e.target.value })} className="h-8 text-sm" />
+          <div className="space-y-2">
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Nome *</Label>
+                <Input value={contactForm.nome} onChange={(e) => setContactForm({ ...contactForm, nome: e.target.value })} className="h-8 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Telefone</Label>
+                <Input value={contactForm.telefone || ""} onChange={(e) => setContactForm({ ...contactForm, telefone: e.target.value })} className="h-8 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">E-mail</Label>
+                <Input value={contactForm.email || ""} onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })} className="h-8 text-sm" />
+              </div>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Telefone</Label>
-              <Input value={contactForm.contact_phone || ""} onChange={(e) => setContactForm({ ...contactForm, contact_phone: e.target.value })} className="h-8 text-sm" />
+            <div className="grid grid-cols-3 gap-2 items-end">
+              <div className="space-y-1">
+                <Label className="text-xs">Cargo</Label>
+                <Input value={contactForm.cargo || ""} onChange={(e) => setContactForm({ ...contactForm, cargo: e.target.value })} className="h-8 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Área</Label>
+                <Input value={contactForm.area || ""} onChange={(e) => setContactForm({ ...contactForm, area: e.target.value })} className="h-8 text-sm" placeholder="Ex: Engenharia, Financeiro" />
+              </div>
+              <Button size="sm" onClick={handleAddContact} disabled={createContact.isPending}>Salvar</Button>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">E-mail</Label>
-              <Input value={contactForm.contact_email || ""} onChange={(e) => setContactForm({ ...contactForm, contact_email: e.target.value })} className="h-8 text-sm" />
-            </div>
-            <Button size="sm" onClick={handleAddContact} disabled={createContact.isPending}>Salvar</Button>
           </div>
         )}
 
@@ -428,13 +440,13 @@ function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | n
               {contacts.map((c) => (
                 <div key={c.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm">
                   <div>
-                    <span className="font-medium">{c.contact_name}</span>
-                    {c.role && <span className="text-xs text-muted-foreground ml-2">({c.role})</span>}
-                    {c.is_primary && <Badge className="ml-2 text-[10px] h-4">Principal</Badge>}
+                    <span className="font-medium">{c.nome}</span>
+                    {c.cargo && <span className="text-xs text-muted-foreground ml-2">({c.cargo})</span>}
+                    {c.area && <span className="text-xs text-muted-foreground ml-1">· {c.area}</span>}
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    {c.contact_phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{c.contact_phone}</span>}
-                    {c.contact_email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{c.contact_email}</span>}
+                    {c.telefone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{c.telefone}</span>}
+                    {c.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{c.email}</span>}
                     <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleDeleteContact(c.id)}>
                       <Trash2 className="w-3 h-3 text-destructive" />
                     </Button>
