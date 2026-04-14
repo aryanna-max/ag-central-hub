@@ -1599,6 +1599,7 @@ export type Database = {
       projects: {
         Row: {
           bairro: string | null
+          billing_type: string
           cep: string | null
           cidade: string | null
           client_id: string | null
@@ -1646,6 +1647,7 @@ export type Database = {
         }
         Insert: {
           bairro?: string | null
+          billing_type?: string
           cep?: string | null
           cidade?: string | null
           client_id?: string | null
@@ -1693,6 +1695,7 @@ export type Database = {
         }
         Update: {
           bairro?: string | null
+          billing_type?: string
           cep?: string | null
           cidade?: string | null
           client_id?: string | null

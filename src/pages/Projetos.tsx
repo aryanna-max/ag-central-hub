@@ -201,6 +201,7 @@ export default function Projetos() {
         empresa_emissora: editForm.empresa_emissora,
         conta_bancaria: editForm.conta_bancaria,
         modalidade_faturamento: editForm.modalidade_faturamento,
+        billing_type: editForm.billing_type,
         referencia_contrato: editForm.referencia_contrato,
         instrucao_faturamento_variavel: editForm.instrucao_faturamento_variavel,
         contato_engenheiro: editForm.contato_engenheiro,
@@ -569,6 +570,17 @@ export default function Projetos() {
                         <SelectItem value="por_medicao">Por medição</SelectItem>
                         <SelectItem value="diaria">Diária</SelectItem>
                         <SelectItem value="por_servico">Por serviço</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Tipo de Cobrança</Label>
+                    <Select value={editForm.billing_type || "entrega_nf"} onValueChange={(v) => setEditForm({ ...editForm, billing_type: v })}>
+                      <SelectTrigger><SelectValue placeholder="Selecionar tipo" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="entrega_nf">Entrega + NF</SelectItem>
+                        <SelectItem value="medicao">Medição</SelectItem>
+                        <SelectItem value="sem_documento">Sem Documento</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

@@ -37,6 +37,7 @@ export interface Project {
   contato_engenheiro: string | null;
   contato_financeiro: string | null;
   modalidade_faturamento: string | null;
+  billing_type: string;
   referencia_contrato: string | null;
   instrucao_faturamento_variavel: boolean | null;
   has_multiple_services: boolean | null;
