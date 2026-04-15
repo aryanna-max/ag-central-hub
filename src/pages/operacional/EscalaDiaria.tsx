@@ -264,6 +264,34 @@ export default function EscalaDiaria() {
         }
       }
 
+      // Auto-assign responsible_campo_id if a topógrafo was added
+      const topografoId = empIds.find((eid) => {
+        const emp = activeEmployees.find((e) => e.id === eid);
+        return isTopografo(emp?.role);
+      });
+      if (topografoId && addForm.project_id) {
+        const { data: proj } = await supabase
+          .from("projects")
+          .select("responsible_campo_id")
+          .eq("id", addForm.project_id)
+          .single();
+        if (proj && proj.responsible_campo_id !== topografoId) {
+          const prevId = proj.responsible_campo_id;
+          await supabase.from("projects").update({ responsible_campo_id: topografoId } as any).eq("id", addForm.project_id);
+          if (prevId && prevId !== topografoId) {
+            const prevEmp = activeEmployees.find((e) => e.id === prevId);
+            const newEmp = activeEmployees.find((e) => e.id === topografoId);
+            await supabase.from("project_status_history").insert({
+              project_id: addForm.project_id,
+              from_status: "execucao",
+              to_status: "execucao",
+              modulo: "operacional",
+              notes: `Responsável campo alterado: ${prevEmp?.name || "anterior"} → ${newEmp?.name || "novo"}`,
+            } as any);
+          }
+        }
+      }
+
       qc.invalidateQueries({ queryKey: ["daily-schedule"] });
       setShowAddModal(false);
       setAddForm({ project_id: "", employee_ids: [], vehicle_id: "", team_id: "", benefits: { cafe: false, almoco: false, janta: false, vt: false } });
@@ -278,7 +306,7 @@ export default function EscalaDiaria() {
     const team = (teams || []).find((t: any) => t.id === teamId);
     if (!team) return;
     const memberIds = ((team as any).team_members || []).map((m: any) => m.employee_id);
-    setAddForm((prev) => ({ ...prev, employee_ids: memberIds }));
+    setAddForm((prev) => ({ ...prev, employee_ids: memberIds, team_id: teamId }));
     // Also pre-fill project and vehicle from team defaults
     if ((team as any).default_project_id) {
       setAddForm((prev) => ({ ...prev, project_id: (team as any).default_project_id }));
@@ -605,24 +633,28 @@ export default function EscalaDiaria() {
                   </TableHeader>
                   <TableBody>
                     {assignments.map((a: any, idx: number) => {
-                      const teamMembers = a.teams?.team_members || [];
-                      const topografo = teamMembers.find((m: any) => m.role === "topografo");
-                      const auxiliares = teamMembers.filter((m: any) => m.role !== "topografo");
-                      const teamEntries = (schedule.entries || []).filter((e: any) => e.team_id === a.team_id);
+                      // Show actually assigned employees from daily_schedule_entries, not preset group members
+                      let teamEntries = (schedule.entries || []).filter((e: any) => e.daily_team_assignment_id === a.id);
+                      // Fallback: if entries don't have daily_team_assignment_id, match by project_id
+                      if (teamEntries.length === 0) {
+                        teamEntries = (schedule.entries || []).filter((e: any) => !e.daily_team_assignment_id && e.project_id === a.project_id);
+                      }
+                      const topografoEntry = teamEntries.find((e: any) => isTopografo(e.employees?.role));
+                      const auxiliarEntries = teamEntries.filter((e: any) => !isTopografo(e.employees?.role));
 
                       return (
                         <TableRow key={a.id} className="border-b">
                           <TableCell className="font-bold text-center">{idx + 1}</TableCell>
                           <TableCell>
-                            <span className="font-bold text-sm uppercase">{topografo?.employees?.name || "—"}</span>
+                            <span className="font-bold text-sm uppercase">{topografoEntry?.employees?.name || "—"}</span>
                           </TableCell>
                           <TableCell>
                             <div className="space-y-0.5">
-                              {auxiliares.length === 0 ? (
+                              {auxiliarEntries.length === 0 ? (
                                 <span className="text-muted-foreground text-sm">—</span>
                               ) : (
-                                auxiliares.map((aux: any) => (
-                                  <p key={aux.id} className="text-sm">{aux.employees?.name}</p>
+                                auxiliarEntries.map((entry: any) => (
+                                  <p key={entry.id} className="text-sm">{entry.employees?.name}</p>
                                 ))
                               )}
                             </div>

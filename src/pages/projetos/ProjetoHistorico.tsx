@@ -6,6 +6,7 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { useMeasurements } from "@/hooks/useMeasurements";
 import { useProjectServices } from "@/hooks/useProjectServices";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProjectContacts } from "@/hooks/useProjectContacts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -54,6 +55,7 @@ export default function ProjetoHistorico() {
   const { data: measurements = [] } = useMeasurements();
   const { data: services = [] } = useProjectServices(projectId || "");
   const updateProject = useUpdateProject();
+  const { data: projectContacts = [] } = useProjectContacts(projectId || null);
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Record<string, any>>({});
@@ -400,9 +402,22 @@ export default function ProjetoHistorico() {
           <Separator className="my-3" />
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
             <Field label="Contato Engenheiro" field="contato_engenheiro" />
-            <Field label="Contato Financeiro" field="contato_financeiro" />
             <Field label="Referência Contrato" field="referencia_contrato" />
           </div>
+          {projectContacts.length > 0 && (
+            <>
+              <Separator className="my-3" />
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Contatos</p>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                {projectContacts.map((c) => (
+                  <div key={c.id}>
+                    <p className="text-xs text-muted-foreground capitalize">{c.tipo}</p>
+                    <p className="font-medium">{c.nome}{c.telefone ? ` — ${c.telefone}` : ""}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

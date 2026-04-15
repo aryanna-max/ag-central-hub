@@ -13,6 +13,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Search, Plus, Users, MoreVertical, Pencil, RefreshCw, Trash2, Download } from "lucide-react";
+import { ALL_EMPLOYEE_ROLES } from "@/lib/fieldRoles";
+import { formatCpf } from "@/lib/masks";
 import { toast } from "sonner";
 import { exportCsv } from "@/lib/exportCsv";
 import { format } from "date-fns";
@@ -413,7 +415,7 @@ export default function Funcionarios() {
             </div>
             <div>
               <Label>CPF</Label>
-              <Input value={newCpf} onChange={(e) => setNewCpf(e.target.value)} placeholder="000.000.000-00" />
+              <Input value={newCpf} onChange={(e) => setNewCpf(formatCpf(e.target.value))} placeholder="000.000.000-00" maxLength={14} />
             </div>
             <div>
               <Label>Matrícula</Label>
@@ -422,10 +424,10 @@ export default function Funcionarios() {
             </div>
             <div>
               <Label>Função</Label>
-              <Select value={newRole} onValueChange={(v) => setNewRole(v)}>
-                <SelectTrigger><SelectValue placeholder="Selecione o cargo" /></SelectTrigger>
+              <Select value={newRole} onValueChange={setNewRole}>
+                <SelectTrigger><SelectValue placeholder="Selecione a função..." /></SelectTrigger>
                 <SelectContent>
-                  {FIELD_ROLES.map((r) => (
+                  {ALL_EMPLOYEE_ROLES.map((r) => (
                     <SelectItem key={r} value={r}>{r}</SelectItem>
                   ))}
                 </SelectContent>
@@ -498,10 +500,10 @@ export default function Funcionarios() {
             </div>
             <div>
               <Label>Função</Label>
-              <Select value={editRole} onValueChange={(v) => setEditRole(v)}>
-                <SelectTrigger><SelectValue placeholder="Selecione o cargo" /></SelectTrigger>
+              <Select value={editRole} onValueChange={setEditRole}>
+                <SelectTrigger><SelectValue placeholder="Selecione a função..." /></SelectTrigger>
                 <SelectContent>
-                  {FIELD_ROLES.map((r) => (
+                  {ALL_EMPLOYEE_ROLES.map((r) => (
                     <SelectItem key={r} value={r}>{r}</SelectItem>
                   ))}
                 </SelectContent>

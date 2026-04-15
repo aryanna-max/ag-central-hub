@@ -11,27 +11,7 @@ import { useProjects } from "@/hooks/useProjects";
 import { useCepAutofill } from "@/hooks/useCepAutofill";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-
-function formatCnpj(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 14);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
-  if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
-  if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
-  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
-}
-
-function formatCpf(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 11);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
-  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
-  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-}
-
-function extractDigits(value: string): string {
-  return value.replace(/\D/g, "");
-}
+import { formatCpf, formatCnpj, formatPhone, formatCep, extractDigits } from "@/lib/masks";
 
 function suggestCode(name: string): string {
   const stopWords = ["de", "do", "da", "dos", "das", "e", "a", "o", "em", "para", "com", "ltda", "sa", "s/a", "me", "epp", "eireli"];
@@ -111,7 +91,7 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
       setContactName(""); setContactPhone(""); setContactEmail("");
       setCodigoSuggested(true);
     } else if (open) {
-      setForm({ name: "", tipo: "pj" });
+      setForm({ name: "", tipo: "pj", cidade: "Recife", estado: "PE" });
       setDocDisplay(""); setContactName(""); setContactPhone(""); setContactEmail("");
       setCodigoSuggested(false);
     }
@@ -275,7 +255,7 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
             </div>
             <div className="space-y-2">
               <Label className="text-xs">Telefone</Label>
-              <Input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} className="h-9" />
+              <Input value={contactPhone} onChange={(e) => setContactPhone(formatPhone(e.target.value))} className="h-9" maxLength={15} />
             </div>
             <div className="space-y-2">
               <Label className="text-xs">E-mail</Label>
@@ -292,7 +272,7 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
               <div className="relative">
                 <Input
                   value={form.cep || ""}
-                  onChange={(e) => setForm(prev => ({ ...prev, cep: e.target.value }))}
+                  onChange={(e) => setForm(prev => ({ ...prev, cep: formatCep(e.target.value) }))}
                   placeholder="00000-000"
                   maxLength={9}
                   className="h-9"

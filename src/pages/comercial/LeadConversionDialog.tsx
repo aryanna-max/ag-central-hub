@@ -11,6 +11,9 @@ import { useClients, useCreateClient, type Client } from "@/hooks/useClients";
 import { useCreateProject, useProjects } from "@/hooks/useProjects";
 import { useUpdateLead, type Lead } from "@/hooks/useLeads";
 import { useCreateAlerts, type AlertInsert } from "@/hooks/useAlerts";
+import { useEmployees } from "@/hooks/useEmployees";
+import { isDirector } from "@/lib/fieldRoles";
+import { useCreateProjectContacts } from "@/hooks/useProjectContacts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -46,10 +49,13 @@ interface Props {
 
 export default function LeadConversionDialog({ open, onOpenChange, lead, onConverted }: Props) {
   const { data: clients = [] } = useClients();
+  const { data: employees = [] } = useEmployees();
   const createClient = useCreateClient();
   const createProject = useCreateProject();
   const updateLead = useUpdateLead();
   const createAlerts = useCreateAlerts();
+  const createContacts = useCreateProjectContacts();
+  const directorId = employees.find((e) => e.status !== "desligado" && isDirector(e.role))?.id || null;
 
   const isExistingClient = lead?.origin === "cliente_recorrente" || lead?.origin === "contrato_ativo";
 
@@ -213,10 +219,30 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
         execution_status: "aguardando_campo",
         lead_id: lead.id,
         start_date: new Date().toISOString().split("T")[0],
+        client_codigo: isExistingClient ? existingClient!.codigo! : clientCodigo.toUpperCase(),
+        responsible_comercial_id: directorId,
       } as any);
 
       if (!project?.id) {
         throw new Error("Projeto não foi criado — resposta vazia do banco");
+      }
+
+      // Step 3b: Inherit contacts from client (only if not SPE)
+      const sourceClient = isExistingClient ? existingClient : null;
+      if (sourceClient) {
+        const isSPE = cnpjTomador && sourceClient.cnpj && cnpjTomador !== sourceClient.cnpj;
+        if (!isSPE) {
+          const contactsToCreate: { project_id: string; tipo: "cliente" | "financeiro"; nome: string }[] = [];
+          if (sourceClient.contato_cliente) {
+            contactsToCreate.push({ project_id: project.id, tipo: "cliente", nome: sourceClient.contato_cliente });
+          }
+          if (sourceClient.contato_financeiro) {
+            contactsToCreate.push({ project_id: project.id, tipo: "financeiro", nome: sourceClient.contato_financeiro });
+          }
+          if (contactsToCreate.length > 0) {
+            await createContacts.mutateAsync(contactsToCreate);
+          }
+        }
       }
 
       // Step 4: Update lead
@@ -258,6 +284,15 @@ export default function LeadConversionDialog({ open, onOpenChange, lead, onConve
           recipient: "diretoria",
           title: `Projeto criado — ${displayName}`,
           message: `Código: ${finalCode}. Valor: ${valorFormatted}.`,
+          reference_type: "project",
+          reference_id: project.id,
+        },
+        {
+          alert_type: "novo_projeto",
+          priority: "importante",
+          recipient: "sala_tecnica",
+          title: `Novo projeto — ${displayName}`,
+          message: `Projeto ${finalCode} criado. Preparar para recebimento.`,
           reference_type: "project",
           reference_id: project.id,
         },

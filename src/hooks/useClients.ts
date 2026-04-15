@@ -23,7 +23,7 @@ export interface Client {
   state: string | null;
   segmento: string | null;
   tipo: string | null;
-  contato_engenheiro: string | null;
+  contato_cliente: string | null;
   contato_financeiro: string | null;
   notes: string | null;
   is_active: boolean;
@@ -49,7 +49,7 @@ export interface ClientInsert {
   state?: string | null;
   segmento?: string | null;
   tipo?: string | null;
-  contato_engenheiro?: string | null;
+  contato_cliente?: string | null;
   contato_financeiro?: string | null;
   notes?: string | null;
   is_active?: boolean;
@@ -64,7 +64,7 @@ export interface ClientInsert {
 
 export interface ClientContact {
   id: string;
-  client_id: string | null;
+  client_id: string;
   project_id: string | null;
   nome: string;
   email: string | null;
@@ -73,12 +73,13 @@ export interface ClientContact {
   area: string | null;
   tipo: string | null;
   notas: string | null;
-  created_at: string | null;
-  updated_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ClientContactInsert {
   client_id: string;
+  project_id?: string | null;
   nome: string;
   email?: string | null;
   telefone?: string | null;

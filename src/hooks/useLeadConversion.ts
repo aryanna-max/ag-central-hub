@@ -17,6 +17,7 @@ export function useLeadConversion() {
       responsible_id: lead.responsible_id,
       lead_id: lead.id,
       status: "planejamento",
+      execution_status: "aguardando_processamento",
     });
 
     // Create 3 alerts
@@ -51,6 +52,15 @@ export function useLeadConversion() {
         recipient: "diretoria",
         title: `Projeto criado — ${clientName}`,
         message: `Valor: ${valorFormatted}. Status: Planejamento.`,
+        reference_type: "project",
+        reference_id: project.id,
+      },
+      {
+        alert_type: "novo_projeto",
+        priority: "importante",
+        recipient: "sala_tecnica",
+        title: `Novo projeto — ${clientName}`,
+        message: `Projeto criado. Preparar para recebimento.`,
         reference_type: "project",
         reference_id: project.id,
       },

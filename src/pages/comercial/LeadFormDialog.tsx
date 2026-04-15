@@ -16,6 +16,7 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { isCommercialDirector } from "@/lib/fieldRoles";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { formatCpf, formatCnpj, formatPhone } from "@/lib/masks";
 
 // All non-desligado employees can be responsible
 
@@ -217,8 +218,9 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
                     <Label>CPF</Label>
                     <Input
                       value={form.cnpj || ""}
-                      onChange={(e) => setForm((prev) => ({ ...prev, cnpj: e.target.value }))}
+                      onChange={(e) => setForm((prev) => ({ ...prev, cnpj: formatCpf(e.target.value) }))}
                       placeholder="000.000.000-00"
+                      maxLength={14}
                     />
                   </div>
                 </>
@@ -244,8 +246,9 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
                     <Label>CNPJ</Label>
                     <Input
                       value={form.cnpj || ""}
-                      onChange={(e) => setForm((prev) => ({ ...prev, cnpj: e.target.value }))}
-                      placeholder="XX.XXX.XXX/XXXX-XX"
+                      onChange={(e) => setForm((prev) => ({ ...prev, cnpj: formatCnpj(e.target.value) }))}
+                      placeholder="00.000.000/0000-00"
+                      maxLength={18}
                     />
                   </div>
                 </>
@@ -263,8 +266,9 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
                 <Label>Telefone</Label>
                 <Input
                   value={form.phone || ""}
-                  onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+                  onChange={(e) => setForm((prev) => ({ ...prev, phone: formatPhone(e.target.value) }))}
                   placeholder="(00) 00000-0000"
+                  maxLength={15}
                 />
               </div>
             </div>

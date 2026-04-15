@@ -8,9 +8,13 @@ import { AlertTriangle, Loader2 } from "lucide-react";
 import { SERVICE_TYPES } from "@/lib/serviceTypes";
 import { useClients, type Client } from "@/hooks/useClients";
 import { useCreateProject } from "@/hooks/useProjects";
+import { useEmployees } from "@/hooks/useEmployees";
 import { useCepAutofill } from "@/hooks/useCepAutofill";
+import { isDirector } from "@/lib/fieldRoles";
+import { useCreateProjectContacts } from "@/hooks/useProjectContacts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatCnpj, formatCep } from "@/lib/masks";
 
 async function generateProjectCode(clientCodigo: string): Promise<string> {
   const year = new Date().getFullYear();
@@ -30,7 +34,10 @@ interface Props {
 
 export default function ProjectFormDialog({ open, onOpenChange }: Props) {
   const { data: clients = [] } = useClients();
+  const { data: employees = [] } = useEmployees();
   const createProject = useCreateProject();
+  const createContacts = useCreateProjectContacts();
+  const directorId = employees.find((e) => e.status !== "desligado" && isDirector(e.role))?.id || null;
 
   const [clientId, setClientId] = useState("");
   const [projectName, setProjectName] = useState("");
@@ -48,8 +55,8 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
   const [rua, setRua] = useState("");
   const [bairro, setBairro] = useState("");
   const [numero, setNumero] = useState("");
-  const [cidade, setCidade] = useState("");
-  const [estado, setEstado] = useState("");
+  const [cidade, setCidade] = useState("Recife");
+  const [estado, setEstado] = useState("PE");
 
   const cepData = useCepAutofill(cep);
 
@@ -68,7 +75,7 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
       setClientId(""); setProjectName(""); setCnpjTomador("");
       setContractValue(null); setEmpresaFaturadora("ag_topografia"); setBillingType("");
       setProjectCode(""); setService(""); setCep(""); setRua(""); setBairro("");
-      setNumero(""); setCidade(""); setEstado("");
+      setNumero(""); setCidade("Recife"); setEstado("PE");
     }
   }, [open]);
 
@@ -80,6 +87,11 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
       .catch(() => setProjectCode(""))
       .finally(() => setCodeLoading(false));
     setCnpjTomador(selectedClient.cnpj || "");
+    // Auto-suggest project name if empty
+    if (!projectName && selectedClient.name) {
+      const loc = cidade && cidade !== "Recife" ? ` — ${cidade}` : "";
+      setProjectName(`${selectedClient.name}${loc}`);
+    }
   }, [selectedClient]);
 
   const handleSubmit = async () => {
@@ -90,7 +102,7 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
 
     setIsPending(true);
     try {
-      await createProject.mutateAsync({
+      const project = await createProject.mutateAsync({
         name: projectName,
         service: service || null,
         client_id: clientId,
@@ -103,6 +115,7 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
         start_date: new Date().toISOString().split("T")[0],
         is_active: true,
         client_codigo: selectedClient!.codigo!,
+        responsible_comercial_id: directorId,
         cep: cep || null,
         rua: rua || null,
         bairro: bairro || null,
@@ -110,6 +123,22 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
         cidade: cidade || null,
         estado: estado || null,
       } as any);
+
+      // Inherit contacts from client if NOT an SPE (cnpj_tomador empty or matches client CNPJ)
+      const isSPE = cnpjTomador && selectedClient?.cnpj && cnpjTomador !== selectedClient.cnpj;
+      if (!isSPE && selectedClient) {
+        const contactsToCreate: { project_id: string; tipo: "cliente" | "financeiro"; nome: string }[] = [];
+        if (selectedClient.contato_cliente) {
+          contactsToCreate.push({ project_id: (project as any).id, tipo: "cliente", nome: selectedClient.contato_cliente });
+        }
+        if (selectedClient.contato_financeiro) {
+          contactsToCreate.push({ project_id: (project as any).id, tipo: "financeiro", nome: selectedClient.contato_financeiro });
+        }
+        if (contactsToCreate.length > 0) {
+          await createContacts.mutateAsync(contactsToCreate);
+        }
+      }
+
       toast.success(`Projeto ${projectCode} criado`);
       onOpenChange(false);
     } catch (err: any) {
@@ -167,7 +196,7 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
 
           <div className="space-y-1">
             <Label>CNPJ Tomador</Label>
-            <Input value={cnpjTomador} onChange={(e) => setCnpjTomador(e.target.value)} placeholder="CNPJ da SPE, filial ou unidade" />
+            <Input value={cnpjTomador} onChange={(e) => setCnpjTomador(formatCnpj(e.target.value))} placeholder="00.000.000/0000-00" maxLength={18} />
             <p className="text-xs text-muted-foreground">Pode ser diferente do CNPJ do cliente</p>
           </div>
 
@@ -215,7 +244,7 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
             <div className="space-y-1">
               <Label className="text-xs">CEP</Label>
               <div className="relative">
-                <Input value={cep} onChange={(e) => setCep(e.target.value)} placeholder="00000-000" maxLength={9} className="h-9" />
+                <Input value={cep} onChange={(e) => setCep(formatCep(e.target.value))} placeholder="00000-000" maxLength={9} className="h-9" />
                 {cepData.loading && <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 animate-spin text-muted-foreground" />}
               </div>
             </div>

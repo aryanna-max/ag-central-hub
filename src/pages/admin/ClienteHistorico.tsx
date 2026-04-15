@@ -4,6 +4,9 @@ import { useClients } from "@/hooks/useClients";
 import { useProjects } from "@/hooks/useProjects";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useLeads } from "@/hooks/useLeads";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import type { ProjectContact } from "@/hooks/useProjectContacts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -87,15 +90,29 @@ export default function ClienteHistorico() {
     return { total, emExecucao, fatPendente, valorTotal };
   }, [clientProjects]);
 
+  const projectIds = useMemo(() => clientProjects.map((p) => p.id), [clientProjects]);
+  const { data: allContacts = [] } = useQuery({
+    queryKey: ["client-project-contacts", clientId],
+    enabled: projectIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("project_contacts")
+        .select("*")
+        .in("project_id", projectIds);
+      if (error) throw error;
+      return (data || []) as ProjectContact[];
+    },
+  });
+
   const contatos = useMemo(() => {
-    const eng = new Set<string>();
-    const fin = new Set<string>();
-    clientProjects.forEach(p => {
-      if (p.contato_engenheiro) eng.add(p.contato_engenheiro);
-      if (p.contato_financeiro) fin.add(p.contato_financeiro);
+    const clientes = new Set<string>();
+    const financeiros = new Set<string>();
+    allContacts.forEach((c) => {
+      if (c.tipo === "cliente" || c.tipo === "engenheiro") clientes.add(c.nome);
+      if (c.tipo === "financeiro") financeiros.add(c.nome);
     });
-    return { engenheiros: [...eng], financeiros: [...fin] };
-  }, [clientProjects]);
+    return { clientes: [...clientes], financeiros: [...financeiros] };
+  }, [allContacts]);
 
   if (!client) {
     return (
@@ -207,12 +224,12 @@ export default function ClienteHistorico() {
       </div>
 
       {/* Contatos */}
-      {(contatos.engenheiros.length > 0 || contatos.financeiros.length > 0 || client.notes) && (
+      {(contatos.clientes.length > 0 || contatos.financeiros.length > 0 || client.notes) && (
         <Card>
           <CardContent className="p-4 space-y-3">
             <h3 className="font-semibold flex items-center gap-2"><Users className="w-4 h-4" /> Contatos e Observações</h3>
-            {contatos.engenheiros.length > 0 && (
-              <div><span className="text-sm font-medium">Engenheiros: </span><span className="text-sm">{contatos.engenheiros.join(", ")}</span></div>
+            {contatos.clientes.length > 0 && (
+              <div><span className="text-sm font-medium">Contatos: </span><span className="text-sm">{contatos.clientes.join(", ")}</span></div>
             )}
             {contatos.financeiros.length > 0 && (
               <div><span className="text-sm font-medium">Financeiros: </span><span className="text-sm">{contatos.financeiros.join(", ")}</span></div>
