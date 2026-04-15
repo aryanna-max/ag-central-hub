@@ -14,7 +14,7 @@ export function useLeadConversion() {
       client_cnpj: lead.cnpj,
       service: lead.servico,
       contract_value: lead.valor,
-      responsible_id: lead.responsible_id,
+      responsible: lead.responsible_id as any,
       lead_id: lead.id,
       status: "planejamento",
       execution_status: "aguardando_processamento",

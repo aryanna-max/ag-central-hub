@@ -103,7 +103,7 @@ export default function ProjetoHistorico() {
   }
 
   const p = editing ? form : project;
-  const responsible = p.responsible_id ? empMap.get(p.responsible_id) : p.responsible;
+  const responsible = (p as any).responsible_id ? empMap.get((p as any).responsible_id) : p.responsible;
   const totalMeasured = projMeasurements.reduce((s, m) => s + (m.valor_bruto || 0), 0);
   const totalNF = projMeasurements.reduce((s, m) => s + (m.valor_nf || 0), 0);
   const location = [p.cidade, p.estado].filter(Boolean).join("/");
