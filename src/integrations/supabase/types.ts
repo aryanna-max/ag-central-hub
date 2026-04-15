@@ -1485,6 +1485,47 @@ export type Database = {
           },
         ]
       }
+      project_contacts: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          nome: string
+          notas: string | null
+          project_id: string
+          telefone: string | null
+          tipo: Database["public"]["Enums"]["contact_type"]
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nome: string
+          notas?: string | null
+          project_id: string
+          telefone?: string | null
+          tipo: Database["public"]["Enums"]["contact_type"]
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nome?: string
+          notas?: string | null
+          project_id?: string
+          telefone?: string | null
+          tipo?: Database["public"]["Enums"]["contact_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_contacts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_scope_items: {
         Row: {
           completed_at: string | null
@@ -1702,8 +1743,6 @@ export type Database = {
           referencia_contrato: string | null
           responsible_campo_id: string | null
           responsible_comercial_id: string | null
-          responsible_diretor_id: string | null
-          responsible_id: string | null
           responsible_tecnico_id: string | null
           rrt_emitido_em: string | null
           rrt_numero: string | null
@@ -1756,8 +1795,6 @@ export type Database = {
           referencia_contrato?: string | null
           responsible_campo_id?: string | null
           responsible_comercial_id?: string | null
-          responsible_diretor_id?: string | null
-          responsible_id?: string | null
           responsible_tecnico_id?: string | null
           rrt_emitido_em?: string | null
           rrt_numero?: string | null
@@ -1810,8 +1847,6 @@ export type Database = {
           referencia_contrato?: string | null
           responsible_campo_id?: string | null
           responsible_comercial_id?: string | null
-          responsible_diretor_id?: string | null
-          responsible_id?: string | null
           responsible_tecnico_id?: string | null
           rrt_emitido_em?: string | null
           rrt_numero?: string | null
@@ -1844,26 +1879,12 @@ export type Database = {
             foreignKeyName: "projects_responsible_campo_id_fkey"
             columns: ["responsible_campo_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "projects_responsible_comercial_id_fkey"
             columns: ["responsible_comercial_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "projects_responsible_diretor_id_fkey"
-            columns: ["responsible_diretor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "projects_responsible_id_fkey"
-            columns: ["responsible_id"]
             isOneToOne: false
             referencedRelation: "employees"
             referencedColumns: ["id"]
@@ -1872,7 +1893,7 @@ export type Database = {
             foreignKeyName: "projects_responsible_tecnico_id_fkey"
             columns: ["responsible_tecnico_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
           {
@@ -2535,6 +2556,7 @@ export type Database = {
         | "financeiro"
       attendance_status: "presente" | "falta" | "justificado" | "atrasado"
       billing_mode: "fixo_mensal" | "diarias" | "esporadico"
+      contact_type: "cliente" | "financeiro" | "engenheiro" | "outro"
       employee_status:
         | "disponivel"
         | "ferias"
@@ -2783,6 +2805,7 @@ export const Constants = {
       ],
       attendance_status: ["presente", "falta", "justificado", "atrasado"],
       billing_mode: ["fixo_mensal", "diarias", "esporadico"],
+      contact_type: ["cliente", "financeiro", "engenheiro", "outro"],
       employee_status: [
         "disponivel",
         "ferias",
