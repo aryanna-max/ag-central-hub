@@ -149,7 +149,7 @@ export default function Projetos() {
   const { data: projects = [], isLoading } = useProjects();
   const { data: employees = [] } = useEmployees();
   const { data: clients = [] } = useClients();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const updateProject = useUpdateProject();
   const upsertContacts = useUpsertProjectContacts();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);

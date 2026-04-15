@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import {
-  DollarSign, CheckCircle, Clock, Undo2, Filter, FileText,
+  DollarSign, CheckCircle, Clock, Undo2, FileText, Eye,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,20 +13,44 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
-import { useQuery } from "@tanstack/react-query";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 
-const billingLabels: Record<string, { label: string; color: string }> = {
-  medicao_mensal: { label: "Medição Mensal", color: "bg-blue-100 text-blue-800 border-blue-200" },
-  entrega_nf: { label: "NF na Entrega", color: "bg-emerald-100 text-emerald-800 border-emerald-200" },
-  entrega_recibo: { label: "Recibo na Entrega", color: "bg-amber-100 text-amber-800 border-amber-200" },
+/* ── Billing type badge config ── */
+const billingBadges: Record<string, { label: string; className: string }> = {
+  entrega_nf: { label: "NF na entrega", className: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+  entrega_recibo: { label: "Recibo", className: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+  medicao_mensal: { label: "Por medição", className: "bg-blue-100 text-blue-800 border-blue-200" },
+  misto: { label: "Misto", className: "bg-amber-100 text-amber-800 border-amber-200" },
+  sem_documento: { label: "Sem documento", className: "bg-muted text-muted-foreground" },
 };
 
+/* ── Priority border colors ── */
+const priorityBorder: Record<string, string> = {
+  urgente: "border-l-destructive",
+  importante: "border-l-orange-500",
+  informacao: "border-l-blue-500",
+};
+
+const fmt = (v: number | null | undefined) =>
+  v != null ? `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—";
+
+/* ── Enriched alert type ── */
 interface EnrichedAlert {
   id: string;
   title: string;
@@ -38,6 +62,7 @@ interface EnrichedAlert {
   resolved_at: string | null;
   created_at: string;
   reference_id: string | null;
+  reference_type: string | null;
   alert_status: string | null;
   project_codigo: string | null;
   project_name: string | null;
@@ -47,6 +72,9 @@ interface EnrichedAlert {
   billing_type: string | null;
   contract_value: number | null;
   client_name: string | null;
+  client_id: string | null;
+  /* full project data for sheet */
+  project: any | null;
 }
 
 export default function FaturamentoAlertas() {
@@ -55,17 +83,25 @@ export default function FaturamentoAlertas() {
   const createAlerts = useCreateAlerts();
   const resolveAlert = useResolveAlert();
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const qc = useQueryClient();
 
   const [returnSheetId, setReturnSheetId] = useState<string | null>(null);
   const [returnComment, setReturnComment] = useState("");
-  const [resolveAlertId, setResolveAlertId] = useState<string | null>(null);
-  const [docNumber, setDocNumber] = useState("");
   const [subtab, setSubtab] = useState("pendentes");
+
+  /* NF modal state */
+  const [nfAlert, setNfAlert] = useState<EnrichedAlert | null>(null);
+  const [nfNumero, setNfNumero] = useState("");
+  const [nfData, setNfData] = useState<Date>(new Date());
+  const [nfValor, setNfValor] = useState("");
+  const [nfEmpresa, setNfEmpresa] = useState("ag_topografia");
+
+  /* Project sheet state */
+  const [sheetProject, setSheetProject] = useState<any | null>(null);
 
   const submittedSheets = sheets.filter((s) => s.status === "submetido");
 
-  // Enriched alerts with project + client data
+  /* ── Enriched alerts query ── */
   const { data: enrichedAlerts = [] } = useQuery({
     queryKey: ["faturamento-alerts-enriched"],
     queryFn: async () => {
@@ -89,22 +125,26 @@ export default function FaturamentoAlertas() {
       if (refIds.length > 0) {
         const { data: projects } = await supabase
           .from("projects")
-          .select("id, codigo, name, cnpj_tomador, empresa_faturadora, delivered_at, billing_type, contract_value, client_id")
+          .select("*,clients(id,name,cnpj)")
           .in("id", refIds);
 
         (projects || []).forEach((p: any) => {
-          projectsMap[p.id] = p;
+          const proj = {
+            ...p,
+            clients: Array.isArray(p.clients) ? p.clients[0] || null : p.clients || null,
+          };
+          projectsMap[p.id] = proj;
         });
 
         const clientIds = (projects || [])
-          .map((p: any) => p.client_id)
+          .map((p: any) => Array.isArray(p.clients) ? p.clients[0]?.id : p.clients?.id || p.client_id)
           .filter(Boolean) as string[];
 
         if (clientIds.length > 0) {
           const { data: clients } = await supabase
             .from("clients")
-            .select("id, name")
-            .in("id", clientIds);
+            .select("id, name, cnpj")
+            .in("id", [...new Set(clientIds)]);
           (clients || []).forEach((c: any) => {
             clientsMap[c.id] = c;
           });
@@ -113,7 +153,8 @@ export default function FaturamentoAlertas() {
 
       return alerts.map((a: any): EnrichedAlert => {
         const proj = a.reference_id ? projectsMap[a.reference_id] : null;
-        const client = proj?.client_id ? clientsMap[proj.client_id] : null;
+        const clientId = proj?.client_id;
+        const client = clientId ? clientsMap[clientId] : null;
         return {
           id: a.id,
           title: a.title,
@@ -125,6 +166,7 @@ export default function FaturamentoAlertas() {
           resolved_at: a.resolved_at,
           created_at: a.created_at,
           reference_id: a.reference_id,
+          reference_type: a.reference_type,
           alert_status: a.alert_status,
           project_codigo: proj?.codigo || null,
           project_name: proj?.name || null,
@@ -133,25 +175,37 @@ export default function FaturamentoAlertas() {
           delivered_at: proj?.delivered_at || null,
           billing_type: proj?.billing_type || null,
           contract_value: proj?.contract_value != null ? Number(proj.contract_value) : null,
-          client_name: client?.name || null,
+          client_name: client?.name || proj?.clients?.name || null,
+          client_id: clientId || null,
+          project: proj || null,
         };
       });
     },
     refetchInterval: 30000,
   });
 
-  const pendingAlerts = enrichedAlerts.filter((a) => !a.resolved);
-  const resolvedAlerts = enrichedAlerts.filter((a) => a.resolved);
+  /* sorted: resolved=false first, then by priority, then date */
+  const sortedAlerts = useMemo(() => {
+    const prioOrder: Record<string, number> = { urgente: 0, importante: 1, informacao: 2 };
+    return [...enrichedAlerts].sort((a, b) => {
+      if (a.resolved !== b.resolved) return a.resolved ? 1 : -1;
+      const pa = prioOrder[a.priority] ?? 3;
+      const pb = prioOrder[b.priority] ?? 3;
+      if (pa !== pb) return pa - pb;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [enrichedAlerts]);
+
+  const pendingAlerts = sortedAlerts.filter((a) => !a.resolved);
+  const resolvedAlerts = sortedAlerts.filter((a) => a.resolved);
 
   const displayedAlerts = subtab === "pendentes"
     ? pendingAlerts
     : subtab === "resolvidos"
       ? resolvedAlerts
-      : enrichedAlerts;
+      : sortedAlerts;
 
-  const pendingCount = pendingAlerts.length + submittedSheets.length;
-
-  // Expense sheet handlers
+  /* ── Expense sheet handlers ── */
   const handleApprove = async (sheetId: string) => {
     const sheet = sheets.find((s) => s.id === sheetId);
     try {
@@ -201,12 +255,22 @@ export default function FaturamentoAlertas() {
     }
   };
 
-  const handleResolveAlert = async () => {
-    if (!resolveAlertId || !docNumber.trim()) {
-      return toast({ title: "Informe o número do documento", variant: "destructive" });
+  /* ── NF Registration ── */
+  const openNfModal = (alert: EnrichedAlert) => {
+    setNfAlert(alert);
+    setNfNumero("");
+    setNfData(new Date());
+    setNfValor(alert.contract_value?.toString() || "");
+    setNfEmpresa(alert.empresa_faturadora || "ag_topografia");
+  };
+
+  const handleRegisterNf = async () => {
+    if (!nfAlert || !nfNumero.trim()) {
+      return toast({ title: "Informe o número da NF", variant: "destructive" });
     }
     try {
-      const { error } = await supabase
+      // Resolve the alert
+      const { error: alertErr } = await supabase
         .from("alerts")
         .update({
           resolved: true,
@@ -214,71 +278,97 @@ export default function FaturamentoAlertas() {
           read: true,
           alert_status: "resolvido",
         } as any)
-        .eq("id", resolveAlertId);
-      if (error) throw error;
-      toast({ title: `Documento ${docNumber} registrado` });
-      setResolveAlertId(null);
-      setDocNumber("");
+        .eq("id", nfAlert.id);
+      if (alertErr) throw alertErr;
+
+      // Update project execution_status to 'faturamento' if currently 'entregue'
+      if (nfAlert.reference_id && nfAlert.reference_type === "project") {
+        const { data: proj } = await supabase
+          .from("projects")
+          .select("execution_status")
+          .eq("id", nfAlert.reference_id)
+          .single();
+        if (proj && proj.execution_status === "entregue") {
+          await supabase
+            .from("projects")
+            .update({ execution_status: "faturamento" } as any)
+            .eq("id", nfAlert.reference_id);
+        }
+      }
+
+      qc.invalidateQueries({ queryKey: ["faturamento-alerts-enriched"] });
+      qc.invalidateQueries({ queryKey: ["alerts"] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      toast({ title: `NF ${nfNumero} registrada com sucesso` });
+      setNfAlert(null);
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
     }
   };
 
+  /* ── Render alert card ── */
   const renderAlertCard = (alert: EnrichedAlert) => {
     const isResolved = alert.resolved;
-    const billing = alert.billing_type ? billingLabels[alert.billing_type] : null;
-    const borderColor = isResolved
+    const billing = alert.billing_type ? billingBadges[alert.billing_type] : null;
+    const border = isResolved
       ? "border-l-muted"
-      : alert.priority === "urgente"
-        ? "border-l-orange-500"
-        : "border-l-blue-500";
+      : priorityBorder[alert.priority] || "border-l-blue-500";
 
     return (
       <Card
         key={alert.id}
-        className={`border-l-4 ${borderColor} ${isResolved ? "opacity-60" : ""}`}
+        className={`border-l-4 ${border} ${isResolved ? "opacity-60" : ""}`}
       >
         <CardContent className="p-4 space-y-2">
-          {/* Header action */}
-          <div className="flex items-center justify-between">
-            <Badge className="bg-primary/10 text-primary border-primary/20 font-bold text-sm">
-              {alert.title}
-            </Badge>
-            <span className="text-xs text-muted-foreground">
+          {/* Header */}
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-bold text-base text-foreground leading-tight">{alert.title}</p>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
               {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true, locale: ptBR })}
             </span>
           </div>
 
-          {/* Project info */}
-          <div className="space-y-1">
+          {/* Detail message */}
+          {alert.message && (
+            <p className="text-sm text-muted-foreground">{alert.message}</p>
+          )}
+
+          {/* Project + Client info */}
+          <div className="space-y-1 text-sm">
             {(alert.project_codigo || alert.project_name) && (
-              <p className="font-semibold text-sm">
+              <p>
+                <span className="text-muted-foreground">Projeto: </span>
                 {alert.project_codigo && (
-                  <span className="font-mono text-primary">{alert.project_codigo}</span>
+                  <span className="font-mono font-semibold text-primary">{alert.project_codigo}</span>
                 )}
                 {alert.project_codigo && alert.project_name && " — "}
-                {alert.project_name}
+                <span className="font-medium">{alert.project_name}</span>
               </p>
             )}
             {alert.client_name && (
-              <p className="text-sm text-muted-foreground">{alert.client_name}</p>
-            )}
-            {alert.cnpj_tomador && (
-              <p className="text-xs text-muted-foreground">CNPJ: {alert.cnpj_tomador}</p>
-            )}
-            {alert.empresa_faturadora && (
-              <p className="text-xs text-muted-foreground">
-                Faturar por: {alert.empresa_faturadora === "ag_topografia" ? "AG Topografia" : "AG Cartografia"}
+              <p>
+                <span className="text-muted-foreground">Cliente: </span>
+                <span className="font-medium">{alert.client_name}</span>
               </p>
             )}
+            <p>
+              <span className="text-muted-foreground">CNPJ Tomador: </span>
+              <span>{alert.cnpj_tomador || "— não informado"}</span>
+            </p>
+            <p>
+              <span className="text-muted-foreground">Empresa faturadora: </span>
+              <span>{alert.empresa_faturadora === "ag_cartografia" ? "AG Cartografia" : "AG Topografia"}</span>
+            </p>
             {alert.delivered_at && (
-              <p className="text-xs text-muted-foreground">
-                Entregue em: {format(new Date(alert.delivered_at), "dd/MM/yyyy")}
+              <p>
+                <span className="text-muted-foreground">Data entrega: </span>
+                <span>{format(new Date(alert.delivered_at), "dd/MM/yyyy")}</span>
               </p>
             )}
             {alert.contract_value != null && alert.contract_value > 0 && (
-              <p className="text-sm font-medium">
-                Valor: {alert.contract_value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+              <p>
+                <span className="text-muted-foreground">Valor: </span>
+                <span className="font-semibold">{fmt(alert.contract_value)}</span>
               </p>
             )}
           </div>
@@ -286,7 +376,7 @@ export default function FaturamentoAlertas() {
           {/* Badges */}
           <div className="flex items-center gap-2 flex-wrap">
             {billing && (
-              <Badge variant="outline" className={`text-[10px] ${billing.color}`}>
+              <Badge variant="outline" className={`text-[10px] ${billing.className}`}>
                 {billing.label}
               </Badge>
             )}
@@ -303,18 +393,18 @@ export default function FaturamentoAlertas() {
               <Button
                 size="sm"
                 className="h-7 text-xs"
-                onClick={() => { setResolveAlertId(alert.id); setDocNumber(""); }}
+                onClick={() => openNfModal(alert)}
               >
-                <CheckCircle className="w-3 h-3 mr-1" /> Marcar como emitido
+                <CheckCircle className="w-3 h-3 mr-1" /> Registrar NF emitida
               </Button>
-              {alert.action_url && (
+              {alert.project && (
                 <Button
                   size="sm"
                   variant="outline"
                   className="h-7 text-xs"
-                  onClick={() => navigate(alert.action_url!)}
+                  onClick={() => setSheetProject(alert.project)}
                 >
-                  Ver projeto
+                  <Eye className="w-3 h-3 mr-1" /> Ver projeto
                 </Button>
               )}
             </div>
@@ -323,6 +413,8 @@ export default function FaturamentoAlertas() {
       </Card>
     );
   };
+
+  const proj = sheetProject;
 
   return (
     <div className="space-y-4">
@@ -341,11 +433,11 @@ export default function FaturamentoAlertas() {
         </Card>
         <Card>
           <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-2.5 rounded-lg bg-blue-100 text-blue-700">
+            <div className="p-2.5 rounded-lg bg-destructive/10 text-destructive">
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Alertas Pendentes</p>
+              <p className="text-sm text-muted-foreground">NFs Pendentes</p>
               <p className="text-2xl font-bold">{pendingAlerts.length}</p>
             </div>
           </CardContent>
@@ -356,8 +448,8 @@ export default function FaturamentoAlertas() {
               <CheckCircle className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total Pendente</p>
-              <p className="text-2xl font-bold">{pendingCount}</p>
+              <p className="text-sm text-muted-foreground">Resolvidos</p>
+              <p className="text-2xl font-bold">{resolvedAlerts.length}</p>
             </div>
           </CardContent>
         </Card>
@@ -408,7 +500,7 @@ export default function FaturamentoAlertas() {
         <TabsList>
           <TabsTrigger value="pendentes">Pendentes ({pendingAlerts.length})</TabsTrigger>
           <TabsTrigger value="resolvidos">Resolvidos ({resolvedAlerts.length})</TabsTrigger>
-          <TabsTrigger value="todos">Todos ({enrichedAlerts.length})</TabsTrigger>
+          <TabsTrigger value="todos">Todos ({sortedAlerts.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value={subtab} className="space-y-3 mt-3">
@@ -432,6 +524,7 @@ export default function FaturamentoAlertas() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Devolver Folha</DialogTitle>
+            <DialogDescription>Informe o motivo para devolver esta folha de despesa.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <Label>Motivo da Devolução *</Label>
@@ -444,22 +537,172 @@ export default function FaturamentoAlertas() {
         </DialogContent>
       </Dialog>
 
-      {/* Resolve alert dialog */}
-      <Dialog open={!!resolveAlertId} onOpenChange={() => { setResolveAlertId(null); setDocNumber(""); }}>
+      {/* NF Registration Modal */}
+      <Dialog open={!!nfAlert} onOpenChange={() => setNfAlert(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Marcar como Emitido</DialogTitle>
+            <DialogTitle>Registrar NF Emitida</DialogTitle>
+            <DialogDescription>
+              {nfAlert?.project_codigo && `${nfAlert.project_codigo} — `}{nfAlert?.project_name}
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            <Label>Número do documento *</Label>
-            <Input value={docNumber} onChange={(e) => setDocNumber(e.target.value)} placeholder="Ex: NF-2026-001" />
+          <div className="space-y-4">
+            <div>
+              <Label>Número da NF *</Label>
+              <Input
+                value={nfNumero}
+                onChange={(e) => setNfNumero(e.target.value)}
+                placeholder="Ex: NF-2026-001"
+              />
+            </div>
+            <div>
+              <Label>Data de emissão</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal", !nfData && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {nfData ? format(nfData, "dd/MM/yyyy") : "Selecionar data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={nfData}
+                    onSelect={(d) => d && setNfData(d)}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <Label>Valor da NF (R$)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={nfValor}
+                onChange={(e) => setNfValor(e.target.value)}
+                placeholder="0,00"
+              />
+            </div>
+            <div>
+              <Label>Empresa faturadora</Label>
+              <Select value={nfEmpresa} onValueChange={setNfEmpresa}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ag_topografia">AG Topografia</SelectItem>
+                  <SelectItem value="ag_cartografia">AG Cartografia</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setResolveAlertId(null)}>Cancelar</Button>
-            <Button onClick={handleResolveAlert} disabled={!docNumber.trim()}>Confirmar</Button>
+            <Button variant="outline" onClick={() => setNfAlert(null)}>Cancelar</Button>
+            <Button onClick={handleRegisterNf} disabled={!nfNumero.trim()}>
+              <CheckCircle className="w-4 h-4 mr-1" /> Confirmar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Project Detail Sheet */}
+      <Sheet open={!!sheetProject} onOpenChange={() => setSheetProject(null)}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>
+              {proj?.codigo && <span className="font-mono text-primary mr-2">{proj.codigo}</span>}
+              {proj?.name}
+            </SheetTitle>
+          </SheetHeader>
+          {proj && (
+            <div className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Cliente</p>
+                  <p className="font-medium">{proj.clients?.name || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">CNPJ Tomador</p>
+                  <p className="font-medium">{proj.cnpj_tomador || "— não informado"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Empresa Faturadora</p>
+                  <p className="font-medium">
+                    {proj.empresa_faturadora === "ag_cartografia" ? "AG Cartografia" : "AG Topografia"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Tipo Documento</p>
+                  <p className="font-medium">
+                    {proj.tipo_documento === "recibo" ? "Recibo" : "Nota Fiscal"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Modalidade</p>
+                  <p className="font-medium">
+                    {proj.billing_type ? (billingBadges[proj.billing_type]?.label || proj.billing_type) : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Valor Contrato</p>
+                  <p className="font-medium">{fmt(proj.contract_value)}</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Status Execução</p>
+                  <p className="font-medium">{proj.execution_status || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Data Entrega</p>
+                  <p className="font-medium">
+                    {proj.delivered_at ? format(new Date(proj.delivered_at), "dd/MM/yyyy") : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Início Campo</p>
+                  <p className="font-medium">
+                    {proj.field_started_at ? format(new Date(proj.field_started_at), "dd/MM/yyyy") : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Campo Concluído</p>
+                  <p className="font-medium">
+                    {proj.field_completed_at ? format(new Date(proj.field_completed_at), "dd/MM/yyyy") : "—"}
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="text-sm space-y-2">
+                <div>
+                  <p className="text-muted-foreground">Conta Bancária</p>
+                  <p className="font-medium">{proj.conta_bancaria || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Referência Contrato</p>
+                  <p className="font-medium">{proj.referencia_contrato || "—"}</p>
+                </div>
+                {proj.notes && (
+                  <div>
+                    <p className="text-muted-foreground">Observações</p>
+                    <p className="font-medium">{proj.notes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

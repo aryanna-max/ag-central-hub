@@ -21,23 +21,23 @@ export default function FinanceiroDashboard() {
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex-wrap">
           <TabsTrigger value="alertas">Alertas</TabsTrigger>
-          <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+          <TabsTrigger value="areceber">A Receber</TabsTrigger>
           <TabsTrigger value="medicoes">Medições</TabsTrigger>
-          <TabsTrigger value="projetos">Projetos</TabsTrigger>
+          <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
         </TabsList>
 
         <TabsContent value="alertas">
           <FaturamentoAlertas />
         </TabsContent>
-        <TabsContent value="pipeline">
-          <FaturamentoPipeline />
+        <TabsContent value="areceber">
+          <FaturamentoProjetos />
         </TabsContent>
         <TabsContent value="medicoes">
           <FaturamentoMedicoes />
         </TabsContent>
-        <TabsContent value="projetos">
-          <FaturamentoProjetos />
+        <TabsContent value="pipeline">
+          <FaturamentoPipeline />
         </TabsContent>
         <TabsContent value="relatorios">
           <FaturamentoRelatorios />
