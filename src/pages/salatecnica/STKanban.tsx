@@ -206,7 +206,7 @@ export default function STKanban() {
       if (!ids.length) return [];
 
       const [tasksRes, vacRes, scheduleRes] = await Promise.all([
-        supabase.from("technical_tasks").select("assigned_to_id").in("assigned_to_id", ids).in("status" as any, ["pendente", "em_andamento"]),
+        (supabase.from("technical_tasks").select("assigned_to_id") as any).in("assigned_to_id", ids).in("status", ["pendente", "em_andamento"]),
         supabase.from("employee_vacations").select("employee_id").in("employee_id", ids).lte("start_date", today).gte("end_date", today),
         supabase.from("daily_schedule_entries").select("employee_id, daily_schedule_id")
           .in("employee_id", ids),
