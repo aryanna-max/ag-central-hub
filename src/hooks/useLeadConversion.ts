@@ -17,8 +17,7 @@ export function useLeadConversion() {
       responsible: lead.responsible_id as any,
       lead_id: lead.id,
       status: "planejamento",
-      execution_status: "aguardando_processamento",
-    });
+    } as any);
 
     // Create 3 alerts
     const valorFormatted = lead.valor
