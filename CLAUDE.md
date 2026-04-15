@@ -18,7 +18,7 @@ Sistema de gestão interna da **AG Topografia**, empresa de topografia e cartogr
 
 | Faixa | Marco | Status |
 |-------|-------|--------|
-| **5-6** | SQL Fases 1-4 executadas (campos sujos, tabelas novas, tabelas mortas) | Em andamento |
+| **5-6** | SQL Fases 1-4 executadas (campos sujos, tabelas novas, tabelas mortas) | **Concluído** (confirmado 15/04/2026) |
 | **6-7** | Sala Técnica funcional, Financeiro com pipeline real, execution_status em todos os módulos | Pendente |
 | **7-8** | Alertas automáticos (email Alcione), aprovação despesas via WhatsApp, relatórios por módulo | Pendente |
 | **8-9** | Dados 100% limpos, clientes deduplicados, ViaCEP, histórico de status | Pendente |
@@ -122,24 +122,27 @@ Não existe Kanban único. Diretoria vê panorâmica. Sala Técnica nunca vê da
 
 ---
 
-## Schema Atual — Estado do banco (31/03/2026)
+## Schema Atual — Estado do banco (atualizado 15/04/2026)
 
-### 31 tabelas existentes
-alerts, attendance, calendar_events, clients, daily_schedule_entries, daily_schedules, daily_team_assignments, email_send_log, email_send_state, email_unsubscribe_tokens, employee_project_authorizations, employees, field_expense_items, field_expense_sheets, leads, measurements, monthly_schedules, profiles, project_benefits, project_services, projects, proposal_items, proposals, schedule_confirmations, suppressed_emails, system_settings, team_members, teams, user_roles, vehicle_payment_history, vehicles
+### 30 tabelas (31 originais - 3 mortas + 2 novas)
+alerts, calendar_events, clients, daily_schedule_entries, daily_schedules, daily_team_assignments, email_send_log, email_send_state, employee_project_authorizations, employee_vacations, employees, field_expense_items, field_expense_sheets, leads, measurements, monthly_schedules, profiles, project_benefits, project_services, project_status_history, projects, proposal_items, proposals, suppressed_emails, system_settings, team_members, teams, user_roles, vehicle_payment_history, vehicles
 
-### Contagem de registros (31/03/2026)
-| Tabela | Registros |
-|--------|-----------|
-| projects | 77 |
-| project_services | 80 |
-| employees | 64 |
-| clients | 51 |
-| alerts | 38 |
-| teams | 18 |
-| vehicles | 18 |
-| leads | 15 |
-| daily_schedules | 5 (3 legado) |
-| proposals, measurements, monthly_schedules, expense_sheets/items, daily_entries | 0 |
+**Tabelas eliminadas:** attendance, schedule_confirmations, email_unsubscribe_tokens
+**Tabelas criadas:** project_status_history, employee_vacations
+
+### Contagem de registros (15/04/2026)
+| Tabela | Registros | Delta vs 31/03 |
+|--------|-----------|-----------------|
+| projects | 89 | +12 |
+| project_services | 80 | = |
+| employees | 64 | = |
+| clients | 56 | +5 |
+| project_status_history | 46 | nova |
+| alerts | 79 | +41 |
+| leads | 38 | +23 |
+| daily_schedules | 5 | = |
+| employee_vacations | 0 | nova |
+| proposals, measurements | 0 | = |
 
 ### Enums existentes (types.ts)
 - `absence_type`: ferias, licenca_medica, licenca_maternidade, licenca_paternidade, afastamento, falta, outros
@@ -166,40 +169,32 @@ alerts, attendance, calendar_events, clients, daily_schedule_entries, daily_sche
 - `tipo_documento`: nf, recibo
 - `removal_reason`: campo_concluido, pausa_temporaria, reagendado, clima, equipamento, falta_equipe
 
-### Tabelas a CRIAR (6)
-1. `project_scope_items` — itens de escopo (tipo ART/RRT)
-2. `project_status_history` — log de mudanças de status
-3. `technical_tasks` — tarefas da Sala Técnica
-4. `invoices` — NFs e recibos
-5. `invoice_items` — itens da NF (liga NF a serviços)
-6. `employee_vacations` — períodos de férias
+### Tabelas já criadas (SQL Consolidado, executado)
+- `project_status_history` — log de mudanças de status (46 registros)
+- `employee_vacations` — períodos de férias (vazia)
 
-### Tabelas a ELIMINAR (3)
+### Tabelas já eliminadas (SQL Consolidado, executado)
 - `attendance` — duplicada com daily_schedule_entries
 - `schedule_confirmations` — funcionalidade em daily_schedules.is_closed
 - `email_unsubscribe_tokens` — absorvido por suppressed_emails
 
-### Total final: 34 tabelas (31 - 3 + 6)
+### Tabelas ainda a CRIAR (4)
+1. `project_scope_items` — itens de escopo (tipo ART/RRT)
+2. `technical_tasks` — tarefas da Sala Técnica
+3. `invoices` — NFs e recibos
+4. `invoice_items` — itens da NF (liga NF a serviços)
 
 ---
 
-## Campos sujos a limpar (texto → FK)
+## Campos sujos — Limpeza concluída (15/04/2026)
 
-### projects (7 campos)
-- `client` (text) → já tem `client_id` FK
-- `client_cnpj` (text) → join client_id → clients.cnpj
-- `client_name` (text) → join client_id → clients.name
-- `responsible` (text) → criar `responsible_id` FK → employees
-- `cnpj` (text) → já tem `cnpj_tomador`
-- `obra_id` (text) → eliminar
-- `empresa_emissora` (text) → já tem `empresa_faturadora`
-- `modalidade_faturamento` (text) → vive em project_services.billing_mode
-- `has_multiple_services` (bool) → calculado, não precisa
+### projects — 10 colunas removidas (SQL Consolidado)
+~~`client`, `client_name`, `client_cnpj`, `responsible`, `cnpj`, `empresa_emissora`, `modalidade_faturamento`, `obra_id`, `has_multiple_services`, `parent_project_id`~~
 
-### proposals (3 campos)
-- `client_name` → client_id → clients
-- `responsible` → criar responsible_id FK
-- `opportunity_id` → módulo eliminado
+### proposals — 3 colunas removidas (SQL Consolidado)
+~~`client_name`, `responsible`, `opportunity_id`~~
+
+### Campos sujos RESTANTES (ainda no banco)
 
 ### leads (2 campos)
 - `responsible` → criar responsible_id FK
@@ -304,7 +299,12 @@ Cliente único: `Direcional Engenharia` (id: e6720b0d-a82b-4483-bb84-c5363bf8c95
 - billing_type: `entrega_nf` (NF na entrega de cada serviço)
 - Limpeza: deletar cliente "Simproja", migrar projeto para "Sindicato Educ. Jaboatão", cada serviço como project_service separado
 
-### Billing type por cliente — regras definitivas (02/04/2026)
+### Billing types válidos
+- `medicao_mensal` — medição recorrente mensal (16 projetos)
+- `entrega_nf` — NF por entrega de serviço (66 projetos)
+- `entrega_recibo` — recibo por entrega, para PF ou clientes sem CNPJ (7 projetos)
+
+### Billing type por cliente — regras definitivas (atualizado 15/04/2026)
 
 | Cliente | Sigla | billing_type | Observação |
 |---|---|---|---|
@@ -316,15 +316,19 @@ Cliente único: `Direcional Engenharia` (id: e6720b0d-a82b-4483-bb84-c5363bf8c95
 | Pernambuco Construtora / Porto de Pedra | PCPE | `medicao_mensal` | R$19.500/mês |
 | JME | JME | `medicao_mensal` | Apex — arquivo de medição mensal confirmado |
 | Flamboyant | FLMB | `medicao_mensal` | Castanhal/PA — arquivo de medição JAN/FEV confirmado |
-| Gran Alpes | GRAN | `entrega_nf` | 2 serviços pontuais novos em Gravatá. Leo era intermediador, contato real = Rodrigo. Verificar leads. Os arquivos "MEDIÇAO GRAN ALPES" são tipo de serviço, não cobrança mensal |
+| Gran Alpes | GRA | `entrega_recibo` | 3 projetos em Gravatá. Contato real = Rodrigo. Confirmado no banco: recibo, não NF |
 | Encar | ENCAR | `medicao_mensal` | Sucupira Curado Arena — arquivo medição JAN/FEV confirmado |
 | Colgravata (COL SPE) | COL | `medicao_mensal` | SPE Colorado com medição mensal |
 | Colarcoverde (COL SPE) | COL | `medicao_mensal` | SPE Colorado — arquivo medição MAR/ABR confirmado |
 | Demais SPEs Colorado (Colarrio, Colaru, Colapiraca etc.) | COL | `entrega_nf` | Serviços esporádicos, NF por entrega |
 | Polimix | POL | `entrega_nf` | Esporádico — NF por entrega de cada serviço |
 | Hoteis Salinas S/A (Grupo Amarante) | AMAR | `entrega_nf` | Tomador real nas NFs é Hoteis Salinas S/A. Grupo Amarante é o grupo. Esporádico |
-| Direcional Engenharia + SPEs | DIR | `entrega_nf` | Modelo idêntico ao Colorado. SPEs confirmadas: Bromelia, Imperatriz, Casa Amarela, Lourdes (e outras). Cada SPE = 1 projeto com cnpj_tomador da SPE. Projetos às vezes cadastrados com código de contrato no nome (ex: 00095787) — corrigir manualmente. Não são duplicatas |
+| Direcional Engenharia + SPEs | DIR | `entrega_nf` | Modelo idêntico ao Colorado. SPEs confirmadas: Bromelia, Imperatriz, Casa Amarela, Lourdes (e outras). Cada SPE = 1 projeto com cnpj_tomador da SPE |
 | Simproja / Sindicato Educ. Jaboatão | SIMP | `entrega_nf` | 2 serviços, 2 NFs. Sede em Jaboatão/PE, projeto em Goiana/PE |
+| Leonardo | LNR | `entrega_recibo` | PF — Alphaville Lote 18 |
+| Duda Pascoal | DPA | `entrega_recibo` | PF — Levantamento Planialtimétrico |
+| Hugo | HGO | `entrega_recibo` | PF — Sta Barbara |
+| Mercia / Paulo Breno | MPB | `entrega_recibo` | PF — Lev. Parque Sitio dos Bragas |
 
 > **ATENÇÃO:** O CLAUDE2.md e CLAUDE.md (Sistema AG/) têm billing_types errados para JME, Engeko, HBR e Colorado. Usar EXCLUSIVAMENTE esta tabela como referência.
 
@@ -351,18 +355,18 @@ Cliente único: `Direcional Engenharia` (id: e6720b0d-a82b-4483-bb84-c5363bf8c95
 
 ---
 
-## Fases de migração SQL (executar no Lovable SQL Editor)
+## Fases de migração SQL — STATUS (15/04/2026)
 
-Arquivos na pasta `Sistema AG/`:
+**SQL_CONSOLIDADO_15abr2026.sql** — Consolidou todas as fases. **100% EXECUTADO.**
 
-1. **SQL_FASE_0_DIAGNOSTICO.sql** — apenas SELECTs
-2. **SQL_FASE_0b_MARCO_ZERO.sql** — marcar registros legados (já executado parcialmente)
-3. **SQL_FASE_1_ENUMS.sql** — criar novos enums + corrigir lead_status
-4. **SQL_FASE_2_TABELAS_COLUNAS.sql** — criar 6 tabelas + add colunas
-5. **SQL_FASE_3_LIMPEZA_CAMPOS.sql** — migrar texto → FK, depois DROP campos sujos
-6. **SQL_FASE_4_DROP_TABELAS.sql** — eliminar attendance, schedule_confirmations, email_unsubscribe_tokens
+Resultado confirmado:
+- Colunas legado removidas de projects (10) e proposals (3)
+- Tabelas mortas eliminadas (attendance, schedule_confirmations, email_unsubscribe_tokens)
+- Tabelas novas criadas (project_status_history, employee_vacations)
+- billing_type populado em 89/89 projetos (medicao_mensal: 16, entrega_nf: 66, entrega_recibo: 7)
+- removal_reason e scope_description adicionados
 
-**ATENÇÃO:** Aryanna mexeu em coisas e o estado pode estar diferente do diagnosticado. Rodar novo diagnóstico antes de executar qualquer fase.
+Arquivos SQL antigos na pasta `Sistema AG/` são **histórico** — não executar novamente.
 
 ---
 
@@ -380,11 +384,11 @@ Arquivos na pasta `Sistema AG/`:
 | # | Pendência | Fonte | Impacto |
 |---|---|---|---|
 | 1 | Nomear líder Sala Técnica | Sérgio / Ciro | Módulo ST bloqueado |
-| 2 | billing_type Direcional e Casa Amarela | Scripts / Sérgio | Cadastros incompletos |
+| ~~2~~ | ~~billing_type Direcional e Casa Amarela~~ | ~~Scripts / Sérgio~~ | **Resolvido 15/04/2026** — 100% dos projetos com billing_type populado |
 | 3 | Diária de férias — valor e forma de pagamento | Scripts / RH | Tabela employee_vacations incompleta |
 | 4 | Frequência relatórios automáticos (campo, veículos, ausências, férias) | Scripts | Email alerts não configurados |
 | 5 | Categorias e centros de custo Meu Dinheiro | Alcione | Financeiro sem estrutura |
-| 6 | Gran Alpes — verificar se está nos leads e qual o status | Leads no sistema | Cadastro cliente pendente |
+| ~~6~~ | ~~Gran Alpes — verificar se está nos leads e qual o status~~ | ~~Leads no sistema~~ | **Resolvido 15/04/2026** — Cliente GRA com 3 projetos, billing_type = entrega_recibo. Confirmar com Sérgio/Ciro se recibo é correto (CLAUDE.md antigo dizia entrega_nf) |
 | 7 | Integração NF — hoje gerada fora do sistema. Verificar APIs futuras (Enotas, Nuvem Fiscal, Focus NFe) para emissão automática | Diretoria | Financeiro — fase futura |
 
 ## Decisões fechadas (03/04/2026)
