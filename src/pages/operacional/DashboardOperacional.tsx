@@ -30,9 +30,15 @@ const PIE_COLORS = [
 
 function useActiveProjects() {
   return useQuery({
-    queryKey: ["projects-active"],
+    queryKey: ["projects-active-operational"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("projects").select("*").eq("is_active", true).eq("show_in_operational", true).in("execution_status", ["aguardando_campo", "em_campo"] as any).order("name");
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name, location, execution_status, client_id, clients:client_id(name)")
+        .eq("is_active", true)
+        .eq("show_in_operational", true)
+        .in("execution_status", ["aguardando_campo", "em_campo"] as any)
+        .order("name");
       if (error) throw error;
       return data;
     },
@@ -211,7 +217,7 @@ export default function DashboardOperacional() {
                   <div key={obra.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
                     <div>
                       <p className="text-sm font-medium">{obra.name}</p>
-                      <p className="text-xs text-muted-foreground">{obra.client} • {obra.location || "—"}</p>
+                      <p className="text-xs text-muted-foreground">{(obra.clients as any)?.name || "—"} • {obra.location || "—"}</p>
                     </div>
                     <Badge className="bg-secondary text-secondary-foreground text-xs">Ativo</Badge>
                   </div>
@@ -237,7 +243,7 @@ export default function DashboardOperacional() {
                 <div key={obra.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
                   <div>
                     <p className="text-sm font-medium">{obra.name}</p>
-                    <p className="text-xs text-muted-foreground">{obra.client || "—"} • {obra.location || "—"}</p>
+                    <p className="text-xs text-muted-foreground">{obra.client_name || "—"} • {obra.location || "—"}</p>
                   </div>
                   <Badge variant="destructive" className="text-xs">Sem Equipe</Badge>
                 </div>
