@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Radar, Briefcase, Map, PenTool, Receipt, Users, Database,
   ChevronLeft, ChevronRight, Target, Building2, CalendarDays,
@@ -88,6 +88,7 @@ const adminNavigation: SidebarItem[] = [
 ];
 
 export default function AppSidebar() {
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<string[]>([]);
   const location = useLocation();
@@ -168,7 +169,14 @@ export default function AppSidebar() {
             <div key={item.path}>
               {hasChildren ? (
                 <button
-                  onClick={() => !collapsed && toggleMenu(item.path)}
+                  onClick={() => {
+                    if (collapsed) {
+                      const target = item.children?.[0]?.path || item.path;
+                      navigate(target);
+                    } else {
+                      toggleMenu(item.path);
+                    }
+                  }}
                   className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     parentActive
                       ? "bg-sidebar-accent text-sidebar-primary"
