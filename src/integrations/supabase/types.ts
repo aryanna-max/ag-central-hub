@@ -679,10 +679,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "employee_daily_records_daily_schedule_id_fkey"
+            columns: ["daily_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "daily_schedules"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "employee_daily_records_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_daily_records_expense_sheet_id_fkey"
+            columns: ["expense_sheet_id"]
+            isOneToOne: false
+            referencedRelation: "field_expense_sheets"
             referencedColumns: ["id"]
           },
           {
@@ -693,24 +707,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "employee_daily_records_daily_schedule_id_fkey"
-            columns: ["daily_schedule_id"]
-            isOneToOne: false
-            referencedRelation: "daily_schedules"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "employee_daily_records_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "employee_daily_records_expense_sheet_id_fkey"
-            columns: ["expense_sheet_id"]
-            isOneToOne: false
-            referencedRelation: "field_expense_sheets"
             referencedColumns: ["id"]
           },
         ]
