@@ -316,7 +316,7 @@ Cliente único: `Direcional Engenharia` (id: e6720b0d-a82b-4483-bb84-c5363bf8c95
 | Pernambuco Construtora / Porto de Pedra | PCPE | `medicao_mensal` | R$19.500/mês |
 | JME | JME | `medicao_mensal` | Apex — arquivo de medição mensal confirmado |
 | Flamboyant | FLMB | `medicao_mensal` | Castanhal/PA — arquivo de medição JAN/FEV confirmado |
-| Gran Alpes | GRA | **`entrega_recibo`** ⚠️ | 3 projetos em Gravatá. Contato real = Rodrigo. PJ — confirmar com Sérgio/Ciro se deveria ser `entrega_nf` |
+| Gran Alpes | GRA | `entrega_recibo` | 3 projetos em Gravatá. Contato real = Rodrigo. Sem NF no servidor = recibo |
 | Encar | ENCAR | `medicao_mensal` | Sucupira Curado Arena — arquivo medição JAN/FEV confirmado |
 | Colgravata (COL SPE) | COL | `medicao_mensal` | SPE Colorado com medição mensal |
 | Colarcoverde (COL SPE) | COL | `medicao_mensal` | SPE Colorado — arquivo medição MAR/ABR confirmado |
@@ -388,7 +388,7 @@ Arquivos SQL antigos na pasta `Sistema AG/` são **histórico** — não executa
 | 3 | Diária de férias — valor e forma de pagamento | Scripts / RH | Tabela employee_vacations incompleta |
 | 4 | Frequência relatórios automáticos (campo, veículos, ausências, férias) | Scripts | Email alerts não configurados |
 | 5 | Categorias e centros de custo Meu Dinheiro | Alcione | Financeiro sem estrutura |
-| 6 | Gran Alpes — billing_type correto? | Sérgio / Ciro | PJ com `entrega_recibo` no banco. CLAUDE.md antigo dizia `entrega_nf`. Confirmar qual é o correto |
+| ~~6~~ | ~~Gran Alpes — billing_type correto?~~ | ~~Sérgio / Ciro~~ | **Resolvido 16/04/2026** — Sem NF no servidor = `entrega_recibo` confirmado |
 | 7 | Integração NF — hoje gerada fora do sistema. Verificar APIs futuras (Enotas, Nuvem Fiscal, Focus NFe) para emissão automática | Diretoria | Financeiro — fase futura |
 
 ## Decisões fechadas (03/04/2026)
