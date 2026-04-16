@@ -39,6 +39,7 @@ const navigation: SidebarItem[] = [
       { label: "Projetos em Campo", path: "/operacional/projetos-campo", icon: FolderKanban },
       { label: "Planejamento", path: "/operacional/escala", icon: CalendarDays },
       { label: "RDF Digital", path: "/operacional/rdf", icon: FileText },
+      { label: "Encontro de Contas", path: "/operacional/encontro-de-contas", icon: BarChart3 },
       { label: "Despesas de Campo", path: "/operacional/despesas-de-campo", icon: Receipt },
       { label: "Veículos", path: "/operacional/veiculos", icon: Car },
     ],
