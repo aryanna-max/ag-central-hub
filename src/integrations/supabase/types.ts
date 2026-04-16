@@ -101,6 +101,78 @@ export type Database = {
           },
         ]
       }
+      benefit_settlements: {
+        Row: {
+          id: string
+          semana_inicio: string
+          semana_fim: string
+          employee_id: string
+          cafe_previsto: number
+          cafe_realizado: number
+          almoco_previsto: number
+          almoco_realizado: number
+          jantar_previsto: number
+          jantar_realizado: number
+          saldo_desconto: number
+          status: string
+          sheet_id: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          semana_inicio: string
+          semana_fim: string
+          employee_id: string
+          cafe_previsto?: number
+          cafe_realizado?: number
+          almoco_previsto?: number
+          almoco_realizado?: number
+          jantar_previsto?: number
+          jantar_realizado?: number
+          saldo_desconto?: number
+          status?: string
+          sheet_id?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          semana_inicio?: string
+          semana_fim?: string
+          employee_id?: string
+          cafe_previsto?: number
+          cafe_realizado?: number
+          almoco_previsto?: number
+          almoco_realizado?: number
+          jantar_previsto?: number
+          jantar_realizado?: number
+          saldo_desconto?: number
+          status?: string
+          sheet_id?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_settlements_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "benefit_settlements_sheet_id_fkey"
+            columns: ["sheet_id"]
+            isOneToOne: false
+            referencedRelation: "field_expense_sheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_events: {
         Row: {
           calendar_id: string | null
