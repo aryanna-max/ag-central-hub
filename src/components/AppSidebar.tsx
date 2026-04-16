@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Radar, Briefcase, Map, PenTool, Receipt, Users, Database,
@@ -93,6 +93,16 @@ export default function AppSidebar() {
   const location = useLocation();
   const alertCounts = useModuleAlertCounts();
   const { role } = useAuth();
+  const isFirstRender = useRef(true);
+
+  // Auto-collapse on navigation (skip first render)
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    setCollapsed(true);
+  }, [location.pathname]);
 
   const fullNavigation = useMemo(() => {
     const all = [...navigation, ...adminNavigation];
@@ -132,11 +142,18 @@ export default function AppSidebar() {
           <span className="text-secondary-foreground font-bold text-sm">AG</span>
         </div>
         {!collapsed && (
-          <div className="overflow-hidden">
+          <div className="overflow-hidden flex-1">
             <p className="text-sidebar-accent-foreground font-bold text-sm leading-tight">AG Topografia</p>
             <p className="text-sidebar-muted text-xs">Sistema de Gestão</p>
           </div>
         )}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="shrink-0 p-1 rounded-md text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+          title={collapsed ? "Expandir menu" : "Recolher menu"}
+        >
+          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </button>
       </div>
 
       {/* Navigation */}
@@ -208,13 +225,6 @@ export default function AppSidebar() {
         })}
       </nav>
 
-      {/* Collapse button */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="flex items-center justify-center h-12 border-t border-sidebar-border text-sidebar-muted hover:text-sidebar-foreground transition-colors"
-      >
-        {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-      </button>
     </aside>
   );
 }
