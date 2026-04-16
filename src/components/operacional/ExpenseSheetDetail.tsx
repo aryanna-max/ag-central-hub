@@ -157,7 +157,13 @@ export default function ExpenseSheetDetail({ sheetId, onClose, onEdit }: Props) 
     }
   };
 
+  const isAutoDesconto = (item: ExpenseItem) =>
+    item.expense_type === "Desconto Encontro de Contas";
+
   const natureBadge = (item: ExpenseItem) => {
+    if (isAutoDesconto(item)) {
+      return <Badge className="bg-red-600 text-white text-[10px]">DESCONTO</Badge>;
+    }
     if (item.item_type === "despesa_extra") {
       return (
         <div className="flex flex-col gap-1">
@@ -185,25 +191,43 @@ export default function ExpenseSheetDetail({ sheetId, onClose, onEdit }: Props) 
 
   const renderRow = (item: ExpenseItem) => {
     const isExtra = item.item_type === "despesa_extra";
+    const isDesconto = isAutoDesconto(item);
     return (
-      <TableRow key={item.id} className={isExtra ? "bg-orange-50 dark:bg-orange-950/20" : ""}>
+      <TableRow
+        key={item.id}
+        className={
+          isDesconto
+            ? "bg-red-50 dark:bg-red-950/20"
+            : isExtra
+            ? "bg-orange-50 dark:bg-orange-950/20"
+            : ""
+        }
+      >
         <TableCell>{natureBadge(item)}</TableCell>
-        <TableCell className="font-medium text-sm">
+        <TableCell className={`font-medium text-sm ${isDesconto ? "text-red-700 dark:text-red-400" : ""}`}>
           {isExtra ? getReceiverName(item) : getEmployeeName(item)}
         </TableCell>
         <TableCell className="text-xs">{getProjectName(item)}</TableCell>
         <TableCell className="text-xs">{item.expense_type}</TableCell>
-        <TableCell className="text-xs max-w-[180px]">{item.description}</TableCell>
-        <TableCell className="text-right font-semibold text-sm">
+        <TableCell className={`text-xs max-w-[180px] ${isDesconto ? "italic text-red-600 dark:text-red-400" : ""}`}>
+          {item.description}
+        </TableCell>
+        <TableCell className={`text-right font-semibold text-sm ${isDesconto ? "text-red-600 dark:text-red-400" : ""}`}>
           {Number(item.value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
         </TableCell>
         <TableCell className="text-center" title={item.payment_method}>
-          {pmIcon(item.payment_method)}
+          {isDesconto ? null : pmIcon(item.payment_method)}
         </TableCell>
-        <TableCell>{statusBadge(item.payment_status)}</TableCell>
+        <TableCell>
+          {isDesconto
+            ? <Badge className="bg-red-100 text-red-700 text-[10px] border border-red-300">Auto</Badge>
+            : statusBadge(item.payment_status)
+          }
+        </TableCell>
         {canActFinanceiro && (
           <TableCell className="text-right">
-            {item.payment_status === "pendente" && (
+            {/* Itens de desconto automático são read-only — sem botões de ação */}
+            {!isDesconto && item.payment_status === "pendente" && (
               <div className="flex gap-1 justify-end">
                 <Button size="sm" variant="outline" onClick={() => markPaid(item.id)}>
                   <DollarSign className="w-3 h-3 mr-1" /> Pagar

@@ -136,8 +136,21 @@ export default function EncontroDeContas() {
 
   const handleCloseWeek = async () => {
     try {
-      await closeMutation.mutateAsync(semanaInicio);
-      toast({ title: "Semana fechada", description: "Todos os registros foram bloqueados." });
+      const result = await closeMutation.mutateAsync(semanaInicio);
+      const { count, sheetFound } = result as any;
+      if (sheetFound) {
+        toast({
+          title: "Semana fechada",
+          description: `${count} desconto(s) inserido(s) automaticamente na folha de despesas.`,
+        });
+      } else if (count > 0) {
+        toast({
+          title: "Semana fechada",
+          description: `${count} funcionário(s) com saldo a descontar. Nenhuma folha de despesas ativa encontrada para o período — verifique manualmente.`,
+        });
+      } else {
+        toast({ title: "Semana fechada", description: "Nenhum desconto a aplicar." });
+      }
     } catch (err: any) {
       toast({ title: "Erro ao fechar semana", description: err.message, variant: "destructive" });
     }

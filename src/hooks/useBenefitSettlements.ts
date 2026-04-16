@@ -167,20 +167,85 @@ export function useUpdateBenefitSettlement() {
   });
 }
 
-// Close a whole week (status aberto → fechado)
+// Close a whole week (status aberto → fechado) + gera itens de desconto na folha
 export function useCloseWeekSettlements() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (semana_inicio: string) => {
-      const { error } = await supabase
+      // 1. Fechar todos os settlements abertos da semana
+      const { error: closeError } = await supabase
         .from("benefit_settlements")
         .update({ status: "fechado" })
         .eq("semana_inicio", semana_inicio)
         .eq("status", "aberto");
-      if (error) throw error;
+      if (closeError) throw closeError;
+
+      // 2. Buscar settlements fechados com saldo > 0
+      const { data: settlements, error: fetchError } = await supabase
+        .from("benefit_settlements")
+        .select("*, employees(name)")
+        .eq("semana_inicio", semana_inicio)
+        .eq("status", "fechado")
+        .gt("saldo_desconto", 0);
+      if (fetchError) throw fetchError;
+      if (!settlements?.length) return { count: 0, sheetFound: false };
+
+      // 3. Buscar folha de despesas ativa que abranja semana_inicio
+      const { data: sheets } = await supabase
+        .from("field_expense_sheets")
+        .select("id, period_start, period_end, status")
+        .lte("period_start", semana_inicio)
+        .gte("period_end", semana_inicio)
+        .neq("status", "pago")
+        .order("period_start", { ascending: false })
+        .limit(1);
+
+      const sheet = sheets?.[0] ?? null;
+      let count = 0;
+
+      for (const s of settlements) {
+        // 4. Se existe folha compatível, inserir item de desconto negativo
+        if (sheet) {
+          // Idempotente: não duplicar se já existe
+          const { data: existingItem } = await supabase
+            .from("field_expense_items")
+            .select("id")
+            .eq("sheet_id", sheet.id)
+            .eq("employee_id", s.employee_id)
+            .eq("expense_type", "Desconto Encontro de Contas")
+            .maybeSingle();
+
+          if (!existingItem) {
+            const descricao = `Desconto encontro de contas — semana ${semana_inicio}: R$${Number(s.saldo_desconto).toFixed(2).replace(".", ",")}`;
+            await supabase.from("field_expense_items").insert({
+              sheet_id: sheet.id,
+              employee_id: s.employee_id,
+              project_id: null,
+              expense_type: "Desconto Encontro de Contas",
+              nature: "desconto",
+              item_type: "funcionario",
+              value: -Math.abs(s.saldo_desconto),
+              description: descricao,
+              payment_status: "aprovado",
+              fiscal_alert: false,
+            });
+          }
+
+          // 5. Vincular settlement à folha (rastreabilidade)
+          await supabase
+            .from("benefit_settlements")
+            .update({ sheet_id: sheet.id })
+            .eq("id", s.id);
+        }
+        count++;
+      }
+
+      return { count, sheetFound: !!sheet };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["benefit-settlements"] });
+      qc.invalidateQueries({ queryKey: ["expense-sheets"] });
+      qc.invalidateQueries({ queryKey: ["expense-items"] });
     },
   });
 }
