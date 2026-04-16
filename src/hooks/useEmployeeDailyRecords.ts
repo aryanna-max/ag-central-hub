@@ -10,7 +10,7 @@ export function useEmployeeDailyRecords(filters: {
   return useQuery({
     queryKey: ["employee-daily-records", filters],
     queryFn: async () => {
-      let query = (supabase.from as any)("employee_daily_records")
+      let query = supabase.from("employee_daily_records")
         .select("*, employees(name, matricula), projects(name, codigo)")
         .order("schedule_date", { ascending: false });
 

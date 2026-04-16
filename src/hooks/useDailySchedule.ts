@@ -313,7 +313,7 @@ export function useCloseDailySchedule() {
           const benefits = entry.project_id ? benefitsMap.get(entry.project_id) : null;
           const isPresente = !entry.attendance || entry.attendance === "presente" || entry.attendance === "atrasado";
 
-          const record: Record<string, unknown> = {
+          const record = {
             employee_id: entry.employee_id,
             schedule_date: schedule.schedule_date,
             project_id: entry.project_id,
@@ -322,8 +322,8 @@ export function useCloseDailySchedule() {
             vehicle_id: entry.vehicle_id,
             cafe_provided: isPresente && (benefits?.cafe_enabled || false),
             cafe_value: isPresente && benefits?.cafe_enabled ? (benefits.cafe_value || 0) : 0,
-            almoco_dif_provided: isPresente && benefits?.almoco_type === "diferenca",
-            almoco_dif_value: isPresente && benefits?.almoco_type === "diferenca" ? (benefits.almoco_diferenca_value || 0) : 0,
+            almoco_dif_provided: isPresente && (benefits?.almoco_type as string) === "diferenca",
+            almoco_dif_value: isPresente && (benefits?.almoco_type as string) === "diferenca" ? (benefits?.almoco_diferenca_value || 0) : 0,
             jantar_provided: isPresente && (benefits?.jantar_enabled || false),
             jantar_value: isPresente && benefits?.jantar_enabled ? (benefits.jantar_value || 0) : 0,
             hospedagem_provided: isPresente && (benefits?.hospedagem_enabled || false),
@@ -334,17 +334,21 @@ export function useCloseDailySchedule() {
           };
 
           // Upsert: se já existe (re-fechar), atualiza
-          const { data: existingRecord } = await (supabase.from as any)("employee_daily_records")
+          let upsertQuery = supabase.from("employee_daily_records")
             .select("id")
-            .eq("employee_id", record.employee_id)
-            .eq("schedule_date", record.schedule_date)
-            .eq("project_id", record.project_id || "")
-            .maybeSingle();
+            .eq("employee_id", entry.employee_id)
+            .eq("schedule_date", schedule.schedule_date);
+          if (entry.project_id) {
+            upsertQuery = upsertQuery.eq("project_id", entry.project_id);
+          } else {
+            upsertQuery = upsertQuery.is("project_id", null);
+          }
+          const { data: existingRecord } = await upsertQuery.maybeSingle();
 
           if (existingRecord) {
-            await (supabase.from as any)("employee_daily_records").update(record).eq("id", existingRecord.id);
+            await supabase.from("employee_daily_records").update(record).eq("id", existingRecord.id);
           } else {
-            await (supabase.from as any)("employee_daily_records").insert(record);
+            await supabase.from("employee_daily_records").insert(record);
           }
         }
       }

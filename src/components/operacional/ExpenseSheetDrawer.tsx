@@ -249,7 +249,7 @@ export default function ExpenseSheetDrawer({ open, onOpenChange, editSheetId }: 
       return;
     }
 
-    const { data: records, error } = await (supabase.from as any)("employee_daily_records")
+    const { data: records, error } = await supabase.from("employee_daily_records")
       .select("*, employees(name), projects(name, codigo)")
       .gte("schedule_date", periodStart)
       .lte("schedule_date", periodEnd)
