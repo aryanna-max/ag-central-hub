@@ -652,9 +652,9 @@ function ProjectCard({
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="font-bold text-[11px] text-primary truncate">{p.codigo || "—"}</span>
           {hasAlert && (
-            <span className="flex h-2 w-2 shrink-0">
-              <span className="animate-ping absolute h-2 w-2 rounded-full bg-amber-400 opacity-75" />
-              <span className="relative rounded-full h-2 w-2 bg-amber-500" />
+            <span className="relative inline-flex h-2 w-2 shrink-0 items-center justify-center">
+              <span className="pointer-events-none absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
             </span>
           )}
         </div>
