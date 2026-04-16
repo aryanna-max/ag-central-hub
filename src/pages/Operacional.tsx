@@ -4,7 +4,7 @@ import ProjetosEmCampoKanban from "./operacional/ProjetosEmCampoKanban";
 import Planejamento from "./operacional/Planejamento";
 import DespesasDeCampoTabs from "./operacional/DespesasDeCampoTabs";
 import Veiculos from "./operacional/Veiculos";
-import RDF from "./operacional/RDF";
+import RDFDigital from "./operacional/RDFDigital";
 
 export default function Operacional() {
   return (
@@ -15,7 +15,7 @@ export default function Operacional() {
       <Route path="escala" element={<Planejamento />} />
       <Route path="despesas-de-campo" element={<DespesasDeCampoTabs />} />
       <Route path="veiculos" element={<Veiculos />} />
-      <Route path="rdf" element={<RDF />} />
+      <Route path="rdf" element={<RDFDigital />} />
       <Route path="*" element={<Navigate to="dashboard" replace />} />
     </Routes>
   );

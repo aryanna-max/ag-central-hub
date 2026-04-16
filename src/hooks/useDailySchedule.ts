@@ -238,56 +238,57 @@ export function useCloseDailySchedule() {
         .select("vehicle_id")
         .eq("daily_schedule_id", scheduleId)
         .not("vehicle_id", "is", null);
-      if (!assignments?.length) return;
 
-      // 3. Para cada veículo, gerar diária automática
-      const d = new Date(schedule.schedule_date + "T12:00:00");
-      const month = d.getMonth() + 1;
-      const year = d.getFullYear();
-      const vehicleIds = [...new Set(assignments.map((a) => a.vehicle_id).filter(Boolean))] as string[];
+      // 3. Para cada veículo, gerar diária automática (só se houver veículos)
+      if (assignments?.length) {
+        const d = new Date(schedule.schedule_date + "T12:00:00");
+        const month = d.getMonth() + 1;
+        const year = d.getFullYear();
+        const vehicleIds = [...new Set(assignments.map((a) => a.vehicle_id).filter(Boolean))] as string[];
 
-      for (const vehicleId of vehicleIds) {
-        // Buscar daily_rate do veículo
-        const { data: vehicle } = await supabase
-          .from("vehicles")
-          .select("daily_rate")
-          .eq("id", vehicleId)
-          .single();
-        const dailyRate = vehicle?.daily_rate || 0;
+        for (const vehicleId of vehicleIds) {
+          // Buscar daily_rate do veículo
+          const { data: vehicle } = await supabase
+            .from("vehicles")
+            .select("daily_rate")
+            .eq("id", vehicleId)
+            .single();
+          const dailyRate = vehicle?.daily_rate || 0;
 
-        // Verificar se já existe registro pro mês
-        const { data: existing } = await supabase
-          .from("vehicle_payment_history")
-          .select("id, days_count")
-          .eq("vehicle_id", vehicleId)
-          .eq("month", month)
-          .eq("year", year)
-          .maybeSingle();
-
-        if (existing) {
-          const newCount = (existing.days_count || 0) + 1;
-          await supabase
+          // Verificar se já existe registro pro mês
+          const { data: existing } = await supabase
             .from("vehicle_payment_history")
-            .update({
-              days_count: newCount,
-              daily_rate: dailyRate,
-              total_value: newCount * dailyRate,
-            })
-            .eq("id", existing.id);
-        } else {
-          await supabase
-            .from("vehicle_payment_history")
-            .insert({
-              vehicle_id: vehicleId,
-              month,
-              year,
-              days_count: 1,
-              daily_rate: dailyRate,
-              total_value: dailyRate,
-              status: "aberto",
-              period_start: schedule.schedule_date,
-              period_end: schedule.schedule_date,
-            } as any);
+            .select("id, days_count")
+            .eq("vehicle_id", vehicleId)
+            .eq("month", month)
+            .eq("year", year)
+            .maybeSingle();
+
+          if (existing) {
+            const newCount = (existing.days_count || 0) + 1;
+            await supabase
+              .from("vehicle_payment_history")
+              .update({
+                days_count: newCount,
+                daily_rate: dailyRate,
+                total_value: newCount * dailyRate,
+              })
+              .eq("id", existing.id);
+          } else {
+            await supabase
+              .from("vehicle_payment_history")
+              .insert({
+                vehicle_id: vehicleId,
+                month,
+                year,
+                days_count: 1,
+                daily_rate: dailyRate,
+                total_value: dailyRate,
+                status: "aberto",
+                period_start: schedule.schedule_date,
+                period_end: schedule.schedule_date,
+              } as any);
+          }
         }
       }
 
