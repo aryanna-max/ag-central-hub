@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import ProjectBenefitsCard from "./ProjectBenefitsCard";
 
 interface Props {
   open: boolean;
@@ -52,7 +53,7 @@ export default function MonthlyDayEditDialog({
   const [projectId, setProjectId] = useState("");
   const [vehicleId, setVehicleId] = useState("");
   const [scope, setScope] = useState<"period" | "day">("period");
-  const [editMode, setEditMode] = useState<"team" | "members">("team");
+  const [editMode, setEditMode] = useState<"team" | "members" | "benefits">("team");
   const [memberAdditions, setMemberAdditions] = useState<string[]>([]);
   const [memberRemovals, setMemberRemovals] = useState<string[]>([]);
   const [addingMember, setAddingMember] = useState("");
@@ -178,10 +179,11 @@ export default function MonthlyDayEditDialog({
           </RadioGroup>
         </div>
 
-        <Tabs value={editMode} onValueChange={(v) => setEditMode(v as "team" | "members")} className="w-full">
+        <Tabs value={editMode} onValueChange={(v) => setEditMode(v as "team" | "members" | "benefits")} className="w-full">
           <TabsList className="w-full">
-            <TabsTrigger value="team" className="flex-1">Trocar Equipe/Projeto</TabsTrigger>
-            <TabsTrigger value="members" className="flex-1">Editar Membros</TabsTrigger>
+            <TabsTrigger value="team" className="flex-1">Equipe/Projeto</TabsTrigger>
+            <TabsTrigger value="members" className="flex-1">Membros</TabsTrigger>
+            <TabsTrigger value="benefits" className="flex-1">Beneficios</TabsTrigger>
           </TabsList>
 
           <TabsContent value="team" className="space-y-4 mt-4">
@@ -322,6 +324,16 @@ export default function MonthlyDayEditDialog({
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
+          </TabsContent>
+
+          <TabsContent value="benefits" className="mt-4">
+            {projectId ? (
+              <ProjectBenefitsCard projectId={projectId} />
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Selecione um projeto na aba "Equipe/Projeto" para configurar beneficios.
+              </p>
+            )}
           </TabsContent>
         </Tabs>
 

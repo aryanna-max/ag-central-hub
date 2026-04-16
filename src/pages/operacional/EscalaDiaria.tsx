@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CalendarDays, Plus, Lock, Printer, Trash2, Pencil, CheckCircle, AlertTriangle, X, Users, Save } from "lucide-react";
+import { CalendarDays, Plus, Lock, Printer, Trash2, Pencil, CheckCircle, AlertTriangle, X, Users, Save, Coffee } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -99,6 +99,34 @@ export default function EscalaDiaria() {
       return data || [];
     },
   });
+
+  // Fetch project benefits for badge display
+  const assignmentProjectIds = useMemo(() => {
+    return [...new Set((schedule?.assignments || []).map((a: any) => a.project_id).filter(Boolean))];
+  }, [schedule?.assignments]);
+
+  const { data: benefitsData } = useQuery({
+    queryKey: ["project-benefits-batch", assignmentProjectIds],
+    queryFn: async () => {
+      if (!assignmentProjectIds.length) return [];
+      const { data, error } = await supabase
+        .from("project_benefits")
+        .select("project_id, cafe_enabled, almoco_type, jantar_enabled, hospedagem_enabled")
+        .in("project_id", assignmentProjectIds);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: assignmentProjectIds.length > 0,
+  });
+
+  const benefitsMap = useMemo(() => {
+    const map = new Map<string, boolean>();
+    for (const b of benefitsData || []) {
+      const hasAny = b.cafe_enabled || b.almoco_type === "diferenca" || b.jantar_enabled || b.hospedagem_enabled;
+      if (hasAny) map.set(b.project_id, true);
+    }
+    return map;
+  }, [benefitsData]);
 
   const { data: obrasData } = useProjectsList(showAllProjects);
   const createSchedule = useCreateDailySchedule();
@@ -372,6 +400,18 @@ export default function EscalaDiaria() {
     try {
       await closeSchedule.mutateAsync(schedule.id);
       toast.success("Escala fechada!");
+
+      // Contar registros de benefícios gerados
+      const { count } = await supabase.from("employee_daily_records")
+        .select("id", { count: "exact", head: true })
+        .eq("daily_schedule_id", schedule.id);
+
+      if (count && count > 0) {
+        toast.info(`${count} registros de benefícios gerados`, { duration: 5000 });
+      } else {
+        toast.info("Nenhum benefício configurado para os projetos de hoje", { duration: 5000 });
+      }
+
       // Lembrete: algum projeto finalizou campo?
       setTimeout(() => {
         toast("Algum projeto finalizou campo hoje?", {
@@ -661,7 +701,14 @@ export default function EscalaDiaria() {
                           </TableCell>
                           <TableCell>
                             <div>
-                              <p className="text-sm font-medium">{a.projects?.name || "—"}</p>
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-sm font-medium">{a.projects?.name || "—"}</p>
+                                {a.project_id && benefitsMap.get(a.project_id) && (
+                                  <Badge variant="outline" className="border-green-500 text-green-700 text-[10px] px-1 py-0 gap-0.5">
+                                    <Coffee className="w-3 h-3" />
+                                  </Badge>
+                                )}
+                              </div>
                               <p className="text-xs text-muted-foreground">{a.projects?.location || ""}</p>
                             </div>
                           </TableCell>

@@ -604,6 +604,117 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_daily_records: {
+        Row: {
+          almoco_dif_provided: boolean | null
+          almoco_dif_value: number | null
+          attendance: string | null
+          cafe_provided: boolean | null
+          cafe_value: number | null
+          created_at: string
+          daily_schedule_id: string | null
+          employee_id: string
+          expense_sheet_id: string | null
+          hospedagem_provided: boolean | null
+          hospedagem_value: number | null
+          id: string
+          jantar_provided: boolean | null
+          jantar_value: number | null
+          notes: string | null
+          project_id: string | null
+          schedule_date: string
+          status: string | null
+          updated_at: string
+          vehicle_id: string | null
+          vt_provided: boolean | null
+          vt_value: number | null
+        }
+        Insert: {
+          almoco_dif_provided?: boolean | null
+          almoco_dif_value?: number | null
+          attendance?: string | null
+          cafe_provided?: boolean | null
+          cafe_value?: number | null
+          created_at?: string
+          daily_schedule_id?: string | null
+          employee_id: string
+          expense_sheet_id?: string | null
+          hospedagem_provided?: boolean | null
+          hospedagem_value?: number | null
+          id?: string
+          jantar_provided?: boolean | null
+          jantar_value?: number | null
+          notes?: string | null
+          project_id?: string | null
+          schedule_date: string
+          status?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+          vt_provided?: boolean | null
+          vt_value?: number | null
+        }
+        Update: {
+          almoco_dif_provided?: boolean | null
+          almoco_dif_value?: number | null
+          attendance?: string | null
+          cafe_provided?: boolean | null
+          cafe_value?: number | null
+          created_at?: string
+          daily_schedule_id?: string | null
+          employee_id?: string
+          expense_sheet_id?: string | null
+          hospedagem_provided?: boolean | null
+          hospedagem_value?: number | null
+          id?: string
+          jantar_provided?: boolean | null
+          jantar_value?: number | null
+          notes?: string | null
+          project_id?: string | null
+          schedule_date?: string
+          status?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+          vt_provided?: boolean | null
+          vt_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_daily_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_daily_records_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_daily_records_daily_schedule_id_fkey"
+            columns: ["daily_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "daily_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_daily_records_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_daily_records_expense_sheet_id_fkey"
+            columns: ["expense_sheet_id"]
+            isOneToOne: false
+            referencedRelation: "field_expense_sheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_project_authorizations: {
         Row: {
           created_at: string | null
