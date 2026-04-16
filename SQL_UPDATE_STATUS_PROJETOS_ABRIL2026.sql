@@ -106,19 +106,15 @@ WHERE id = (
 -- ------------------------------------------------------------
 -- 3. UFV PAUDALHO → entregue
 --    Serviço entregue, sem pagamento visível.
+--    UUID CONFIRMADO: 97fb4989-9847-4316-9534-243fe5e55af8
+--    (este é o projeto 'KROMA ENGENHARIA LTDA' no import — Paudalho/PE)
 -- ------------------------------------------------------------
 UPDATE projects
 SET
   execution_status = 'entregue',
-  notes = COALESCE(notes || E'\n', '') || '[15/04/2026] Serviço entregue. Sem registro de pagamento até esta data.',
+  notes = COALESCE(notes || E'\n', '') || '[15/04/2026] Serviço entregue (UFV Paudalho). Sem registro de pagamento até esta data. Cliente: Kroma Engenharia.',
   updated_at = NOW()
-WHERE id = (
-  SELECT id FROM projects
-  WHERE name ILIKE '%UFV%Paudalho%'
-     OR (name ILIKE '%UFV%' AND name ILIKE '%Paudalho%')
-  ORDER BY created_at DESC
-  LIMIT 1
-);
+WHERE id = '97fb4989-9847-4316-9534-243fe5e55af8';
 
 
 -- ------------------------------------------------------------
@@ -490,14 +486,12 @@ WHERE id = 'f72c4ead-b511-43d5-92f6-53d9b6b4a45a';
 -- FIX P2: Projeto 'KROMA ENGENHARIA LTDA' → nome descritivo
 -- id: 97fb4989-9847-4316-9534-243fe5e55af8
 -- Serviço: Levantamento Planialtimétrico | Local: Paudalho/PE | R$2.000
--- Status: proposta_aprovada (planejamento)
--- NOTA: Lead de origem = Julia Moraes (Kroma Engenharia)
--- Este projeto pode ser o "UFV Paudalho" referenciado na auditoria WhatsApp?
--- VERIFICAR com Sérgio/Marcelo antes de confirmar o rename.
+-- Confirmado: este é o projeto UFV Paudalho da auditoria WhatsApp
+-- Lead de origem: Julia Moraes (Kroma Engenharia)
 UPDATE projects
 SET
-  name = 'Kroma Engenharia - Levantamento - Paudalho',
-  notes = COALESCE(notes || E'\n', '') || '[15/04/2026] Renomeado de "KROMA ENGENHARIA LTDA" para padrão descritivo. VERIFICAR: pode ser o projeto "UFV Paudalho" mencionado na auditoria WhatsApp.',
+  name = 'Kroma Engenharia - UFV Paudalho',
+  notes = COALESCE(notes || E'\n', '') || '[15/04/2026] Renomeado de "KROMA ENGENHARIA LTDA" para "Kroma Engenharia - UFV Paudalho". Confirmado como o projeto UFV Paudalho da auditoria WhatsApp.',
   updated_at = NOW()
 WHERE id = '97fb4989-9847-4316-9534-243fe5e55af8';
 
