@@ -38,6 +38,7 @@ const navigation: SidebarItem[] = [
       { label: "Dashboard", path: "/operacional/dashboard", icon: LayoutDashboard },
       { label: "Projetos em Campo", path: "/operacional/projetos-campo", icon: FolderKanban },
       { label: "Planejamento", path: "/operacional/escala", icon: CalendarDays },
+      { label: "RDF Digital", path: "/operacional/rdf", icon: FileText },
       { label: "Despesas de Campo", path: "/operacional/despesas-de-campo", icon: Receipt },
       { label: "Veículos", path: "/operacional/veiculos", icon: Car },
     ],
