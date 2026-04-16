@@ -169,7 +169,14 @@ export default function AppSidebar() {
             <div key={item.path}>
               {hasChildren ? (
                 <button
-                  onClick={() => !collapsed && toggleMenu(item.path)}
+                  onClick={() => {
+                    if (collapsed) {
+                      const target = item.children?.[0]?.path || item.path;
+                      navigate(target);
+                    } else {
+                      toggleMenu(item.path);
+                    }
+                  }}
                   className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     parentActive
                       ? "bg-sidebar-accent text-sidebar-primary"
