@@ -372,6 +372,18 @@ export default function EscalaDiaria() {
     try {
       await closeSchedule.mutateAsync(schedule.id);
       toast.success("Escala fechada!");
+
+      // Contar registros de benefícios gerados
+      const { count } = await (supabase.from as any)("employee_daily_records")
+        .select("id", { count: "exact", head: true })
+        .eq("daily_schedule_id", schedule.id);
+
+      if (count && count > 0) {
+        toast.info(`${count} registros de benefícios gerados`, { duration: 5000 });
+      } else {
+        toast.info("Nenhum benefício configurado para os projetos de hoje", { duration: 5000 });
+      }
+
       // Lembrete: algum projeto finalizou campo?
       setTimeout(() => {
         toast("Algum projeto finalizou campo hoje?", {

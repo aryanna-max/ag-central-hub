@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { format, startOfWeek, getWeek, getYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, Trash2, User, Receipt } from "lucide-react";
+import { Plus, Trash2, User, Receipt, ClipboardList } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
 } from "@/components/ui/sheet";
@@ -241,6 +242,99 @@ export default function ExpenseSheetDrawer({ open, onOpenChange, editSheetId }: 
       if (i.key !== itemKey || i.kind !== "funcionario") return i;
       return { ...i, lines: i.lines.filter((l) => l.key !== lineKey) };
     }));
+
+  const handleAutoFill = async () => {
+    if (!periodStart || !periodEnd) {
+      toast({ title: "Defina o período primeiro", variant: "destructive" });
+      return;
+    }
+
+    const { data: records, error } = await (supabase.from as any)("employee_daily_records")
+      .select("*, employees(name), projects(name, codigo)")
+      .gte("schedule_date", periodStart)
+      .lte("schedule_date", periodEnd)
+      .in("attendance", ["presente", "atrasado"])
+      .order("employee_id")
+      .order("schedule_date");
+
+    if (error || !records?.length) {
+      toast({ title: "Nenhum registro encontrado no período. As escalas foram fechadas?", variant: "destructive" });
+      return;
+    }
+
+    // Agrupar por employee_id
+    const byEmployee = new Map<string, typeof records>();
+    for (const r of records) {
+      const list = byEmployee.get(r.employee_id) || [];
+      list.push(r);
+      byEmployee.set(r.employee_id, list);
+    }
+
+    const newItems: FuncionarioItem[] = [];
+    let keyCounter = Date.now();
+
+    for (const [employeeId, empRecords] of byEmployee) {
+      const lines: SubLine[] = [];
+
+      // Agrupar por projeto
+      const byProject = new Map<string, typeof empRecords>();
+      for (const r of empRecords) {
+        const pid = r.project_id || "sem-projeto";
+        const list = byProject.get(pid) || [];
+        list.push(r);
+        byProject.set(pid, list);
+      }
+
+      for (const [projectId, projRecords] of byProject) {
+        if (projectId === "sem-projeto") continue;
+
+        const cafeTotal = projRecords.reduce((s: number, r: any) => s + (r.cafe_provided ? (r.cafe_value || 0) : 0), 0);
+        if (cafeTotal > 0) {
+          lines.push({ key: keyCounter++, project_id: projectId, expense_type: "Café", nature: "adiantamento", value: cafeTotal });
+        }
+
+        const almocoTotal = projRecords.reduce((s: number, r: any) => s + (r.almoco_dif_provided ? (r.almoco_dif_value || 0) : 0), 0);
+        if (almocoTotal > 0) {
+          lines.push({ key: keyCounter++, project_id: projectId, expense_type: "Almoço", nature: "adiantamento", value: almocoTotal });
+        }
+
+        const jantarTotal = projRecords.reduce((s: number, r: any) => s + (r.jantar_provided ? (r.jantar_value || 0) : 0), 0);
+        if (jantarTotal > 0) {
+          lines.push({ key: keyCounter++, project_id: projectId, expense_type: "Jantar", nature: "adiantamento", value: jantarTotal });
+        }
+
+        const vtTotal = projRecords.reduce((s: number, r: any) => s + (r.vt_provided ? (r.vt_value || 0) : 0), 0);
+        if (vtTotal > 0) {
+          lines.push({ key: keyCounter++, project_id: projectId, expense_type: "Transporte", nature: "reembolso", value: vtTotal });
+        }
+
+        const hospTotal = projRecords.reduce((s: number, r: any) => s + (r.hospedagem_provided ? (r.hospedagem_value || 0) : 0), 0);
+        if (hospTotal > 0) {
+          lines.push({ key: keyCounter++, project_id: projectId, expense_type: "Hospedagem", nature: "reembolso", value: hospTotal });
+        }
+      }
+
+      if (lines.length > 0) {
+        newItems.push({
+          kind: "funcionario",
+          key: keyCounter++,
+          employee_id: employeeId,
+          payment_method: "cartao",
+          receiver_id: "",
+          intermediary_reason: "",
+          lines,
+        });
+      }
+    }
+
+    if (newItems.length === 0) {
+      toast({ title: "Nenhum benefício configurado nos projetos do período. Configure em Benefícios do Projeto." });
+      return;
+    }
+
+    setItems(prev => [...prev, ...newItems]);
+    toast({ title: `${newItems.length} funcionário(s) adicionados da escala` });
+  };
 
   const validate = (): string | null => {
     if (!periodStart || !periodEnd) return "Informe o período.";
@@ -484,6 +578,31 @@ export default function ExpenseSheetDrawer({ open, onOpenChange, editSheetId }: 
           </div>
 
           <Separator />
+
+          {/* Auto-fill from schedule */}
+          {items.length === 0 && (
+            <Button
+              variant="outline"
+              className="w-full border-dashed border-green-500 text-green-700 hover:bg-green-50"
+              onClick={handleAutoFill}
+            >
+              <ClipboardList className="w-4 h-4 mr-2" /> Preencher da Escala ({periodStart} a {periodEnd})
+            </Button>
+          )}
+          {items.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground"
+              onClick={() => {
+                if (confirm("Isso vai ADICIONAR itens da escala aos já existentes. Continuar?")) {
+                  handleAutoFill();
+                }
+              }}
+            >
+              + Adicionar da escala
+            </Button>
+          )}
 
           {/* Add buttons */}
           <div className="flex items-center gap-2 flex-wrap">

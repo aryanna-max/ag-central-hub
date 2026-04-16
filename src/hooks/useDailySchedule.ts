@@ -290,10 +290,69 @@ export function useCloseDailySchedule() {
             } as any);
         }
       }
+
+      // === GERAR EMPLOYEE_DAILY_RECORDS ===
+      const { data: entries } = await supabase
+        .from("daily_schedule_entries")
+        .select("employee_id, project_id, attendance, vehicle_id")
+        .eq("daily_schedule_id", scheduleId)
+        .is("removed_at", null);
+
+      if (entries?.length) {
+        const projectIds = [...new Set(entries.map(e => e.project_id).filter(Boolean))] as string[];
+        const { data: allBenefits } = await supabase
+          .from("project_benefits")
+          .select("*")
+          .in("project_id", projectIds);
+
+        const benefitsMap = new Map(
+          (allBenefits || []).map(b => [b.project_id, b])
+        );
+
+        for (const entry of entries) {
+          const benefits = entry.project_id ? benefitsMap.get(entry.project_id) : null;
+          const isPresente = !entry.attendance || entry.attendance === "presente" || entry.attendance === "atrasado";
+
+          const record: Record<string, unknown> = {
+            employee_id: entry.employee_id,
+            schedule_date: schedule.schedule_date,
+            project_id: entry.project_id,
+            daily_schedule_id: scheduleId,
+            attendance: entry.attendance || "presente",
+            vehicle_id: entry.vehicle_id,
+            cafe_provided: isPresente && (benefits?.cafe_enabled || false),
+            cafe_value: isPresente && benefits?.cafe_enabled ? (benefits.cafe_value || 0) : 0,
+            almoco_dif_provided: isPresente && benefits?.almoco_type === "diferenca",
+            almoco_dif_value: isPresente && benefits?.almoco_type === "diferenca" ? (benefits.almoco_diferenca_value || 0) : 0,
+            jantar_provided: isPresente && (benefits?.jantar_enabled || false),
+            jantar_value: isPresente && benefits?.jantar_enabled ? (benefits.jantar_value || 0) : 0,
+            hospedagem_provided: isPresente && (benefits?.hospedagem_enabled || false),
+            hospedagem_value: isPresente && benefits?.hospedagem_enabled ? (benefits.hospedagem_value || 0) : 0,
+            vt_provided: isPresente,
+            vt_value: isPresente ? 4.50 : 0,
+            status: "provisorio",
+          };
+
+          // Upsert: se já existe (re-fechar), atualiza
+          const { data: existingRecord } = await (supabase.from as any)("employee_daily_records")
+            .select("id")
+            .eq("employee_id", record.employee_id)
+            .eq("schedule_date", record.schedule_date)
+            .eq("project_id", record.project_id || "")
+            .maybeSingle();
+
+          if (existingRecord) {
+            await (supabase.from as any)("employee_daily_records").update(record).eq("id", existingRecord.id);
+          } else {
+            await (supabase.from as any)("employee_daily_records").insert(record);
+          }
+        }
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["daily-schedule"] });
       qc.invalidateQueries({ queryKey: ["vehicle-payments"] });
+      qc.invalidateQueries({ queryKey: ["employee-daily-records"] });
     },
   });
 }
