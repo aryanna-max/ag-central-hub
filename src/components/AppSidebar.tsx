@@ -4,7 +4,7 @@ import {
   Radar, Briefcase, Map, PenTool, Receipt, Users, Database,
   ChevronLeft, ChevronRight, Target, Building2, CalendarDays,
   Car, FolderKanban, LayoutDashboard, UserPlus, Shield,
-  FileText, BarChart3,
+  FileText, BarChart3, ClipboardList,
 } from "lucide-react";
 import { useModuleAlertCounts } from "@/hooks/useModuleAlertCounts";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,6 +40,7 @@ const navigation: SidebarItem[] = [
       { label: "Planejamento", path: "/operacional/escala", icon: CalendarDays },
       { label: "Despesas de Campo", path: "/operacional/despesas-de-campo", icon: Receipt },
       { label: "Veículos", path: "/operacional/veiculos", icon: Car },
+      { label: "RDF", path: "/operacional/rdf", icon: ClipboardList },
     ],
   },
   {

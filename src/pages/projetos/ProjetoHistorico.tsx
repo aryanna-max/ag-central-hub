@@ -7,6 +7,7 @@ import { useMeasurements } from "@/hooks/useMeasurements";
 import { useProjectServices } from "@/hooks/useProjectServices";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjectContacts } from "@/hooks/useProjectContacts";
+import { useProjectBenefits, useUpsertProjectBenefits } from "@/hooks/useProjectBenefits";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,12 +19,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import DeadlineBadge from "@/components/DeadlineBadge";
 import { SERVICE_TYPES } from "@/lib/serviceTypes";
 import {
   ArrowLeft, Building2, MapPin, Calendar, DollarSign,
   FileText, Users, Clock, FolderKanban, Receipt,
-  AlertTriangle, Briefcase, Pencil, Save, X,
+  AlertTriangle, Briefcase, Pencil, Save, X, Coffee, Utensils,
 } from "lucide-react";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { toast } from "sonner";
@@ -59,6 +61,8 @@ export default function ProjetoHistorico() {
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Record<string, any>>({});
+  const [editingBenefits, setEditingBenefits] = useState(false);
+  const [benefitsForm, setBenefitsForm] = useState<Record<string, any>>({});
 
   const { data: statusHistory = [] } = useQuery({
     queryKey: ["project-status-history", projectId],
@@ -82,6 +86,9 @@ export default function ProjetoHistorico() {
     enabled: !!projectId,
   });
 
+  const { data: benefits } = useProjectBenefits(projectId);
+  const upsertBenefits = useUpsertProjectBenefits();
+
   const project = useMemo(() => projects.find((p) => p.id === projectId), [projects, projectId]);
   const client = useMemo(() => clients.find((c) => c.id === project?.client_id), [clients, project]);
   const empMap = useMemo(() => new Map(employees.map((e) => [e.id, e.name])), [employees]);
@@ -90,6 +97,28 @@ export default function ProjetoHistorico() {
   useEffect(() => {
     if (project) setForm({ ...project });
   }, [project]);
+
+  useEffect(() => {
+    if (benefits) {
+      setBenefitsForm({ ...benefits });
+    } else {
+      setBenefitsForm({
+        cafe_enabled: false, cafe_value: 0,
+        almoco_type: "va_cobre", almoco_diferenca_value: 0,
+        jantar_enabled: false, jantar_value: 0,
+        hospedagem_enabled: false, hospedagem_type: "empresa_paga", hospedagem_value: 0,
+      });
+    }
+  }, [benefits]);
+
+  const handleSaveBenefits = async () => {
+    if (!projectId) return;
+    try {
+      await upsertBenefits.mutateAsync({ project_id: projectId, ...benefitsForm });
+      toast.success("Benefícios de campo salvos");
+      setEditingBenefits(false);
+    } catch { toast.error("Erro ao salvar benefícios"); }
+  };
 
   if (!project) {
     return (
@@ -540,6 +569,164 @@ export default function ProjetoHistorico() {
           </CardContent>
         </Card>
       )}
+
+      {/* ═══ BENEFÍCIOS DE CAMPO ═══ */}
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Coffee className="w-4 h-4" /> Benefícios de Campo
+            </h3>
+            {editingBenefits ? (
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setEditingBenefits(false)}>
+                  <X className="w-3 h-3 mr-1" /> Cancelar
+                </Button>
+                <Button size="sm" onClick={handleSaveBenefits} disabled={upsertBenefits.isPending}>
+                  <Save className="w-3 h-3 mr-1" /> {upsertBenefits.isPending ? "Salvando..." : "Salvar"}
+                </Button>
+              </div>
+            ) : (
+              <Button size="sm" variant="outline" onClick={() => setEditingBenefits(true)}>
+                <Pencil className="w-3 h-3 mr-1" /> Editar
+              </Button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Café */}
+            <div className="border rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium flex items-center gap-1.5">
+                  <Coffee className="w-3.5 h-3.5 text-amber-600" /> Café
+                </span>
+                {editingBenefits ? (
+                  <Switch
+                    checked={!!benefitsForm.cafe_enabled}
+                    onCheckedChange={(v) => setBenefitsForm({ ...benefitsForm, cafe_enabled: v })}
+                  />
+                ) : (
+                  <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full", benefits?.cafe_enabled ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground")}>
+                    {benefits?.cafe_enabled ? "Ativo" : "Inativo"}
+                  </span>
+                )}
+              </div>
+              {editingBenefits && benefitsForm.cafe_enabled && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Valor (R$)</Label>
+                  <Input type="number" step="0.01" value={benefitsForm.cafe_value || ""} onChange={(e) => setBenefitsForm({ ...benefitsForm, cafe_value: Number(e.target.value) })} className="h-7 text-sm mt-0.5" />
+                </div>
+              )}
+              {!editingBenefits && benefits?.cafe_enabled && (
+                <p className="text-xs text-muted-foreground">R$ {(benefits.cafe_value || 0).toFixed(2)}/dia</p>
+              )}
+            </div>
+
+            {/* Almoço */}
+            <div className="border rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium flex items-center gap-1.5">
+                  <Utensils className="w-3.5 h-3.5 text-blue-600" /> Almoço
+                </span>
+                {editingBenefits ? (
+                  <Select value={benefitsForm.almoco_type || "va_cobre"} onValueChange={(v) => setBenefitsForm({ ...benefitsForm, almoco_type: v })}>
+                    <SelectTrigger className="h-7 w-32 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="va_cobre">VA cobre</SelectItem>
+                      <SelectItem value="diferenca">Diferença</SelectItem>
+                      <SelectItem value="empresa_paga">Empresa paga</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                    {benefits?.almoco_type === "diferenca" ? "Diferença" : benefits?.almoco_type === "empresa_paga" ? "Empresa paga" : "VA cobre"}
+                  </span>
+                )}
+              </div>
+              {editingBenefits && benefitsForm.almoco_type === "diferenca" && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Valor diferença (R$)</Label>
+                  <Input type="number" step="0.01" value={benefitsForm.almoco_diferenca_value || ""} onChange={(e) => setBenefitsForm({ ...benefitsForm, almoco_diferenca_value: Number(e.target.value) })} className="h-7 text-sm mt-0.5" />
+                </div>
+              )}
+              {!editingBenefits && benefits?.almoco_type === "diferenca" && (
+                <p className="text-xs text-muted-foreground">R$ {(benefits.almoco_diferenca_value || 0).toFixed(2)}/dia</p>
+              )}
+            </div>
+
+            {/* Jantar */}
+            <div className="border rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium flex items-center gap-1.5">
+                  <Utensils className="w-3.5 h-3.5 text-purple-600" /> Jantar
+                </span>
+                {editingBenefits ? (
+                  <Switch
+                    checked={!!benefitsForm.jantar_enabled}
+                    onCheckedChange={(v) => setBenefitsForm({ ...benefitsForm, jantar_enabled: v })}
+                  />
+                ) : (
+                  <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full", benefits?.jantar_enabled ? "bg-purple-100 text-purple-700" : "bg-muted text-muted-foreground")}>
+                    {benefits?.jantar_enabled ? "Ativo" : "Inativo"}
+                  </span>
+                )}
+              </div>
+              {editingBenefits && benefitsForm.jantar_enabled && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Valor (R$)</Label>
+                  <Input type="number" step="0.01" value={benefitsForm.jantar_value || ""} onChange={(e) => setBenefitsForm({ ...benefitsForm, jantar_value: Number(e.target.value) })} className="h-7 text-sm mt-0.5" />
+                </div>
+              )}
+              {!editingBenefits && benefits?.jantar_enabled && (
+                <p className="text-xs text-muted-foreground">R$ {(benefits.jantar_value || 0).toFixed(2)}/dia</p>
+              )}
+            </div>
+
+            {/* Hospedagem */}
+            <div className="border rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Hospedagem</span>
+                {editingBenefits ? (
+                  <Switch
+                    checked={!!benefitsForm.hospedagem_enabled}
+                    onCheckedChange={(v) => setBenefitsForm({ ...benefitsForm, hospedagem_enabled: v })}
+                  />
+                ) : (
+                  <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full", benefits?.hospedagem_enabled ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground")}>
+                    {benefits?.hospedagem_enabled ? "Ativo" : "Inativo"}
+                  </span>
+                )}
+              </div>
+              {editingBenefits && benefitsForm.hospedagem_enabled && (
+                <div className="space-y-1.5">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Tipo</Label>
+                    <Select value={benefitsForm.hospedagem_type || "empresa_paga"} onValueChange={(v) => setBenefitsForm({ ...benefitsForm, hospedagem_type: v })}>
+                      <SelectTrigger className="h-7 text-xs mt-0.5"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="empresa_paga">Empresa paga</SelectItem>
+                        <SelectItem value="reembolso">Reembolso</SelectItem>
+                        <SelectItem value="diaria">Diária fixa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Valor (R$)</Label>
+                    <Input type="number" step="0.01" value={benefitsForm.hospedagem_value || ""} onChange={(e) => setBenefitsForm({ ...benefitsForm, hospedagem_value: Number(e.target.value) })} className="h-7 text-sm mt-0.5" />
+                  </div>
+                </div>
+              )}
+              {!editingBenefits && benefits?.hospedagem_enabled && (
+                <p className="text-xs text-muted-foreground">R$ {(benefits.hospedagem_value || 0).toFixed(2)}/dia · {benefits.hospedagem_type}</p>
+              )}
+            </div>
+          </div>
+
+          {!benefits && !editingBenefits && (
+            <p className="text-xs text-muted-foreground text-center py-1">Nenhum benefício configurado para este projeto.</p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ═══ OBSERVAÇÕES ═══ */}
       <Card>
