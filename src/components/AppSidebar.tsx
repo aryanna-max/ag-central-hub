@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Radar, Briefcase, Map, PenTool, Receipt, Users, Database,
   ChevronLeft, ChevronRight, Target, Building2, CalendarDays,

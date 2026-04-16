@@ -103,57 +103,57 @@ export type Database = {
       }
       benefit_settlements: {
         Row: {
-          id: string
-          semana_inicio: string
-          semana_fim: string
-          employee_id: string
-          cafe_previsto: number
-          cafe_realizado: number
-          almoco_previsto: number
-          almoco_realizado: number
-          jantar_previsto: number
-          jantar_realizado: number
-          saldo_desconto: number
-          status: string
-          sheet_id: string | null
-          notes: string | null
+          almoco_previsto: number | null
+          almoco_realizado: number | null
+          cafe_previsto: number | null
+          cafe_realizado: number | null
           created_at: string
+          employee_id: string
+          id: string
+          jantar_previsto: number | null
+          jantar_realizado: number | null
+          notes: string | null
+          saldo_desconto: number | null
+          semana_fim: string
+          semana_inicio: string
+          sheet_id: string | null
+          status: string | null
           updated_at: string
         }
         Insert: {
-          id?: string
-          semana_inicio: string
-          semana_fim: string
-          employee_id: string
-          cafe_previsto?: number
-          cafe_realizado?: number
-          almoco_previsto?: number
-          almoco_realizado?: number
-          jantar_previsto?: number
-          jantar_realizado?: number
-          saldo_desconto?: number
-          status?: string
-          sheet_id?: string | null
-          notes?: string | null
+          almoco_previsto?: number | null
+          almoco_realizado?: number | null
+          cafe_previsto?: number | null
+          cafe_realizado?: number | null
           created_at?: string
+          employee_id: string
+          id?: string
+          jantar_previsto?: number | null
+          jantar_realizado?: number | null
+          notes?: string | null
+          saldo_desconto?: number | null
+          semana_fim: string
+          semana_inicio: string
+          sheet_id?: string | null
+          status?: string | null
           updated_at?: string
         }
         Update: {
-          id?: string
-          semana_inicio?: string
-          semana_fim?: string
-          employee_id?: string
-          cafe_previsto?: number
-          cafe_realizado?: number
-          almoco_previsto?: number
-          almoco_realizado?: number
-          jantar_previsto?: number
-          jantar_realizado?: number
-          saldo_desconto?: number
-          status?: string
-          sheet_id?: string | null
-          notes?: string | null
+          almoco_previsto?: number | null
+          almoco_realizado?: number | null
+          cafe_previsto?: number | null
+          cafe_realizado?: number | null
           created_at?: string
+          employee_id?: string
+          id?: string
+          jantar_previsto?: number | null
+          jantar_realizado?: number | null
+          notes?: string | null
+          saldo_desconto?: number | null
+          semana_fim?: string
+          semana_inicio?: string
+          sheet_id?: string | null
+          status?: string | null
           updated_at?: string
         }
         Relationships: [
