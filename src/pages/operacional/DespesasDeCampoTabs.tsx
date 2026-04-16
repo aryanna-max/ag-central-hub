@@ -3,6 +3,7 @@ import { DollarSign } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobileExpenses from "@/components/mobile/expenses/MobileExpenses";
+import EncontroDeContas from "./EncontroDeContas";
 import DespesasDeCampo from "./DespesasDeCampo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
@@ -162,6 +163,7 @@ export default function DespesasDeCampoTabs() {
         <TabsList>
           <TabsTrigger value="despesas">Despesas</TabsTrigger>
           <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
+          <TabsTrigger value="encontro">Encontro de Contas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="despesas">
@@ -170,6 +172,10 @@ export default function DespesasDeCampoTabs() {
 
         <TabsContent value="relatorios">
           <ExpenseReportsTab />
+        </TabsContent>
+
+        <TabsContent value="encontro">
+          <EncontroDeContas />
         </TabsContent>
       </Tabs>
     </div>

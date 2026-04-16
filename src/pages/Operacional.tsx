@@ -5,7 +5,6 @@ import Planejamento from "./operacional/Planejamento";
 import DespesasDeCampoTabs from "./operacional/DespesasDeCampoTabs";
 import Veiculos from "./operacional/Veiculos";
 import RDFDigital from "./operacional/RDFDigital";
-import EncontroDeContas from "./operacional/EncontroDeContas";
 
 export default function Operacional() {
   return (
@@ -17,7 +16,6 @@ export default function Operacional() {
       <Route path="despesas-de-campo" element={<DespesasDeCampoTabs />} />
       <Route path="veiculos" element={<Veiculos />} />
       <Route path="rdf" element={<RDFDigital />} />
-      <Route path="encontro-de-contas" element={<EncontroDeContas />} />
       <Route path="*" element={<Navigate to="dashboard" replace />} />
     </Routes>
   );
