@@ -133,8 +133,9 @@ export default function AppSidebar() {
 
   return (
     <aside
+      onClick={() => { if (collapsed) setCollapsed(false); }}
       className={`flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ${
-        collapsed ? "w-16" : "w-64"
+        collapsed ? "w-16 cursor-pointer" : "w-64"
       } min-h-screen`}
     >
       {/* Logo */}
