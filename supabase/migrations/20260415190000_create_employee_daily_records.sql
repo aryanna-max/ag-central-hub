@@ -38,4 +38,4 @@ CREATE POLICY "Authenticated users full access"
 
 CREATE OR REPLACE TRIGGER set_updated_at_employee_daily_records
   BEFORE UPDATE ON public.employee_daily_records
-  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();

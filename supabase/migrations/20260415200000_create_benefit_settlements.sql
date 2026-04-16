@@ -36,4 +36,4 @@ CREATE POLICY "bs_all_authenticated"
 
 CREATE OR REPLACE TRIGGER set_updated_at_benefit_settlements
   BEFORE UPDATE ON public.benefit_settlements
-  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
