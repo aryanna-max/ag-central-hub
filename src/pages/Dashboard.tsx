@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useCallback } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { canSeeFinancials as checkFinancials } from "@/lib/constants";
@@ -508,23 +508,24 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Kanban board */}
-        <div className="overflow-x-auto pb-4 -mx-4 px-4">
-          <div className="flex gap-2 min-w-max">
+        {/* Kanban board — drag to scroll */}
+        <DragScrollContainer className="pb-4 -mx-4 px-4">
+          <div className="flex gap-2 min-w-max select-none">
             {GROUPS.map((group) => {
               if (!groupToggles[group.key]) return null;
               return group.columns.map((col) => {
                 const items = projectsByStatus[col] || [];
                 const isCollapsed = collapsedCols.has(col) && items.length === 0;
 
-                if (isCollapsed) {
+               if (isCollapsed) {
                   return (
                     <div
                       key={col}
-                      className="w-8 shrink-0 rounded-lg border cursor-pointer flex flex-col items-center justify-center py-4 hover:bg-muted/50 transition-colors"
+                      className="w-8 shrink-0 rounded-lg border cursor-pointer flex flex-col items-center justify-start pt-2 pb-4 hover:bg-muted/50 transition-colors"
                       style={{ borderTopColor: group.color, borderTopWidth: 3 }}
                       onClick={() => toggleCol(col)}
                     >
+                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground mb-1" />
                       <span
                         className="text-[10px] text-muted-foreground font-medium"
                         style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
@@ -542,14 +543,21 @@ export default function Dashboard() {
                     style={{ borderTopColor: group.color, borderTopWidth: 3 }}
                   >
                     <div
-                      className="px-3 py-2 flex items-center justify-between cursor-pointer"
-                      onClick={() => items.length === 0 && toggleCol(col)}
+                      className="px-3 py-2 flex items-center gap-1.5 cursor-pointer group/colhdr"
+                      onClick={() => toggleCol(col)}
                     >
+                      <button
+                        className="p-0.5 rounded hover:bg-muted transition-colors opacity-40 group-hover/colhdr:opacity-100"
+                        onClick={(e) => { e.stopPropagation(); toggleCol(col); }}
+                        title="Recolher coluna"
+                      >
+                        <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                      </button>
                       <span className="text-xs font-semibold truncate">
                         {EXEC_STATUS_LABELS[col]}
                       </span>
                       <Badge
-                        className="text-[10px] h-5 px-1.5 font-bold"
+                        className="text-[10px] h-5 px-1.5 font-bold ml-auto"
                         style={{ backgroundColor: group.color, color: "white" }}
                       >
                         {items.length}
@@ -574,13 +582,62 @@ export default function Dashboard() {
               });
             })}
           </div>
-        </div>
+        </DragScrollContainer>
       </section>
     </div>
   );
 }
 
 // ─── KPI Card (redesenhado) ───
+
+// ─── Drag-to-scroll container ───
+function DragScrollContainer({ children, className }: { children: React.ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    const el = ref.current;
+    if (!el) return;
+    // Don't hijack clicks on buttons / links
+    if ((e.target as HTMLElement).closest("button, a, [role=button]")) return;
+    isDragging.current = true;
+    startX.current = e.pageX - el.offsetLeft;
+    scrollLeft.current = el.scrollLeft;
+    el.style.cursor = "grabbing";
+    el.style.userSelect = "none";
+  }, []);
+
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging.current || !ref.current) return;
+    e.preventDefault();
+    const x = e.pageX - ref.current.offsetLeft;
+    ref.current.scrollLeft = scrollLeft.current - (x - startX.current);
+  }, []);
+
+  const onMouseUp = useCallback(() => {
+    isDragging.current = false;
+    if (ref.current) {
+      ref.current.style.cursor = "grab";
+      ref.current.style.userSelect = "";
+    }
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={cn("overflow-x-auto cursor-grab", className)}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseUp}
+    >
+      {children}
+    </div>
+  );
+}
+
 function KpiCard({
   icon, label, value, subtitle, gradient, iconBg, iconColor, pulse, active, onClick,
 }: {
