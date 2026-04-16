@@ -88,6 +88,7 @@ const adminNavigation: SidebarItem[] = [
 ];
 
 export default function AppSidebar() {
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<string[]>([]);
   const location = useLocation();
