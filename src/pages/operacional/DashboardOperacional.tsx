@@ -52,12 +52,12 @@ export default function DashboardOperacional() {
   const { data: employees } = useEmployeesWithAbsences(today);
   const { data: teams } = useTeams();
   const { data: vehicles } = useVehicles();
-  const { data: obras } = useActiveProjects();
+  const { data: projetos } = useActiveProjects();
   const { data: unallocatedProjects } = useUnallocatedProjects(currentMonth, currentYear);
   const stats = useMemo(() => {
     const emps = employees || [];
     const disponivel = emps.filter((e) => e.availability === "disponivel").length;
-    const emObra = emps.filter((e) => e.availability === "em_projeto").length;
+    const emProjeto = emps.filter((e) => e.availability === "em_projeto").length;
     const ferias = emps.filter((e) => e.availability === "ferias").length;
     const licenca = emps.filter((e) => e.availability === "licenca").length;
     const afastado = emps.filter((e) => e.availability === "afastado").length;
@@ -65,12 +65,12 @@ export default function DashboardOperacional() {
     const veiculosDisp = (vehicles || []).filter((v) => v.status === "disponivel").length;
     const veiculosManut = (vehicles || []).filter((v) => v.status === "manutencao").length;
     const activeTeams = (teams || []).filter((t: any) => t.is_active).length;
-    return { disponivel, emObra, ferias, licenca, afastado, veiculosUso, veiculosDisp, veiculosManut, activeTeams, totalEmps: emps.length };
+    return { disponivel, emProjeto, ferias, licenca, afastado, veiculosUso, veiculosDisp, veiculosManut, activeTeams, totalEmps: emps.length };
   }, [employees, vehicles, teams]);
 
   const empStatusData = [
     { name: "Disponível", value: stats.disponivel },
-    { name: "Em Obra", value: stats.emObra },
+    { name: "Em Projeto", value: stats.emProjeto },
     { name: "Férias", value: stats.ferias },
     { name: "Licença/Afastado", value: stats.licenca + stats.afastado },
   ].filter((d) => d.value > 0);
@@ -209,15 +209,15 @@ export default function DashboardOperacional() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {(obras || []).length === 0 ? (
+            {(projetos || []).length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhum projeto ativo.</p>
             ) : (
               <div className="space-y-2">
-                {(obras || []).map((obra: any) => (
-                  <div key={obra.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                {(projetos || []).map((p: any) => (
+                  <div key={p.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
                     <div>
-                      <p className="text-sm font-medium">{obra.name}</p>
-                      <p className="text-xs text-muted-foreground">{(obra.clients as any)?.name || "—"} • {obra.location || "—"}</p>
+                      <p className="text-sm font-medium">{p.name}</p>
+                      <p className="text-xs text-muted-foreground">{(p.clients as any)?.name || "—"} • {p.location || "—"}</p>
                     </div>
                     <Badge className="bg-secondary text-secondary-foreground text-xs">Ativo</Badge>
                   </div>
@@ -239,11 +239,11 @@ export default function DashboardOperacional() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {unallocatedProjects!.map((obra: any) => (
-                <div key={obra.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+              {unallocatedProjects!.map((p: any) => (
+                <div key={p.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
                   <div>
-                    <p className="text-sm font-medium">{obra.name}</p>
-                    <p className="text-xs text-muted-foreground">{obra.client_name || "—"} • {obra.location || "—"}</p>
+                    <p className="text-sm font-medium">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">{p.client_name || "—"} • {p.location || "—"}</p>
                   </div>
                   <Badge variant="destructive" className="text-xs">Sem Equipe</Badge>
                 </div>

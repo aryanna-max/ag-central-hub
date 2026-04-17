@@ -418,8 +418,8 @@ export default function EscalaDiaria() {
         toast("Algum projeto finalizou campo hoje?", {
           duration: 10000,
           action: {
-            label: "Ver projetos",
-            onClick: () => navigate("/operacional/projetos-campo"),
+            label: "Ver no Kanban",
+            onClick: () => navigate("/projetos/kanban"),
           },
         });
       }, 1500);
