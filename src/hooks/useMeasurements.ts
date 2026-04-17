@@ -226,7 +226,7 @@ export function useCreateMeasurementFromProject() {
     }) => {
       const { data: project, error: projErr } = await supabase
         .from("projects")
-        .select("id, name, client_id, empresa_faturadora, contract_value")
+        .select("id, name, codigo, client_id, empresa_faturadora, contract_value")
         .eq("id", projectId)
         .single();
       if (projErr) throw projErr;
@@ -239,14 +239,16 @@ export function useCreateMeasurementFromProject() {
         .limit(1);
       const proposalId = proposals?.[0]?.proposal_id ?? null;
 
-      const year = new Date().getFullYear();
+      // Código BM: BM-{CODIGO_PROJETO_SEM_ANO}-{SEQ_POR_PROJETO}
+      // Ex: Projeto "2026-BRK-003" → BM-BRK-003-001, BM-BRK-003-002...
+      const codigoSemAno = (project.codigo ?? "")
+        .replace(/^\d{4}-/, ""); // remove "2026-" do início
       const { count } = await supabase
         .from("measurements")
         .select("id", { count: "exact", head: true })
-        .gte("created_at", `${year}-01-01`)
-        .lt("created_at", `${year + 1}-01-01`);
+        .eq("project_id", projectId);
       const seq = (count ?? 0) + 1;
-      const codigoBm = `AG-BM-${year}-${String(seq).padStart(3, "0")}`;
+      const codigoBm = `BM-${codigoSemAno}-${String(seq).padStart(3, "0")}`;
 
       const { data: measurement, error: mErr } = await supabase
         .from("measurements")
