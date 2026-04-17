@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee } from "@/hooks/useEmployees";
+import { useEmployees, useUpdateEmployee, useDeleteEmployee } from "@/hooks/useEmployees";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,20 +9,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Search, Plus, Users, MoreVertical, Pencil, RefreshCw, Trash2, Download } from "lucide-react";
+import { Search, Plus, Users, MoreVertical, Pencil, RefreshCw, Trash2, Download, UserMinus } from "lucide-react";
 import { ALL_EMPLOYEE_ROLES } from "@/lib/fieldRoles";
-import { formatCpf } from "@/lib/masks";
 import { toast } from "sonner";
 import { exportCsv } from "@/lib/exportCsv";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Employee } from "@/hooks/useEmployees";
-import { FIELD_ROLES, isFieldRole, isTechRole } from "@/lib/fieldRoles";
+import { isFieldRole, isTechRole } from "@/lib/fieldRoles";
 import ColumnToggle, { useColumnVisibility, type ColumnDef } from "@/components/ColumnToggle";
 import { SortableTableHead, useSortableTable } from "@/components/ui/sortable-table-head";
+import AdmissaoWizard from "@/components/rh/AdmissaoWizard";
+import DesligamentoDialog from "@/components/rh/DesligamentoDialog";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   disponivel: { label: "Disponível", className: "bg-green-600 text-white" },
@@ -34,17 +35,8 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 const PAGE_SIZE = 20;
 
-function validateMatricula(value: string): string | null {
-  if (!value) return null;
-  const trimmed = value.trim().toUpperCase();
-  if (/^000\d{3}$/.test(trimmed)) return null; // CLT valid
-  if (/^PREST-\d{3}$/.test(trimmed)) return null; // Prestador valid
-  return "Matrícula deve ser formato 000XXX (CLT) ou PREST-XXX (prestador)";
-}
-
 export default function Funcionarios() {
   const { data: employees = [], isLoading } = useEmployees();
-  const createEmployee = useCreateEmployee();
   const updateEmployee = useUpdateEmployee();
   const deleteEmployee = useDeleteEmployee();
 
@@ -52,6 +44,8 @@ export default function Funcionarios() {
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [roleFilter, setRoleFilter] = useState<string>("todos");
   const [page, setPage] = useState(1);
+  const [showAdmissao, setShowAdmissao] = useState(false);
+  const [termEmp, setTermEmp] = useState<Employee | null>(null);
 
   const EMP_COLUMNS: ColumnDef[] = [
     { key: "matricula", label: "Matrícula" },
@@ -62,17 +56,6 @@ export default function Funcionarios() {
     { key: "status", label: "Status" },
   ];
   const { visibleColumns, toggle: toggleColumn, isVisible } = useColumnVisibility(EMP_COLUMNS);
-
-  const [showNew, setShowNew] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newRole, setNewRole] = useState("");
-  const [newAdmission, setNewAdmission] = useState("");
-  const [newStatus, setNewStatus] = useState("disponivel");
-  const [newMatricula, setNewMatricula] = useState("");
-  const [newCpf, setNewCpf] = useState("");
-  const [newHasVt, setNewHasVt] = useState(false);
-  const [newVtCash, setNewVtCash] = useState(false);
-  const [newVtValue, setNewVtValue] = useState("");
 
   // Edit dialog
   const [editEmp, setEditEmp] = useState<Employee | null>(null);
@@ -128,39 +111,6 @@ export default function Funcionarios() {
     if (matricula.startsWith("000")) return <Badge className="bg-blue-600 text-white text-[10px] px-1.5">CLT</Badge>;
     if (matricula.toUpperCase().startsWith("PREST")) return <Badge className="bg-muted text-muted-foreground text-[10px] px-1.5">PREST</Badge>;
     return null;
-  };
-
-  // Handlers
-  const handleCreate = async () => {
-    if (!newName.trim()) { toast.error("Nome é obrigatório"); return; }
-    const matError = validateMatricula(newMatricula);
-    if (newMatricula && matError) { toast.error(matError); return; }
-    // CPF uniqueness
-    if (newCpf.trim()) {
-      const existing = employees.find(e => e.cpf === newCpf.trim());
-      if (existing) { toast.error(`CPF já cadastrado: ${existing.name}`); return; }
-    }
-    try {
-      await createEmployee.mutateAsync({
-        name: newName.trim(),
-        role: newRole.trim() || "Ajudante de Topografia",
-        admission_date: newAdmission || null,
-        status: newStatus as any,
-        matricula: newMatricula.trim().toUpperCase() || null,
-        cpf: newCpf.trim() || null,
-      } as any);
-      // Update VT fields separately (not in types yet)
-      if (newHasVt) {
-        const { data: created } = await supabase.from("employees").select("id").eq("name", newName.trim()).order("created_at", { ascending: false }).limit(1).single();
-        if (created) {
-          await supabase.from("employees").update({ has_vt: newHasVt, vt_cash: newVtCash, vt_value: Number(newVtValue) || 0 } as any).eq("id", created.id);
-        }
-      }
-      toast.success("Funcionário cadastrado!");
-      setShowNew(false);
-      setNewName(""); setNewRole(""); setNewAdmission(""); setNewStatus("disponivel");
-      setNewMatricula(""); setNewCpf(""); setNewHasVt(false); setNewVtCash(false); setNewVtValue("");
-    } catch { toast.error("Erro ao cadastrar"); }
   };
 
   const openEdit = (emp: Employee) => {
@@ -234,8 +184,8 @@ export default function Funcionarios() {
             exportCsv(["Matrícula", "Nome", "Função", "CPF", "Admissão", "Status", "VT"], rows, "funcionarios.csv");
             toast.success(`${rows.length} funcionários exportados`);
           }}><Download className="w-4 h-4 mr-1" /> Exportar</Button>
-          <Button onClick={() => setShowNew(true)}>
-            <Plus className="w-4 h-4 mr-1" /> Novo Funcionário
+          <Button onClick={() => setShowAdmissao(true)}>
+            <Plus className="w-4 h-4 mr-1" /> Admitir Funcionário
           </Button>
         </div>
       </div>
@@ -348,6 +298,10 @@ export default function Funcionarios() {
                                 <DropdownMenuItem onClick={() => openStatusChange(emp)}>
                                   <RefreshCw className="w-4 h-4 mr-2" /> Alterar Status
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => setTermEmp(emp)}>
+                                  <UserMinus className="w-4 h-4 mr-2" /> {emp.status === "desligado" ? "Ver desligamento" : "Desligar"}
+                                </DropdownMenuItem>
                                 <DropdownMenuItem className="text-destructive" onClick={() => setDeleteEmp(emp)}>
                                   <Trash2 className="w-4 h-4 mr-2" /> Excluir
                                 </DropdownMenuItem>
@@ -402,81 +356,15 @@ export default function Funcionarios() {
         </CardContent>
       </Card>
 
-      {/* Dialog: Novo Funcionário */}
-      <Dialog open={showNew} onOpenChange={setShowNew}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Novo Funcionário</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label>Nome *</Label>
-              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nome completo" />
-            </div>
-            <div>
-              <Label>CPF</Label>
-              <Input value={newCpf} onChange={(e) => setNewCpf(formatCpf(e.target.value))} placeholder="000.000.000-00" maxLength={14} />
-            </div>
-            <div>
-              <Label>Matrícula</Label>
-              <Input value={newMatricula} onChange={(e) => setNewMatricula(e.target.value.toUpperCase())} placeholder="000XXX ou PREST-XXX" maxLength={10} />
-              <p className="text-[10px] text-muted-foreground mt-0.5">CLT: 000XXX (6 dígitos) | Prestador: PREST-XXX</p>
-            </div>
-            <div>
-              <Label>Função</Label>
-              <Select value={newRole} onValueChange={setNewRole}>
-                <SelectTrigger><SelectValue placeholder="Selecione a função..." /></SelectTrigger>
-                <SelectContent>
-                  {ALL_EMPLOYEE_ROLES.map((r) => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Data de Admissão</Label>
-              <Input type="date" value={newAdmission} onChange={(e) => setNewAdmission(e.target.value)} />
-            </div>
-            <div>
-              <Label>Status</Label>
-              <Select value={newStatus} onValueChange={setNewStatus}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="disponivel">Disponível</SelectItem>
-                  <SelectItem value="ferias">Férias</SelectItem>
-                  <SelectItem value="afastado">Afastado</SelectItem>
-                  <SelectItem value="licenca">Licença</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="border rounded-lg p-3 space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase">Vale Transporte</p>
-              <div className="flex items-center justify-between">
-                <Label>Tem VT?</Label>
-                <Switch checked={newHasVt} onCheckedChange={setNewHasVt} />
-              </div>
-              {newHasVt && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <Label>Recebe em dinheiro?</Label>
-                    <Switch checked={newVtCash} onCheckedChange={setNewVtCash} />
-                  </div>
-                  <div>
-                    <Label>Valor VT mensal (R$)</Label>
-                    <Input type="number" value={newVtValue} onChange={(e) => setNewVtValue(e.target.value)} placeholder="0.00" />
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNew(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} disabled={createEmployee.isPending}>
-              {createEmployee.isPending ? "Salvando..." : "Salvar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Wizard: Admissão */}
+      <AdmissaoWizard open={showAdmissao} onOpenChange={setShowAdmissao} />
+
+      {/* Dialog: Desligamento */}
+      <DesligamentoDialog
+        employee={termEmp}
+        open={!!termEmp}
+        onOpenChange={(v) => !v && setTermEmp(null)}
+      />
 
       {/* Dialog: Editar */}
       <Dialog open={!!editEmp} onOpenChange={(o) => !o && setEditEmp(null)}>
