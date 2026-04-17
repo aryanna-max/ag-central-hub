@@ -295,9 +295,19 @@ export function useCloseDailySchedule() {
       // === GERAR EMPLOYEE_DAILY_RECORDS ===
       const { data: entries } = await supabase
         .from("daily_schedule_entries")
-        .select("employee_id, project_id, attendance, vehicle_id")
+        .select("employee_id, project_id, attendance, vehicle_id, employees:employee_id(transporte_tipo)")
         .eq("daily_schedule_id", scheduleId)
         .is("removed_at", null);
+
+      // Configuração VT do system_settings (default 4.50 × 2 viagens = 9.00/dia)
+      const { data: vtConfigData } = await supabase
+        .from("system_settings")
+        .select("key, value")
+        .in("key", ["vt_valor_viagem", "vt_viagens_por_dia"]);
+      const settingsMap = new Map((vtConfigData || []).map((s: any) => [s.key, s.value]));
+      const vtValorViagem = parseFloat(settingsMap.get("vt_valor_viagem") || "4.50");
+      const vtViagensDia = parseInt(settingsMap.get("vt_viagens_por_dia") || "2", 10);
+      const vtDiario = vtValorViagem * vtViagensDia;
 
       if (entries?.length) {
         const projectIds = [...new Set(entries.map(e => e.project_id).filter(Boolean))] as string[];
@@ -313,6 +323,8 @@ export function useCloseDailySchedule() {
         for (const entry of entries) {
           const benefits = entry.project_id ? benefitsMap.get(entry.project_id) : null;
           const isPresente = !entry.attendance || entry.attendance === "presente" || entry.attendance === "atrasado";
+          const transporteTipo = (entry as any).employees?.transporte_tipo || "vt_cartao";
+          const recebeVt = isPresente && transporteTipo === "vt_cartao";
 
           const record = {
             employee_id: entry.employee_id,
@@ -329,8 +341,8 @@ export function useCloseDailySchedule() {
             jantar_value: isPresente && benefits?.jantar_enabled ? (benefits.jantar_value || 0) : 0,
             hospedagem_provided: isPresente && (benefits?.hospedagem_enabled || false),
             hospedagem_value: isPresente && benefits?.hospedagem_enabled ? (benefits.hospedagem_value || 0) : 0,
-            vt_provided: isPresente,
-            vt_value: isPresente ? 4.50 : 0,
+            vt_provided: recebeVt,
+            vt_value: recebeVt ? vtDiario : 0,
             status: "provisorio",
           };
 
