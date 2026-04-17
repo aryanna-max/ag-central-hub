@@ -19,7 +19,7 @@ import { useProjectMeasurements } from "@/hooks/useMeasurements";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useClients } from "@/hooks/useClients";
 import { useProjectServices } from "@/hooks/useProjectServices";
-import MeasurementFormDialog from "@/components/operacional/MeasurementFormDialog";
+import MeasurementFormDialog from "@/components/operacional/medicoes/MeasurementFormDialog";
 import ProjectServicesSection from "@/components/projetos/ProjectServicesSection";
 import ProjectContactsEditor, { type ContactRow } from "@/components/projetos/ProjectContactsEditor";
 import { useProjectContacts, useUpsertProjectContacts } from "@/hooks/useProjectContacts";

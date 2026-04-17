@@ -3,7 +3,7 @@ import { Users } from "lucide-react";
 import ModulePage from "@/components/ModulePage";
 import Funcionarios from "./rh/Funcionarios";
 import RelatorioAusencias from "./rh/RelatorioAusencias";
-import Ferias from "./operacional/Ferias";
+import Ferias from "./rh/Ferias";
 
 function RHPlaceholder() {
   return (
