@@ -34,10 +34,17 @@ export default function MeasurementCreateDialog({ open, onOpenChange }: Props) {
   const { data: projects } = useActiveProjects();
   const createFromProject = useCreateMeasurementFromProject();
 
+  const today = new Date();
+  const firstOfMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
+  const lastOfMonth = (() => {
+    const d = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
+
   const [projectId, setProjectId] = useState("");
   const [measurementType, setMeasurementType] = useState("grid_diarias");
-  const [periodMonth, setPeriodMonth] = useState(String(new Date().getMonth() + 1));
-  const [periodYear, setPeriodYear] = useState(String(new Date().getFullYear()));
+  const [periodStart, setPeriodStart] = useState(firstOfMonth);
+  const [periodEnd, setPeriodEnd] = useState(lastOfMonth);
 
   const selectedProject = (projects || []).find((p: any) => p.id === projectId);
 
@@ -46,12 +53,14 @@ export default function MeasurementCreateDialog({ open, onOpenChange }: Props) {
       toast.error("Selecione um projeto");
       return;
     }
-
-    const m = Number(periodMonth);
-    const y = Number(periodYear);
-    const lastDay = new Date(y, m, 0).getDate();
-    const periodStart = `${y}-${String(m).padStart(2, "0")}-01`;
-    const periodEnd = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    if (!periodStart || !periodEnd) {
+      toast.error("Preencha o período inicial e final");
+      return;
+    }
+    if (periodEnd < periodStart) {
+      toast.error("Data final deve ser posterior à inicial");
+      return;
+    }
 
     try {
       await createFromProject.mutateAsync({
@@ -113,28 +122,12 @@ export default function MeasurementCreateDialog({ open, onOpenChange }: Props) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Mês</Label>
-              <Select value={periodMonth} onValueChange={setPeriodMonth}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-                    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
-                  ].map((m, i) => (
-                    <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Período de *</Label>
+              <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
             </div>
             <div>
-              <Label>Ano</Label>
-              <Select value={periodYear} onValueChange={setPeriodYear}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {[2025, 2026, 2027].map((y) => (
-                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Período até *</Label>
+              <Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
             </div>
           </div>
 
@@ -143,7 +136,7 @@ export default function MeasurementCreateDialog({ open, onOpenChange }: Props) {
             <ul className="list-disc ml-4 mt-1 space-y-1">
               <li>Puxar client_id e proposal_id do projeto</li>
               <li>Criar itens a partir dos serviços do projeto</li>
-              <li>Gerar código AG-BM-{periodYear}-XXX</li>
+              <li>Gerar código BM-{selectedProject?.codigo?.replace(/^\d{4}-/, "") || "XXX"}-NN</li>
               <li>Calcular acumulado de medições anteriores</li>
             </ul>
           </div>
