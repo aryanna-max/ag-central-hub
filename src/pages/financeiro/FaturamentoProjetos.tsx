@@ -44,14 +44,16 @@ export default function FaturamentoProjetos() {
   const [payRef, setPayRef] = useState("");
   const [payObs, setPayObs] = useState("");
 
-  // Fetch projects with execution_status = 'faturamento'
+  // Fetch projects "A Receber" — apenas execution_status = 'faturamento' e ativos
+  // Projetos 'pago' não são mais A Receber (saem da aba após confirmação de pagamento)
   const { data: projects = [], isLoading: loadingProjects } = useQuery({
     queryKey: ["areceber-projects"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
         .select("id, codigo, name, contract_value, empresa_faturadora, delivered_at, execution_status, updated_at, client_id")
-        .in("execution_status", ["faturamento", "pago"] as any)
+        .eq("is_active", true)
+        .eq("execution_status", "faturamento" as any)
         .order("delivered_at", { ascending: true });
       if (error) throw error;
 

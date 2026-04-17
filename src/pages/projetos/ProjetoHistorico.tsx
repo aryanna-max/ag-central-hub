@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useProjects, useUpdateProject } from "@/hooks/useProjects";
+import { useProjectsAll, useUpdateProject } from "@/hooks/useProjects";
 import { useClients } from "@/hooks/useClients";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useMeasurements } from "@/hooks/useMeasurements";
@@ -51,7 +51,7 @@ export default function ProjetoHistorico() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const qc = useQueryClient();
-  const { data: projects = [] } = useProjects();
+  const { data: projects = [] } = useProjectsAll();
   const { data: clients = [] } = useClients();
   const { data: employees = [] } = useEmployees();
   const { data: measurements = [] } = useMeasurements();

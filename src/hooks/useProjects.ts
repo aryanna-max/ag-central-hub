@@ -88,9 +88,38 @@ export interface ProjectInsert {
   codigo?: string;
 }
 
+/**
+ * useProjects — projetos ATIVOS (is_active=true).
+ * Default pra todas as telas operacionais/financeiras.
+ * Para incluir arquivados (telas de histórico), usar useProjectsAll().
+ */
 export function useProjects() {
   return useQuery({
     queryKey: ["projects"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*,clients(id,name,cnpj)")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []).map((p: any) => ({
+        ...p,
+        clients: Array.isArray(p.clients) ? p.clients[0] || null : p.clients || null,
+      })) as Project[];
+    },
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+}
+
+/**
+ * useProjectsAll — inclui arquivados. Usar só em telas de histórico
+ * (ProjetoHistorico, ClienteHistorico, relatórios retroativos).
+ */
+export function useProjectsAll() {
+  return useQuery({
+    queryKey: ["projects-all"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")

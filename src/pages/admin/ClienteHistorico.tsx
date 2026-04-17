@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useClients } from "@/hooks/useClients";
-import { useProjects } from "@/hooks/useProjects";
+import { useProjectsAll } from "@/hooks/useProjects";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useLeads } from "@/hooks/useLeads";
 import { useQuery } from "@tanstack/react-query";
@@ -45,7 +45,7 @@ export default function ClienteHistorico() {
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
   const { data: clients } = useClients();
-  const { data: projects } = useProjects();
+  const { data: projects } = useProjectsAll();
   const { data: employees } = useEmployees();
   const { data: leads } = useLeads();
   const [statusFilter, setStatusFilter] = useState<string>("todos");
