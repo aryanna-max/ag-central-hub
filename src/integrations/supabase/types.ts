@@ -286,6 +286,47 @@ export type Database = {
           },
         ]
       }
+      client_doc_requirements: {
+        Row: {
+          client_id: string
+          created_at: string
+          doc_type: Database["public"]["Enums"]["doc_type"]
+          id: string
+          is_mandatory: boolean
+          notes: string | null
+          updated_at: string
+          validity_months: number | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          doc_type: Database["public"]["Enums"]["doc_type"]
+          id?: string
+          is_mandatory?: boolean
+          notes?: string | null
+          updated_at?: string
+          validity_months?: number | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          doc_type?: Database["public"]["Enums"]["doc_type"]
+          id?: string
+          is_mandatory?: boolean
+          notes?: string | null
+          updated_at?: string
+          validity_months?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_doc_requirements_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -380,6 +421,95 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_documents: {
+        Row: {
+          created_at: string
+          doc_status: Database["public"]["Enums"]["doc_status"]
+          doc_type: Database["public"]["Enums"]["doc_type"]
+          empresa: string
+          expiry_date: string | null
+          file_url: string | null
+          id: string
+          issue_date: string | null
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          doc_status?: Database["public"]["Enums"]["doc_status"]
+          doc_type: Database["public"]["Enums"]["doc_type"]
+          empresa: string
+          expiry_date?: string | null
+          file_url?: string | null
+          id?: string
+          issue_date?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          doc_status?: Database["public"]["Enums"]["doc_status"]
+          doc_type?: Database["public"]["Enums"]["doc_type"]
+          empresa?: string
+          expiry_date?: string | null
+          file_url?: string | null
+          id?: string
+          issue_date?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      compliance_task_executions: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          due_date: string
+          id: string
+          notes: string | null
+          reference_month: number
+          reference_year: number
+          status: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          due_date: string
+          id?: string
+          notes?: string | null
+          reference_month: number
+          reference_year: number
+          status?: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          due_date?: string
+          id?: string
+          notes?: string | null
+          reference_month?: number
+          reference_year?: number
+          status?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_task_executions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_compliance_tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -676,6 +806,60 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_client_integrations: {
+        Row: {
+          client_id: string
+          created_at: string
+          employee_id: string
+          expiry_date: string | null
+          id: string
+          integration_date: string | null
+          notes: string | null
+          registered_by: string | null
+          status: Database["public"]["Enums"]["doc_status"]
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          employee_id: string
+          expiry_date?: string | null
+          id?: string
+          integration_date?: string | null
+          notes?: string | null
+          registered_by?: string | null
+          status?: Database["public"]["Enums"]["doc_status"]
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          employee_id?: string
+          expiry_date?: string | null
+          id?: string
+          integration_date?: string | null
+          notes?: string | null
+          registered_by?: string | null
+          status?: Database["public"]["Enums"]["doc_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_client_integrations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_client_integrations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_daily_records: {
         Row: {
           almoco_dif_provided: boolean | null
@@ -783,6 +967,56 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_documents: {
+        Row: {
+          created_at: string
+          doc_status: Database["public"]["Enums"]["doc_status"]
+          doc_type: Database["public"]["Enums"]["doc_type"]
+          employee_id: string
+          expiry_date: string | null
+          file_url: string | null
+          id: string
+          issue_date: string | null
+          notes: string | null
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          doc_status?: Database["public"]["Enums"]["doc_status"]
+          doc_type: Database["public"]["Enums"]["doc_type"]
+          employee_id: string
+          expiry_date?: string | null
+          file_url?: string | null
+          id?: string
+          issue_date?: string | null
+          notes?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          doc_status?: Database["public"]["Enums"]["doc_status"]
+          doc_type?: Database["public"]["Enums"]["doc_type"]
+          employee_id?: string
+          expiry_date?: string | null
+          file_url?: string | null
+          id?: string
+          issue_date?: string | null
+          notes?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_documents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
@@ -1013,7 +1247,9 @@ export type Database = {
           payment_method: string
           payment_status: string
           project_id: string | null
+          receiver_document: string | null
           receiver_id: string | null
+          receiver_name: string | null
           receiver_type: string | null
           sheet_id: string
           total_value: number | null
@@ -1033,7 +1269,9 @@ export type Database = {
           payment_method?: string
           payment_status?: string
           project_id?: string | null
+          receiver_document?: string | null
           receiver_id?: string | null
+          receiver_name?: string | null
           receiver_type?: string | null
           sheet_id: string
           total_value?: number | null
@@ -1053,7 +1291,9 @@ export type Database = {
           payment_method?: string
           payment_status?: string
           project_id?: string | null
+          receiver_document?: string | null
           receiver_id?: string | null
+          receiver_name?: string | null
           receiver_type?: string | null
           sheet_id?: string
           total_value?: number | null
@@ -1706,6 +1946,60 @@ export type Database = {
           {
             foreignKeyName: "measurements_responsavel_cobranca_id_fkey"
             columns: ["responsavel_cobranca_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_compliance_tasks: {
+        Row: {
+          category: string | null
+          client_id: string | null
+          created_at: string
+          day_of_month: number
+          description: string | null
+          id: string
+          is_active: boolean
+          responsible_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          client_id?: string | null
+          created_at?: string
+          day_of_month: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          responsible_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          client_id?: string | null
+          created_at?: string
+          day_of_month?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          responsible_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_compliance_tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_compliance_tasks_responsible_id_fkey"
+            columns: ["responsible_id"]
             isOneToOne: false
             referencedRelation: "employees"
             referencedColumns: ["id"]
@@ -2940,6 +3234,40 @@ export type Database = {
       attendance_status: "presente" | "falta" | "justificado" | "atrasado"
       billing_mode: "fixo_mensal" | "diarias" | "esporadico"
       contact_type: "cliente" | "financeiro" | "engenheiro" | "outro"
+      doc_status:
+        | "valido"
+        | "vencendo"
+        | "vencido"
+        | "pendente"
+        | "nao_aplicavel"
+      doc_type:
+        | "aso"
+        | "nr18"
+        | "nr35"
+        | "nr10"
+        | "nr33"
+        | "ficha_epi"
+        | "integracao_cliente"
+        | "ctps"
+        | "rg"
+        | "cpf"
+        | "cnh"
+        | "comprovante_residencia"
+        | "certidao_nascimento"
+        | "titulo_eleitor"
+        | "reservista"
+        | "pis"
+        | "conta_bancaria"
+        | "foto_3x4"
+        | "pcmso"
+        | "pgr"
+        | "seguro_vida"
+        | "alvara"
+        | "contrato_social"
+        | "cnpj_cartao"
+        | "crea"
+        | "art"
+        | "outro"
       employee_status:
         | "disponivel"
         | "ferias"
@@ -3189,6 +3517,42 @@ export const Constants = {
       attendance_status: ["presente", "falta", "justificado", "atrasado"],
       billing_mode: ["fixo_mensal", "diarias", "esporadico"],
       contact_type: ["cliente", "financeiro", "engenheiro", "outro"],
+      doc_status: [
+        "valido",
+        "vencendo",
+        "vencido",
+        "pendente",
+        "nao_aplicavel",
+      ],
+      doc_type: [
+        "aso",
+        "nr18",
+        "nr35",
+        "nr10",
+        "nr33",
+        "ficha_epi",
+        "integracao_cliente",
+        "ctps",
+        "rg",
+        "cpf",
+        "cnh",
+        "comprovante_residencia",
+        "certidao_nascimento",
+        "titulo_eleitor",
+        "reservista",
+        "pis",
+        "conta_bancaria",
+        "foto_3x4",
+        "pcmso",
+        "pgr",
+        "seguro_vida",
+        "alvara",
+        "contrato_social",
+        "cnpj_cartao",
+        "crea",
+        "art",
+        "outro",
+      ],
       employee_status: [
         "disponivel",
         "ferias",
