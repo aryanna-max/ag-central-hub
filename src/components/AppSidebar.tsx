@@ -4,7 +4,7 @@ import {
   Radar, Briefcase, Map, PenTool, Receipt, Users, Database,
   ChevronLeft, ChevronRight, Target, Building2, CalendarDays,
   Car, FolderKanban, LayoutDashboard, UserPlus, Shield,
-  FileText, BarChart3,
+  FileText, BarChart3, FileCheck, Calendar,
 } from "lucide-react";
 import { useModuleAlertCounts } from "@/hooks/useModuleAlertCounts";
 import { useAuth } from "@/contexts/AuthContext";
@@ -70,6 +70,8 @@ const navigation: SidebarItem[] = [
     allowedRoles: ["master", "diretor", "financeiro", "operacional"],
     children: [
       { label: "Funcionários", path: "/rh/funcionarios", icon: UserPlus },
+      { label: "Documentos", path: "/rh/documentos", icon: FileCheck },
+      { label: "Compliance", path: "/rh/compliance", icon: Calendar },
       { label: "Férias", path: "/rh/ferias", icon: CalendarDays },
       { label: "Ausências", path: "/rh/ausencias", icon: FileText },
     ],

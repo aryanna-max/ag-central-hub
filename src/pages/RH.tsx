@@ -1,24 +1,9 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { Users } from "lucide-react";
-import ModulePage from "@/components/ModulePage";
 import Funcionarios from "./rh/Funcionarios";
 import RelatorioAusencias from "./rh/RelatorioAusencias";
 import Ferias from "./rh/Ferias";
-
-function RHPlaceholder() {
-  return (
-    <ModulePage
-      title="Pessoas"
-      subtitle="Funcionários, Documentos e Exames"
-      icon={<Users className="w-5 h-5" />}
-      sections={[
-        { title: "Documentos", description: "Gestão de documentos de admissão e registros." },
-        { title: "Exames", description: "Controle de exames admissionais e periódicos." },
-        { title: "Integrações", description: "Vínculos com sistemas de folha e eSocial." },
-      ]}
-    />
-  );
-}
+import Documentos from "./rh/Documentos";
+import Compliance from "./rh/Compliance";
 
 export default function RH() {
   return (
@@ -27,8 +12,8 @@ export default function RH() {
       <Route path="funcionarios" element={<Funcionarios />} />
       <Route path="ferias" element={<Ferias />} />
       <Route path="ausencias" element={<RelatorioAusencias />} />
-      <Route path="documentos" element={<RHPlaceholder />} />
-      <Route path="exames" element={<RHPlaceholder />} />
+      <Route path="documentos" element={<Documentos />} />
+      <Route path="compliance" element={<Compliance />} />
       <Route path="*" element={<Navigate to="funcionarios" replace />} />
     </Routes>
   );

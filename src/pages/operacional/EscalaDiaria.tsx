@@ -37,6 +37,7 @@ import EmployeeAvailabilityKanban from "@/components/operacional/EmployeeAvailab
 import DailyReportDialog from "@/components/operacional/DailyReportDialog";
 import { useUpdateMonthlySchedule } from "@/hooks/useMonthlySchedules";
 import { useAuth } from "@/contexts/AuthContext";
+import { DocStatusBadge } from "@/components/rh/ComplianceBadge";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
 
@@ -686,7 +687,10 @@ export default function EscalaDiaria() {
                         <TableRow key={a.id} className="border-b">
                           <TableCell className="font-bold text-center">{idx + 1}</TableCell>
                           <TableCell>
-                            <span className="font-bold text-sm uppercase">{topografoEntry?.employees?.name || "—"}</span>
+                            <span className="font-bold text-sm uppercase inline-flex items-center gap-1.5">
+                              {topografoEntry?.employees?.name || "—"}
+                              {topografoEntry?.employee_id && <DocStatusBadge employeeId={topografoEntry.employee_id} />}
+                            </span>
                           </TableCell>
                           <TableCell>
                             <div className="space-y-0.5">
@@ -694,7 +698,10 @@ export default function EscalaDiaria() {
                                 <span className="text-muted-foreground text-sm">—</span>
                               ) : (
                                 auxiliarEntries.map((entry: any) => (
-                                  <p key={entry.id} className="text-sm">{entry.employees?.name}</p>
+                                  <p key={entry.id} className="text-sm inline-flex items-center gap-1.5">
+                                    {entry.employees?.name}
+                                    {entry.employee_id && <DocStatusBadge employeeId={entry.employee_id} />}
+                                  </p>
                                 ))
                               )}
                             </div>
