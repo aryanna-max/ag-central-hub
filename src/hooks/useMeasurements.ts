@@ -248,7 +248,7 @@ export function useCreateMeasurementFromProject() {
         .select("id", { count: "exact", head: true })
         .eq("project_id", projectId);
       const seq = (count ?? 0) + 1;
-      const codigoBm = `BM-${codigoSemAno}-${String(seq).padStart(3, "0")}`;
+      const codigoBm = `BM-${codigoSemAno}-${String(seq).padStart(2, "0")}`;
 
       const { data: measurement, error: mErr } = await supabase
         .from("measurements")
