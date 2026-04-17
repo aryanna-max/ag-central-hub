@@ -323,7 +323,7 @@ export function useCloseDailySchedule() {
         for (const entry of entries) {
           const benefits = entry.project_id ? benefitsMap.get(entry.project_id) : null;
           const isPresente = !entry.attendance || entry.attendance === "presente" || entry.attendance === "atrasado";
-          const transporteTipo = (entry as any).employees?.transporte_tipo || "vt_cartao";
+          const transporteTipo = entry.employees?.transporte_tipo || "vt_cartao";
           const recebeVt = isPresente && transporteTipo === "vt_cartao";
 
           const record = {
