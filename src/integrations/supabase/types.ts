@@ -1147,6 +1147,7 @@ export type Database = {
           photo_url: string | null
           role: string
           status: Database["public"]["Enums"]["employee_status"]
+          transporte_tipo: string | null
           updated_at: string
           vt_cash: boolean | null
           vt_value: number | null
@@ -1164,6 +1165,7 @@ export type Database = {
           photo_url?: string | null
           role?: string
           status?: Database["public"]["Enums"]["employee_status"]
+          transporte_tipo?: string | null
           updated_at?: string
           vt_cash?: boolean | null
           vt_value?: number | null
@@ -1181,6 +1183,7 @@ export type Database = {
           photo_url?: string | null
           role?: string
           status?: Database["public"]["Enums"]["employee_status"]
+          transporte_tipo?: string | null
           updated_at?: string
           vt_cash?: boolean | null
           vt_value?: number | null
@@ -1252,6 +1255,7 @@ export type Database = {
           receiver_name: string | null
           receiver_type: string | null
           sheet_id: string
+          subtipo: string | null
           total_value: number | null
           value: number
         }
@@ -1274,6 +1278,7 @@ export type Database = {
           receiver_name?: string | null
           receiver_type?: string | null
           sheet_id: string
+          subtipo?: string | null
           total_value?: number | null
           value?: number
         }
@@ -1296,6 +1301,7 @@ export type Database = {
           receiver_name?: string | null
           receiver_type?: string | null
           sheet_id?: string
+          subtipo?: string | null
           total_value?: number | null
           value?: number
         }
