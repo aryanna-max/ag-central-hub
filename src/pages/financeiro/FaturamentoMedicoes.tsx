@@ -21,11 +21,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Plus, MoreHorizontal, Pencil, FileText, CheckCircle, XCircle, Send, Eye, CalendarIcon, Trash2, Undo2 } from "lucide-react";
+import { MoreHorizontal, FileText, CheckCircle, XCircle, Eye, CalendarIcon, Info } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import MeasurementViewDialog from "@/components/operacional/medicoes/MeasurementViewDialog";
 
 const STATUSES_ORDERED = ["rascunho", "aguardando_aprovacao", "aprovada", "nf_emitida", "paga"] as const;
 
@@ -36,6 +37,12 @@ const statusLabels: Record<string, { label: string; color: string }> = {
   nf_emitida: { label: "NF Emitida", color: "bg-blue-100 text-blue-800" },
   paga: { label: "Paga", color: "bg-green-100 text-green-800" },
   cancelada: { label: "Cancelada", color: "bg-red-100 text-red-800" },
+};
+
+const measurementTypeLabels: Record<string, { label: string; color: string }> = {
+  grid_diarias: { label: "Grid Diárias", color: "bg-purple-100 text-purple-800" },
+  boletim_formal: { label: "Boletim Formal", color: "bg-indigo-100 text-indigo-800" },
+  resumo_entrega: { label: "Resumo Entrega", color: "bg-sky-100 text-sky-800" },
 };
 
 function StatusProgressBar({ current }: { current: string }) {
@@ -57,39 +64,19 @@ function StatusProgressBar({ current }: { current: string }) {
   );
 }
 
-interface MeasurementForm {
-  project_id: string;
-  codigo_bm: string;
-  empresa_faturadora: string;
-  tipo_documento: string;
-  period_start: string;
-  period_end: string;
-  dias_semana: number;
-  dias_fds: number;
-  valor_diaria_semana: number;
-  valor_diaria_fds: number;
-  retencao_pct: number;
-  instrucao_faturamento: string;
-  notes: string;
+function AvancoBar({ pct }: { pct: number | null | undefined }) {
+  const v = Math.min(100, Math.max(0, pct ?? 0));
+  return (
+    <div className="flex items-center gap-2 w-[110px]">
+      <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+        <div className="h-full bg-primary transition-all" style={{ width: `${v}%` }} />
+      </div>
+      <span className="text-[10px] font-mono tabular-nums w-9 text-right">{v.toFixed(0)}%</span>
+    </div>
+  );
 }
 
-const emptyForm: MeasurementForm = {
-  project_id: "",
-  codigo_bm: "",
-  empresa_faturadora: "ag_topografia",
-  tipo_documento: "nota_fiscal",
-  period_start: "",
-  period_end: "",
-  dias_semana: 0,
-  dias_fds: 0,
-  valor_diaria_semana: 0,
-  valor_diaria_fds: 0,
-  retencao_pct: 5,
-  instrucao_faturamento: "",
-  notes: "",
-};
-
-const fmtCurrency = (v: number | null) =>
+const fmtCurrency = (v: number | null | undefined) =>
   v != null ? v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—";
 
 export default function FaturamentoMedicoes() {
@@ -97,14 +84,11 @@ export default function FaturamentoMedicoes() {
 
   const [filterStatus, setFilterStatus] = useState("todos");
   const [filterClient, setFilterClient] = useState("todos");
+  const [filterType, setFilterType] = useState("todos");
   const now = new Date();
   const [filterMonth, setFilterMonth] = useState(now.getMonth());
   const [filterYear, setFilterYear] = useState(now.getFullYear());
   const [filterMonthEnabled, setFilterMonthEnabled] = useState(false);
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState<MeasurementForm>({ ...emptyForm });
 
   // NF registration modal
   const [nfDialogId, setNfDialogId] = useState<string | null>(null);
@@ -121,8 +105,8 @@ export default function FaturamentoMedicoes() {
   const [payRef, setPayRef] = useState("");
   const [payObs, setPayObs] = useState("");
 
-  // Detail modal
-  const [detailId, setDetailId] = useState<string | null>(null);
+  // View detail modal (reutiliza o do operacional)
+  const [viewId, setViewId] = useState<string | null>(null);
 
   const { data: measurements = [], isLoading } = useQuery({
     queryKey: ["faturamento-medicoes"],
@@ -154,22 +138,14 @@ export default function FaturamentoMedicoes() {
       return (data || []).map((m: any) => {
         const proj = m.project_id ? projectsMap[m.project_id] : null;
         const client = proj?.client_id ? clientsMap[proj.client_id] : null;
-        return { ...m, project_codigo: proj?.codigo, project_name: proj?.name, client_name: client?.name, client_id_resolved: proj?.client_id };
+        return {
+          ...m,
+          project_codigo: proj?.codigo,
+          project_name: proj?.name,
+          client_name: client?.name,
+          client_id_resolved: proj?.client_id,
+        };
       });
-    },
-  });
-
-  const { data: projects = [] } = useQuery({
-    queryKey: ["faturamento-medicoes-projects"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("id, codigo, name, billing_type, execution_status, instrucao_faturamento_variavel")
-        .eq("billing_type", "medicao_mensal")
-        .eq("is_active", true)
-        .order("codigo");
-      if (error) throw error;
-      return (data || []).filter((p: any) => p.execution_status !== "pago");
     },
   });
 
@@ -182,49 +158,6 @@ export default function FaturamentoMedicoes() {
     },
   });
 
-  const valorBruto = (form.dias_semana * form.valor_diaria_semana) + (form.dias_fds * form.valor_diaria_fds);
-  const valorRetencao = Math.round(valorBruto * (form.retencao_pct / 100) * 100) / 100;
-  const valorNf = Math.round((valorBruto - valorRetencao) * 100) / 100;
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const payload: any = {
-        project_id: form.project_id || null,
-        codigo_bm: form.codigo_bm,
-        empresa_faturadora: form.empresa_faturadora,
-        tipo_documento: form.tipo_documento,
-        period_start: form.period_start,
-        period_end: form.period_end,
-        dias_semana: form.dias_semana,
-        dias_fds: form.dias_fds,
-        valor_diaria_semana: form.valor_diaria_semana,
-        valor_diaria_fds: form.valor_diaria_fds,
-        retencao_pct: form.retencao_pct,
-        valor_bruto: valorBruto,
-        valor_retencao: valorRetencao,
-        valor_nf: valorNf,
-        instrucao_faturamento: form.instrucao_faturamento || null,
-        notes: form.notes || null,
-        status: "rascunho",
-      };
-      if (editId) {
-        const { error } = await supabase.from("measurements").update(payload).eq("id", editId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("measurements").insert(payload);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      toast.success(editId ? "Medição atualizada" : "Medição criada");
-      queryClient.invalidateQueries({ queryKey: ["faturamento-medicoes"] });
-      setDialogOpen(false);
-      setEditId(null);
-      setForm({ ...emptyForm });
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase.from("measurements").update({ status } as any).eq("id", id);
@@ -233,18 +166,6 @@ export default function FaturamentoMedicoes() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["faturamento-medicoes"] });
       toast.success("Status atualizado");
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("measurements").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["faturamento-medicoes"] });
-      toast.success("Medição excluída");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -304,31 +225,11 @@ export default function FaturamentoMedicoes() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const openEdit = useCallback((m: any) => {
-    setForm({
-      project_id: m.project_id || "",
-      codigo_bm: m.codigo_bm,
-      empresa_faturadora: m.empresa_faturadora,
-      tipo_documento: m.tipo_documento,
-      period_start: m.period_start,
-      period_end: m.period_end,
-      dias_semana: m.dias_semana,
-      dias_fds: m.dias_fds,
-      valor_diaria_semana: m.valor_diaria_semana,
-      valor_diaria_fds: m.valor_diaria_fds,
-      retencao_pct: m.retencao_pct,
-      instrucao_faturamento: m.instrucao_faturamento || "",
-      notes: m.notes || "",
-    });
-    setEditId(m.id);
-    setDialogOpen(true);
-  }, []);
-
   const openNfDialog = useCallback((m: any) => {
     setNfDialogId(m.id);
     setNfNumero("");
     setNfData(new Date());
-    setNfValor(String(m.valor_nf || ""));
+    setNfValor(String(m.valor_nf || m.valor_bruto || ""));
     setNfEmpresa(m.empresa_faturadora || "ag_topografia");
   }, []);
 
@@ -345,6 +246,7 @@ export default function FaturamentoMedicoes() {
     let list = measurements;
     if (filterStatus !== "todos") list = list.filter((m: any) => m.status === filterStatus);
     if (filterClient !== "todos") list = list.filter((m: any) => m.client_id_resolved === filterClient);
+    if (filterType !== "todos") list = list.filter((m: any) => m.measurement_type === filterType);
     if (filterMonthEnabled) {
       const s = startOfMonth(new Date(filterYear, filterMonth));
       const e = endOfMonth(new Date(filterYear, filterMonth));
@@ -355,15 +257,22 @@ export default function FaturamentoMedicoes() {
       });
     }
     return list;
-  }, [measurements, filterStatus, filterClient, filterMonthEnabled, filterMonth, filterYear]);
-
-  const detailMeasurement = detailId ? measurements.find((m: any) => m.id === detailId) : null;
+  }, [measurements, filterStatus, filterClient, filterType, filterMonthEnabled, filterMonth, filterYear]);
 
   const months = Array.from({ length: 12 }, (_, i) => i);
   const years = [2025, 2026, 2027];
 
   return (
     <div className="space-y-4">
+      {/* Banner informativo — financeiro não cria mais medição */}
+      <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+        <Info className="w-4 h-4 mt-0.5 shrink-0" />
+        <div>
+          Medições são criadas e editadas pelo <strong>Operacional</strong> (Marcelo) a partir da escala real.
+          Aqui você acompanha o andamento, registra NF e confirma pagamentos.
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -382,6 +291,16 @@ export default function FaturamentoMedicoes() {
             <SelectItem value="todos">Todos os clientes</SelectItem>
             {clients.map((c: any) => (
               <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={filterType} onValueChange={setFilterType}>
+          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os tipos</SelectItem>
+            {Object.entries(measurementTypeLabels).map(([k, v]) => (
+              <SelectItem key={k} value={k}>{v.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -412,12 +331,6 @@ export default function FaturamentoMedicoes() {
             </>
           )}
         </div>
-
-        <div className="flex-1" />
-
-        <Button onClick={() => { setForm({ ...emptyForm }); setEditId(null); setDialogOpen(true); }}>
-          <Plus className="w-4 h-4 mr-1" /> Nova medição
-        </Button>
       </div>
 
       <p className="text-sm text-muted-foreground">{filtered.length} medição(ões)</p>
@@ -430,11 +343,13 @@ export default function FaturamentoMedicoes() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Código BM</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead>Projeto</TableHead>
                   <TableHead>Cliente</TableHead>
                   <TableHead>Período</TableHead>
                   <TableHead className="text-right">Valor Bruto</TableHead>
                   <TableHead className="text-right">Valor NF</TableHead>
+                  <TableHead>Avanço Acum.</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Progresso</TableHead>
                   <TableHead className="w-10" />
@@ -442,15 +357,27 @@ export default function FaturamentoMedicoes() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
                 ) : filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Nenhuma medição encontrada</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">Nenhuma medição encontrada</TableCell></TableRow>
                 ) : (
                   filtered.map((m: any) => {
                     const st = statusLabels[m.status] || { label: m.status, color: "bg-muted text-foreground" };
+                    const tp = measurementTypeLabels[m.measurement_type] || null;
                     return (
-                      <TableRow key={m.id} className={m.status === "cancelada" ? "opacity-50" : ""}>
-                        <TableCell className="font-mono font-semibold">{m.codigo_bm}</TableCell>
+                      <TableRow
+                        key={m.id}
+                        className={cn("cursor-pointer", m.status === "cancelada" && "opacity-50")}
+                        onClick={() => setViewId(m.id)}
+                      >
+                        <TableCell className="font-mono font-semibold">{m.codigo_bm || "—"}</TableCell>
+                        <TableCell>
+                          {tp ? (
+                            <Badge variant="outline" className={`text-[10px] ${tp.color}`}>{tp.label}</Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                         <TableCell>{m.project_codigo || "—"}</TableCell>
                         <TableCell>{m.client_name || "—"}</TableCell>
                         <TableCell className="text-sm">
@@ -461,12 +388,15 @@ export default function FaturamentoMedicoes() {
                         <TableCell className="text-right">{fmtCurrency(m.valor_bruto)}</TableCell>
                         <TableCell className="text-right">{fmtCurrency(m.valor_nf)}</TableCell>
                         <TableCell>
+                          <AvancoBar pct={m.avanco_acumulado_pct} />
+                        </TableCell>
+                        <TableCell>
                           <Badge variant="outline" className={`text-[10px] ${st.color}`}>{st.label}</Badge>
                         </TableCell>
                         <TableCell>
                           {m.status !== "cancelada" && <StatusProgressBar current={m.status} />}
                         </TableCell>
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -474,52 +404,30 @@ export default function FaturamentoMedicoes() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              {/* rascunho actions */}
-                              {m.status === "rascunho" && (
-                                <>
-                                  <DropdownMenuItem onClick={() => updateStatus.mutate({ id: m.id, status: "aguardando_aprovacao" })}>
-                                    <Send className="w-3.5 h-3.5 mr-2" /> Enviar para aprovação
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => openEdit(m)}>
-                                    <Pencil className="w-3.5 h-3.5 mr-2" /> Editar
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => deleteMutation.mutate(m.id)} className="text-destructive">
-                                    <Trash2 className="w-3.5 h-3.5 mr-2" /> Excluir
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                              {/* aguardando_aprovacao actions */}
-                              {m.status === "aguardando_aprovacao" && (
-                                <>
-                                  <DropdownMenuItem onClick={() => updateStatus.mutate({ id: m.id, status: "aprovada" })}>
-                                    <CheckCircle className="w-3.5 h-3.5 mr-2" /> Aprovar
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => updateStatus.mutate({ id: m.id, status: "rascunho" })}>
-                                    <Undo2 className="w-3.5 h-3.5 mr-2" /> Rejeitar → rascunho
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                              {/* aprovada actions */}
+                              <DropdownMenuItem onClick={() => setViewId(m.id)}>
+                                <Eye className="w-3.5 h-3.5 mr-2" /> Ver detalhes
+                              </DropdownMenuItem>
+
+                              {/* aprovada → registrar NF (ação financeira) */}
                               {m.status === "aprovada" && (
                                 <DropdownMenuItem onClick={() => openNfDialog(m)}>
                                   <FileText className="w-3.5 h-3.5 mr-2" /> Registrar NF
                                 </DropdownMenuItem>
                               )}
-                              {/* nf_emitida actions */}
+
+                              {/* nf_emitida → confirmar pagamento (ação financeira) */}
                               {m.status === "nf_emitida" && (
                                 <DropdownMenuItem onClick={() => openPayModal(m)}>
                                   <CheckCircle className="w-3.5 h-3.5 mr-2" /> Confirmar pagamento
                                 </DropdownMenuItem>
                               )}
-                              {/* paga / cancelada — view only */}
-                              {["paga", "cancelada"].includes(m.status) && (
-                                <DropdownMenuItem onClick={() => setDetailId(m.id)}>
-                                  <Eye className="w-3.5 h-3.5 mr-2" /> Ver detalhes
-                                </DropdownMenuItem>
-                              )}
+
                               {/* cancel from any non-final */}
                               {!["paga", "cancelada"].includes(m.status) && (
-                                <DropdownMenuItem onClick={() => updateStatus.mutate({ id: m.id, status: "cancelada" })} className="text-destructive">
+                                <DropdownMenuItem
+                                  onClick={() => updateStatus.mutate({ id: m.id, status: "cancelada" })}
+                                  className="text-destructive"
+                                >
                                   <XCircle className="w-3.5 h-3.5 mr-2" /> Cancelar
                                 </DropdownMenuItem>
                               )}
@@ -536,120 +444,14 @@ export default function FaturamentoMedicoes() {
         </CardContent>
       </Card>
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={(o) => { if (!o) { setDialogOpen(false); setEditId(null); } }}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editId ? "Editar Medição" : "Nova Medição"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
-              <Label>Projeto *</Label>
-              <Select value={form.project_id} onValueChange={(v) => setForm({ ...form, project_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecione o projeto" /></SelectTrigger>
-                <SelectContent>
-                  {projects.map((p: any) => (
-                    <SelectItem key={p.id} value={p.id}>{p.codigo} — {p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Código BM *</Label>
-              <Input value={form.codigo_bm} onChange={(e) => setForm({ ...form, codigo_bm: e.target.value })} placeholder="Ex: BM-2026-001" />
-            </div>
-
-            <div>
-              <Label>Empresa Faturadora *</Label>
-              <Select value={form.empresa_faturadora} onValueChange={(v) => setForm({ ...form, empresa_faturadora: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ag_topografia">AG Topografia</SelectItem>
-                  <SelectItem value="ag_cartografia">AG Cartografia</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Tipo Documento *</Label>
-              <Select value={form.tipo_documento} onValueChange={(v) => setForm({ ...form, tipo_documento: v, retencao_pct: v === "recibo" ? 0 : form.retencao_pct })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nota_fiscal">Nota Fiscal</SelectItem>
-                  <SelectItem value="recibo">Recibo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Retenção %</Label>
-              <Input
-                type="number"
-                value={form.retencao_pct}
-                onChange={(e) => setForm({ ...form, retencao_pct: Number(e.target.value) })}
-                disabled={form.tipo_documento === "recibo"}
-              />
-            </div>
-
-            <div>
-              <Label>Período início *</Label>
-              <Input type="date" value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} />
-            </div>
-            <div>
-              <Label>Período fim *</Label>
-              <Input type="date" value={form.period_end} onChange={(e) => setForm({ ...form, period_end: e.target.value })} />
-            </div>
-
-            <div>
-              <Label>Dias semana</Label>
-              <Input type="number" value={form.dias_semana} onChange={(e) => setForm({ ...form, dias_semana: Number(e.target.value) })} />
-            </div>
-            <div>
-              <Label>Valor diária semana (R$)</Label>
-              <Input type="number" step="0.01" value={form.valor_diaria_semana} onChange={(e) => setForm({ ...form, valor_diaria_semana: Number(e.target.value) })} />
-            </div>
-            <div>
-              <Label>Dias FDS</Label>
-              <Input type="number" value={form.dias_fds} onChange={(e) => setForm({ ...form, dias_fds: Number(e.target.value) })} />
-            </div>
-            <div>
-              <Label>Valor diária FDS (R$)</Label>
-              <Input type="number" step="0.01" value={form.valor_diaria_fds} onChange={(e) => setForm({ ...form, valor_diaria_fds: Number(e.target.value) })} />
-            </div>
-
-            <div className="sm:col-span-2 rounded-lg border border-border bg-muted/30 p-3 space-y-1">
-              <div className="flex justify-between text-sm">
-                <span>Valor Bruto</span>
-                <span className="font-semibold">{fmtCurrency(valorBruto)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Retenção ({form.retencao_pct}%)</span>
-                <span className="text-destructive">- {fmtCurrency(valorRetencao)}</span>
-              </div>
-              <div className="flex justify-between text-sm font-bold border-t border-border pt-1">
-                <span>Valor NF</span>
-                <span>{fmtCurrency(valorNf)}</span>
-              </div>
-            </div>
-
-            <div className="sm:col-span-2">
-              <Label>Instrução de faturamento</Label>
-              <Textarea value={form.instrucao_faturamento} onChange={(e) => setForm({ ...form, instrucao_faturamento: e.target.value })} placeholder="Instruções opcionais..." />
-            </div>
-            <div className="sm:col-span-2">
-              <Label>Observações</Label>
-              <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={() => saveMutation.mutate()} disabled={!form.codigo_bm.trim() || !form.period_start || !form.period_end || saveMutation.isPending}>
-              {editId ? "Salvar" : "Criar medição"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Detail Dialog (reutiliza do operacional) */}
+      {viewId && (
+        <MeasurementViewDialog
+          measurementId={viewId}
+          open={!!viewId}
+          onOpenChange={(o) => !o && setViewId(null)}
+        />
+      )}
 
       {/* Register NF Dialog */}
       <Dialog open={!!nfDialogId} onOpenChange={() => setNfDialogId(null)}>
@@ -751,30 +553,6 @@ export default function FaturamentoMedicoes() {
               Confirmar pagamento
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Detail Dialog */}
-      <Dialog open={!!detailId} onOpenChange={() => setDetailId(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Detalhes da medição</DialogTitle>
-          </DialogHeader>
-          {detailMeasurement && (
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div><span className="text-muted-foreground">Código BM:</span> <strong>{detailMeasurement.codigo_bm}</strong></div>
-              <div><span className="text-muted-foreground">Status:</span> <Badge variant="outline" className={statusLabels[detailMeasurement.status]?.color}>{statusLabels[detailMeasurement.status]?.label}</Badge></div>
-              <div><span className="text-muted-foreground">Projeto:</span> {detailMeasurement.project_codigo || "—"}</div>
-              <div><span className="text-muted-foreground">Cliente:</span> {detailMeasurement.client_name || "—"}</div>
-              <div><span className="text-muted-foreground">Período:</span> {detailMeasurement.period_start} a {detailMeasurement.period_end}</div>
-              <div><span className="text-muted-foreground">Empresa:</span> {detailMeasurement.empresa_faturadora === "ag_topografia" ? "AG Topografia" : "AG Cartografia"}</div>
-              <div><span className="text-muted-foreground">Valor bruto:</span> {fmtCurrency(detailMeasurement.valor_bruto)}</div>
-              <div><span className="text-muted-foreground">Valor NF:</span> {fmtCurrency(detailMeasurement.valor_nf)}</div>
-              {detailMeasurement.nf_numero && <div><span className="text-muted-foreground">NF nº:</span> {detailMeasurement.nf_numero}</div>}
-              {detailMeasurement.nf_data && <div><span className="text-muted-foreground">Data NF:</span> {format(new Date(detailMeasurement.nf_data + "T12:00:00"), "dd/MM/yyyy")}</div>}
-              {detailMeasurement.notes && <div className="col-span-2"><span className="text-muted-foreground">Obs:</span> {detailMeasurement.notes}</div>}
-            </div>
-          )}
         </DialogContent>
       </Dialog>
     </div>
