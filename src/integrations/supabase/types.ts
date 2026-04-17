@@ -1408,47 +1408,47 @@ export type Database = {
       }
       measurement_daily_entries: {
         Row: {
+          created_at: string
+          daily_record_id: string | null
+          date: string
+          day_type: string | null
+          employee_id: string
           id: string
           measurement_id: string
-          date: string
-          employee_id: string
-          project_id: string
-          day_type: string
-          worked: boolean
-          daily_record_id: string | null
           notes: string | null
-          created_at: string
+          project_id: string
+          worked: boolean | null
         }
         Insert: {
+          created_at?: string
+          daily_record_id?: string | null
+          date: string
+          day_type?: string | null
+          employee_id: string
           id?: string
           measurement_id: string
-          date: string
-          employee_id: string
-          project_id: string
-          day_type?: string
-          worked?: boolean
-          daily_record_id?: string | null
           notes?: string | null
-          created_at?: string
+          project_id: string
+          worked?: boolean | null
         }
         Update: {
+          created_at?: string
+          daily_record_id?: string | null
+          date?: string
+          day_type?: string | null
+          employee_id?: string
           id?: string
           measurement_id?: string
-          date?: string
-          employee_id?: string
-          project_id?: string
-          day_type?: string
-          worked?: boolean
-          daily_record_id?: string | null
           notes?: string | null
-          created_at?: string
+          project_id?: string
+          worked?: boolean | null
         }
         Relationships: [
           {
-            foreignKeyName: "measurement_daily_entries_measurement_id_fkey"
-            columns: ["measurement_id"]
+            foreignKeyName: "measurement_daily_entries_daily_record_id_fkey"
+            columns: ["daily_record_id"]
             isOneToOne: false
-            referencedRelation: "measurements"
+            referencedRelation: "employee_daily_records"
             referencedColumns: ["id"]
           },
           {
@@ -1459,80 +1459,80 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "measurement_daily_entries_measurement_id_fkey"
+            columns: ["measurement_id"]
+            isOneToOne: false
+            referencedRelation: "measurements"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "measurement_daily_entries_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "measurement_daily_entries_daily_record_id_fkey"
-            columns: ["daily_record_id"]
-            isOneToOne: false
-            referencedRelation: "employee_daily_records"
-            referencedColumns: ["id"]
-          },
         ]
       }
       measurement_items: {
         Row: {
-          id: string
-          measurement_id: string
-          project_service_id: string | null
-          item_number: number
-          description: string
-          unit: string
-          contracted_quantity: number
-          unit_value: number
-          total_contracted: number
-          measured_quantity: number
-          measured_value: number
-          accumulated_quantity: number
-          accumulated_value: number
-          remaining_quantity: number
-          remaining_value: number
-          notes: string | null
+          accumulated_quantity: number | null
+          accumulated_value: number | null
+          contracted_quantity: number | null
           created_at: string
+          description: string
+          id: string
+          item_number: number
+          measured_quantity: number | null
+          measured_value: number | null
+          measurement_id: string
+          notes: string | null
+          project_service_id: string | null
+          remaining_quantity: number | null
+          remaining_value: number | null
+          total_contracted: number | null
+          unit: string | null
+          unit_value: number | null
           updated_at: string
         }
         Insert: {
-          id?: string
-          measurement_id: string
-          project_service_id?: string | null
-          item_number: number
-          description: string
-          unit?: string
-          contracted_quantity?: number
-          unit_value?: number
-          total_contracted?: number
-          measured_quantity?: number
-          measured_value?: number
-          accumulated_quantity?: number
-          accumulated_value?: number
-          remaining_quantity?: number
-          remaining_value?: number
-          notes?: string | null
+          accumulated_quantity?: number | null
+          accumulated_value?: number | null
+          contracted_quantity?: number | null
           created_at?: string
+          description: string
+          id?: string
+          item_number: number
+          measured_quantity?: number | null
+          measured_value?: number | null
+          measurement_id: string
+          notes?: string | null
+          project_service_id?: string | null
+          remaining_quantity?: number | null
+          remaining_value?: number | null
+          total_contracted?: number | null
+          unit?: string | null
+          unit_value?: number | null
           updated_at?: string
         }
         Update: {
-          id?: string
-          measurement_id?: string
-          project_service_id?: string | null
-          item_number?: number
-          description?: string
-          unit?: string
-          contracted_quantity?: number
-          unit_value?: number
-          total_contracted?: number
-          measured_quantity?: number
-          measured_value?: number
-          accumulated_quantity?: number
-          accumulated_value?: number
-          remaining_quantity?: number
-          remaining_value?: number
-          notes?: string | null
+          accumulated_quantity?: number | null
+          accumulated_value?: number | null
+          contracted_quantity?: number | null
           created_at?: string
+          description?: string
+          id?: string
+          item_number?: number
+          measured_quantity?: number | null
+          measured_value?: number | null
+          measurement_id?: string
+          notes?: string | null
+          project_service_id?: string | null
+          remaining_quantity?: number | null
+          remaining_value?: number | null
+          total_contracted?: number | null
+          unit?: string | null
+          unit_value?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -1555,9 +1555,9 @@ export type Database = {
       measurements: {
         Row: {
           approved_at: string | null
-          approved_by_client: boolean
-          avanco_acumulado_pct: number
-          avanco_periodo_pct: number
+          approved_by_client: boolean | null
+          avanco_acumulado_pct: number | null
+          avanco_periodo_pct: number | null
           client_id: string | null
           codigo_bm: string
           created_at: string | null
@@ -1568,7 +1568,7 @@ export type Database = {
           instrucao_faturamento: string | null
           invoice_id: string | null
           measurement_number: number | null
-          measurement_type: string
+          measurement_type: string | null
           nf_data: string | null
           nf_numero: string | null
           notes: string | null
@@ -1578,10 +1578,10 @@ export type Database = {
           project_id: string | null
           project_service_id: string | null
           proposal_id: string | null
-          requires_signature: boolean
+          requires_signature: boolean | null
           responsavel_cobranca_id: string | null
           retencao_pct: number
-          saldo_a_medir: number
+          saldo_a_medir: number | null
           status: string
           tipo_documento: string
           updated_at: string | null
@@ -1593,9 +1593,9 @@ export type Database = {
         }
         Insert: {
           approved_at?: string | null
-          approved_by_client?: boolean
-          avanco_acumulado_pct?: number
-          avanco_periodo_pct?: number
+          approved_by_client?: boolean | null
+          avanco_acumulado_pct?: number | null
+          avanco_periodo_pct?: number | null
           client_id?: string | null
           codigo_bm: string
           created_at?: string | null
@@ -1606,7 +1606,7 @@ export type Database = {
           instrucao_faturamento?: string | null
           invoice_id?: string | null
           measurement_number?: number | null
-          measurement_type?: string
+          measurement_type?: string | null
           nf_data?: string | null
           nf_numero?: string | null
           notes?: string | null
@@ -1616,10 +1616,10 @@ export type Database = {
           project_id?: string | null
           project_service_id?: string | null
           proposal_id?: string | null
-          requires_signature?: boolean
+          requires_signature?: boolean | null
           responsavel_cobranca_id?: string | null
           retencao_pct?: number
-          saldo_a_medir?: number
+          saldo_a_medir?: number | null
           status?: string
           tipo_documento?: string
           updated_at?: string | null
@@ -1631,9 +1631,9 @@ export type Database = {
         }
         Update: {
           approved_at?: string | null
-          approved_by_client?: boolean
-          avanco_acumulado_pct?: number
-          avanco_periodo_pct?: number
+          approved_by_client?: boolean | null
+          avanco_acumulado_pct?: number | null
+          avanco_periodo_pct?: number | null
           client_id?: string | null
           codigo_bm?: string
           created_at?: string | null
@@ -1644,7 +1644,7 @@ export type Database = {
           instrucao_faturamento?: string | null
           invoice_id?: string | null
           measurement_number?: number | null
-          measurement_type?: string
+          measurement_type?: string | null
           nf_data?: string | null
           nf_numero?: string | null
           notes?: string | null
@@ -1654,10 +1654,10 @@ export type Database = {
           project_id?: string | null
           project_service_id?: string | null
           proposal_id?: string | null
-          requires_signature?: boolean
+          requires_signature?: boolean | null
           responsavel_cobranca_id?: string | null
           retencao_pct?: number
-          saldo_a_medir?: number
+          saldo_a_medir?: number | null
           status?: string
           tipo_documento?: string
           updated_at?: string | null
@@ -1668,6 +1668,20 @@ export type Database = {
           valor_retencao?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "measurements_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "measurements_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "measurements_project_id_fkey"
             columns: ["project_id"]
@@ -1683,20 +1697,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "measurements_responsavel_cobranca_id_fkey"
-            columns: ["responsavel_cobranca_id"]
-            isOneToOne: false
-            referencedRelation: "employees"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "measurements_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "measurements_proposal_id_fkey"
             columns: ["proposal_id"]
             isOneToOne: false
@@ -1704,10 +1704,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "measurements_invoice_id_fkey"
-            columns: ["invoice_id"]
+            foreignKeyName: "measurements_responsavel_cobranca_id_fkey"
+            columns: ["responsavel_cobranca_id"]
             isOneToOne: false
-            referencedRelation: "invoices"
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
@@ -3258,11 +3258,6 @@ export const Constants = {
         "nf_emitida",
         "paga",
         "cancelada",
-      ],
-      measurement_type: [
-        "grid_diarias",
-        "boletim_formal",
-        "resumo_entrega",
       ],
       project_status: [
         "planejamento",
