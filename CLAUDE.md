@@ -1,12 +1,13 @@
-# SISTEMA AG — ARQUIVO CONSOLIDADO v10
+# SISTEMA AG — ARQUIVO CONSOLIDADO v11
 **Supabase:** bphgtvwgsgaqaxmkrtqj
 **Lovable:** e5b79b44-8865-4599-b013-f3e91865a8f0
 **GitHub:** aryanna-max/ag-central-hub
-**Data:** 15/04/2026 (v10 — inclui audit codigo + modelo operacional + compliance + processos BPMN)
+**Data:** 21/04/2026 (v11 — inclui regra `as any` como criterio de fechamento de fase)
 **Referencia:** types.ts (fonte de verdade) + `AG Topografia - Central/ARQUITETURA_SISTEMA_V2_15ABR2026.html`
 
-> **Este arquivo substitui o v9.**
-> v10 incorpora: audit real do codigo (38 tabelas, 22 hooks), modelo operacional das planilhas (RDF, Caixa, beneficios, encontro de contas), compliance documental, processos BPMN por cargo, gap analysis.
+> **Este arquivo substitui o v10.**
+> v11 (21/04): corrige schema `projects` (3 colunas `responsible_*` no lugar de `responsible_id`), remove `useLeadConversion` da lista de hooks ativos (codigo morto), adiciona regra de fechamento de fase baseada em `as any` (secao nova).
+> v10 (15/04): audit real do codigo (38 tabelas, 22 hooks), modelo operacional das planilhas (RDF, Caixa, beneficios, encontro de contas), compliance documental, processos BPMN por cargo, gap analysis.
 > **Arquitetura completa:** `AG Topografia - Central/ARQUITETURA_SISTEMA_V2_15ABR2026.html` (documento definitivo)
 > **Prompt Cowork:** `AG Topografia - Central/PROMPT_COWORK_AG.md`
 > Para prompts Lovable: usar `AG Topografia - Central/PROMPTS_LOVABLE.md`
@@ -200,7 +201,9 @@ empresa_faturadora, cnpj_tomador, tipo_documento, contract_value, conta_bancaria
 referencia_contrato, instrucao_faturamento_variavel, contato_engenheiro, contato_financeiro,
 start_date, end_date, delivery_deadline, delivery_days_estimated,
 field_started_at, field_completed_at, field_deadline, field_days_estimated,
-delivered_at, needs_tech_prep, responsible_id, lead_id, parent_project_id,
+delivered_at, needs_tech_prep,
+responsible_comercial_id, responsible_campo_id, responsible_tecnico_id,
+lead_id, parent_project_id,
 location, rua, numero, bairro, cidade, estado, cep, latitude, longitude,
 service, scope_description, notes, is_active, created_at, updated_at
 ```
@@ -229,11 +232,14 @@ technical_tasks, user_roles, vehicle_payment_history, vehicles
 **P3:** ordens_servico + colunas em proposals (tipo, proposta_pai_id, desconto_*)
 **P4:** accounts_payable, fuel_records, overtime_records, purchase_requests, inventory_items, inventory_movements, epi_records
 
-### 22 hooks existentes
+### 21 hooks existentes
 useAlerts, useCepAutofill, useClients, useDailySchedule, useEmployees, useExpenseSheets,
-useLeadConversion, useLeads, useMeasurements, useModuleAlertCounts, useMonthlySchedules,
+useLeads, useMeasurements, useModuleAlertCounts, useMonthlySchedules,
 useProjectAuthorizations, useProjectContacts, useProjectServices, useProjects, useProposals,
 useScopeItems, useTeams, useTechnicalTasks, useVehicles, use-mobile, use-toast
+
+> `useLeadConversion` existe no filesystem mas e **codigo morto** (nenhum importador).
+> Fluxo real de conversao e `LeadConversionDialog.tsx`. Ver PR #9 (doc investigacao cat3).
 
 ---
 
@@ -313,6 +319,59 @@ Escalas/despesas: WHERE is_legacy=false (Marco Zero: 31/03/2026)
 - ❌ NAO usar "OBRA" — sempre "PROJETO"
 - ❌ NAO criar tabela clientes por modulo — `clients` e fonte unica
 - ✅ Uma secao por vez no Lovable, confirmar antes de avancar
+
+---
+
+## REGRA — `as any` E FECHAMENTO DE FASE
+
+> **Diagnostico 21/04/2026:** 286 `as any` em 71 arquivos. Cada um e sintoma
+> de decisao arquitetural nao fechada ou de tipagem empurrada pro futuro.
+> Mapa completo no PR #9 (`docs/investigacao-bugs-cat3-20260421.md`).
+
+### Regra de aceitacao
+
+Uma fase (1, 2, 3, 4, 5) so e considerada **fechada** quando zera os `as any`
+dos arquivos tocados na fase.
+
+Checklist obrigatorio em cada PR de fase:
+
+```
+- [ ] Feature funciona
+- [ ] Build passa
+- [ ] grep -n "as any" src/<territorio_da_fase>/ == 0
+```
+
+### Territorios por fase (estimativa)
+
+| Fase | Arquivos principais | `as any` | Observacao |
+|---|---|---|---|
+| 1 — Escala→Beneficios→RDF | EscalaDiaria, EmployeeAvailabilityKanban, MonthlyCalendarGrid, PlanningReportsTab, RDFDigital, useBenefitSettlements, useDailySchedule | ~35 | Decidir `attendance` table + `responsible_campo_id` |
+| 2 — Compliance | useEmployeeDocuments, useComplianceTasks, Compliance.tsx, useEmployees | ~30 | Maioria e falso-positivo (tabelas existem em types.ts) |
+| 3 — Pessoas completo | Funcionarios.tsx, useBenefitSettlements | ~20 | Admissao/desligamento reescreve. `vt_*` dissolve naturalmente |
+| 4 — Arq. Comercial | Projetos.tsx, LeadConversionDialog, Leads, Propostas, ClientFormDialog, LeadFormDialog, useLeads | ~60 | Maior bolsa. Projetos.tsx sozinho tem 27 |
+| 5 — Email Financeiro | AprovacaoExterna.tsx | ~5 | Bug `enqueue_email` dissolve quando fase acontece |
+
+**Subtotal:** ~150 (52%) morrem como efeito colateral das fases.
+
+### O que sobra (~136 casts)
+
+Polimento puro — joins do Supabase (useMeasurements, VehicleReportsTab) +
+arrays literais de enum validos. Nao e arquitetura, so tipagem. Unico sprint
+"cosmetico" de fato — deixar para o fim.
+
+### O que NAO fazer
+
+- ❌ Sprint de limpeza de `as any` em paralelo com fases — perde foco da
+  arquitetura e o problema volta na proxima migration
+- ❌ Remover `as any` sem rodar `npm run build` — muitos quebram tipagem real
+- ❌ Fazer tudo num PR so
+
+### O que fazer
+
+- ✅ Cada prompt Lovable de fase cita os `as any` do territorio e pede
+  remocao junto com a feature
+- ✅ Usar checklist acima como criterio de aceitacao
+- ✅ PR que nao zera `as any` do territorio volta pra Lovable
 
 ---
 
