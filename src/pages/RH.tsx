@@ -4,6 +4,7 @@ import RelatorioAusencias from "./rh/RelatorioAusencias";
 import Ferias from "./rh/Ferias";
 import Documentos from "./rh/Documentos";
 import Compliance from "./rh/Compliance";
+import DescontosMensais from "./rh/DescontosMensais";
 
 export default function RH() {
   return (
@@ -14,6 +15,7 @@ export default function RH() {
       <Route path="ausencias" element={<RelatorioAusencias />} />
       <Route path="documentos" element={<Documentos />} />
       <Route path="compliance" element={<Compliance />} />
+      <Route path="descontos" element={<DescontosMensais />} />
       <Route path="*" element={<Navigate to="funcionarios" replace />} />
     </Routes>
   );
