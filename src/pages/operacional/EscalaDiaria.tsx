@@ -37,6 +37,8 @@ import DailyReportDialog from "@/components/operacional/DailyReportDialog";
 import { useUpdateMonthlySchedule } from "@/hooks/useMonthlySchedules";
 import { useAuth } from "@/contexts/AuthContext";
 import { DocStatusBadge } from "@/components/rh/ComplianceBadge";
+import EmployeeBadge from "@/components/rh/EmployeeBadge";
+import { useEmployeesBadgesForProject, summarizeBadges } from "@/hooks/useEmployeeBadge";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
 
@@ -158,6 +160,20 @@ export default function EscalaDiaria() {
       (e) => e.name.toLowerCase().includes(q) || (e.matricula || "").toLowerCase().includes(q)
     );
   }, [activeEmployees, empSearch]);
+
+  // Badges docs x cliente — só consulta se há projeto selecionado no modal.
+  const filteredEmployeeIds = useMemo(
+    () => filteredModalEmployees.map((e) => e.id),
+    [filteredModalEmployees]
+  );
+  const { data: badgeMap } = useEmployeesBadgesForProject(
+    filteredEmployeeIds,
+    addForm.project_id || null
+  );
+  const badgeSummary = useMemo(
+    () => (badgeMap ? summarizeBadges(badgeMap) : null),
+    [badgeMap]
+  );
 
   const handleCreateSchedule = async () => {
     try {
@@ -872,6 +888,7 @@ export default function EscalaDiaria() {
                 {filteredModalEmployees.map((emp) => {
                   const isSelected = addForm.employee_ids.includes(emp.id);
                   const isTop = isTopografo(emp.role);
+                  const badge = addForm.project_id ? badgeMap?.get(emp.id) : undefined;
                   return (
                     <div
                       key={emp.id}
@@ -880,6 +897,11 @@ export default function EscalaDiaria() {
                     >
                       <Checkbox checked={isSelected} className="pointer-events-none" />
                       <span className="flex-1 text-sm">{emp.name}</span>
+                      {badge && (
+                        <span onClick={(e) => e.stopPropagation()}>
+                          <EmployeeBadge badge={badge} size="sm" />
+                        </span>
+                      )}
                       <Badge variant="outline" className={`text-xs ${isTop ? "border-green-600 text-green-700" : "border-blue-600 text-blue-700"}`}>
                         {isTop ? "TOP" : "AUX"}
                       </Badge>
@@ -890,6 +912,11 @@ export default function EscalaDiaria() {
                   <p className="p-3 text-sm text-muted-foreground text-center">Nenhum funcionário encontrado</p>
                 )}
               </div>
+              {addForm.project_id && badgeMap && badgeSummary && (
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Validação docs: {badgeSummary.verde} apto · {badgeSummary.amarelo} atenção · {badgeSummary.vermelho} bloqueio
+                </p>
+              )}
             </div>
 
             {/* Vehicle */}
