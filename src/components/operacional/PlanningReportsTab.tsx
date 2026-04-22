@@ -114,7 +114,7 @@ export default function PlanningReportsTab() {
     }));
   }, [entries, empMap, projMap]);
 
-  // Report 4: Vacation overrides
+  // Report 4: Vacation overrides (funcionários de férias ESCALADOS mesmo assim)
   const vacationOverrides = useMemo(() => {
     return entries.filter((e: any) => e.is_vacation_override && !e.removed_at).map((e: any) => ({
       employee: empMap[e.employee_id] || "—",
@@ -123,6 +123,40 @@ export default function PlanningReportsTab() {
       notes: e.notes || "",
     }));
   }, [entries, empMap, projMap]);
+
+  // Report 5: Férias no período (fonte: employee_vacations)
+  // Mostra TODOS os funcionários com férias que intersectam o intervalo,
+  // independente de terem sido escalados ou não. Resolve bug "relatório
+  // não mostra ninguém de férias" (22/04/2026).
+  const { data: vacationsInPeriod = [] } = useQuery({
+    queryKey: ["planning-report-vacations", minDate, endDate, empFilter],
+    queryFn: async () => {
+      let q = supabase
+        .from("employee_vacations")
+        .select("employee_id, start_date, end_date, notes")
+        .lte("start_date", endDate)      // vacation começou antes do fim do período
+        .gte("end_date", minDate);        // e ainda não terminou antes do início
+      if (empFilter !== "all") q = q.eq("employee_id", empFilter);
+      const { data, error } = await q.order("start_date", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const vacationsList = useMemo(() => {
+    return vacationsInPeriod.map((v) => {
+      const startD = new Date(v.start_date + "T12:00:00");
+      const endD = new Date(v.end_date + "T12:00:00");
+      const durationDays = Math.round((endD.getTime() - startD.getTime()) / 86400000) + 1;
+      return {
+        employee: empMap[v.employee_id] || "—",
+        start: v.start_date,
+        end: v.end_date,
+        duration: durationDays,
+        notes: v.notes || "",
+      };
+    });
+  }, [vacationsInPeriod, empMap]);
 
   const fieldEmployees = employees.filter((e: any) => e.status !== "desligado");
 

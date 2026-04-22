@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import { isTopografo } from "@/lib/fieldRoles";
 
 type KanbanColumn = "nao_alocado" | "folga" | "falta" | "atestado" | "reserva_ag";
@@ -14,6 +15,11 @@ interface Employee {
   role: string;
   status: string;
   availability?: string;
+  activeAbsence?: {
+    start_date: string;
+    end_date: string;
+    notes: string | null;
+  } | null;
 }
 
 interface Props {
@@ -266,21 +272,39 @@ export default function EmployeeAvailabilityKanban({
           ))}
         </div>
 
-        {/* RH auto-status (read-only) */}
+        {/* Ausências RH (férias/licença/afastado — read-only, fonte única) */}
         {rhAbsentEmployees.length > 0 && (
           <div className="rounded-lg border border-border bg-muted/20 p-3">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-              Status RH (automático — somente leitura)
+              Ausências RH — somente leitura ({rhAbsentEmployees.length})
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {rhAbsentEmployees.map((emp) => (
-                <div key={emp.id} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-border/40 bg-muted/60 text-xs opacity-70">
-                  <Badge variant="outline" className="text-[9px] h-4 px-1 shrink-0 bg-muted text-muted-foreground">
-                    {emp.availability === "ferias" ? "FÉRIAS" : emp.availability === "licenca" ? "LICENÇA" : "AFAST."}
-                  </Badge>
-                  <span className="truncate leading-tight">{formatEmployeeName(emp)}</span>
-                </div>
-              ))}
+              {rhAbsentEmployees.map((emp) => {
+                const returnDate = emp.activeAbsence?.end_date;
+                const returnFormatted = returnDate
+                  ? format(new Date(returnDate + "T12:00:00"), "dd/MM")
+                  : null;
+                const badgeColor = emp.availability === "ferias"
+                  ? "bg-amber-100 text-amber-800 border-amber-300"
+                  : emp.availability === "licenca"
+                    ? "bg-orange-100 text-orange-800 border-orange-300"
+                    : "bg-red-100 text-red-800 border-red-300";
+                return (
+                  <div
+                    key={emp.id}
+                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-border/40 bg-muted/60 text-xs"
+                    title={returnDate ? `Retorno em ${returnFormatted}` : undefined}
+                  >
+                    <Badge variant="outline" className={`text-[9px] h-4 px-1 shrink-0 ${badgeColor}`}>
+                      {emp.availability === "ferias" ? "FÉRIAS" : emp.availability === "licenca" ? "LICENÇA" : "AFAST."}
+                    </Badge>
+                    <span className="truncate leading-tight font-medium">{formatEmployeeName(emp)}</span>
+                    {returnFormatted && (
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">→ {returnFormatted}</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

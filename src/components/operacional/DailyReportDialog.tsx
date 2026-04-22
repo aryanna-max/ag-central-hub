@@ -107,73 +107,196 @@ export default function DailyReportDialog({
   const isTopografo = (role: string) =>
     role?.toLowerCase().includes("topógrafo") || role?.toLowerCase().includes("topografo");
 
-  // Planning Report Content
-  const PlanningReport = () => (
-    <div ref={reportRef} style={{ width: 800, background: "#fff", padding: 24, fontFamily: "Arial, sans-serif" }}>
-      {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: 16, borderBottom: "3px solid #006B54", paddingBottom: 12 }}>
-        <h1 style={{ fontSize: 22, fontWeight: "bold", color: "#006B54", margin: 0 }}>AG TOPOGRAFIA</h1>
-        <p style={{ fontSize: 16, margin: "4px 0 0", color: "#333" }}>Escala de Campo — {dateStr}</p>
-      </div>
+  // Planning Report Content — usado para planejamento da escala do dia seguinte.
+  // Mostra 5 categorias de ausência/status como placeholders (Falta/Folga/Atestado/
+  // Reserva AG/Férias) mesmo que vazias — Marcelo marca depois conforme o dia se
+  // desenvolve. Férias vem auto-populated de employee_vacations.
+  const PlanningReport = () => {
+    const reservaEmps = attendanceRecords.filter((r: any) => r.status === "reserva_ag");
+    const faltaEmps = attendanceRecords.filter((r: any) => r.status === "falta");
+    const folgaEmps = attendanceRecords.filter((r: any) => r.status === "folga");
+    const atestadoEmps = attendanceRecords.filter((r: any) => r.status === "atestado");
+    const feriasEmps = absentEmployees.filter((e: any) => e.availability === "ferias");
 
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-        <thead>
-          <tr style={{ background: "#006B54", color: "#fff" }}>
-            <th style={{ padding: "8px 10px", textAlign: "left", border: "1px solid #005544" }}>#</th>
-            <th style={{ padding: "8px 10px", textAlign: "left", border: "1px solid #005544" }}>Projeto</th>
-            <th style={{ padding: "8px 10px", textAlign: "left", border: "1px solid #005544" }}>Equipe</th>
-            <th style={{ padding: "8px 10px", textAlign: "left", border: "1px solid #005544" }}>Funcionários</th>
-            <th style={{ padding: "8px 10px", textAlign: "left", border: "1px solid #005544" }}>Veículo</th>
-          </tr>
-        </thead>
-        <tbody>
-          {assignments.map((a: any, idx: number) => {
-            const members = a.teams?.team_members || [];
-            const bg = idx % 2 === 0 ? "#ffffff" : "#f0faf4";
-            return (
-              <tr key={a.id} style={{ background: bg }}>
-                <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0", fontWeight: "bold", textAlign: "center" }}>{idx + 1}</td>
-                <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0", fontWeight: 500 }}>
-                  {a.projects?.name || "—"}
-                  {a.projects?.client_name && <div style={{ fontSize: 11, color: "#777" }}>{a.projects.client_name}</div>}
-                </td>
-                <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0" }}>{a.teams?.name || "—"}</td>
-                <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0" }}>
-                  {members.map((m: any) => (
-                    <div key={m.id} style={{ marginBottom: 2 }}>
-                      <span
-                        className="badge"
-                        style={{
-                          display: "inline-block",
-                          padding: "1px 5px",
-                          borderRadius: 4,
-                          fontSize: 10,
-                          fontWeight: "bold",
-                          color: "#fff",
-                          background: isTopografo(m.role) ? "#166534" : "#2563eb",
-                          marginRight: 4,
-                        }}
-                      >
-                        {isTopografo(m.role) ? "TOP" : "AUX"}
-                      </span>
-                      {m.employees?.name || "—"}
-                    </div>
-                  ))}
-                </td>
-                <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0" }}>
-                  {a.vehicles ? `${a.vehicles.model} — ${a.vehicles.plate}` : "—"}
+    const getName = (empId: string) => allEmployees.find((e: any) => e.id === empId)?.name || "—";
+
+    type CategorySpec = {
+      key: string;
+      label: string;
+      color: string;
+      emps: { id: string; name: string; end_date?: string | null }[];
+      source: "drag" | "auto";
+    };
+
+    const categories: CategorySpec[] = [
+      {
+        key: "falta",
+        label: "Falta",
+        color: "#dc2626",
+        emps: faltaEmps.map((r: any) => ({ id: r.employee_id, name: getName(r.employee_id) })),
+        source: "drag",
+      },
+      {
+        key: "folga",
+        label: "Folga",
+        color: "#16a34a",
+        emps: folgaEmps.map((r: any) => ({ id: r.employee_id, name: getName(r.employee_id) })),
+        source: "drag",
+      },
+      {
+        key: "atestado",
+        label: "Atestado",
+        color: "#d97706",
+        emps: atestadoEmps.map((r: any) => ({ id: r.employee_id, name: getName(r.employee_id) })),
+        source: "drag",
+      },
+      {
+        key: "reserva_ag",
+        label: "Reserva AG",
+        color: "#2563eb",
+        emps: reservaEmps.map((r: any) => ({ id: r.employee_id, name: getName(r.employee_id) })),
+        source: "drag",
+      },
+      {
+        key: "ferias",
+        label: "Férias",
+        color: "#6b7280",
+        emps: feriasEmps.map((e: any) => ({ id: e.id, name: e.name, end_date: e.activeAbsence?.end_date })),
+        source: "auto",
+      },
+    ];
+
+    return (
+      <div ref={reportRef} style={{ width: 800, background: "#fff", padding: 24, fontFamily: "Arial, sans-serif" }}>
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 16, borderBottom: "3px solid #006B54", paddingBottom: 12 }}>
+          <h1 style={{ fontSize: 22, fontWeight: "bold", color: "#006B54", margin: 0 }}>AG TOPOGRAFIA</h1>
+          <p style={{ fontSize: 16, margin: "4px 0 0", color: "#333" }}>Escala de Campo — {dateStr}</p>
+          <p style={{ fontSize: 12, margin: "4px 0 0", color: "#6b7280", fontStyle: "italic" }}>Planejamento (véspera)</p>
+        </div>
+
+        {/* EM CAMPO */}
+        <h2 style={{ fontSize: 15, fontWeight: "bold", color: "#006B54", margin: "0 0 8px", textTransform: "uppercase" }}>
+          Em Campo
+        </h2>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+          <thead>
+            <tr style={{ background: "#006B54", color: "#fff" }}>
+              <th style={{ padding: "8px 10px", textAlign: "left", border: "1px solid #005544" }}>#</th>
+              <th style={{ padding: "8px 10px", textAlign: "left", border: "1px solid #005544" }}>Projeto</th>
+              <th style={{ padding: "8px 10px", textAlign: "left", border: "1px solid #005544" }}>Equipe</th>
+              <th style={{ padding: "8px 10px", textAlign: "left", border: "1px solid #005544" }}>Funcionários</th>
+              <th style={{ padding: "8px 10px", textAlign: "left", border: "1px solid #005544" }}>Veículo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {assignments.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ padding: "12px", border: "1px solid #e0e0e0", textAlign: "center", color: "#9ca3af", fontStyle: "italic" }}>
+                  Nenhum funcionário escalado ainda — arraste na tela de escala.
                 </td>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            ) : assignments.map((a: any, idx: number) => {
+              const members = a.teams?.team_members || [];
+              const bg = idx % 2 === 0 ? "#ffffff" : "#f0faf4";
+              return (
+                <tr key={a.id} style={{ background: bg }}>
+                  <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0", fontWeight: "bold", textAlign: "center" }}>{idx + 1}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0", fontWeight: 500 }}>
+                    {a.projects?.name || "—"}
+                    {a.projects?.client_name && <div style={{ fontSize: 11, color: "#777" }}>{a.projects.client_name}</div>}
+                  </td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0" }}>{a.teams?.name || "—"}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0" }}>
+                    {members.map((m: any) => (
+                      <div key={m.id} style={{ marginBottom: 2 }}>
+                        <span
+                          className="badge"
+                          style={{
+                            display: "inline-block",
+                            padding: "1px 5px",
+                            borderRadius: 4,
+                            fontSize: 10,
+                            fontWeight: "bold",
+                            color: "#fff",
+                            background: isTopografo(m.role) ? "#166534" : "#2563eb",
+                            marginRight: 4,
+                          }}
+                        >
+                          {isTopografo(m.role) ? "TOP" : "AUX"}
+                        </span>
+                        {m.employees?.name || "—"}
+                      </div>
+                    ))}
+                  </td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0" }}>
+                    {a.vehicles ? `${a.vehicles.model} — ${a.vehicles.plate}` : "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
 
-      <div style={{ marginTop: 16, fontSize: 11, color: "#999", borderTop: "1px solid #eee", paddingTop: 8 }}>
-        Gerado por {createdBy || "Sistema"} em {format(now, "dd/MM/yyyy HH:mm")}
+        {/* STATUS POR CATEGORIA (placeholders mesmo vazios) */}
+        <h2 style={{ fontSize: 15, fontWeight: "bold", color: "#006B54", margin: "20px 0 8px", textTransform: "uppercase" }}>
+          Status dos funcionários
+        </h2>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead>
+            <tr style={{ background: "#f5f5f5" }}>
+              <th style={{ padding: "6px 10px", textAlign: "left", border: "1px solid #e0e0e0", width: 140 }}>Categoria</th>
+              <th style={{ padding: "6px 10px", textAlign: "center", border: "1px solid #e0e0e0", width: 50 }}>Qtd</th>
+              <th style={{ padding: "6px 10px", textAlign: "left", border: "1px solid #e0e0e0" }}>Funcionários</th>
+            </tr>
+          </thead>
+          <tbody>
+            {categories.map((cat) => (
+              <tr key={cat.key} style={{ background: "#fff" }}>
+                <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0" }}>
+                  <span style={{
+                    padding: "1px 6px", borderRadius: 4,
+                    fontSize: 10, fontWeight: "bold", color: "#fff",
+                    background: cat.color,
+                  }}>
+                    {cat.label.toUpperCase()}
+                  </span>
+                </td>
+                <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0", textAlign: "center", fontWeight: "bold" }}>
+                  {cat.emps.length}
+                </td>
+                <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0" }}>
+                  {cat.emps.length === 0 ? (
+                    <span style={{ color: "#9ca3af", fontStyle: "italic", fontSize: 12 }}>
+                      {cat.source === "auto"
+                        ? "Nenhum funcionário em férias hoje"
+                        : "Arraste aqui no Kanban (ou preencha no dia)"}
+                    </span>
+                  ) : (
+                    cat.emps.map((e, i) => (
+                      <span key={e.id}>
+                        {i > 0 && ", "}
+                        {e.name}
+                        {e.end_date && (
+                          <span style={{ fontSize: 10, color: "#6b7280" }}>
+                            {" "}(retorno {format(new Date(e.end_date + "T12:00:00"), "dd/MM")})
+                          </span>
+                        )}
+                      </span>
+                    ))
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div style={{ marginTop: 16, fontSize: 11, color: "#999", borderTop: "1px solid #eee", paddingTop: 8 }}>
+          Gerado por {createdBy || "Sistema"} em {format(now, "dd/MM/yyyy HH:mm")}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Confirmed Report Content
   const ConfirmedReport = () => {
