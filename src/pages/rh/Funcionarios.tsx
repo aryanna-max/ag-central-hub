@@ -11,7 +11,9 @@ import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Search, Plus, Users, MoreVertical, Pencil, RefreshCw, Trash2, Download } from "lucide-react";
+import { Search, Plus, Users, MoreVertical, Pencil, RefreshCw, Trash2, Download, UserMinus } from "lucide-react";
+import AdmissaoWizard from "@/components/rh/AdmissaoWizard";
+import DesligamentoDialog from "@/components/rh/DesligamentoDialog";
 import { ALL_EMPLOYEE_ROLES } from "@/lib/fieldRoles";
 import { formatCpf } from "@/lib/masks";
 import { toast } from "sonner";
@@ -87,13 +89,6 @@ export default function Funcionarios() {
   const { visibleColumns, toggle: toggleColumn, isVisible } = useColumnVisibility(EMP_COLUMNS);
 
   const [showNew, setShowNew] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newRole, setNewRole] = useState("");
-  const [newAdmission, setNewAdmission] = useState("");
-  const [newStatus, setNewStatus] = useState("disponivel");
-  const [newMatricula, setNewMatricula] = useState("");
-  const [newCpf, setNewCpf] = useState("");
-  const [newTransporteTipo, setNewTransporteTipo] = useState<TransporteTipo>("vt_cartao");
 
   // Edit dialog
   const [editEmp, setEditEmp] = useState<Employee | null>(null);
@@ -108,6 +103,9 @@ export default function Funcionarios() {
 
   // Delete confirm
   const [deleteEmp, setDeleteEmp] = useState<Employee | null>(null);
+
+  // Termination dialog (Desligar/Reativar)
+  const [terminateEmp, setTerminateEmp] = useState<Employee | null>(null);
 
   // Unique roles for filter
   const uniqueRoles = useMemo(() => {
@@ -149,43 +147,8 @@ export default function Funcionarios() {
     return null;
   };
 
-  // Handlers
-  const handleCreate = async () => {
-    if (!newName.trim()) { toast.error("Nome é obrigatório"); return; }
-    const matError = validateMatricula(newMatricula);
-    if (newMatricula && matError) { toast.error(matError); return; }
-    // CPF uniqueness
-    if (newCpf.trim()) {
-      const existing = employees.find(e => e.cpf === newCpf.trim());
-      if (existing) { toast.error(`CPF já cadastrado: ${existing.name}`); return; }
-    }
-    try {
-      const created = await createEmployee.mutateAsync({
-        name: newName.trim(),
-        role: newRole.trim() || "Ajudante de Topografia",
-        admission_date: newAdmission || null,
-        status: newStatus as Employee["status"],
-        matricula: newMatricula.trim().toUpperCase() || null,
-        cpf: newCpf.trim() || null,
-        transporte_tipo: newTransporteTipo,
-      });
-      // Sincronizar colunas legacy (has_vt/vt_cash) para compatibilidade.
-      // Após remoção dessas colunas em próxima onda, este bloco sai.
-      if (created?.id) {
-        await supabase
-          .from("employees")
-          .update({
-            has_vt: newTransporteTipo !== "nenhum",
-            vt_cash: newTransporteTipo === "dinheiro",
-          })
-          .eq("id", created.id);
-      }
-      toast.success("Funcionário cadastrado!");
-      setShowNew(false);
-      setNewName(""); setNewRole(""); setNewAdmission(""); setNewStatus("disponivel");
-      setNewMatricula(""); setNewCpf(""); setNewTransporteTipo("vt_cartao");
-    } catch { toast.error("Erro ao cadastrar"); }
-  };
+  // Handler de criação: removido.
+  // AdmissaoWizard (4 passos, 32 campos Fase 3B) agora cuida da admissão completa.
 
   const openEdit = (emp: Employee) => {
     setEditEmp(emp);
@@ -370,6 +333,10 @@ export default function Funcionarios() {
                                 <DropdownMenuItem onClick={() => openStatusChange(emp)}>
                                   <RefreshCw className="w-4 h-4 mr-2" /> Alterar Status
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setTerminateEmp(emp)}>
+                                  <UserMinus className="w-4 h-4 mr-2" />
+                                  {emp.status === "desligado" ? "Reativar" : "Desligar"}
+                                </DropdownMenuItem>
                                 <DropdownMenuItem className="text-destructive" onClick={() => setDeleteEmp(emp)}>
                                   <Trash2 className="w-4 h-4 mr-2" /> Excluir
                                 </DropdownMenuItem>
@@ -424,79 +391,15 @@ export default function Funcionarios() {
         </CardContent>
       </Card>
 
-      {/* Dialog: Novo Funcionário */}
-      <Dialog open={showNew} onOpenChange={setShowNew}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Novo Funcionário</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label>Nome *</Label>
-              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nome completo" />
-            </div>
-            <div>
-              <Label>CPF</Label>
-              <Input value={newCpf} onChange={(e) => setNewCpf(formatCpf(e.target.value))} placeholder="000.000.000-00" maxLength={14} />
-            </div>
-            <div>
-              <Label>Matrícula</Label>
-              <Input value={newMatricula} onChange={(e) => setNewMatricula(e.target.value.toUpperCase())} placeholder="000XXX ou PREST-XXX" maxLength={10} />
-              <p className="text-[10px] text-muted-foreground mt-0.5">CLT: 000XXX (6 dígitos) | Prestador: PREST-XXX</p>
-            </div>
-            <div>
-              <Label>Função</Label>
-              <Select value={newRole} onValueChange={setNewRole}>
-                <SelectTrigger><SelectValue placeholder="Selecione a função..." /></SelectTrigger>
-                <SelectContent>
-                  {ALL_EMPLOYEE_ROLES.map((r) => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Data de Admissão</Label>
-              <Input type="date" value={newAdmission} onChange={(e) => setNewAdmission(e.target.value)} />
-            </div>
-            <div>
-              <Label>Status</Label>
-              <Select value={newStatus} onValueChange={setNewStatus}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="disponivel">Disponível</SelectItem>
-                  <SelectItem value="ferias">Férias</SelectItem>
-                  <SelectItem value="afastado">Afastado</SelectItem>
-                  <SelectItem value="licenca">Licença</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="border rounded-lg p-3 space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase">Transporte</p>
-              <div>
-                <Label>Tipo de transporte</Label>
-                <Select value={newTransporteTipo} onValueChange={(v) => setNewTransporteTipo(v as TransporteTipo)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(TRANSPORTE_LABELS) as TransporteTipo[]).map((k) => (
-                      <SelectItem key={k} value={k}>{TRANSPORTE_LABELS[k]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Valor do VT vem de system_settings (padrão R$ 4,50 × 2 viagens).
-                </p>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNew(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} disabled={createEmployee.isPending}>
-              {createEmployee.isPending ? "Salvando..." : "Salvar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Wizard: Nova Admissão (4 passos, 32 campos Fase 3B) */}
+      <AdmissaoWizard open={showNew} onOpenChange={setShowNew} />
+
+      {/* Dialog: Desligar / Reativar */}
+      <DesligamentoDialog
+        employee={terminateEmp}
+        open={!!terminateEmp}
+        onOpenChange={(o) => !o && setTerminateEmp(null)}
+      />
 
       {/* Dialog: Editar */}
       <Dialog open={!!editEmp} onOpenChange={(o) => !o && setEditEmp(null)}>
