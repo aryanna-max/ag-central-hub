@@ -8,7 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
@@ -33,6 +32,30 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 const PAGE_SIZE = 20;
+
+type TransporteTipo = "vt_cartao" | "dinheiro" | "nenhum";
+
+const TRANSPORTE_LABELS: Record<TransporteTipo, string> = {
+  vt_cartao: "Cartão (VT/VEM)",
+  dinheiro: "Dinheiro",
+  nenhum: "Nenhum",
+};
+
+function deriveTransporteTipo(emp: Employee | null): TransporteTipo {
+  if (!emp) return "vt_cartao";
+  const e = emp as Employee & {
+    transporte_tipo?: string | null;
+    has_vt?: boolean | null;
+    vt_cash?: boolean | null;
+  };
+  if (e.transporte_tipo === "vt_cartao" || e.transporte_tipo === "dinheiro" || e.transporte_tipo === "nenhum") {
+    return e.transporte_tipo;
+  }
+  // Fallback para legacy (compatibilidade)
+  if (e.has_vt === false) return "nenhum";
+  if (e.vt_cash === true) return "dinheiro";
+  return "vt_cartao";
+}
 
 function validateMatricula(value: string): string | null {
   if (!value) return null;
@@ -70,18 +93,14 @@ export default function Funcionarios() {
   const [newStatus, setNewStatus] = useState("disponivel");
   const [newMatricula, setNewMatricula] = useState("");
   const [newCpf, setNewCpf] = useState("");
-  const [newHasVt, setNewHasVt] = useState(false);
-  const [newVtCash, setNewVtCash] = useState(false);
-  const [newVtValue, setNewVtValue] = useState("");
+  const [newTransporteTipo, setNewTransporteTipo] = useState<TransporteTipo>("vt_cartao");
 
   // Edit dialog
   const [editEmp, setEditEmp] = useState<Employee | null>(null);
   const [editName, setEditName] = useState("");
   const [editRole, setEditRole] = useState("");
   const [editAdmission, setEditAdmission] = useState("");
-  const [editHasVt, setEditHasVt] = useState(false);
-  const [editVtCash, setEditVtCash] = useState(false);
-  const [editVtValue, setEditVtValue] = useState("");
+  const [editTransporteTipo, setEditTransporteTipo] = useState<TransporteTipo>("vt_cartao");
 
   // Status change dialog
   const [statusEmp, setStatusEmp] = useState<Employee | null>(null);
@@ -141,25 +160,30 @@ export default function Funcionarios() {
       if (existing) { toast.error(`CPF já cadastrado: ${existing.name}`); return; }
     }
     try {
-      await createEmployee.mutateAsync({
+      const created = await createEmployee.mutateAsync({
         name: newName.trim(),
         role: newRole.trim() || "Ajudante de Topografia",
         admission_date: newAdmission || null,
-        status: newStatus as any,
+        status: newStatus as Employee["status"],
         matricula: newMatricula.trim().toUpperCase() || null,
         cpf: newCpf.trim() || null,
-      } as any);
-      // Update VT fields separately (not in types yet)
-      if (newHasVt) {
-        const { data: created } = await supabase.from("employees").select("id").eq("name", newName.trim()).order("created_at", { ascending: false }).limit(1).single();
-        if (created) {
-          await supabase.from("employees").update({ has_vt: newHasVt, vt_cash: newVtCash, vt_value: Number(newVtValue) || 0 } as any).eq("id", created.id);
-        }
+        transporte_tipo: newTransporteTipo,
+      });
+      // Sincronizar colunas legacy (has_vt/vt_cash) para compatibilidade.
+      // Após remoção dessas colunas em próxima onda, este bloco sai.
+      if (created?.id) {
+        await supabase
+          .from("employees")
+          .update({
+            has_vt: newTransporteTipo !== "nenhum",
+            vt_cash: newTransporteTipo === "dinheiro",
+          })
+          .eq("id", created.id);
       }
       toast.success("Funcionário cadastrado!");
       setShowNew(false);
       setNewName(""); setNewRole(""); setNewAdmission(""); setNewStatus("disponivel");
-      setNewMatricula(""); setNewCpf(""); setNewHasVt(false); setNewVtCash(false); setNewVtValue("");
+      setNewMatricula(""); setNewCpf(""); setNewTransporteTipo("vt_cartao");
     } catch { toast.error("Erro ao cadastrar"); }
   };
 
@@ -168,9 +192,7 @@ export default function Funcionarios() {
     setEditName(emp.name);
     setEditRole(emp.role);
     setEditAdmission(emp.admission_date || "");
-    setEditHasVt((emp as any).has_vt || false);
-    setEditVtCash((emp as any).vt_cash || false);
-    setEditVtValue(String((emp as any).vt_value || ""));
+    setEditTransporteTipo(deriveTransporteTipo(emp));
   };
 
   const handleEdit = async () => {
@@ -181,13 +203,13 @@ export default function Funcionarios() {
         name: editName.trim(),
         role: editRole.trim() || "Ajudante de Topografia",
         admission_date: editAdmission || null,
+        transporte_tipo: editTransporteTipo,
       });
-      // Update VT fields
+      // Sincronizar colunas legacy (has_vt/vt_cash) para compatibilidade.
       await supabase.from("employees").update({
-        has_vt: editHasVt,
-        vt_cash: editVtCash,
-        vt_value: Number(editVtValue) || 0,
-      } as any).eq("id", editEmp.id);
+        has_vt: editTransporteTipo !== "nenhum",
+        vt_cash: editTransporteTipo === "dinheiro",
+      }).eq("id", editEmp.id);
       toast.success("Funcionário atualizado!");
       setEditEmp(null);
     } catch { toast.error("Erro ao atualizar"); }
@@ -201,7 +223,7 @@ export default function Funcionarios() {
   const handleStatusChange = async () => {
     if (!statusEmp) return;
     try {
-      await updateEmployee.mutateAsync({ id: statusEmp.id, status: newStatusValue as any });
+      await updateEmployee.mutateAsync({ id: statusEmp.id, status: newStatusValue as Employee["status"] });
       toast.success("Status atualizado!");
       setStatusEmp(null);
     } catch { toast.error("Erro ao alterar status"); }
@@ -450,23 +472,21 @@ export default function Funcionarios() {
               </Select>
             </div>
             <div className="border rounded-lg p-3 space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase">Vale Transporte</p>
-              <div className="flex items-center justify-between">
-                <Label>Tem VT?</Label>
-                <Switch checked={newHasVt} onCheckedChange={setNewHasVt} />
+              <p className="text-xs font-semibold text-muted-foreground uppercase">Transporte</p>
+              <div>
+                <Label>Tipo de transporte</Label>
+                <Select value={newTransporteTipo} onValueChange={(v) => setNewTransporteTipo(v as TransporteTipo)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(TRANSPORTE_LABELS) as TransporteTipo[]).map((k) => (
+                      <SelectItem key={k} value={k}>{TRANSPORTE_LABELS[k]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Valor do VT vem de system_settings (padrão R$ 4,50 × 2 viagens).
+                </p>
               </div>
-              {newHasVt && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <Label>Recebe em dinheiro?</Label>
-                    <Switch checked={newVtCash} onCheckedChange={setNewVtCash} />
-                  </div>
-                  <div>
-                    <Label>Valor VT mensal (R$)</Label>
-                    <Input type="number" value={newVtValue} onChange={(e) => setNewVtValue(e.target.value)} placeholder="0.00" />
-                  </div>
-                </>
-              )}
             </div>
           </div>
           <DialogFooter>
@@ -514,23 +534,21 @@ export default function Funcionarios() {
               <Input type="date" value={editAdmission} onChange={(e) => setEditAdmission(e.target.value)} />
             </div>
             <div className="border rounded-lg p-3 space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase">Vale Transporte</p>
-              <div className="flex items-center justify-between">
-                <Label>Tem VT?</Label>
-                <Switch checked={editHasVt} onCheckedChange={setEditHasVt} />
+              <p className="text-xs font-semibold text-muted-foreground uppercase">Transporte</p>
+              <div>
+                <Label>Tipo de transporte</Label>
+                <Select value={editTransporteTipo} onValueChange={(v) => setEditTransporteTipo(v as TransporteTipo)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(TRANSPORTE_LABELS) as TransporteTipo[]).map((k) => (
+                      <SelectItem key={k} value={k}>{TRANSPORTE_LABELS[k]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Valor do VT vem de system_settings (padrão R$ 4,50 × 2 viagens).
+                </p>
               </div>
-              {editHasVt && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <Label>Recebe em dinheiro?</Label>
-                    <Switch checked={editVtCash} onCheckedChange={setEditVtCash} />
-                  </div>
-                  <div>
-                    <Label>Valor VT mensal (R$)</Label>
-                    <Input type="number" value={editVtValue} onChange={(e) => setEditVtValue(e.target.value)} placeholder="0.00" />
-                  </div>
-                </>
-              )}
             </div>
           </div>
           <DialogFooter>
