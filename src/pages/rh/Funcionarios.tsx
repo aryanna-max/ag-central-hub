@@ -11,9 +11,11 @@ import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Search, Plus, Users, MoreVertical, Pencil, RefreshCw, Trash2, Download, UserMinus } from "lucide-react";
+import { Search, Plus, Users, MoreVertical, Pencil, RefreshCw, Trash2, Download, UserMinus, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import AdmissaoWizard from "@/components/rh/AdmissaoWizard";
 import DesligamentoDialog from "@/components/rh/DesligamentoDialog";
+import EmployeeCompletudeBadge, { calculateCompletude } from "@/components/rh/EmployeeCompletudeBadge";
 import { ALL_EMPLOYEE_ROLES } from "@/lib/fieldRoles";
 import { formatCpf } from "@/lib/masks";
 import { toast } from "sonner";
@@ -85,7 +87,9 @@ export default function Funcionarios() {
     { key: "funcao", label: "Função" },
     { key: "admissao", label: "Admissão" },
     { key: "status", label: "Status" },
+    { key: "completude", label: "Cadastro" },
   ];
+  const navigate = useNavigate();
   const { visibleColumns, toggle: toggleColumn, isVisible } = useColumnVisibility(EMP_COLUMNS);
 
   const [showNew, setShowNew] = useState(false);
@@ -299,14 +303,20 @@ export default function Funcionarios() {
                        {isVisible("funcao") && <SortableTableHead sortKey="role" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Função</SortableTableHead>}
                        {isVisible("admissao") && <SortableTableHead sortKey="admission_date" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Admissão</SortableTableHead>}
                        {isVisible("status") && <SortableTableHead sortKey="status" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Status</SortableTableHead>}
+                       {isVisible("completude") && <TableHead className="w-[90px]">Cadastro</TableHead>}
                       <TableHead className="w-[50px]" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginated.map((emp) => {
                       const st = statusConfig[emp.status] || statusConfig.disponivel;
+                      const completude = calculateCompletude(emp as unknown as Record<string, unknown>);
                       return (
-                        <TableRow key={emp.id}>
+                        <TableRow
+                          key={emp.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => navigate(`/rh/funcionarios/${emp.id}`)}
+                        >
                            {isVisible("matricula") && <TableCell className="font-mono text-xs text-muted-foreground">{emp.matricula || "—"}</TableCell>}
                            {isVisible("tipo") && <TableCell>{getTypeBadge(emp.matricula)}</TableCell>}
                            {isVisible("nome") && <TableCell className="font-medium">{emp.name}</TableCell>}
@@ -319,7 +329,10 @@ export default function Funcionarios() {
                           {isVisible("status") && <TableCell>
                             <Badge className={st.className}>{st.label}</Badge>
                           </TableCell>}
-                          <TableCell>
+                          {isVisible("completude") && <TableCell>
+                            <EmployeeCompletudeBadge completude={completude} size="small" />
+                          </TableCell>}
+                          <TableCell onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -327,8 +340,11 @@ export default function Funcionarios() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => navigate(`/rh/funcionarios/${emp.id}`)}>
+                                  <Eye className="w-4 h-4 mr-2" /> Ver ficha completa
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => openEdit(emp)}>
-                                  <Pencil className="w-4 h-4 mr-2" /> Editar
+                                  <Pencil className="w-4 h-4 mr-2" /> Editar rápido
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => openStatusChange(emp)}>
                                   <RefreshCw className="w-4 h-4 mr-2" /> Alterar Status
