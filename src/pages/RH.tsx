@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Funcionarios from "./rh/Funcionarios";
+import FichaFuncionario from "./rh/FichaFuncionario";
 import RelatorioAusencias from "./rh/RelatorioAusencias";
 import Ferias from "./rh/Ferias";
 import Documentos from "./rh/Documentos";
@@ -11,6 +12,7 @@ export default function RH() {
     <Routes>
       <Route index element={<Navigate to="funcionarios" replace />} />
       <Route path="funcionarios" element={<Funcionarios />} />
+      <Route path="funcionarios/:id" element={<FichaFuncionario />} />
       <Route path="ferias" element={<Ferias />} />
       <Route path="ausencias" element={<RelatorioAusencias />} />
       <Route path="documentos" element={<Documentos />} />
