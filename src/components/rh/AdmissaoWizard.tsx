@@ -41,6 +41,17 @@ type Jornada = "44h" | "36h" | "30h" | "20h" | "escala";
 type EmpresaContratante = "gonzaga_berlim" | "ag_cartografia";
 type TipoConta = "corrente" | "poupanca";
 type EstadoCivil = "solteiro" | "casado" | "divorciado" | "viuvo" | "uniao_estavel";
+type Escolaridade = "fundamental" | "medio" | "tecnico" | "superior" | "pos";
+
+const ESCOLARIDADE_LABELS: Record<Escolaridade, string> = {
+  fundamental: "Ensino Fundamental",
+  medio: "Ensino Médio",
+  tecnico: "Técnico",
+  superior: "Superior",
+  pos: "Pós-graduação",
+};
+
+const ALELO_VALOR_PADRAO = 15.0;
 
 function validateMatricula(value: string): string | null {
   if (!value) return null;
@@ -71,8 +82,10 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
   const [pis, setPis] = useState("");
   const [matricula, setMatricula] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
+  const [nomeMae, setNomeMae] = useState("");
   const [estadoCivil, setEstadoCivil] = useState<EstadoCivil | "">("");
   const [genero, setGenero] = useState("");
+  const [escolaridade, setEscolaridade] = useState<Escolaridade | "">("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
 
@@ -101,6 +114,8 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
   const [pixChave, setPixChave] = useState("");
   const [transporteTipo, setTransporteTipo] = useState<TransporteTipo>("vt_cartao");
   const [vtIsento, setVtIsento] = useState(false);
+  const [recebeAlelo, setRecebeAlelo] = useState(true);
+  const [aleloValorDia, setAleloValorDia] = useState(String(ALELO_VALOR_PADRAO));
   const [emergenciaNome, setEmergenciaNome] = useState("");
   const [emergenciaTelefone, setEmergenciaTelefone] = useState("");
   const [emergenciaParentesco, setEmergenciaParentesco] = useState("");
@@ -137,13 +152,15 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
   const resetForm = () => {
     setStep(0);
     setName(""); setCpf(""); setRg(""); setPis(""); setMatricula("");
-    setDataNascimento(""); setEstadoCivil(""); setGenero(""); setPhone(""); setEmail("");
+    setDataNascimento(""); setNomeMae(""); setEstadoCivil(""); setGenero(""); setEscolaridade("");
+    setPhone(""); setEmail("");
     setCep(""); setRua(""); setNumero(""); setComplemento(""); setBairro(""); setCidade(""); setEstado("");
     setAdmissionDate(new Date().toISOString().slice(0, 10));
     setTipoContrato("clt"); setEmpresaContratante("gonzaga_berlim");
     setJobRoleId(""); setJornada("44h"); setSalarioBase("");
     setBanco(""); setAgencia(""); setConta(""); setTipoConta("corrente"); setPixChave("");
     setTransporteTipo("vt_cartao"); setVtIsento(false);
+    setRecebeAlelo(true); setAleloValorDia(String(ALELO_VALOR_PADRAO));
     setEmergenciaNome(""); setEmergenciaTelefone(""); setEmergenciaParentesco("");
     setCtpsNumero(""); setCtpsSerie(""); setCnh(""); setCnhCategoria(""); setCnhValidade("");
   };
@@ -168,8 +185,10 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
       pis: pis.trim() || null,
       matricula: matricula.trim().toUpperCase() || null,
       data_nascimento: dataNascimento || null,
+      nome_mae: nomeMae.trim() || null,
       estado_civil: estadoCivil || null,
       genero: genero || null,
+      escolaridade: escolaridade || null,
       phone: phone.trim() || null,
       email: email.trim() || null,
       // Endereço
@@ -194,11 +213,13 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
       conta: conta.trim() || null,
       tipo_conta: tipoConta,
       pix_chave: pixChave.trim() || null,
-      // Transporte
+      // Transporte + Alelo
       transporte_tipo: transporteTipo,
       vt_isento_desconto: vtIsento,
       has_vt: transporteTipo !== "nenhum", // legacy compat
       vt_cash: transporteTipo === "dinheiro", // legacy compat
+      recebe_alelo: recebeAlelo,
+      alelo_valor_dia: aleloValorDia ? parseFloat(aleloValorDia) : ALELO_VALOR_PADRAO,
       // Emergência
       contato_emergencia_nome: emergenciaNome.trim() || null,
       contato_emergencia_telefone: emergenciaTelefone.trim() || null,
@@ -289,6 +310,10 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
               <Label>Data de nascimento</Label>
               <Input type="date" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} />
             </div>
+            <div className="col-span-2">
+              <Label>Nome da mãe</Label>
+              <Input value={nomeMae} onChange={(e) => setNomeMae(e.target.value)} placeholder="Obrigatório para CLT" />
+            </div>
             <div>
               <Label>Estado civil</Label>
               <Select value={estadoCivil} onValueChange={(v) => setEstadoCivil(v as EstadoCivil)}>
@@ -305,6 +330,17 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
             <div>
               <Label>Gênero</Label>
               <Input value={genero} onChange={(e) => setGenero(e.target.value)} placeholder="Masculino / Feminino / Outro" />
+            </div>
+            <div>
+              <Label>Escolaridade</Label>
+              <Select value={escolaridade} onValueChange={(v) => setEscolaridade(v as Escolaridade)}>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(ESCOLARIDADE_LABELS) as Escolaridade[]).map((k) => (
+                    <SelectItem key={k} value={k}>{ESCOLARIDADE_LABELS[k]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Telefone</Label>
@@ -492,6 +528,34 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
                   <Label htmlFor="vt-isento" className="cursor-pointer">Isento de desconto 6%</Label>
                 </div>
               </div>
+            </div>
+
+            <div className="border rounded-lg p-3 space-y-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase">Alelo (vale alimentação)</p>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="recebe-alelo"
+                  checked={recebeAlelo}
+                  onCheckedChange={(c) => setRecebeAlelo(c === true)}
+                />
+                <Label htmlFor="recebe-alelo" className="cursor-pointer">Recebe Alelo (crédito mensal dia 26)</Label>
+              </div>
+              {recebeAlelo && (
+                <div>
+                  <Label>Valor por dia útil (R$)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={aleloValorDia}
+                    onChange={(e) => setAleloValorDia(e.target.value)}
+                    placeholder={String(ALELO_VALOR_PADRAO)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Padrão R$ {ALELO_VALOR_PADRAO.toFixed(2)}/dia (system_settings.alelo_valor_dia).
+                    Sobrescrever só se negociado diferente.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="border rounded-lg p-3 space-y-3">
