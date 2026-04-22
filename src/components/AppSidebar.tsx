@@ -69,6 +69,7 @@ const navigation: SidebarItem[] = [
     allowedRoles: ["master", "diretor", "financeiro", "operacional"],
     children: [
       { label: "Funcionários", path: "/rh/funcionarios", icon: UserPlus },
+      { label: "Descontos Mensais", path: "/rh/descontos", icon: Calendar },
       { label: "Documentos", path: "/rh/documentos", icon: FileCheck },
       { label: "Compliance", path: "/rh/compliance", icon: Calendar },
       { label: "Férias", path: "/rh/ferias", icon: CalendarDays },
