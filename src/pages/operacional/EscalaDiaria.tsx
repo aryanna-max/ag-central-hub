@@ -30,7 +30,6 @@ import { useEmployees, useEmployeesWithAbsences } from "@/hooks/useEmployees";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import { isFieldRole, isTopografo } from "@/lib/fieldRoles";
-import AbsencesSection from "@/components/operacional/AbsencesSection";
 import TeamLocationMap from "@/components/operacional/TeamLocationMap";
 import MonthlyDayEditDialog from "@/components/operacional/MonthlyDayEditDialog";
 import EmployeeAvailabilityKanban from "@/components/operacional/EmployeeAvailabilityKanban";
@@ -774,8 +773,9 @@ export default function EscalaDiaria() {
           {/* Map */}
           {assignments.length > 0 && <TeamLocationMap assignments={assignments} date={selectedDate} />}
 
-          {/* Absences section (RH) */}
-          <AbsencesSection employees={absentEmployees} />
+          {/* Ausências: movidas para dentro do EmployeeAvailabilityKanban
+              (seção "Ausências RH" read-only com data de retorno).
+              Removido AbsencesSection — duplicação resolvida 22/04. */}
         </>
       )}
 

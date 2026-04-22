@@ -22,11 +22,30 @@ export function useEmployees() {
   });
 }
 
+export type EmployeeAvailability =
+  | "disponivel"
+  | "ferias"
+  | "licenca"
+  | "afastado"
+  | "em_projeto";
+
+export type ActiveAbsence = {
+  start_date: string;
+  end_date: string;
+  notes: string | null;
+  absence_type: "ferias";
+};
+
+export type EmployeeWithAvailability = Employee & {
+  availability: EmployeeAvailability;
+  activeAbsence: ActiveAbsence | null;
+};
+
 export function useEmployeesWithAbsences(date?: string) {
   const targetDate = date || new Date().toISOString().split("T")[0];
   return useQuery({
     queryKey: ["employees-with-absences", targetDate],
-    queryFn: async () => {
+    queryFn: async (): Promise<EmployeeWithAvailability[]> => {
       const { data: allEmployees, error: empError } = await supabase
         .from("employees")
         .select("*")
@@ -36,21 +55,18 @@ export function useEmployeesWithAbsences(date?: string) {
       // Filter field roles client-side for case-insensitive partial matching
       const employees = (allEmployees || []).filter((e) => isFieldRole(e.role));
 
-      // Try to fetch absences from employee_absences table (may not exist in types)
-      let absences: any[] = [];
-      try {
-        const { data: absData, error: absError } = await supabase
-          .from("employee_absences" as any)
-          .select("*")
-          .lte("start_date", targetDate)
-          .gte("end_date", targetDate);
-        if (!absError && absData) absences = absData as any[];
-      } catch {
-        // Table may not exist
-      }
+      // Fonte única: employee_vacations (tabela employee_absences foi DROP
+      // na migration 20260422_ferias_cleanup_dados_teste.sql — Onda de fix).
+      const { data: vacationsData } = await supabase
+        .from("employee_vacations")
+        .select("employee_id, start_date, end_date, notes")
+        .lte("start_date", targetDate)
+        .gte("end_date", targetDate);
+
+      const vacations = vacationsData ?? [];
 
       // Get daily schedule entries for the date to see who's assigned
-      const { data: entries, error: entError } = await supabase
+      const { data: entries } = await supabase
         .from("daily_schedules")
         .select("id")
         .eq("schedule_date", targetDate)
@@ -65,23 +81,27 @@ export function useEmployeesWithAbsences(date?: string) {
         assignedEmployeeIds = (schedEntries || []).map((e) => e.employee_id);
       }
 
-      return (employees || []).map((emp) => {
-        const activeAbsence = absences.find(
-          (a: any) => a.employee_id === emp.id
-        );
+      return employees.map((emp) => {
+        const vac = vacations.find((v) => v.employee_id === emp.id);
+        const activeAbsence: ActiveAbsence | null = vac
+          ? {
+              start_date: vac.start_date,
+              end_date: vac.end_date,
+              notes: vac.notes,
+              absence_type: "ferias",
+            }
+          : null;
+
         const isAssigned = assignedEmployeeIds.includes(emp.id);
 
-        let availability: "disponivel" | "ferias" | "licenca" | "afastado" | "em_projeto" = "disponivel";
+        let availability: EmployeeAvailability = "disponivel";
+        // Trigger fn_sync_employee_vacation_status mantém employees.status
+        // em sincronia com employee_vacations — então basta ler status.
         if (emp.status === "ferias") availability = "ferias";
         else if (emp.status === "licenca") availability = "licenca";
         else if (emp.status === "afastado") availability = "afastado";
-        else if (activeAbsence) {
-          if (activeAbsence.absence_type === "ferias") availability = "ferias";
-          else if (activeAbsence.absence_type?.startsWith("licenca")) availability = "licenca";
-          else availability = "afastado";
-        } else if (isAssigned) {
-          availability = "em_projeto";
-        }
+        else if (activeAbsence) availability = "ferias";
+        else if (isAssigned) availability = "em_projeto";
 
         return { ...emp, availability, activeAbsence };
       });
