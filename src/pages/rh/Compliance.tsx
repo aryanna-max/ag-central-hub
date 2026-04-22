@@ -22,6 +22,7 @@ import { Calendar, CheckCircle2, RotateCcw, Plus, Trash2, AlertTriangle } from "
 import { toast } from "sonner";
 import { format, parseISO, startOfMonth } from "date-fns";
 import { DOC_TYPE_LABELS } from "@/hooks/useEmployeeDocuments";
+import type { Database } from "@/integrations/supabase/types";
 
 // ============================================================
 // ABA 1 — Calendário Mensal
@@ -169,12 +170,30 @@ function CalendarioMensal() {
 // ABA 2 — Docs da Empresa
 // ============================================================
 
+// =============================================================================
+// Hooks — company_documents
+// =============================================================================
+// Schema real: empresa (string), doc_type (enum), doc_status (enum),
+//   issue_date, expiry_date, notes, file_url.
+// Obs: bug anterior usava doc_name (campo inexistente) — fixado 22/04/2026.
+// =============================================================================
+
+type CompanyDocumentForm = {
+  id?: string;
+  empresa: "gonzaga_berlim" | "ag_cartografia";
+  doc_type: Database["public"]["Enums"]["doc_type"];
+  doc_status: Database["public"]["Enums"]["doc_status"];
+  issue_date: string;
+  expiry_date: string;
+  notes: string;
+};
+
 function useCompanyDocuments() {
   return useQuery({
     queryKey: ["company-documents"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("company_documents" as any)
+        .from("company_documents")
         .select("*")
         .order("expiry_date", { ascending: true, nullsFirst: false });
       if (error) throw error;
@@ -186,12 +205,23 @@ function useCompanyDocuments() {
 function useUpsertCompanyDocument() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (values: any) => {
+    mutationFn: async (values: CompanyDocumentForm) => {
+      const payload = {
+        empresa: values.empresa,
+        doc_type: values.doc_type,
+        doc_status: values.doc_status,
+        issue_date: values.issue_date || null,
+        expiry_date: values.expiry_date || null,
+        notes: values.notes || null,
+      };
       if (values.id) {
-        const { error } = await supabase.from("company_documents" as any).update(values).eq("id", values.id);
+        const { error } = await supabase
+          .from("company_documents")
+          .update(payload)
+          .eq("id", values.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("company_documents" as any).insert(values);
+        const { error } = await supabase.from("company_documents").insert(payload);
         if (error) throw error;
       }
     },
@@ -199,39 +229,34 @@ function useUpsertCompanyDocument() {
   });
 }
 
+const DEFAULT_COMPANY_DOC_FORM: CompanyDocumentForm = {
+  empresa: "gonzaga_berlim",
+  doc_type: "pcmso",
+  doc_status: "pendente",
+  issue_date: "",
+  expiry_date: "",
+  notes: "",
+};
+
 function DocsEmpresa() {
   const { data: docs = [], isLoading } = useCompanyDocuments();
   const upsert = useUpsertCompanyDocument();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState<any>({
-    empresa: "gonzaga_berlim",
-    doc_name: "",
-    issue_date: "",
-    expiry_date: "",
-    doc_status: "pendente",
-    notes: "",
-  });
+  const [form, setForm] = useState<CompanyDocumentForm>({ ...DEFAULT_COMPANY_DOC_FORM });
 
   function openNew() {
-    setForm({
-      empresa: "gonzaga_berlim",
-      doc_name: "",
-      issue_date: "",
-      expiry_date: "",
-      doc_status: "pendente",
-      notes: "",
-    });
+    setForm({ ...DEFAULT_COMPANY_DOC_FORM });
     setDialogOpen(true);
   }
 
-  function openEdit(d: any) {
+  function openEdit(d: typeof docs[number]) {
     setForm({
       id: d.id,
-      empresa: d.empresa,
-      doc_name: d.doc_name,
+      empresa: d.empresa as CompanyDocumentForm["empresa"],
+      doc_type: d.doc_type,
+      doc_status: d.doc_status,
       issue_date: d.issue_date ?? "",
       expiry_date: d.expiry_date ?? "",
-      doc_status: d.doc_status,
       notes: d.notes ?? "",
     });
     setDialogOpen(true);
@@ -239,20 +264,16 @@ function DocsEmpresa() {
 
   async function handleSave() {
     try {
-      await upsert.mutateAsync({
-        ...form,
-        issue_date: form.issue_date || null,
-        expiry_date: form.expiry_date || null,
-        notes: form.notes || null,
-      });
+      await upsert.mutateAsync(form);
       toast.success("Documento salvo");
       setDialogOpen(false);
-    } catch (e: any) {
-      toast.error(e?.message ?? "Erro ao salvar");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao salvar";
+      toast.error(msg);
     }
   }
 
-  const vencidos = (docs as any[]).filter((d) => d.doc_status === "vencido");
+  const vencidos = docs.filter((d) => d.doc_status === "vencido");
 
   return (
     <div className="space-y-4">
@@ -266,7 +287,7 @@ function DocsEmpresa() {
           <CardContent className="text-sm space-y-1">
             {vencidos.map((d) => (
               <div key={d.id}>
-                <strong>{d.doc_name}</strong> ({d.empresa}) — venceu em{" "}
+                <strong>{DOC_TYPE_LABELS[d.doc_type] ?? d.doc_type}</strong> ({d.empresa}) — venceu em{" "}
                 {d.expiry_date ? format(parseISO(d.expiry_date), "dd/MM/yyyy") : "—"}
               </div>
             ))}
@@ -295,12 +316,20 @@ function DocsEmpresa() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(docs as any[]).map((d) => {
+            {docs.map((d) => {
               const vencido = d.doc_status === "vencido";
               return (
                 <TableRow key={d.id} className={vencido ? "bg-red-50" : ""}>
-                  <TableCell className="text-xs">{d.empresa}</TableCell>
-                  <TableCell className="font-medium">{d.doc_name}</TableCell>
+                  <TableCell className="text-xs">
+                    {d.empresa === "gonzaga_berlim"
+                      ? "Gonzaga Berlim"
+                      : d.empresa === "ag_cartografia"
+                        ? "AG Cartografia"
+                        : d.empresa}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {DOC_TYPE_LABELS[d.doc_type] ?? d.doc_type}
+                  </TableCell>
                   <TableCell>{d.issue_date ? format(parseISO(d.issue_date), "dd/MM/yyyy") : "—"}</TableCell>
                   <TableCell>{d.expiry_date ? format(parseISO(d.expiry_date), "dd/MM/yyyy") : "—"}</TableCell>
                   <TableCell>
@@ -328,20 +357,38 @@ function DocsEmpresa() {
           <div className="space-y-3">
             <div>
               <Label>Empresa</Label>
-              <Select value={form.empresa} onValueChange={(v) => setForm({ ...form, empresa: v })}>
+              <Select
+                value={form.empresa}
+                onValueChange={(v) =>
+                  setForm({ ...form, empresa: v as CompanyDocumentForm["empresa"] })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="gonzaga_berlim">Gonzaga Berlim</SelectItem>
                   <SelectItem value="ag_cartografia">AG Cartografia</SelectItem>
-                  <SelectItem value="ag_topografia_avulsa">AG Topografia Avulsa</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Nome do documento</Label>
-              <Input value={form.doc_name} onChange={(e) => setForm({ ...form, doc_name: e.target.value })} />
+              <Label>Tipo do documento</Label>
+              <Select
+                value={form.doc_type}
+                onValueChange={(v) =>
+                  setForm({ ...form, doc_type: v as Database["public"]["Enums"]["doc_type"] })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(DOC_TYPE_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -363,7 +410,12 @@ function DocsEmpresa() {
             </div>
             <div>
               <Label>Status</Label>
-              <Select value={form.doc_status} onValueChange={(v) => setForm({ ...form, doc_status: v })}>
+              <Select
+                value={form.doc_status}
+                onValueChange={(v) =>
+                  setForm({ ...form, doc_status: v as Database["public"]["Enums"]["doc_status"] })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -399,31 +451,50 @@ function DocsEmpresa() {
 // ABA 3 — Requisitos por Cliente
 // ============================================================
 
+// =============================================================================
+// Hooks — client_doc_requirements (Fase 2)
+// =============================================================================
+// Schema (src/integrations/supabase/types.ts):
+//   - client_id UUID FK
+//   - doc_type public.doc_type (enum)
+//   - is_mandatory BOOLEAN
+//   - validity_months INT (NÃO days — bug fixado 22/04/2026)
+//   - notes TEXT
+// =============================================================================
+
+type ClientDocRequirementInput = {
+  client_id: string;
+  doc_type: Database["public"]["Enums"]["doc_type"];
+  is_mandatory: boolean;
+  validity_months: number | null;
+  notes: string | null;
+};
+
 function useClientRequirements(clientId: string | undefined) {
   return useQuery({
     queryKey: ["client-doc-requirements", clientId],
+    enabled: !!clientId,
     queryFn: async () => {
       if (!clientId) return [];
       const { data, error } = await supabase
-        .from("client_doc_requirements" as any)
+        .from("client_doc_requirements")
         .select("*")
         .eq("client_id", clientId)
         .order("doc_type");
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!clientId,
   });
 }
 
 function useUpsertRequirement() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (values: any) => {
-      const { error } = await supabase.from("client_doc_requirements" as any).insert(values);
+    mutationFn: async (values: ClientDocRequirementInput) => {
+      const { error } = await supabase.from("client_doc_requirements").insert(values);
       if (error) throw error;
     },
-    onSuccess: (_, vars: any) =>
+    onSuccess: (_, vars) =>
       qc.invalidateQueries({ queryKey: ["client-doc-requirements", vars.client_id] }),
   });
 }
@@ -432,7 +503,7 @@ function useDeleteRequirement() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id }: { id: string; clientId: string }) => {
-      const { error } = await supabase.from("client_doc_requirements" as any).delete().eq("id", id);
+      const { error } = await supabase.from("client_doc_requirements").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ["client-doc-requirements", vars.clientId] }),
@@ -447,7 +518,11 @@ function RequisitosCliente() {
   const remove = useDeleteRequirement();
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({ doc_type: "aso", validity_days: "", notes: "" });
+  const [form, setForm] = useState<{
+    doc_type: Database["public"]["Enums"]["doc_type"];
+    validity_months: string;
+    notes: string;
+  }>({ doc_type: "aso", validity_months: "", notes: "" });
 
   async function handleAdd() {
     if (!clientId) return;
@@ -455,15 +530,16 @@ function RequisitosCliente() {
       await upsert.mutateAsync({
         client_id: clientId,
         doc_type: form.doc_type,
-        validity_days: form.validity_days ? Number(form.validity_days) : null,
+        validity_months: form.validity_months ? Number(form.validity_months) : null,
         notes: form.notes || null,
         is_mandatory: true,
       });
       toast.success("Requisito adicionado");
       setDialogOpen(false);
-      setForm({ doc_type: "aso", validity_days: "", notes: "" });
-    } catch (e: any) {
-      toast.error(e?.message ?? "Erro ao adicionar");
+      setForm({ doc_type: "aso", validity_months: "", notes: "" });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao adicionar";
+      toast.error(msg);
     }
   }
 
@@ -471,8 +547,9 @@ function RequisitosCliente() {
     try {
       await remove.mutateAsync({ id, clientId });
       toast.success("Requisito removido");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Erro");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao remover";
+      toast.error(msg);
     }
   }
 
@@ -486,7 +563,7 @@ function RequisitosCliente() {
               <SelectValue placeholder="Selecione um cliente" />
             </SelectTrigger>
             <SelectContent>
-              {(clients as any[]).map((c) => (
+              {clients.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.name}
                 </SelectItem>
@@ -512,16 +589,16 @@ function RequisitosCliente() {
           <TableHeader>
             <TableRow>
               <TableHead>Tipo</TableHead>
-              <TableHead>Validade (dias)</TableHead>
+              <TableHead>Validade (meses)</TableHead>
               <TableHead>Observações</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(reqs as any[]).map((r) => (
+            {reqs.map((r) => (
               <TableRow key={r.id}>
                 <TableCell>{DOC_TYPE_LABELS[r.doc_type] ?? r.doc_type}</TableCell>
-                <TableCell>{r.validity_days ?? "—"}</TableCell>
+                <TableCell>{r.validity_months ?? "—"}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{r.notes ?? "—"}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => handleRemove(r.id)}>
@@ -542,7 +619,12 @@ function RequisitosCliente() {
           <div className="space-y-3">
             <div>
               <Label>Tipo</Label>
-              <Select value={form.doc_type} onValueChange={(v) => setForm({ ...form, doc_type: v })}>
+              <Select
+                value={form.doc_type}
+                onValueChange={(v) =>
+                  setForm({ ...form, doc_type: v as Database["public"]["Enums"]["doc_type"] })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -556,13 +638,16 @@ function RequisitosCliente() {
               </Select>
             </div>
             <div>
-              <Label>Validade (dias) — opcional</Label>
+              <Label>Validade (meses) — opcional</Label>
               <Input
                 type="number"
-                value={form.validity_days}
-                onChange={(e) => setForm({ ...form, validity_days: e.target.value })}
-                placeholder="Ex: 365"
+                value={form.validity_months}
+                onChange={(e) => setForm({ ...form, validity_months: e.target.value })}
+                placeholder="Ex: 12 (ASO) · 24 (NR-18/NR-35)"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Padrões: ASO = 12 · NR-18/NR-35 = 24 · CNH = 60 · vazio = sem vencimento
+              </p>
             </div>
             <div>
               <Label>Observações</Label>
