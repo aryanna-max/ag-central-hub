@@ -1,15 +1,16 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import CalendarioMensal from "./CalendarioMensal";
+import RequisitosClientesReadonly from "./RequisitosClientesReadonly";
+import Documentos from "@/pages/rh/Documentos";
 
 interface PlaceholderProps {
   title: string;
   description: string;
-  legacyPath?: string;
-  legacyLabel?: string;
 }
 
-function SectionPlaceholder({ title, description, legacyPath, legacyLabel }: PlaceholderProps) {
+function SectionPlaceholder({ title, description }: PlaceholderProps) {
   return (
     <Card className="border-dashed">
       <CardHeader>
@@ -18,16 +19,8 @@ function SectionPlaceholder({ title, description, legacyPath, legacyLabel }: Pla
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">{description}</p>
         <p className="text-sm text-muted-foreground">
-          Esta seção está sendo construída. Conteúdo virá no Bloco 2 do ADR-041.
+          Esta seção ganha conteúdo no Bloco 3 do ADR-041 (cockpit agregado).
         </p>
-        {legacyPath && (
-          <a
-            href={legacyPath}
-            className="inline-flex items-center text-sm font-medium text-primary hover:underline"
-          >
-            {legacyLabel ?? "Ver no sistema atual"} →
-          </a>
-        )}
       </CardContent>
     </Card>
   );
@@ -36,7 +29,6 @@ function SectionPlaceholder({ title, description, legacyPath, legacyLabel }: Pla
 const subnav = [
   { label: "Radar", path: "/compliance/radar" },
   { label: "Calendário", path: "/compliance/calendario" },
-  { label: "Empresa", path: "/compliance/empresa" },
   { label: "Funcionários", path: "/compliance/funcionarios" },
   { label: "Clientes", path: "/compliance/clientes" },
   { label: "Portais", path: "/compliance/portais" },
@@ -87,50 +79,10 @@ export default function Compliance() {
             />
           }
         />
-        <Route
-          path="calendario"
-          element={
-            <SectionPlaceholder
-              title="Calendário Mensal"
-              description="Tarefas mensais recorrentes por cliente (CBC dia 10, BRK dia 15, Memorial Star dia 20, etc.)."
-              legacyPath="/rh/compliance"
-              legacyLabel="Ver no sistema atual (/rh/compliance)"
-            />
-          }
-        />
-        <Route
-          path="empresa"
-          element={
-            <SectionPlaceholder
-              title="Documentos da Empresa"
-              description="PCMSO, PGR, Seguro de Vida e demais docs corporativos das 3 empresas emissoras."
-              legacyPath="/rh/compliance"
-              legacyLabel="Ver no sistema atual (/rh/compliance)"
-            />
-          }
-        />
-        <Route
-          path="funcionarios"
-          element={
-            <SectionPlaceholder
-              title="Documentos por Funcionário"
-              description="ASO, NR-18, NR-35, Ficha EPI, Integrações de cliente — rastreio individual."
-              legacyPath="/rh/documentos"
-              legacyLabel="Ver no sistema atual (/rh/documentos)"
-            />
-          }
-        />
-        <Route
-          path="clientes"
-          element={
-            <SectionPlaceholder
-              title="Requisitos por Cliente"
-              description="Compliance configurável por cliente (BRK, CBC, Aeroporto, etc.) — 2 camadas: universal + específico."
-              legacyPath="/rh/compliance"
-              legacyLabel="Ver no sistema atual (/rh/compliance)"
-            />
-          }
-        />
+        <Route path="calendario" element={<CalendarioMensal />} />
+        <Route path="empresa" element={<Navigate to="/base/governanca" replace />} />
+        <Route path="funcionarios" element={<Documentos />} />
+        <Route path="clientes" element={<RequisitosClientesReadonly />} />
         <Route
           path="portais"
           element={

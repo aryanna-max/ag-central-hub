@@ -21,6 +21,7 @@ import {
 } from "@/hooks/useClients";
 import { useProjects, type Project } from "@/hooks/useProjects";
 import ClientFormDialog from "./ClientFormDialog";
+import RequisitosClienteEditor from "./RequisitosClienteEditor";
 import { toast } from "sonner";
 import { exportCsv } from "@/lib/exportCsv";
 import { format } from "date-fns";
@@ -393,92 +394,106 @@ function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | n
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          {client.cnpj && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <FileText className="w-4 h-4" /> <span className="font-medium text-foreground font-mono">{client.cnpj}</span>
-            </div>
-          )}
-          {client.phone && <div className="flex items-center gap-2 text-muted-foreground"><Phone className="w-4 h-4" /> {client.phone}</div>}
-          {client.email && <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-4 h-4" /> {client.email}</div>}
-          {(client.cidade || client.city) && <div className="text-muted-foreground">{client.cidade || client.city}{(client.estado || client.state) ? `/${client.estado || client.state}` : ""}</div>}
-          {client.segmento && <div className="text-muted-foreground">Segmento: <span className="font-medium text-foreground">{client.segmento}</span></div>}
-        </div>
+        <Tabs defaultValue="dados" className="flex-1 flex flex-col min-h-0">
+          <TabsList>
+            <TabsTrigger value="dados">Dados</TabsTrigger>
+            <TabsTrigger value="contatos">Contatos ({contacts.length})</TabsTrigger>
+            <TabsTrigger value="compliance">Compliance</TabsTrigger>
+          </TabsList>
 
-        {client.notes && <p className="text-sm bg-muted/50 rounded-md p-3">{client.notes}</p>}
-
-        <Separator />
-
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium">Contatos ({contacts.length})</p>
-          <Button variant="ghost" size="sm" onClick={() => setShowAddContact(!showAddContact)}>
-            <UserPlus className="w-4 h-4 mr-1" /> Adicionar
-          </Button>
-        </div>
-
-        {showAddContact && (
-          <div className="space-y-2 border rounded-md p-3 bg-muted/30">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Nome *</Label>
-                <Input value={contactForm.nome} onChange={(e) => setContactForm({ ...contactForm, nome: e.target.value })} className="h-8 text-sm" placeholder="Nome do contato" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Cargo</Label>
-                <Input value={contactForm.cargo || ""} onChange={(e) => setContactForm({ ...contactForm, cargo: e.target.value })} className="h-8 text-sm" placeholder="Ex: Engenheiro" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Telefone</Label>
-                <Input value={contactForm.telefone || ""} onChange={(e) => setContactForm({ ...contactForm, telefone: formatPhone(e.target.value) })} className="h-8 text-sm" placeholder="(81) 99999-0000" maxLength={15} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">E-mail</Label>
-                <Input value={contactForm.email || ""} onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })} className="h-8 text-sm" placeholder="email@empresa.com" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Área</Label>
-                <Input value={contactForm.area || ""} onChange={(e) => setContactForm({ ...contactForm, area: e.target.value })} className="h-8 text-sm" placeholder="Ex: Obras, Financeiro" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Notas</Label>
-                <Input value={contactForm.notas || ""} onChange={(e) => setContactForm({ ...contactForm, notas: e.target.value })} className="h-8 text-sm" placeholder="Observações" />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setShowAddContact(false)}>Cancelar</Button>
-              <Button size="sm" onClick={handleAddContact} disabled={createContact.isPending}>Salvar</Button>
-            </div>
-          </div>
-        )}
-
-        <ScrollArea className="flex-1 max-h-60">
-          {contacts.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Nenhum contato cadastrado.</p>
-          ) : (
-            <div className="space-y-2">
-              {contacts.map((c) => (
-                <div key={c.id} className="flex items-start justify-between p-3 rounded-md bg-muted/50 text-sm">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{c.nome}</span>
-                      {c.cargo && <Badge variant="outline" className="text-[10px] h-4">{c.cargo}</Badge>}
-                      {c.tipo === "principal" && <Badge className="text-[10px] h-4">Principal</Badge>}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                      {c.telefone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{c.telefone}</span>}
-                      {c.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{c.email}</span>}
-                      {c.area && <span>Área: {c.area}</span>}
-                    </div>
-                    {c.notas && <p className="text-xs text-muted-foreground italic mt-1">{c.notas}</p>}
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => handleDeleteContact(c.id)}>
-                    <Trash2 className="w-3 h-3 text-destructive" />
-                  </Button>
+          <TabsContent value="dados" className="space-y-4 mt-4">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {client.cnpj && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <FileText className="w-4 h-4" /> <span className="font-medium text-foreground font-mono">{client.cnpj}</span>
                 </div>
-              ))}
+              )}
+              {client.phone && <div className="flex items-center gap-2 text-muted-foreground"><Phone className="w-4 h-4" /> {client.phone}</div>}
+              {client.email && <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-4 h-4" /> {client.email}</div>}
+              {(client.cidade || client.city) && <div className="text-muted-foreground">{client.cidade || client.city}{(client.estado || client.state) ? `/${client.estado || client.state}` : ""}</div>}
+              {client.segmento && <div className="text-muted-foreground">Segmento: <span className="font-medium text-foreground">{client.segmento}</span></div>}
             </div>
-          )}
-        </ScrollArea>
+
+            {client.notes && <p className="text-sm bg-muted/50 rounded-md p-3">{client.notes}</p>}
+          </TabsContent>
+
+          <TabsContent value="contatos" className="space-y-3 mt-4 flex-1 flex flex-col min-h-0">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">Contatos ({contacts.length})</p>
+              <Button variant="ghost" size="sm" onClick={() => setShowAddContact(!showAddContact)}>
+                <UserPlus className="w-4 h-4 mr-1" /> Adicionar
+              </Button>
+            </div>
+
+            {showAddContact && (
+              <div className="space-y-2 border rounded-md p-3 bg-muted/30">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Nome *</Label>
+                    <Input value={contactForm.nome} onChange={(e) => setContactForm({ ...contactForm, nome: e.target.value })} className="h-8 text-sm" placeholder="Nome do contato" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Cargo</Label>
+                    <Input value={contactForm.cargo || ""} onChange={(e) => setContactForm({ ...contactForm, cargo: e.target.value })} className="h-8 text-sm" placeholder="Ex: Engenheiro" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Telefone</Label>
+                    <Input value={contactForm.telefone || ""} onChange={(e) => setContactForm({ ...contactForm, telefone: formatPhone(e.target.value) })} className="h-8 text-sm" placeholder="(81) 99999-0000" maxLength={15} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">E-mail</Label>
+                    <Input value={contactForm.email || ""} onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })} className="h-8 text-sm" placeholder="email@empresa.com" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Área</Label>
+                    <Input value={contactForm.area || ""} onChange={(e) => setContactForm({ ...contactForm, area: e.target.value })} className="h-8 text-sm" placeholder="Ex: Obras, Financeiro" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Notas</Label>
+                    <Input value={contactForm.notas || ""} onChange={(e) => setContactForm({ ...contactForm, notas: e.target.value })} className="h-8 text-sm" placeholder="Observações" />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setShowAddContact(false)}>Cancelar</Button>
+                  <Button size="sm" onClick={handleAddContact} disabled={createContact.isPending}>Salvar</Button>
+                </div>
+              </div>
+            )}
+
+            <ScrollArea className="flex-1">
+              {contacts.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Nenhum contato cadastrado.</p>
+              ) : (
+                <div className="space-y-2">
+                  {contacts.map((c) => (
+                    <div key={c.id} className="flex items-start justify-between p-3 rounded-md bg-muted/50 text-sm">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{c.nome}</span>
+                          {c.cargo && <Badge variant="outline" className="text-[10px] h-4">{c.cargo}</Badge>}
+                          {c.tipo === "principal" && <Badge className="text-[10px] h-4">Principal</Badge>}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                          {c.telefone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{c.telefone}</span>}
+                          {c.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{c.email}</span>}
+                          {c.area && <span>Área: {c.area}</span>}
+                        </div>
+                        {c.notas && <p className="text-xs text-muted-foreground italic mt-1">{c.notas}</p>}
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => handleDeleteContact(c.id)}>
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="compliance" className="mt-4 flex-1 overflow-auto">
+            <RequisitosClienteEditor client={client} />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
