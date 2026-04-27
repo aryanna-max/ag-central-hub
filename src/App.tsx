@@ -25,6 +25,8 @@ import ClienteHistorico from "./pages/admin/ClienteHistorico";
 import SystemSettings from "./pages/admin/SystemSettings";
 import ProjetoHistorico from "./pages/projetos/ProjetoHistorico";
 import AprovacaoExterna from "./pages/AprovacaoExterna";
+import Compliance from "./pages/compliance/Compliance";
+import BaseGovernanca from "./pages/base/Governanca";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +93,8 @@ function AppRoutes() {
         <Route path="/sala-tecnica/*" element={<SalaTecnica />} />
         <Route path="/financeiro/*" element={<Financeiro />} />
         <Route path="/rh/*" element={<RH />} />
+        <Route path="/compliance/*" element={<Compliance />} />
+        <Route path="/base/governanca/*" element={<BaseGovernanca />} />
         <Route path="/admin/usuarios" element={<UserManagement />} />
         <Route path="/admin/cadastros" element={<CadastrosBase />} />
         <Route path="/admin/clientes" element={<AdminClientes />} />
