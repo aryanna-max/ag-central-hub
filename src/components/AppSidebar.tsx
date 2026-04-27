@@ -4,7 +4,7 @@ import {
   Radar, Briefcase, Map, PenTool, Receipt, Users, Database,
   ChevronLeft, ChevronRight, Target, Building2, CalendarDays,
   Car, FolderKanban, LayoutDashboard, UserPlus, Shield,
-  FileText, BarChart3, FileCheck, Calendar,
+  FileText, BarChart3, FileCheck, Calendar, ShieldCheck,
 } from "lucide-react";
 import { useModuleAlertCounts } from "@/hooks/useModuleAlertCounts";
 import { useAuth } from "@/contexts/AuthContext";
@@ -65,6 +65,19 @@ const navigation: SidebarItem[] = [
     ],
   },
   {
+    label: "Compliance", path: "/compliance", icon: ShieldCheck,
+    allowedRoles: ["master", "diretor", "financeiro", "operacional"],
+    children: [
+      { label: "Radar", path: "/compliance/radar", icon: Radar },
+      { label: "Calendário", path: "/compliance/calendario", icon: Calendar },
+      { label: "Empresa", path: "/compliance/empresa", icon: Building2 },
+      { label: "Funcionários", path: "/compliance/funcionarios", icon: UserPlus },
+      { label: "Clientes", path: "/compliance/clientes", icon: Building2 },
+      { label: "Portais", path: "/compliance/portais", icon: FileCheck },
+      { label: "Pendências", path: "/compliance/pendencias", icon: Target },
+    ],
+  },
+  {
     label: "Pessoas", path: "/rh", icon: Users,
     allowedRoles: ["master", "diretor", "financeiro", "operacional"],
     children: [
@@ -85,6 +98,7 @@ const adminNavigation: SidebarItem[] = [
     children: [
       { label: "Usuários", path: "/admin/usuarios", icon: UserPlus },
       { label: "Cadastros Base", path: "/admin/cadastros", icon: Database },
+      { label: "Governança", path: "/base/governanca", icon: FileCheck },
       { label: "Configurações", path: "/admin/configuracoes", icon: Shield },
     ],
   },
