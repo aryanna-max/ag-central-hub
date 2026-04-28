@@ -47,7 +47,7 @@ interface Props {
   onConverted?: () => void;
 }
 
-export default function LeadConversionDialog({ open, onOpenChange, lead, onConverted }: Props) {
+export default function LeadConvertFullDialog({ open, onOpenChange, lead, onConverted }: Props) {
   const { data: clients = [] } = useClients();
   const { data: employees = [] } = useEmployees();
   const createClient = useCreateClient();

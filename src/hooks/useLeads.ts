@@ -18,6 +18,24 @@ export const ACTIVE_STATUSES: LeadStatus[] = ["novo", "em_negociacao", "proposta
 export const KANBAN_STATUSES: LeadStatus[] = ["novo", "em_negociacao", "proposta_enviada", "convertido"];
 export const HISTORY_STATUSES: LeadStatus[] = ["perdido"];
 
+/**
+ * Versão livre (Decisão #19, redesenho 28/04/2026):
+ *  - Estados terminais (convertido, perdido) NÃO voltam.
+ *  - Qualquer estado ativo pode ir pra qualquer outro estado ativo.
+ *  - Saltos permitidos pra cliente recorrente sem proposta formal.
+ */
+export function canTransitionLead(from: LeadStatus, to: LeadStatus): boolean {
+  if (from === to) return false;
+  if (from === "convertido" || from === "perdido") return false;
+  return true;
+}
+
+/** Salto de funil — usado para mostrar toast informativo (não bloqueia). */
+export function isSkippingFunnel(from: LeadStatus, to: LeadStatus): boolean {
+  return from !== "proposta_enviada" && to === "convertido";
+}
+
+/** @deprecated 2026-04-28 (Decisão #19). Use canTransitionLead() instead. */
 export const ALLOWED_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
   novo: ["em_negociacao", "perdido"],
   em_negociacao: ["proposta_enviada", "perdido"],
