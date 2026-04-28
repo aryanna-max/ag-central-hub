@@ -315,10 +315,10 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
                               {auxs.map((a) => a.employees?.name).join(", ")}
                             </div>
                           )}
-                          {(s as any).vehicles && (
+                          {s.vehicles && (
                             <p className="mt-1 flex items-center gap-1">
                               <Car className="w-3 h-3" />
-                              {(s as any).vehicles.model} — {(s as any).vehicles.plate}
+                              {s.vehicles.model} — {s.vehicles.plate}
                             </p>
                           )}
                           <p className="text-primary mt-1 font-medium">Clique para editar</p>
@@ -403,12 +403,12 @@ export default function MonthlyCalendarGrid({ month, year, schedules, onDayClick
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      {(s as any).vehicles && (
+                      {s.vehicles && (
                         <div className="flex items-center gap-1 text-xs">
                           <Car className="w-3 h-3" />
                           <div>
-                            <p className="font-medium">{(s as any).vehicles.model}</p>
-                            <p className="text-muted-foreground">{(s as any).vehicles.plate}</p>
+                            <p className="font-medium">{s.vehicles.model}</p>
+                            <p className="text-muted-foreground">{s.vehicles.plate}</p>
                           </div>
                         </div>
                       )}

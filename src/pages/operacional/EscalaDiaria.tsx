@@ -216,7 +216,8 @@ export default function EscalaDiaria() {
       .eq("employee_id", empId)
       .in("daily_schedule_id", schedules.map((s) => s.id));
     if (entries && entries.length > 0) {
-      return { duplicate: true, projectCode: (entries[0] as any).projects?.codigo || "outro projeto" };
+      const proj = entries[0].projects as { codigo: string | null } | null;
+      return { duplicate: true, projectCode: proj?.codigo || "outro projeto" };
     }
     return { duplicate: false };
   };
@@ -347,16 +348,16 @@ export default function EscalaDiaria() {
   };
 
   const handleLoadGroup = (teamId: string) => {
-    const team = (teams || []).find((t: any) => t.id === teamId);
+    const team = (teams || []).find((t) => t.id === teamId);
     if (!team) return;
-    const memberIds = ((team as any).team_members || []).map((m: any) => m.employee_id);
+    const memberIds = (team.team_members || []).map((m) => m.employee_id);
     setAddForm((prev) => ({ ...prev, employee_ids: memberIds, team_id: teamId }));
     // Also pre-fill project and vehicle from team defaults
-    if ((team as any).default_project_id) {
-      setAddForm((prev) => ({ ...prev, project_id: (team as any).default_project_id }));
+    if (team.default_project_id) {
+      setAddForm((prev) => ({ ...prev, project_id: team.default_project_id! }));
     }
-    if ((team as any).default_vehicle_id) {
-      setAddForm((prev) => ({ ...prev, vehicle_id: (team as any).default_vehicle_id }));
+    if (team.default_vehicle_id) {
+      setAddForm((prev) => ({ ...prev, vehicle_id: team.default_vehicle_id! }));
     }
     toast.success(`Grupo "${team.name}" carregado`);
   };

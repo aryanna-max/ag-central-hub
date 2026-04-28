@@ -79,12 +79,12 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
         notes: client.notes,
         tipo: client.tipo || "pj",
         codigo: client.codigo,
-        cep: (client as any).cep || "",
-        rua: (client as any).rua || "",
-        bairro: (client as any).bairro || "",
-        numero: (client as any).numero || "",
-        cidade: (client as any).cidade || "",
-        estado: (client as any).estado || "",
+        cep: client.cep || "",
+        rua: client.rua || "",
+        bairro: client.bairro || "",
+        numero: client.numero || "",
+        cidade: client.cidade || "",
+        estado: client.estado || "",
       });
       const isPfEdit = client.tipo === "pf";
       setDocDisplay(client.cnpj ? (isPfEdit ? formatCpf(client.cnpj) : formatCnpj(client.cnpj)) : "");

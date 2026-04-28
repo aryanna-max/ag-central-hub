@@ -257,7 +257,7 @@ export default function EncontroDeContas() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(settlements as any[]).map((row) => {
+                  {settlements.map((row) => {
                     const rowEdits = getEdits(row);
                     const avgs = parsedAvgs(row.notes);
                     const isLocked = row.status !== "aberto";
@@ -275,8 +275,8 @@ export default function EncontroDeContas() {
                       (row.jantar_previsto - rowEdits.jantar_realizado) * avgs.avgJantar
                     );
 
-                    const empName = (row as any).employees?.name ?? "—";
-                    const empMatricula = (row as any).employees?.matricula ?? "";
+                    const empName = row.employees?.name ?? "—";
+                    const empMatricula = row.employees?.matricula ?? "";
 
                     return (
                       <tr key={row.id} className="border-b hover:bg-muted/20 transition-colors">

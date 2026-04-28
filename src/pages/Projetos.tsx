@@ -189,13 +189,13 @@ export default function Projetos() {
     const map: Record<string, Project[]> = {};
     ALL_EXEC_STATUSES.forEach((s) => (map[s] = []));
     projects.forEach((p) => {
-      const es = (p as any).execution_status || "aguardando_campo";
+      const es = p.execution_status || "aguardando_campo";
       if (map[es]) {
         // Apply filters
         if (filterClient !== "all" && p.client_id !== filterClient) return;
-        if (filterBilling !== "all" && (p as any).billing_type !== filterBilling) return;
+        if (filterBilling !== "all" && p.billing_type !== filterBilling) return;
         if (filterDeadline !== "all") {
-          const dl = (p as any).delivery_deadline;
+          const dl = p.delivery_deadline;
           if (filterDeadline === "sem_prazo" && dl) return;
           if (filterDeadline === "vencido" && (!dl || new Date(dl) >= new Date())) return;
           if (filterDeadline === "critico") {
@@ -238,9 +238,9 @@ export default function Projetos() {
         client_id: editForm.client_id,
         service: editForm.service,
         contract_value: editForm.contract_value,
-        responsible_comercial_id: (editForm as any).responsible_comercial_id,
-        responsible_campo_id: (editForm as any).responsible_campo_id,
-        responsible_tecnico_id: (editForm as any).responsible_tecnico_id,
+        responsible_comercial_id: editForm.responsible_comercial_id,
+        responsible_campo_id: editForm.responsible_campo_id,
+        responsible_tecnico_id: editForm.responsible_tecnico_id,
         notes: editForm.notes,
         start_date: editForm.start_date,
         end_date: editForm.end_date,
@@ -249,8 +249,8 @@ export default function Projetos() {
         conta_bancaria: editForm.conta_bancaria,
         referencia_contrato: editForm.referencia_contrato,
         instrucao_faturamento_variavel: editForm.instrucao_faturamento_variavel,
-        billing_type: (editForm as any).billing_type,
-        execution_status: (editForm as any).execution_status,
+        billing_type: editForm.billing_type,
+        execution_status: editForm.execution_status,
       });
       // Save contacts to project_contacts table
       await upsertContacts.mutateAsync({
@@ -402,8 +402,8 @@ export default function Projetos() {
                       <div className="space-y-2 min-h-[80px] rounded-lg bg-muted/20 p-1.5">
                         {items.map((project) => {
                           const clientName = getClientDisplay(project);
-                          const bt = BILLING_LABELS[(project as any).billing_type] || null;
-                          const recurring = isRecurringBilling((project as any).billing_type);
+                          const bt = project.billing_type ? BILLING_LABELS[project.billing_type] || null : null;
+                          const recurring = isRecurringBilling(project.billing_type);
                           const hasAlert = alertsByProject[project.id];
                           return (
                             <Card
@@ -423,10 +423,10 @@ export default function Projetos() {
                                   {hasAlert && <Bell className="w-3.5 h-3.5 text-destructive flex-shrink-0 mt-0.5" />}
                                 </div>
                                 <DeadlineBadge
-                                  deadline={(project as any).delivery_deadline ? new Date((project as any).delivery_deadline) : null}
-                                  started_at={(project as any).field_started_at ? new Date((project as any).field_started_at) : null}
-                                  estimated_days={(project as any).delivery_days_estimated}
-                                  completed_at={(project as any).delivered_at ? new Date((project as any).delivered_at) : null}
+                                  deadline={project.delivery_deadline ? new Date(project.delivery_deadline) : null}
+                                  started_at={project.field_started_at ? new Date(project.field_started_at) : null}
+                                  estimated_days={project.delivery_days_estimated}
+                                  completed_at={project.delivered_at ? new Date(project.delivered_at) : null}
                                   label="Entrega"
                                 />
                                 <div className="flex items-center gap-1 flex-wrap">
@@ -530,8 +530,8 @@ export default function Projetos() {
                     <div>
                       <Label className="text-xs">Resp. Comercial</Label>
                       <Select
-                        value={(editForm as any).responsible_comercial_id || ""}
-                        onValueChange={(val) => setEditForm({ ...editForm, responsible_comercial_id: val } as any)}
+                        value={editForm.responsible_comercial_id || ""}
+                        onValueChange={(val) => setEditForm({ ...editForm, responsible_comercial_id: val })}
                       >
                         <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
                         <SelectContent>
@@ -544,8 +544,8 @@ export default function Projetos() {
                     <div>
                       <Label className="text-xs">Resp. Campo</Label>
                       <Select
-                        value={(editForm as any).responsible_campo_id || ""}
-                        onValueChange={(val) => setEditForm({ ...editForm, responsible_campo_id: val } as any)}
+                        value={editForm.responsible_campo_id || ""}
+                        onValueChange={(val) => setEditForm({ ...editForm, responsible_campo_id: val })}
                       >
                         <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
                         <SelectContent>
@@ -558,8 +558,8 @@ export default function Projetos() {
                     <div>
                       <Label className="text-xs">Resp. Técnico</Label>
                       <Select
-                        value={(editForm as any).responsible_tecnico_id || ""}
-                        onValueChange={(val) => setEditForm({ ...editForm, responsible_tecnico_id: val } as any)}
+                        value={editForm.responsible_tecnico_id || ""}
+                        onValueChange={(val) => setEditForm({ ...editForm, responsible_tecnico_id: val })}
                       >
                         <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
                         <SelectContent>
@@ -593,10 +593,10 @@ export default function Projetos() {
                   <div>
                     <Label>Status Execução</Label>
                     <Select
-                      value={(editForm as any).execution_status || ""}
+                      value={editForm.execution_status || ""}
                       onValueChange={async (val) => {
-                        const prev = (editForm as any).execution_status;
-                        setEditForm({ ...editForm, execution_status: val } as any);
+                        const prev = editForm.execution_status;
+                        setEditForm({ ...editForm, execution_status: val as Project["execution_status"] });
                         if (prev && prev !== val) {
                           await supabase.from("project_status_history").insert({
                             project_id: selectedProject.id,
@@ -610,7 +610,7 @@ export default function Projetos() {
                             codigo: selectedProject.codigo,
                             name: selectedProject.name,
                             client_name: selectedProject.clients?.name || selectedProject.client_name,
-                            billing_type: (selectedProject as any).billing_type,
+                            billing_type: selectedProject.billing_type,
                             contract_value: selectedProject.contract_value,
                           });
                           if (alerts.length > 0) {
@@ -635,7 +635,7 @@ export default function Projetos() {
                   </div>
                   <div>
                     <Label>Tipo de Faturamento *</Label>
-                    <Select value={(editForm as any).billing_type || ""} onValueChange={(val) => setEditForm({ ...editForm, billing_type: val } as any)}>
+                    <Select value={editForm.billing_type || ""} onValueChange={(val) => setEditForm({ ...editForm, billing_type: val })}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="entrega_nf">NF na entrega</SelectItem>
@@ -673,7 +673,7 @@ export default function Projetos() {
                 <div className="space-y-4 mt-2">
                   <div>
                     <Label>CNPJ Tomador</Label>
-                    <Input value={(editForm as any).cnpj_tomador || ""} onChange={(e) => setEditForm({ ...editForm, cnpj_tomador: e.target.value } as any)} />
+                    <Input value={editForm.cnpj_tomador || ""} onChange={(e) => setEditForm({ ...editForm, cnpj_tomador: e.target.value })} />
                   </div>
                   <div>
                     <Label>Conta Bancária</Label>
