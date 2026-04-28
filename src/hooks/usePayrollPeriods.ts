@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
 export type PayrollStatus =
   | "aberto"
@@ -9,25 +10,9 @@ export type PayrollStatus =
   | "pago"
   | "encerrado";
 
-export type PayrollPeriod = {
-  id: string;
-  year: number;
-  month: number;
-  competencia_inicio: string;
-  competencia_fim: string;
-  fechamento_escala: string;
-  fechamento_dp: string;
-  apresentacao_thyalcont: string;
-  data_pagamento: string | null;
-  status: PayrollStatus;
-  fechado_escala_por: string | null;
-  fechado_escala_em: string | null;
-  fechado_dp_por: string | null;
-  fechado_dp_em: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-};
+export type PayrollPeriod = Database["public"]["Tables"]["payroll_periods"]["Row"];
+export type PayrollPeriodInsert = Database["public"]["Tables"]["payroll_periods"]["Insert"];
+export type PayrollPeriodUpdate = Database["public"]["Tables"]["payroll_periods"]["Update"];
 
 function pad2(n: number): string {
   return n < 10 ? `0${n}` : `${n}`;
@@ -75,7 +60,7 @@ export function usePayrollPeriods(year?: number) {
   return useQuery({
     queryKey: ["payroll-periods", year],
     queryFn: async () => {
-      let q = (supabase as any)
+      let q = supabase
         .from("payroll_periods")
         .select("*")
         .order("year", { ascending: false })
@@ -93,7 +78,7 @@ export function useCurrentPayrollPeriod() {
     queryKey: ["payroll-period-current"],
     queryFn: async () => {
       const now = new Date();
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("payroll_periods")
         .select("*")
         .eq("year", now.getFullYear())
@@ -110,7 +95,7 @@ export function useCreatePayrollPeriod() {
   return useMutation({
     mutationFn: async (values: { year: number; month: number; notes?: string | null }) => {
       const defaults = defaultPeriodDates(values.year, values.month);
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("payroll_periods")
         .insert({
           year: values.year,
@@ -136,7 +121,7 @@ export function useUpdatePayrollPeriod() {
   return useMutation({
     mutationFn: async (values: Partial<PayrollPeriod> & { id: string }) => {
       const { id, ...patch } = values;
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("payroll_periods")
         .update(patch)
         .eq("id", id);
@@ -163,7 +148,7 @@ export function useGeneratePayrollYear() {
           status: "aberto",
         };
       });
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("payroll_periods")
         .upsert(rows, { onConflict: "year,month", ignoreDuplicates: true });
       if (error) throw error;
@@ -181,7 +166,7 @@ export function useCloseEscala() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { data: userData } = await supabase.auth.getUser();
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("payroll_periods")
         .update({
           status: "escala_fechada",
@@ -203,7 +188,7 @@ export function useCloseDP() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { data: userData } = await supabase.auth.getUser();
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("payroll_periods")
         .update({
           status: "dp_fechado",
@@ -224,7 +209,7 @@ export function useSetPayrollStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (values: { id: string; status: PayrollStatus }) => {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("payroll_periods")
         .update({ status: values.status })
         .eq("id", values.id);
