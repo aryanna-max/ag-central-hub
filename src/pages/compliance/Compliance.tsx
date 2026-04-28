@@ -1,30 +1,11 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { ShieldCheck } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import CalendarioMensal from "./CalendarioMensal";
 import RequisitosClientesReadonly from "./RequisitosClientesReadonly";
+import ComplianceRadar from "./ComplianceRadar";
+import Portais from "./Portais";
+import Pendencias from "./Pendencias";
 import Documentos from "@/pages/rh/Documentos";
-
-interface PlaceholderProps {
-  title: string;
-  description: string;
-}
-
-function SectionPlaceholder({ title, description }: PlaceholderProps) {
-  return (
-    <Card className="border-dashed">
-      <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <p className="text-sm text-muted-foreground">{description}</p>
-        <p className="text-sm text-muted-foreground">
-          Esta seção ganha conteúdo no Bloco 3 do ADR-041 (cockpit agregado).
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
 
 const subnav = [
   { label: "Radar", path: "/compliance/radar" },
@@ -70,37 +51,13 @@ export default function Compliance() {
 
       <Routes>
         <Route index element={<Navigate to="radar" replace />} />
-        <Route
-          path="radar"
-          element={
-            <SectionPlaceholder
-              title="Radar de Compliance"
-              description="Visão consolidada de pendências críticas — documentos vencidos, calendário do mês, integrações por cliente."
-            />
-          }
-        />
+        <Route path="radar" element={<ComplianceRadar />} />
         <Route path="calendario" element={<CalendarioMensal />} />
         <Route path="empresa" element={<Navigate to="/base/governanca" replace />} />
         <Route path="funcionarios" element={<Documentos />} />
         <Route path="clientes" element={<RequisitosClientesReadonly />} />
-        <Route
-          path="portais"
-          element={
-            <SectionPlaceholder
-              title="Portais Externos"
-              description="Alldocs, SERTRAS e demais portais de envio documental por cliente."
-            />
-          }
-        />
-        <Route
-          path="pendencias"
-          element={
-            <SectionPlaceholder
-              title="Pendências"
-              description="Lista única de itens vencidos ou a vencer — feed unificado a partir das células C6 dos módulos."
-            />
-          }
-        />
+        <Route path="portais" element={<Portais />} />
+        <Route path="pendencias" element={<Pendencias />} />
         <Route path="*" element={<Navigate to="radar" replace />} />
       </Routes>
     </div>
