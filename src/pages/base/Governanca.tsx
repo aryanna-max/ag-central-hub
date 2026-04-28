@@ -1,5 +1,6 @@
 import { FileCheck } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import CompanyDocsList from "./CompanyDocsList";
 
 export default function BaseGovernanca() {
   return (
@@ -16,20 +17,9 @@ export default function BaseGovernanca() {
         </div>
       </div>
 
-      <Card className="border-dashed">
-        <CardHeader>
-          <CardTitle className="text-lg">Documentos da Empresa</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Esta seção está sendo construída. Conteúdo virá no Bloco 2 do ADR-041.
-          </p>
-          <a
-            href="/rh/compliance"
-            className="inline-flex items-center text-sm font-medium text-primary hover:underline"
-          >
-            Ver docs empresa em /rh/compliance (atual) →
-          </a>
+      <Card>
+        <CardContent className="pt-6">
+          <CompanyDocsList />
         </CardContent>
       </Card>
     </div>

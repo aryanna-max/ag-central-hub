@@ -70,7 +70,6 @@ const navigation: SidebarItem[] = [
     children: [
       { label: "Radar", path: "/compliance/radar", icon: Radar },
       { label: "Calendário", path: "/compliance/calendario", icon: Calendar },
-      { label: "Empresa", path: "/compliance/empresa", icon: Building2 },
       { label: "Funcionários", path: "/compliance/funcionarios", icon: UserPlus },
       { label: "Clientes", path: "/compliance/clientes", icon: Building2 },
       { label: "Portais", path: "/compliance/portais", icon: FileCheck },
@@ -84,7 +83,6 @@ const navigation: SidebarItem[] = [
       { label: "Funcionários", path: "/rh/funcionarios", icon: UserPlus },
       { label: "Descontos Mensais", path: "/rh/descontos", icon: Calendar },
       { label: "Documentos", path: "/rh/documentos", icon: FileCheck },
-      { label: "Compliance", path: "/rh/compliance", icon: Calendar },
       { label: "Férias", path: "/rh/ferias", icon: CalendarDays },
       { label: "Ausências", path: "/rh/ausencias", icon: FileText },
     ],
