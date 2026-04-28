@@ -7,8 +7,16 @@ export type TeamMember = Tables<"team_members">;
 type TeamUpdate = TablesUpdate<"teams">;
 type TeamMemberInsert = TablesInsert<"team_members">;
 
+export type TeamWithRelations = Team & {
+  team_members: (TeamMember & {
+    employees: Tables<"employees"> | null;
+  })[];
+  vehicles: Pick<Tables<"vehicles">, "id" | "model" | "plate" | "status"> | null;
+  default_project: Pick<Tables<"projects">, "id" | "name"> | null;
+};
+
 export function useTeams() {
-  return useQuery({
+  return useQuery<TeamWithRelations[]>({
     queryKey: ["teams"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -17,7 +25,7 @@ export function useTeams() {
         .eq("is_active", true)
         .order("name");
       if (error) throw error;
-      return data;
+      return (data ?? []) as unknown as TeamWithRelations[];
     },
   });
 }

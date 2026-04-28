@@ -103,7 +103,7 @@ export default function Equipes() {
   };
 
   const currentTeamMemberIds = addMemberTeamId
-    ? (teams?.find((t: any) => t.id === addMemberTeamId) as any)?.team_members?.map((m: any) => m.employee_id) || []
+    ? teams?.find((t) => t.id === addMemberTeamId)?.team_members?.map((m) => m.employee_id) || []
     : [];
 
   const filteredEmployees = (employees || []).filter(
@@ -275,7 +275,7 @@ export default function Equipes() {
                       <Car className="w-3 h-3" /> VEÍCULO PADRÃO
                     </p>
                     <Select
-                      value={(team as any).default_vehicle_id || "none"}
+                      value={team.default_vehicle_id || "none"}
                       onValueChange={(v) => handleVehicleChange(team.id, v)}
                     >
                       <SelectTrigger className="h-9 text-sm">
@@ -304,7 +304,7 @@ export default function Equipes() {
                       <FolderKanban className="w-3 h-3" /> PROJETO PADRÃO
                     </p>
                     <Select
-                      value={(team as any).default_project_id || "none"}
+                      value={team.default_project_id || "none"}
                       onValueChange={(v) => handleProjectChange(team.id, v)}
                     >
                       <SelectTrigger className="h-9 text-sm">

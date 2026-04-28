@@ -2,14 +2,19 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
+type BenefitSettlementRow = Database["public"]["Tables"]["benefit_settlements"]["Row"];
 type BenefitSettlementInsert = Database["public"]["Tables"]["benefit_settlements"]["Insert"];
+
+export type BenefitSettlementWithEmployee = BenefitSettlementRow & {
+  employees: { name: string | null; matricula: string | null } | null;
+};
 
 // Fetch settlements - can filter by semana_inicio, status, or leave open for all
 export function useBenefitSettlements(filters?: {
   semana_inicio?: string;
   status?: string;
 }) {
-  return useQuery({
+  return useQuery<BenefitSettlementWithEmployee[]>({
     queryKey: ["benefit-settlements", filters],
     queryFn: async () => {
       let query = supabase
@@ -23,7 +28,7 @@ export function useBenefitSettlements(filters?: {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      return (data ?? []) as unknown as BenefitSettlementWithEmployee[];
     },
   });
 }

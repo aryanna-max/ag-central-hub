@@ -14,7 +14,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { useEmployees } from "@/hooks/useEmployees";
-import { useEmployeeDailyRecords } from "@/hooks/useEmployeeDailyRecords";
+import { useEmployeeDailyRecords, type EmployeeDailyRecordWithJoins } from "@/hooks/useEmployeeDailyRecords";
 
 function fmt(v: number | null | undefined): string {
   if (!v) return "—";
@@ -30,14 +30,14 @@ export default function RDFDigital() {
   const { data: employees = [] } = useEmployees();
 
   const activeEmployees = useMemo(
-    () => (employees as any[]).filter((e) => e.status !== "desligado").sort((a: any, b: any) => a.name.localeCompare(b.name)),
+    () => employees.filter((e) => e.status !== "desligado").sort((a, b) => a.name.localeCompare(b.name)),
     [employees]
   );
 
   const filteredEmployees = useMemo(() => {
     if (!empSearch) return activeEmployees;
     const q = empSearch.toLowerCase();
-    return activeEmployees.filter((e: any) => e.name.toLowerCase().includes(q));
+    return activeEmployees.filter((e) => e.name.toLowerCase().includes(q));
   }, [activeEmployees, empSearch]);
 
   const monthStart = startOfMonth(new Date(selectedMonth + "-02")).toISOString().slice(0, 10);
@@ -51,8 +51,8 @@ export default function RDFDigital() {
 
   // Build a map: schedule_date → record
   const recordMap = useMemo(() => {
-    const map = new Map<string, any>();
-    for (const r of records as any[]) {
+    const map = new Map<string, EmployeeDailyRecordWithJoins>();
+    for (const r of records) {
       map.set(r.schedule_date, r);
     }
     return map;
@@ -71,7 +71,7 @@ export default function RDFDigital() {
   // Totals
   const totals = useMemo(() => {
     let cafe = 0, almoco = 0, jantar = 0, hosp = 0, vt = 0, total = 0;
-    for (const r of records as any[]) {
+    for (const r of records) {
       cafe += r.cafe_provided ? (r.cafe_value || 0) : 0;
       almoco += r.almoco_dif_provided ? (r.almoco_dif_value || 0) : 0;
       jantar += r.jantar_provided ? (r.jantar_value || 0) : 0;
@@ -84,7 +84,7 @@ export default function RDFDigital() {
 
   const handleExportCSV = () => {
     if (!selectedEmployee || days.length === 0) return;
-    const emp = activeEmployees.find((e: any) => e.id === selectedEmployee);
+    const emp = activeEmployees.find((e) => e.id === selectedEmployee);
     const header = ["Dia", "Projeto", "Café", "Alm.Dif", "Jantar", "Hosp", "VT", "Total"];
     const rows = days.map((day) => {
       const dateStr = format(day, "yyyy-MM-dd");
@@ -97,7 +97,7 @@ export default function RDFDigital() {
         (r.vt_provided ? r.vt_value || 0 : 0);
       return [
         format(day, "dd/MM"),
-        (r as any).projects?.name || "—",
+        r.projects?.name || "—",
         r.cafe_provided ? String(r.cafe_value || 0) : "0",
         r.almoco_dif_provided ? String(r.almoco_dif_value || 0) : "0",
         r.jantar_provided ? String(r.jantar_value || 0) : "0",
@@ -116,7 +116,7 @@ export default function RDFDigital() {
     URL.revokeObjectURL(url);
   };
 
-  const selectedEmpName = activeEmployees.find((e: any) => e.id === selectedEmployee)?.name;
+  const selectedEmpName = activeEmployees.find((e) => e.id === selectedEmployee)?.name;
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">
@@ -161,7 +161,7 @@ export default function RDFDigital() {
                 <SelectValue placeholder="Selecione..." />
               </SelectTrigger>
               <SelectContent className="max-h-60">
-                {filteredEmployees.map((e: any) => (
+                {filteredEmployees.map((e) => (
                   <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -245,7 +245,7 @@ export default function RDFDigital() {
                             )}
                           </TableCell>
                           <TableCell className="text-xs">
-                            <span className="font-medium">{(r as any).projects?.name || "—"}</span>
+                            <span className="font-medium">{r.projects?.name || "—"}</span>
                           </TableCell>
                           <TableCell className="text-right text-xs">{rowCafe > 0 ? fmt(rowCafe) : "—"}</TableCell>
                           <TableCell className="text-right text-xs">{rowAlmoco > 0 ? fmt(rowAlmoco) : "—"}</TableCell>

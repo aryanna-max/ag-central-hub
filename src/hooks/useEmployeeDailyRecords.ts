@@ -1,5 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type EmployeeDailyRecordRow = Database["public"]["Tables"]["employee_daily_records"]["Row"];
+
+export type EmployeeDailyRecordWithJoins = EmployeeDailyRecordRow & {
+  employees: { name: string | null; matricula: string | null } | null;
+  projects: { name: string | null; codigo: string | null } | null;
+};
 
 export function useEmployeeDailyRecords(filters: {
   employeeId?: string;
@@ -7,7 +15,7 @@ export function useEmployeeDailyRecords(filters: {
   endDate?: string;
   projectId?: string;
 }) {
-  return useQuery({
+  return useQuery<EmployeeDailyRecordWithJoins[]>({
     queryKey: ["employee-daily-records", filters],
     queryFn: async () => {
       let query = supabase.from("employee_daily_records")
@@ -21,7 +29,7 @@ export function useEmployeeDailyRecords(filters: {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      return (data ?? []) as unknown as EmployeeDailyRecordWithJoins[];
     },
     enabled: !!(filters.employeeId || filters.startDate || filters.projectId),
   });
