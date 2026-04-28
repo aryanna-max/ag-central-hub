@@ -31,14 +31,23 @@ type KpiFilter = "em_campo" | "prazo_critico" | "a_faturar" | "ativos" | null;
 
 export default function Dashboard() {
   const isMobile = useIsMobile();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const kanbanRef = useRef<HTMLDivElement>(null);
   const canSeeFinancials = checkFinancials(role);
 
-  const { data: projects = [] } = useProjects();
+  const { data: rawProjects = [] } = useProjects();
   const { data: clients = [] } = useClients();
+
+  // Diretor (não-master) vê só projetos onde é o comercial responsável.
+  // Master, operacional, financeiro, sala_tecnica e comercial seguem vendo tudo.
+  const projects = useMemo(() => {
+    if (role === "diretor" && user?.id) {
+      return rawProjects.filter((p) => p.responsible_comercial_id === user.id);
+    }
+    return rawProjects;
+  }, [rawProjects, role, user?.id]);
 
   // Alerts
   const { data: alerts = [] } = useQuery({

@@ -20,6 +20,7 @@ export interface Project {
   clients: ProjectClient | null;
   service: string | null;
   contract_value: number | null;
+  /** @deprecated 2026-04-28 — use responsible_comercial_id / _tecnico_id / _campo_id (FK profiles). */
   responsible: string | null;
   responsible_comercial_id: string | null;
   responsible_campo_id: string | null;
@@ -75,8 +76,11 @@ export interface ProjectInsert {
   cnpj_tomador?: string | null;
   service?: string | null;
   contract_value?: number | null;
+  /** @deprecated 2026-04-28 — use responsible_comercial_id / _tecnico_id / _campo_id (FK profiles). */
   responsible?: string | null;
   responsible_comercial_id?: string | null;
+  responsible_tecnico_id?: string | null;
+  responsible_campo_id?: string | null;
   lead_id?: string | null;
   status?: ProjectStatus;
   notes?: string | null;
