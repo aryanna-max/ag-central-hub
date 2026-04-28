@@ -1,5 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type ExpenseSheetInsert = Database["public"]["Tables"]["field_expense_sheets"]["Insert"];
+type ExpenseSheetUpdate = Database["public"]["Tables"]["field_expense_sheets"]["Update"];
+type ExpenseItemInsert = Database["public"]["Tables"]["field_expense_items"]["Insert"];
 
 export const EXPENSE_TYPES = [
   "Café", "Almoço", "Jantar", "Transporte", "Diária",
@@ -112,9 +117,10 @@ export function useCreateExpenseSheet() {
       status: string;
       week_label?: string;
     }) => {
+      const insertPayload: ExpenseSheetInsert = payload;
       const { data, error } = await supabase
         .from("field_expense_sheets")
-        .insert(payload as any)
+        .insert(insertPayload)
         .select()
         .single();
       if (error) throw error;
@@ -145,6 +151,7 @@ export function useBulkCreateExpenseItems() {
       intermediary_reason?: string | null;
       fiscal_alert?: boolean;
     }>) => {
+      // TODO PR4: project_name não existe em field_expense_items no schema; ExpenseItem manual carrega esse extra.
       const { data, error } = await supabase
         .from("field_expense_items")
         .insert(items as any)
@@ -248,9 +255,10 @@ export function useUpdateExpenseSheet() {
       status?: string;
     }) => {
       const { id, ...updates } = payload;
+      const updateData: ExpenseSheetUpdate = updates;
       const { error } = await supabase
         .from("field_expense_sheets")
-        .update(updates as any)
+        .update(updateData)
         .eq("id", id);
       if (error) throw error;
     },

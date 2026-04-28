@@ -105,7 +105,7 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultProje
         empresa_faturadora: form.empresa_faturadora,
         tipo_documento: form.tipo_documento,
         instrucao_faturamento: form.instrucao_faturamento || null,
-        responsavel_cobranca: form.responsavel_cobranca || null,
+        responsavel_cobranca_id: form.responsavel_cobranca || null,
       });
 
       if (notify) {

@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type BenefitSettlementInsert = Database["public"]["Tables"]["benefit_settlements"]["Insert"];
 
 // Fetch settlements - can filter by semana_inicio, status, or leave open for all
 export function useBenefitSettlements(filters?: {
@@ -90,7 +93,7 @@ export function useGenerateBenefitSettlements() {
         const avgAlmoco = sums.almoco_previsto > 0 ? sums.almoco_valor_total / sums.almoco_previsto : 0;
         const avgJantar = sums.jantar_previsto > 0 ? sums.jantar_valor_total / sums.jantar_previsto : 0;
 
-        const settlement = {
+        const settlement: BenefitSettlementInsert = {
           employee_id,
           semana_inicio,
           semana_fim,
@@ -109,7 +112,7 @@ export function useGenerateBenefitSettlements() {
         if (existingRecord) {
           await supabase.from("benefit_settlements").update(settlement).eq("id", existingRecord.id);
         } else {
-          await supabase.from("benefit_settlements").insert(settlement as any);
+          await supabase.from("benefit_settlements").insert(settlement);
         }
         count++;
       }

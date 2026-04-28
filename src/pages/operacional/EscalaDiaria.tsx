@@ -321,7 +321,7 @@ export default function EscalaDiaria() {
           .single();
         if (proj && proj.responsible_campo_id !== topografoId) {
           const prevId = proj.responsible_campo_id;
-          await supabase.from("projects").update({ responsible_campo_id: topografoId } as any).eq("id", addForm.project_id);
+          await supabase.from("projects").update({ responsible_campo_id: topografoId }).eq("id", addForm.project_id);
           if (prevId && prevId !== topografoId) {
             const prevEmp = activeEmployees.find((e) => e.id === prevId);
             const newEmp = activeEmployees.find((e) => e.id === topografoId);
@@ -331,7 +331,7 @@ export default function EscalaDiaria() {
               to_status: "execucao",
               modulo: "operacional",
               notes: `Responsável campo alterado: ${prevEmp?.name || "anterior"} → ${newEmp?.name || "novo"}`,
-            } as any);
+            });
           }
         }
       }

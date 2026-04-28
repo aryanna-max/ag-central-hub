@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables, TablesInsert } from "@/integrations/supabase/types";
+import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 export type Team = Tables<"teams">;
 export type TeamMember = Tables<"team_members">;
+type TeamUpdate = TablesUpdate<"teams">;
+type TeamMemberInsert = TablesInsert<"team_members">;
 
 export function useTeams() {
   return useQuery({
@@ -24,9 +26,10 @@ export function useUpdateTeamVehicle() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ teamId, vehicleId }: { teamId: string; vehicleId: string | null }) => {
+      const updates: TeamUpdate = { default_vehicle_id: vehicleId };
       const { error } = await supabase
         .from("teams")
-        .update({ default_vehicle_id: vehicleId } as any)
+        .update(updates)
         .eq("id", teamId);
       if (error) throw error;
     },
@@ -38,9 +41,10 @@ export function useUpdateTeamProject() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ teamId, projectId }: { teamId: string; projectId: string | null }) => {
+      const updates: TeamUpdate = { default_project_id: projectId };
       const { error } = await supabase
         .from("teams")
-        .update({ default_project_id: projectId } as any)
+        .update(updates)
         .eq("id", teamId);
       if (error) throw error;
     },
@@ -79,9 +83,10 @@ export function useAddTeamMember() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ team_id, employee_id, role }: { team_id: string; employee_id: string; role?: string }) => {
+      const payload: TeamMemberInsert = { team_id, employee_id, role: role || "auxiliar" };
       const { data, error } = await supabase
         .from("team_members")
-        .insert({ team_id, employee_id, role: role || "auxiliar" } as any)
+        .insert(payload)
         .select()
         .single();
       if (error) throw error;

@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import type { MeasurementItem } from "./useMeasurements";
+
+type MeasurementItemInsert = Database["public"]["Tables"]["measurement_items"]["Insert"];
+type MeasurementItemUpdate = Database["public"]["Tables"]["measurement_items"]["Update"];
 
 export function useMeasurementItems(measurementId: string | null) {
   return useQuery({
@@ -23,9 +27,10 @@ export function useCreateMeasurementItem() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (item: Omit<MeasurementItem, "id" | "created_at" | "updated_at">) => {
+      const payload: MeasurementItemInsert = item;
       const { data, error } = await supabase
         .from("measurement_items")
-        .insert(item as any)
+        .insert(payload)
         .select()
         .single();
       if (error) throw error;
@@ -42,9 +47,10 @@ export function useUpdateMeasurementItem() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<MeasurementItem> & { id: string }) => {
+      const updateData: MeasurementItemUpdate = updates;
       const { data, error } = await supabase
         .from("measurement_items")
-        .update(updates as any)
+        .update(updateData)
         .eq("id", id)
         .select()
         .single();

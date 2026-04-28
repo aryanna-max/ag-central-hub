@@ -81,7 +81,7 @@ export default function STProjectDetail() {
     const updateVal = value === "__none__" ? null : value;
     const { error } = await supabase
       .from("projects")
-      .update({ [field]: updateVal } as any)
+      .update({ [field]: updateVal })
       .eq("id", id);
     if (error) {
       toast.error("Erro ao atualizar responsável: " + error.message);
@@ -538,7 +538,7 @@ export default function STProjectDetail() {
               onClick={async () => {
                 if (!project || !returnReason.trim()) return;
                 try {
-                  await supabase.from("projects").update({ execution_status: "aguardando_campo" as any }).eq("id", project.id);
+                  await supabase.from("projects").update({ execution_status: "aguardando_campo" }).eq("id", project.id);
                   await supabase.from("project_status_history").insert({
                     project_id: project.id,
                     from_status: project.execution_status,
