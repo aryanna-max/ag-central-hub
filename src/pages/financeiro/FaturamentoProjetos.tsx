@@ -23,6 +23,7 @@ import { format, differenceInDays, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import type { ExecutionStatus } from "@/lib/statusConstants";
 
 const fmtCurrency = (v: number | null | undefined) =>
   v != null ? v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—";
@@ -53,7 +54,7 @@ export default function FaturamentoProjetos() {
         .from("projects")
         .select("id, codigo, name, contract_value, empresa_faturadora, delivered_at, execution_status, updated_at, client_id")
         .eq("is_active", true)
-        .eq("execution_status", "faturamento" as any)
+        .eq("execution_status", "faturamento" satisfies ExecutionStatus)
         .order("delivered_at", { ascending: true });
       if (error) throw error;
 
@@ -159,7 +160,7 @@ export default function FaturamentoProjetos() {
       if (!payModal || payModal.type !== "project") return;
       await supabase
         .from("projects")
-        .update({ execution_status: "pago", updated_at: new Date().toISOString() } as any)
+        .update({ execution_status: "pago", updated_at: new Date().toISOString() })
         .eq("id", payModal.id);
 
       const proj = projects.find((p: any) => p.id === payModal.id);
@@ -173,7 +174,7 @@ export default function FaturamentoProjetos() {
         reference_id: payModal.id,
         resolved: false,
         read: false,
-      } as any);
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["areceber-projects"] });
@@ -189,7 +190,7 @@ export default function FaturamentoProjetos() {
       if (!payModal || payModal.type !== "measurement") return;
       await supabase
         .from("measurements")
-        .update({ status: "paga" } as any)
+        .update({ status: "paga" })
         .eq("id", payModal.id);
     },
     onSuccess: () => {

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell, TableFooter } from "@/components/ui/table";
 import { toast } from "sonner";
+import type { ExecutionStatus } from "@/lib/statusConstants";
 
 const MONTHS = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -101,7 +102,7 @@ function useProjects() {
   return useQuery({
     queryKey: ["projects-all-names"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("projects").select("id, name").eq("is_active", true).eq("show_in_operational", true).in("execution_status", ["aguardando_campo", "em_campo"] as any);
+      const { data, error } = await supabase.from("projects").select("id, name").eq("is_active", true).eq("show_in_operational", true).in("execution_status", ["aguardando_campo", "em_campo"] satisfies ExecutionStatus[]);
       if (error) throw error;
       return data;
     },
@@ -176,7 +177,7 @@ export default function DiariasVeiculos() {
           id: vid,
           model: v.model,
           plate: v.plate,
-          responsible: v.is_rented ? "Locadora" : (v.responsible_employee as any)?.name || "—",
+          responsible: v.is_rented ? "Locadora" : (v.responsible_employee as { name?: string } | null)?.name || "—",
           isRented: v.is_rented,
           projects: Array.from(data.projectIds).map((pid) => projectMap[pid] || "—").join(", "),
           days: data.days,
@@ -184,7 +185,7 @@ export default function DiariasVeiculos() {
           total: v.is_rented ? 0 : data.days * rate,
         };
       })
-      .filter(Boolean) as any[];
+      .filter((r): r is NonNullable<typeof r> => r !== null);
   }, [summary, vehicleMap, projectMap, rate]);
 
   const totalDays = summaryRows.reduce((s, r) => s + r.days, 0);
@@ -194,7 +195,7 @@ export default function DiariasVeiculos() {
     try {
       await supabase
         .from("system_settings")
-        .upsert({ key: "vehicle_daily_rate", value: String(rate) } as any);
+        .upsert({ key: "vehicle_daily_rate", value: String(rate) });
       qc.invalidateQueries({ queryKey: ["system-settings"] });
       toast.success("Valor da diária salvo!");
     } catch {
@@ -216,7 +217,7 @@ export default function DiariasVeiculos() {
           days_count: row.days,
           daily_rate: rate,
           total_value: row.total,
-        } as any);
+        });
       }
       qc.invalidateQueries({ queryKey: ["vehicle-payment-history"] });
       toast.success("Mês fechado com sucesso!");
@@ -302,7 +303,7 @@ export default function DiariasVeiculos() {
                 </div>
                 {isClosed && (
                   <Badge className="bg-emerald-600 text-white gap-1 ml-auto">
-                    <Lock className="w-3 h-3" /> Fechado em {new Date((history as any)?.[0]?.closed_at).toLocaleDateString("pt-BR")}
+                    <Lock className="w-3 h-3" /> Fechado em {new Date((history as { closed_at?: string }[] | undefined)?.[0]?.closed_at ?? "").toLocaleDateString("pt-BR")}
                   </Badge>
                 )}
                 {!isClosed && summaryRows.length > 0 && (
@@ -396,7 +397,7 @@ export default function DiariasVeiculos() {
                     <div><span className="text-muted-foreground">Placa:</span><p className="font-mono font-medium">{detailVehicle.plate}</p></div>
                     <div>
                       <span className="text-muted-foreground">Responsável:</span>
-                      <p className="font-medium">{detailVehicle.is_rented ? "Locadora" : (detailVehicle.responsible_employee as any)?.name || "—"}</p>
+                      <p className="font-medium">{detailVehicle.is_rented ? "Locadora" : (detailVehicle.responsible_employee as { name?: string } | null)?.name || "—"}</p>
                     </div>
                     <div><span className="text-muted-foreground">Total dias:</span><p className="font-bold text-lg">{detailDays.length}</p></div>
                     <div className="col-span-2"><span className="text-muted-foreground">Projetos:</span><p>{detailProjects}</p></div>

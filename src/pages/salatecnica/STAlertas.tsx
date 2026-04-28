@@ -57,13 +57,13 @@ export default function STAlertas() {
 
       let q;
       if (filterStatus === "ativo") {
-        q = (base as any).eq("resolved", false);
+        q = base.eq("resolved", false);
       } else if (filterStatus === "resolvido") {
-        q = (base as any).eq("resolved", true);
+        q = base.eq("resolved", true);
       } else if (filterStatus === "all") {
         q = base;
       } else {
-        q = (base as any).eq("alert_status", filterStatus);
+        q = base.eq("alert_status", filterStatus);
       }
 
       const { data, error } = await q;

@@ -39,6 +39,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { DocStatusBadge } from "@/components/rh/ComplianceBadge";
 import EmployeeBadge from "@/components/rh/EmployeeBadge";
 import { useEmployeesBadgesForProject, summarizeBadges } from "@/hooks/useEmployeeBadge";
+import type { ExecutionStatus } from "@/lib/statusConstants";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
 
@@ -52,7 +53,7 @@ function useProjectsList(showAll = false) {
         .eq("is_active", true)
         .eq("show_in_operational", true);
       if (!showAll) {
-        query = query.in("execution_status", ["aguardando_campo", "em_campo"] as any);
+        query = query.in("execution_status", ["aguardando_campo", "em_campo"] satisfies ExecutionStatus[]);
       }
       const { data, error } = await query.order("name");
       if (error) throw error;

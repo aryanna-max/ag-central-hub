@@ -9,5 +9,5 @@ export const FINANCIAL_ROLES = ["master", "diretor", "financeiro"] as const;
 
 /** Verifica se o role pode ver dados financeiros */
 export function canSeeFinancials(role: string | null): boolean {
-  return FINANCIAL_ROLES.includes(role as any);
+  return (FINANCIAL_ROLES as readonly string[]).includes(role ?? "");
 }

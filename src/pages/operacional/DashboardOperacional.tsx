@@ -14,6 +14,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
+import type { ExecutionStatus } from "@/lib/statusConstants";
 
 const months = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -37,7 +38,7 @@ function useActiveProjects() {
         .select("id, name, location, execution_status, client_id, clients:client_id(name)")
         .eq("is_active", true)
         .eq("show_in_operational", true)
-        .in("execution_status", ["aguardando_campo", "em_campo"] as any)
+        .in("execution_status", ["aguardando_campo", "em_campo"] satisfies ExecutionStatus[])
         .order("name");
       if (error) throw error;
       return data;
@@ -217,7 +218,7 @@ export default function DashboardOperacional() {
                   <div key={p.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
                     <div>
                       <p className="text-sm font-medium">{p.name}</p>
-                      <p className="text-xs text-muted-foreground">{(p.clients as any)?.name || "—"} • {p.location || "—"}</p>
+                      <p className="text-xs text-muted-foreground">{(p.clients as { name?: string } | null)?.name || "—"} • {p.location || "—"}</p>
                     </div>
                     <Badge className="bg-secondary text-secondary-foreground text-xs">Ativo</Badge>
                   </div>

@@ -175,7 +175,7 @@ export default function DespesasDeCampo() {
                           </Button>
                         )}
                         {["submetido", "devolvido"].includes(s.status) && (
-                          <Button size="sm" variant="outline" className="text-green-600 h-7 text-xs" onClick={(e) => { e.stopPropagation(); handleCopyLink((s as any).approval_token); }}>
+                          <Button size="sm" variant="outline" className="text-green-600 h-7 text-xs" onClick={(e) => { e.stopPropagation(); handleCopyLink((s as { approval_token?: string }).approval_token); }}>
                             <Link2 className="w-3 h-3 mr-1" /> Copiar Link
                           </Button>
                         )}

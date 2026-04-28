@@ -77,7 +77,7 @@ export default function PorProjeto() {
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from("alerts")
-        .update({ alert_status: "resolvido", resolved: true, resolved_at: new Date().toISOString() } as any)
+        .update({ alert_status: "resolvido", resolved: true, resolved_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
     },
@@ -167,7 +167,7 @@ export default function PorProjeto() {
   const kanbanProjects = useMemo(() => {
     return projects.filter((p) => {
       const es = p.execution_status;
-      if (!es || !ALL_COLUMNS.includes(es as any)) return false;
+      if (!es || !(ALL_COLUMNS as readonly string[]).includes(es)) return false;
       if (kpiFilter === "em_campo" && es !== "em_campo") return false;
       if (kpiFilter === "a_faturar") {
         if (es !== "entregue") return false;

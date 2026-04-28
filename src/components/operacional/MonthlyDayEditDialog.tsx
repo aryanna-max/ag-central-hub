@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import ProjectBenefitsCard from "./ProjectBenefitsCard";
+import type { ExecutionStatus } from "@/lib/statusConstants";
 
 interface Props {
   open: boolean;
@@ -66,7 +67,7 @@ export default function MonthlyDayEditDialog({
     queryKey: ["projects-operational", showAllProjects],
     queryFn: async () => {
       let query = supabase.from("projects").select("*").eq("is_active", true).eq("show_in_operational", true);
-      if (!showAllProjects) { query = query.in("execution_status", ["aguardando_campo", "em_campo"] as any); }
+      if (!showAllProjects) { query = query.in("execution_status", ["aguardando_campo", "em_campo"] satisfies ExecutionStatus[]); }
       const { data, error } = await query.order("name");
       if (error) throw error;
       return data;
@@ -94,7 +95,7 @@ export default function MonthlyDayEditDialog({
   const isPast = targetDate < todayStr;
 
   const selectedTeam = (teams || []).find((t: any) => t.id === teamId);
-  const currentMembers = (selectedTeam as any)?.team_members || [];
+  const currentMembers = (selectedTeam as { team_members?: any[] } | undefined)?.team_members || [];
   const topografo = currentMembers.find((m: any) => m.role === "topografo");
   const auxiliares = currentMembers.filter((m: any) => m.role !== "topografo");
 

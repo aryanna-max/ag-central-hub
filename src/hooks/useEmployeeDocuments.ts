@@ -42,7 +42,7 @@ export function useEmployeeDocuments(employeeId: string | undefined) {
     queryFn: async () => {
       if (!employeeId) return [];
       const { data, error } = await supabase
-        .from("employee_documents" as any)
+        .from("employee_documents")
         .select("*")
         .eq("employee_id", employeeId)
         .order("doc_type");
@@ -61,7 +61,7 @@ export function useCriticalDocuments() {
       cutoff.setDate(cutoff.getDate() + 30);
       const cutoffStr = cutoff.toISOString().split("T")[0];
       const { data, error } = await supabase
-        .from("employee_documents" as any)
+        .from("employee_documents")
         .select("*, employees(name, matricula)")
         .not("expiry_date", "is", null)
         .lte("expiry_date", cutoffStr)
@@ -80,12 +80,13 @@ export function useEmployeeComplianceCheck(employeeId: string | undefined, clien
       if (!employeeId || !clientId) return { ok: true, missing: [] };
 
       const [{ data: requirements }, { data: docs }] = await Promise.all([
-        supabase.from("client_doc_requirements" as any).select("doc_type, is_mandatory").eq("client_id", clientId).eq("is_mandatory", true),
-        supabase.from("employee_documents" as any).select("doc_type, doc_status").eq("employee_id", employeeId).in("doc_status", ["valido", "proximo_vencer"]),
+        supabase.from("client_doc_requirements").select("doc_type, is_mandatory").eq("client_id", clientId).eq("is_mandatory", true),
+        // doc_status enum em types.ts ("vencendo") difere do valor real usado pela app ("proximo_vencer"); types.ts pendente de regen
+        supabase.from("employee_documents").select("doc_type, doc_status").eq("employee_id", employeeId).in("doc_status", ["valido", "proximo_vencer"] as any),
       ]);
 
-      const employeeDocTypes = new Set((docs ?? []).map((d: any) => d.doc_type));
-      const missing = (requirements ?? []).filter((r: any) => !employeeDocTypes.has(r.doc_type));
+      const employeeDocTypes = new Set((docs ?? []).map((d) => d.doc_type));
+      const missing = (requirements ?? []).filter((r) => !employeeDocTypes.has(r.doc_type));
       return { ok: missing.length === 0, missing };
     },
     enabled: !!employeeId && !!clientId,
@@ -108,10 +109,11 @@ export function useUpsertEmployeeDocument() {
       const payload = { ...values, doc_status };
 
       if (values.id) {
-        const { error } = await supabase.from("employee_documents" as any).update(payload).eq("id", values.id);
+        // doc_type/doc_status enums divergentes entre types.ts e DB real (regen pendente)
+        const { error } = await supabase.from("employee_documents").update(payload as any).eq("id", values.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("employee_documents" as any).insert(payload);
+        const { error } = await supabase.from("employee_documents").insert(payload as any);
         if (error) throw error;
       }
     },
@@ -126,7 +128,7 @@ export function useDeleteEmployeeDocument() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id }: { id: string; employeeId: string }) => {
-      const { error } = await supabase.from("employee_documents" as any).delete().eq("id", id);
+      const { error } = await supabase.from("employee_documents").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_, vars) => {

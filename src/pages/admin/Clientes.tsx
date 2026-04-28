@@ -84,10 +84,10 @@ export default function AdminClientes() {
       };
 
       if (editClient) {
-        await updateClient.mutateAsync({ id: editClient.id, ...payload } as any);
+        await updateClient.mutateAsync({ id: editClient.id, ...payload });
         toast.success("Cliente atualizado!");
       } else {
-        await createClient.mutateAsync(payload as any);
+        await createClient.mutateAsync(payload);
         toast.success("Cliente cadastrado!");
       }
       setFormOpen(false);

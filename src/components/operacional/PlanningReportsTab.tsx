@@ -72,7 +72,7 @@ export default function PlanningReportsTab() {
 
   const projMap = useMemo(() => {
     const m: Record<string, { codigo: string; client: string }> = {};
-    projectsList.forEach((p: any) => (m[p.id] = { codigo: p.codigo || "—", client: (p.clients as any)?.name || "—" }));
+    projectsList.forEach((p: any) => (m[p.id] = { codigo: p.codigo || "—", client: (p.clients as { name?: string } | null)?.name || "—" }));
     return m;
   }, [projectsList]);
 
@@ -98,7 +98,7 @@ export default function PlanningReportsTab() {
       const pid = e.project_id;
       if (!map[pid]) map[pid] = { total: 0, dates: new Set(), teams: new Set() };
       map[pid].total++;
-      map[pid].dates.add((e.daily_schedules as any)?.schedule_date);
+      map[pid].dates.add((e.daily_schedules as { schedule_date?: string } | null)?.schedule_date);
       if (e.team_id) map[pid].teams.add(e.team_id);
     });
     return map;
@@ -108,7 +108,7 @@ export default function PlanningReportsTab() {
   const absences = useMemo(() => {
     return entries.filter((e: any) => e.removed_at).map((e: any) => ({
       employee: empMap[e.employee_id] || "—",
-      date: (e.daily_schedules as any)?.schedule_date || "",
+      date: (e.daily_schedules as { schedule_date?: string } | null)?.schedule_date || "",
       reason: e.removal_reason,
       project: e.project_id ? projMap[e.project_id]?.codigo || "—" : "—",
     }));
@@ -118,7 +118,7 @@ export default function PlanningReportsTab() {
   const vacationOverrides = useMemo(() => {
     return entries.filter((e: any) => e.is_vacation_override && !e.removed_at).map((e: any) => ({
       employee: empMap[e.employee_id] || "—",
-      date: (e.daily_schedules as any)?.schedule_date || "",
+      date: (e.daily_schedules as { schedule_date?: string } | null)?.schedule_date || "",
       project: e.project_id ? projMap[e.project_id]?.codigo || "—" : "—",
       notes: e.notes || "",
     }));

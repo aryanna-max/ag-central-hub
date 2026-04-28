@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, DragEvent } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -221,12 +221,12 @@ export default function STEquipe() {
   }, [projects]);
 
   // ─── Drag handlers ───
-  const onDragStart = useCallback((e: DragEvent, techId: string) => {
+  const onDragStart = useCallback((e: React.DragEvent, techId: string) => {
     e.dataTransfer.setData("techId", techId);
     e.dataTransfer.effectAllowed = "copy";
   }, []);
 
-  const onDragOver = useCallback((e: DragEvent, projectId: string) => {
+  const onDragOver = useCallback((e: React.DragEvent, projectId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
     setDragOverProjectId(projectId);
@@ -236,7 +236,7 @@ export default function STEquipe() {
     setDragOverProjectId(null);
   }, []);
 
-  const onDrop = useCallback((e: DragEvent, project: ProjectCard) => {
+  const onDrop = useCallback((e: React.DragEvent, project: ProjectCard) => {
     e.preventDefault();
     setDragOverProjectId(null);
     const techId = e.dataTransfer.getData("techId");
@@ -271,7 +271,7 @@ export default function STEquipe() {
         due_date: newTaskDueDate ? format(newTaskDueDate, "yyyy-MM-dd") : null,
         created_by_id: user?.id || null,
         status: "pendente",
-      } as any);
+      });
       if (error) throw error;
       toast.success("Tarefa criada com sucesso");
       setDropModal(null);
@@ -300,7 +300,7 @@ export default function STEquipe() {
                   <Card
                     key={tech.id}
                     draggable={isDraggable}
-                    onDragStart={isDraggable ? (e) => onDragStart(e as any, tech.id) : undefined}
+                    onDragStart={isDraggable ? (e) => onDragStart(e, tech.id) : undefined}
                     className={cn(
                       "transition-shadow",
                       isDraggable ? "cursor-grab active:cursor-grabbing hover:shadow-md" : "opacity-60 cursor-not-allowed"
@@ -355,9 +355,9 @@ export default function STEquipe() {
                 return (
                   <Card
                     key={proj.id}
-                    onDragOver={(e) => onDragOver(e as any, proj.id)}
+                    onDragOver={(e) => onDragOver(e, proj.id)}
                     onDragLeave={onDragLeave}
-                    onDrop={(e) => onDrop(e as any, proj)}
+                    onDrop={(e) => onDrop(e, proj)}
                     className={cn(
                       "transition-all border-2",
                       isOver

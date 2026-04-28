@@ -215,7 +215,7 @@ export default function ClienteHistorico() {
                     ) : "—"}
                   </TableCell>}
                   {isVisible("inicio") && <TableCell className="text-sm">{p.start_date ? format(parseISO(p.start_date), "dd/MM/yyyy") : "—"}</TableCell>}
-                  {isVisible("responsavel") && <TableCell className="text-sm">{(p as any).responsible_id ? empMap.get((p as any).responsible_id) || "—" : (p.responsible || "—")}</TableCell>}
+                  {isVisible("responsavel") && <TableCell className="text-sm">{(p as { responsible_id?: string }).responsible_id ? empMap.get((p as { responsible_id?: string }).responsible_id ?? "") || "—" : (p.responsible || "—")}</TableCell>}
                 </TableRow>
               ))}
             </TableBody>

@@ -150,7 +150,7 @@ export default function LeadDetailDialog({ open, onOpenChange, lead, onConvert }
       if (lead.status === "novo" || lead.status === "em_negociacao") {
         await updateLead.mutateAsync({
           id: lead.id,
-          status: "proposta_enviada" as any,
+          status: "proposta_enviada",
         });
       }
 
@@ -191,7 +191,7 @@ export default function LeadDetailDialog({ open, onOpenChange, lead, onConvert }
     }
   };
 
-  const originLabel = lead.origin ? (ORIGIN_LABELS as any)[lead.origin] || lead.origin : "—";
+  const originLabel = lead.origin ? ORIGIN_LABELS[lead.origin as keyof typeof ORIGIN_LABELS] || lead.origin : "—";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

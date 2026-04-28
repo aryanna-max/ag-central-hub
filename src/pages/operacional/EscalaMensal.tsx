@@ -27,6 +27,7 @@ import PlanningReportsTab from "@/components/operacional/PlanningReportsTab";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { ExecutionStatus } from "@/lib/statusConstants";
 
 const months = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -60,7 +61,7 @@ export default function EscalaMensal() {
     queryKey: ["projects-operational", showAllProjects],
     queryFn: async () => {
       let query = supabase.from("projects").select("*").eq("is_active", true).eq("show_in_operational", true);
-      if (!showAllProjects) { query = query.in("execution_status", ["aguardando_campo", "em_campo"] as any); }
+      if (!showAllProjects) { query = query.in("execution_status", ["aguardando_campo", "em_campo"] satisfies ExecutionStatus[]); }
       const { data, error } = await query.order("name");
       if (error) throw error;
       return data;

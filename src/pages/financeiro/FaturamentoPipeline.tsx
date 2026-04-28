@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInCalendarDays, startOfMonth, endOfMonth, format } from "date-fns";
 import DeadlineBadge from "@/components/DeadlineBadge";
-import { EXEC_STATUS_LABELS, EXEC_STATUS_COLORS, BILLING_LABELS, BILLING_COLORS } from "@/lib/statusConstants";
+import { EXEC_STATUS_LABELS, EXEC_STATUS_COLORS, BILLING_LABELS, BILLING_COLORS, type ExecutionStatus } from "@/lib/statusConstants";
 
 const fmtCurrency = (v: number | null | undefined) =>
   v != null ? v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—";
@@ -37,7 +37,7 @@ export default function FaturamentoPipeline() {
       const { data: projs, error } = await supabase
         .from("projects")
         .select("id, codigo, name, execution_status, delivery_deadline, billing_type, contract_value, start_date, delivery_days_estimated, delivered_at, client_id, is_active")
-        .in("execution_status", ["aguardando_processamento", "em_processamento", "revisao", "aprovado"] as any)
+        .in("execution_status", ["aguardando_processamento", "em_processamento", "revisao", "aprovado"] satisfies ExecutionStatus[])
         .not("delivery_deadline", "is", null)
         .eq("is_active", true)
         .order("delivery_deadline", { ascending: true });

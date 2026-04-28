@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import {
   EXEC_STATUS_LABELS, EXEC_STATUS_COLORS, EXECUTION_STATUSES,
   PROJECT_STATUS_LABELS, BILLING_LABELS, MEASUREMENT_STATUS_LABELS,
+  type ExecutionStatus,
 } from "@/lib/statusConstants";
 
 const EXEC_LABELS = EXEC_STATUS_LABELS;
@@ -140,7 +141,7 @@ export default function ProjetoHistorico() {
   }
 
   const p = editing ? form : project;
-  const responsible = (p as any).responsible_id ? empMap.get((p as any).responsible_id) : p.responsible;
+  const responsible = (p as { responsible_id?: string }).responsible_id ? empMap.get((p as { responsible_id?: string }).responsible_id ?? "") : p.responsible;
   const totalMeasured = projMeasurements.reduce((s, m) => s + (m.valor_bruto || 0), 0);
   const totalNF = projMeasurements.reduce((s, m) => s + (m.valor_nf || 0), 0);
   const location = [p.cidade, p.estado].filter(Boolean).join("/");
@@ -149,11 +150,11 @@ export default function ProjetoHistorico() {
     ? differenceInDays(p.field_completed_at ? new Date(p.field_completed_at) : new Date(), new Date(p.field_started_at))
     : null;
 
-  const handleStatusChange = async (newStatus: string) => {
+  const handleStatusChange = async (newStatus: ExecutionStatus) => {
     const prev = project.execution_status;
     if (prev === newStatus) return;
     try {
-      await updateProject.mutateAsync({ id: project.id, execution_status: newStatus } as any);
+      await updateProject.mutateAsync({ id: project.id, execution_status: newStatus });
       await supabase.from("project_status_history").insert({
         project_id: project.id, from_status: prev, to_status: newStatus,
         modulo: "projetos", changed_by_id: user?.id || null,
@@ -165,6 +166,7 @@ export default function ProjetoHistorico() {
 
   const handleSave = async () => {
     try {
+      // payload mistura form com campos legacy (responsible_id, etc) que não estão no schema regenerado
       await updateProject.mutateAsync({
         id: project.id,
         name: form.name,
@@ -242,7 +244,7 @@ export default function ProjetoHistorico() {
               <Badge variant="outline" className="font-mono text-sm font-bold">{project.codigo || "—"}</Badge>
 
               {/* execution_status — SEMPRE editável */}
-              <Select value={project.execution_status || ""} onValueChange={handleStatusChange}>
+              <Select value={project.execution_status || ""} onValueChange={(v) => handleStatusChange(v as ExecutionStatus)}>
                 <SelectTrigger className="h-7 w-auto border-0 p-0 bg-transparent">
                   <Badge className={EXEC_COLORS[project.execution_status || ""] || "bg-muted"}>
                     {EXEC_LABELS[project.execution_status || ""] || project.execution_status || "—"}

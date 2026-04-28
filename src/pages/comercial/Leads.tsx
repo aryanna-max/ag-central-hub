@@ -200,7 +200,7 @@ export default function Leads() {
     try {
       await updateLead.mutateAsync({
         id: lossDialog.id,
-        status: "perdido" as any,
+        status: "perdido",
         notes: `${lossDialog.notes || ""}\n\n[PERDIDO] ${format(new Date(), "dd/MM/yyyy", { locale: ptBR })}: ${lossReason}`.trim(),
       });
 

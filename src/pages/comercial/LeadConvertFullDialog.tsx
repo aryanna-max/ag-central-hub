@@ -35,7 +35,7 @@ async function generateProjectCode(clientCodigo: string): Promise<string> {
   const { data: existing } = await supabase
     .from("projects")
     .select("codigo")
-    .like("codigo" as any, `${prefix}%`);
+    .like("codigo", `${prefix}%`);
   const seq = (existing?.length || 0) + 1;
   return `${prefix}${String(seq).padStart(3, "0")}`;
 }
@@ -248,10 +248,10 @@ export default function LeadConvertFullDialog({ open, onOpenChange, lead, onConv
       // Step 4: Update lead
       await updateLead.mutateAsync({
         id: lead.id,
-        status: "convertido" as any,
+        status: "convertido",
         converted_project_id: project.id,
         client_id: clientId,
-      } as any);
+      });
 
       // Step 5: Create alerts
       const valorFormatted = contractValue

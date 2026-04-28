@@ -20,6 +20,18 @@ function exportCsv(headers: string[], rows: string[][], filename: string) {
   URL.revokeObjectURL(url);
 }
 
+type VehicleScheduleJoin = {
+  vehicle_id: string | null;
+  project_id: string | null;
+  employee_id?: string | null;
+  daily_schedules: { schedule_date: string } | null;
+  vehicles?: { plate: string | null; model: string | null } | null;
+  projects?: { codigo: string | null; name?: string | null } | null;
+  employees?: { name: string | null } | null;
+};
+
+type VehicleRow = { id: string; plate: string; model: string };
+
 export default function VehicleReportsTab() {
   const now = new Date();
   const [startDate, setStartDate] = useState(format(startOfMonth(now), "yyyy-MM-dd"));
@@ -69,17 +81,19 @@ export default function VehicleReportsTab() {
       if (vehicleFilter !== "all") q = q.eq("vehicle_id", vehicleFilter);
       const { data, error } = await q;
       if (error) throw error;
-      return data || [];
+      return (data || []) as unknown as VehicleScheduleJoin[];
     },
   });
 
   const projectCost = useMemo(() => {
     const map: Record<string, { vehicle_ids: Set<string>; dates: Set<string> }> = {};
-    usageByProject.forEach((e: any) => {
+    usageByProject.forEach((e) => {
       const pid = e.project_id;
+      if (!pid) return;
       if (!map[pid]) map[pid] = { vehicle_ids: new Set(), dates: new Set() };
-      map[pid].vehicle_ids.add(e.vehicle_id);
-      map[pid].dates.add((e.daily_schedules as any)?.schedule_date);
+      if (e.vehicle_id) map[pid].vehicle_ids.add(e.vehicle_id);
+      const date = e.daily_schedules?.schedule_date;
+      if (date) map[pid].dates.add(date);
     });
     return map;
   }, [usageByProject]);
@@ -97,7 +111,7 @@ export default function VehicleReportsTab() {
       if (vehicleFilter !== "all") q = q.eq("vehicle_id", vehicleFilter);
       const { data, error } = await q.limit(200);
       if (error) throw error;
-      return data || [];
+      return (data || []) as unknown as VehicleScheduleJoin[];
     },
   });
 
@@ -112,7 +126,7 @@ export default function VehicleReportsTab() {
 
   const vehicleMap = useMemo(() => {
     const m: Record<string, string> = {};
-    (vehicles as any[]).forEach((v) => (m[v.id] = `${v.plate} - ${v.model}`));
+    (vehicles as unknown as VehicleRow[]).forEach((v) => (m[v.id] = `${v.plate} - ${v.model}`));
     return m;
   }, [vehicles]);
 
@@ -142,7 +156,7 @@ export default function VehicleReportsTab() {
             <SelectTrigger className="w-48 h-8"><SelectValue placeholder="Veículo" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos veículos</SelectItem>
-              {(vehicles as any[]).map((v) => (
+              {(vehicles as unknown as VehicleRow[]).map((v) => (
                 <SelectItem key={v.id} value={v.id}>{v.plate} - {v.model}</SelectItem>
               ))}
             </SelectContent>
@@ -239,11 +253,11 @@ export default function VehicleReportsTab() {
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <CardTitle className="text-sm">Histórico de Uso</CardTitle>
           <Button variant="outline" size="sm" className="gap-1 h-7" onClick={() => {
-            const rows = usageHistory.map((e: any) => [
-              (e.daily_schedules as any)?.schedule_date || "",
-              (e.vehicles as any)?.plate || "",
-              (e.projects as any)?.codigo || "—",
-              (e.employees as any)?.name || "—",
+            const rows = usageHistory.map((e) => [
+              e.daily_schedules?.schedule_date || "",
+              e.vehicles?.plate || "",
+              e.projects?.codigo || "—",
+              e.employees?.name || "—",
             ]);
             exportCsv(["Data", "Veículo", "Projeto", "Responsável"], rows, "historico_uso.csv");
           }}><Download className="w-3 h-3" /> CSV</Button>
@@ -261,12 +275,12 @@ export default function VehicleReportsTab() {
             <TableBody>
               {usageHistory.length === 0 ? (
                 <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">Sem dados no período</TableCell></TableRow>
-              ) : usageHistory.map((e: any, i: number) => (
+              ) : usageHistory.map((e, i) => (
                 <TableRow key={i}>
-                  <TableCell className="text-sm">{(e.daily_schedules as any)?.schedule_date ? format(new Date((e.daily_schedules as any).schedule_date), "dd/MM/yyyy") : "—"}</TableCell>
-                  <TableCell className="text-sm">{(e.vehicles as any)?.plate} {(e.vehicles as any)?.model}</TableCell>
-                  <TableCell className="font-mono text-xs">{(e.projects as any)?.codigo || "—"}</TableCell>
-                  <TableCell className="text-sm">{(e.employees as any)?.name || "—"}</TableCell>
+                  <TableCell className="text-sm">{e.daily_schedules?.schedule_date ? format(new Date(e.daily_schedules.schedule_date), "dd/MM/yyyy") : "—"}</TableCell>
+                  <TableCell className="text-sm">{e.vehicles?.plate} {e.vehicles?.model}</TableCell>
+                  <TableCell className="font-mono text-xs">{e.projects?.codigo || "—"}</TableCell>
+                  <TableCell className="text-sm">{e.employees?.name || "—"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

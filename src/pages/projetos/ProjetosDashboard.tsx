@@ -17,7 +17,7 @@ import { FolderKanban, DollarSign, Clock, FileText, Bell, Download } from "lucid
 import { exportCsv } from "@/lib/exportCsv";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { EXEC_STATUS_LABELS, EXEC_STATUS_COLORS, EXECUTION_STATUSES } from "@/lib/statusConstants";
+import { EXEC_STATUS_LABELS, EXEC_STATUS_COLORS, EXECUTION_STATUSES, type ExecutionStatus } from "@/lib/statusConstants";
 
 const PIE_COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "#f59e0b", "#8b5cf6", "#10b981", "#ef4444", "#6366f1", "#ec4899"];
 
@@ -31,9 +31,9 @@ export default function ProjetosDashboard() {
   const updateProject = useUpdateProject();
   const navigate = useNavigate();
 
-  const handleStatusChange = async (project: Project, newStatus: string) => {
+  const handleStatusChange = async (project: Project, newStatus: ExecutionStatus) => {
     try {
-      await updateProject.mutateAsync({ id: project.id, execution_status: newStatus } as any);
+      await updateProject.mutateAsync({ id: project.id, execution_status: newStatus });
       await supabase.from("project_status_history").insert({
         project_id: project.id,
         from_status: project.execution_status,
@@ -235,7 +235,7 @@ export default function ProjetosDashboard() {
                     <TableCell>
                       <Select
                         value={p.execution_status || ""}
-                        onValueChange={(v) => handleStatusChange(p, v)}
+                        onValueChange={(v) => handleStatusChange(p, v as ExecutionStatus)}
                       >
                         <SelectTrigger className="h-7 w-[140px] text-[10px] border-0 bg-transparent p-0">
                           <Badge className={EXEC_STATUS_COLORS[p.execution_status || ""] || "bg-muted text-muted-foreground"} variant="secondary">

@@ -159,7 +159,7 @@ function EmployeeDocsPanel({ employeeId }: { employeeId: string }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(docs as any[]).map((d) => {
+            {docs.map((d) => {
               const cfg = STATUS_BADGE[d.doc_status] ?? STATUS_BADGE.pendente;
               return (
                 <TableRow key={d.id}>
@@ -261,10 +261,11 @@ export default function Documentos() {
 
   const criticalByEmployee = useMemo(() => {
     const map = new Map<string, { vencido: number; a_vencer: number }>();
-    (critical as any[]).forEach((d) => {
+    critical.forEach((d) => {
       const cur = map.get(d.employee_id) ?? { vencido: 0, a_vencer: 0 };
       if (d.doc_status === "vencido") cur.vencido++;
-      else if (d.doc_status === "proximo_vencer") cur.a_vencer++;
+      // doc_status enum em types.ts ("vencendo") difere do valor real DB ("proximo_vencer"); regen pendente
+      else if ((d.doc_status as string) === "proximo_vencer") cur.a_vencer++;
       map.set(d.employee_id, cur);
     });
     return map;
@@ -279,7 +280,7 @@ export default function Documentos() {
   }, [employees, search]);
 
   const sortedCritical = useMemo(() => {
-    return [...(critical as any[])].sort((a, b) => {
+    return [...critical].sort((a, b) => {
       if (a.doc_status === "vencido" && b.doc_status !== "vencido") return -1;
       if (a.doc_status !== "vencido" && b.doc_status === "vencido") return 1;
       return (a.expiry_date ?? "").localeCompare(b.expiry_date ?? "");
