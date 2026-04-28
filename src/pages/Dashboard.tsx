@@ -24,6 +24,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import DeadlineBadge from "@/components/DeadlineBadge";
+import CompanyDocsAlertCard from "@/components/dashboard/CompanyDocsAlertCard";
 import { cn } from "@/lib/utils";
 
 type KpiFilter = "em_campo" | "prazo_critico" | "a_faturar" | "ativos" | null;
@@ -255,6 +256,8 @@ export default function Dashboard() {
           {activeProjects.length} projetos ativos
         </Badge>
       </div>
+
+      {(role === "master" || role === "diretor") && <CompanyDocsAlertCard />}
 
       {/* ═══ SEÇÃO 1 — ALERTAS (redesenhados) ═══ */}
       <section>
