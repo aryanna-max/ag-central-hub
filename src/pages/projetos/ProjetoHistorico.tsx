@@ -3,11 +3,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useProjectsAll, useUpdateProject } from "@/hooks/useProjects";
 import { useClients } from "@/hooks/useClients";
 import { useEmployees } from "@/hooks/useEmployees";
+import { useUsers } from "@/hooks/useUsers";
 import { useMeasurements } from "@/hooks/useMeasurements";
 import { useProjectServices } from "@/hooks/useProjectServices";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjectContacts } from "@/hooks/useProjectContacts";
 import { useProjectBenefits, useUpsertProjectBenefits } from "@/hooks/useProjectBenefits";
+import { useProjectParticipations } from "@/hooks/useProjectParticipations";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -54,10 +56,12 @@ export default function ProjetoHistorico() {
   const { data: projects = [] } = useProjectsAll();
   const { data: clients = [] } = useClients();
   const { data: employees = [] } = useEmployees();
+  const { data: users = [] } = useUsers();
   const { data: measurements = [] } = useMeasurements();
   const { data: services = [] } = useProjectServices(projectId || "");
   const updateProject = useUpdateProject();
   const { data: projectContacts = [] } = useProjectContacts(projectId || null);
+  const { data: participations = [] } = useProjectParticipations(projectId);
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Record<string, any>>({});
@@ -92,6 +96,10 @@ export default function ProjetoHistorico() {
   const project = useMemo(() => projects.find((p) => p.id === projectId), [projects, projectId]);
   const client = useMemo(() => clients.find((c) => c.id === project?.client_id), [clients, project]);
   const empMap = useMemo(() => new Map(employees.map((e) => [e.id, e.name])), [employees]);
+  const userMap = useMemo(
+    () => new Map(users.map((u) => [u.id, u.full_name || u.email || u.id])),
+    [users],
+  );
   const projMeasurements = useMemo(() => measurements.filter((m) => m.project_id === projectId), [measurements, projectId]);
 
   useEffect(() => {
@@ -369,6 +377,84 @@ export default function ProjetoHistorico() {
                 </div>
               </div>
             </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ═══ RESPONSÁVEIS (ADR) + EQUIPE (participações) ═══ */}
+      <Card>
+        <CardContent className="p-4">
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <Users className="w-4 h-4" /> Responsáveis
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground">Comercial</p>
+              <p className="font-medium">
+                {project.responsible_comercial_id
+                  ? userMap.get(project.responsible_comercial_id) || "—"
+                  : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Técnico</p>
+              <p className="font-medium">
+                {project.responsible_tecnico_id
+                  ? userMap.get(project.responsible_tecnico_id) || "—"
+                  : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Campo</p>
+              <p className="font-medium">
+                {project.responsible_campo_id
+                  ? userMap.get(project.responsible_campo_id) || "—"
+                  : "—"}
+              </p>
+            </div>
+          </div>
+
+          <Separator className="my-3" />
+
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
+              <Users className="w-4 h-4" /> Equipe ({participations.length})
+            </h4>
+            <span className="text-xs text-muted-foreground">
+              derivada da escala de campo
+            </span>
+          </div>
+          {participations.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Nenhuma participação registrada ainda. Membros aparecem conforme a equipe
+              é escalada na operação diária.
+            </p>
+          ) : (
+            <ul className="space-y-1 text-sm">
+              {participations.map((pp) => {
+                const name = pp.employees?.name || empMap.get(pp.employee_id) || "—";
+                const matricula = pp.employees?.matricula;
+                const ativo = pp.end_date == null;
+                return (
+                  <li key={pp.id} className="flex items-center justify-between gap-2">
+                    <span className="truncate">
+                      <span className="font-medium">{name}</span>
+                      {matricula && (
+                        <span className="ml-1 text-xs text-muted-foreground font-mono">
+                          {matricula}
+                        </span>
+                      )}
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {pp.role}
+                      </span>
+                    </span>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {ativo ? `desde ${fmtDate(pp.start_date)}` : `${fmtDate(pp.start_date)} → ${fmtDate(pp.end_date)}`}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </CardContent>
       </Card>

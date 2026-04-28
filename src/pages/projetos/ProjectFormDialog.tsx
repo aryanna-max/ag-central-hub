@@ -9,6 +9,7 @@ import { SERVICE_TYPES } from "@/lib/serviceTypes";
 import { useClients, type Client } from "@/hooks/useClients";
 import { useCreateProject } from "@/hooks/useProjects";
 import { useEmployees } from "@/hooks/useEmployees";
+import { useUsers } from "@/hooks/useUsers";
 import { useCepAutofill } from "@/hooks/useCepAutofill";
 import { isDirector } from "@/lib/fieldRoles";
 import { useCreateProjectContacts } from "@/hooks/useProjectContacts";
@@ -35,9 +36,24 @@ interface Props {
 export default function ProjectFormDialog({ open, onOpenChange }: Props) {
   const { data: clients = [] } = useClients();
   const { data: employees = [] } = useEmployees();
+  const { data: users = [] } = useUsers();
   const createProject = useCreateProject();
   const createContacts = useCreateProjectContacts();
-  const directorId = employees.find((e) => e.status !== "desligado" && isDirector(e.role))?.id || null;
+
+  // Profiles elegíveis pra papéis comerciais/técnicos: master + diretor + comercial.
+  // FK responsible_*_id agora aponta pra profiles (não employees), pós-migration.
+  const comercialOptions = users.filter((u) =>
+    u.role === "master" || u.role === "diretor" || u.role === "comercial",
+  );
+  const tecnicoOptions = users.filter((u) =>
+    u.role === "master" || u.role === "diretor" || u.role === "sala_tecnica",
+  );
+  const campoOptions = users.filter((u) =>
+    u.role === "master" || u.role === "diretor" || u.role === "operacional",
+  );
+  const aryannaProfile = users.find((u) => u.email === "aryannagonzaga@gmail.com");
+  const defaultComercialId =
+    employees.find((e) => e.status !== "desligado" && isDirector(e.role))?.id || null;
 
   const [clientId, setClientId] = useState("");
   const [projectName, setProjectName] = useState("");
@@ -49,6 +65,10 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
   const [codeLoading, setCodeLoading] = useState(false);
   const [service, setService] = useState("");
   const [isPending, setIsPending] = useState(false);
+
+  const [responsibleComercialId, setResponsibleComercialId] = useState<string>("");
+  const [responsibleTecnicoId, setResponsibleTecnicoId] = useState<string>("");
+  const [responsibleCampoId, setResponsibleCampoId] = useState<string>("");
 
   // Address fields
   const [cep, setCep] = useState("");
@@ -76,8 +96,16 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
       setContractValue(null); setEmpresaFaturadora("ag_topografia"); setBillingType("");
       setProjectCode(""); setService(""); setCep(""); setRua(""); setBairro("");
       setNumero(""); setCidade("Recife"); setEstado("PE");
+      setResponsibleComercialId(""); setResponsibleTecnicoId(""); setResponsibleCampoId("");
     }
   }, [open]);
+
+  // Default técnico = Aryanna assim que profiles carregarem
+  useEffect(() => {
+    if (open && !responsibleTecnicoId && aryannaProfile?.id) {
+      setResponsibleTecnicoId(aryannaProfile.id);
+    }
+  }, [open, aryannaProfile?.id]);
 
   useEffect(() => {
     if (!selectedClient?.codigo) { setProjectCode(""); return; }
@@ -115,7 +143,9 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
         start_date: new Date().toISOString().split("T")[0],
         is_active: true,
         client_codigo: selectedClient!.codigo!,
-        responsible_comercial_id: directorId,
+        responsible_comercial_id: responsibleComercialId || defaultComercialId,
+        responsible_tecnico_id: responsibleTecnicoId || aryannaProfile?.id || null,
+        responsible_campo_id: responsibleCampoId || null,
         cep: cep || null,
         rua: rua || null,
         bairro: bairro || null,
@@ -234,6 +264,68 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
                 <SelectItem value="sem_documento">Sem documento</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Responsáveis (ADR Responsabilidades — 3 papéis) */}
+          <div className="space-y-1">
+            <Label className="text-sm font-medium text-muted-foreground">Responsáveis</Label>
+          </div>
+          <div className="grid grid-cols-1 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Comercial</Label>
+              <Select
+                value={responsibleComercialId || "none"}
+                onValueChange={(v) => setResponsibleComercialId(v === "none" ? "" : v)}
+              >
+                <SelectTrigger className="h-9"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— sem responsável —</SelectItem>
+                  {comercialOptions.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.full_name || u.email || u.id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Técnico</Label>
+              <Select
+                value={responsibleTecnicoId || "none"}
+                onValueChange={(v) => setResponsibleTecnicoId(v === "none" ? "" : v)}
+              >
+                <SelectTrigger className="h-9"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— sem responsável —</SelectItem>
+                  {tecnicoOptions.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.full_name || u.email || u.id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Default: Aryanna (master)</p>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Campo (opcional)</Label>
+              <Select
+                value={responsibleCampoId || "none"}
+                onValueChange={(v) => setResponsibleCampoId(v === "none" ? "" : v)}
+              >
+                <SelectTrigger className="h-9"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— sem responsável —</SelectItem>
+                  {campoOptions.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.full_name || u.email || u.id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Pode ficar vazio até a equipe ser escalada.
+              </p>
+            </div>
           </div>
 
           {/* Endereço da obra */}
