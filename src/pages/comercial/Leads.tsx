@@ -6,18 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, ArrowRightLeft, Target, LayoutGrid, List, FolderKanban, AlertTriangle, TrendingUp, DollarSign, Briefcase, Download } from "lucide-react";
-import ColumnToggle, { useColumnVisibility, type ColumnDef } from "@/components/ColumnToggle";
-import { SortableTableHead, useSortableTable } from "@/components/ui/sortable-table-head";
-import LeadConversionDialog from "./LeadConversionDialog";
+import { Plus, Search, Target, FolderKanban, AlertTriangle, TrendingUp, DollarSign, Briefcase, Download } from "lucide-react";
+import LeadConvertSimpleDialog from "./LeadConvertSimpleDialog";
+import LeadConvertFullDialog from "./LeadConvertFullDialog";
 import {
   useLeads, useDeleteLead, useUpdateLead,
-  LEAD_STATUSES, ACTIVE_STATUSES, KANBAN_STATUSES, HISTORY_STATUSES, ALLOWED_TRANSITIONS,
+  LEAD_STATUSES, ACTIVE_STATUSES, KANBAN_STATUSES, HISTORY_STATUSES, isSkippingFunnel,
   STATUS_LABELS, STATUS_COLORS, ORIGIN_LABELS, ORIGIN_COLORS,
   type Lead, type LeadStatus, type LeadOrigin,
 } from "@/hooks/useLeads";
@@ -66,7 +64,6 @@ export default function Leads() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [originFilter, setOriginFilter] = useState<string>("all");
   const [responsibleFilter, setResponsibleFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [showHistory, setShowHistory] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
@@ -74,19 +71,9 @@ export default function Leads() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [lossDialog, setLossDialog] = useState<Lead | null>(null);
   const [lossReason, setLossReason] = useState("");
-  const [conversionLead, setConversionLead] = useState<Lead | null>(null);
-
-  const LEAD_COLUMNS: ColumnDef[] = [
-    { key: "codigo", label: "Código" },
-    { key: "empresa", label: "Empresa/Nome" },
-    { key: "origem", label: "Origem" },
-    { key: "servico", label: "Serviço" },
-    { key: "valor", label: "Valor" },
-    { key: "responsavel", label: "Responsável" },
-    { key: "status", label: "Status" },
-    { key: "data", label: "Data" },
-  ];
-  const { visibleColumns, toggle: toggleColumn, isVisible } = useColumnVisibility(LEAD_COLUMNS);
+  const [convertingLead, setConvertingLead] = useState<Lead | null>(null);
+  const [showSimpleConvert, setShowSimpleConvert] = useState(false);
+  const [showFullConvert, setShowFullConvert] = useState(false);
 
   const getEmployeeName = (id: string | null) => {
     if (!id) return "—";
@@ -116,8 +103,6 @@ export default function Leads() {
       return matchSearch && matchStatus && matchOrigin && matchResp && matchHistory;
     });
   }, [leads, clients, search, statusFilter, originFilter, responsibleFilter, showHistory]);
-
-  const { sorted: sortedFiltered, sortKey, sortDir, handleSort } = useSortableTable(filtered);
 
   // ─── Projects split: active (not yet delivered) vs finalized ───
 
@@ -175,7 +160,17 @@ export default function Leads() {
   const handleStatusChange = async (lead: Lead, newStatus: LeadStatus) => {
     if (newStatus === lead.status) return;
     if (newStatus === "perdido") { setLossDialog(lead); return; }
-    if (newStatus === "convertido") { setConversionLead(lead); return; }
+    if (newStatus === "convertido") {
+      if (isSkippingFunnel(lead.status, newStatus)) {
+        toast.info(
+          "Cliente recorrente sem proposta formal? Tudo bem — registrando como conversão direta.",
+          { duration: 4000 }
+        );
+      }
+      setConvertingLead(lead);
+      setShowSimpleConvert(true);
+      return;
+    }
     try {
       await updateLead.mutateAsync({ id: lead.id, status: newStatus });
 
@@ -356,107 +351,6 @@ export default function Leads() {
     </div>
   );
 
-  // ─── TABLE VIEW ───
-
-  const renderTable = () => (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {isVisible("codigo") && <SortableTableHead sortKey="codigo" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Código</SortableTableHead>}
-            {isVisible("empresa") && <SortableTableHead sortKey="company" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Empresa/Nome</SortableTableHead>}
-            {isVisible("origem") && <TableHead className="text-xs">Origem</TableHead>}
-            {isVisible("servico") && <TableHead className="text-xs">Serviço</TableHead>}
-            {isVisible("valor") && <SortableTableHead sortKey="valor" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Valor</SortableTableHead>}
-            {isVisible("responsavel") && <TableHead className="text-xs">Responsável</TableHead>}
-            {isVisible("status") && <TableHead className="text-xs">Status</TableHead>}
-            <TableHead className="text-xs">Projeto</TableHead>
-            {isVisible("data") && <SortableTableHead sortKey="created_at" currentSort={sortKey} currentDir={sortDir} onSort={handleSort}>Data</SortableTableHead>}
-            <TableHead className="text-xs w-10" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedFiltered.map((lead) => {
-            const linkedProject = lead.converted_project_id
-              ? projects.find((p) => p.id === lead.converted_project_id)
-              : projects.find((p) => p.lead_id === lead.id);
-            const execBadge = linkedProject?.execution_status ? EXEC_STATUS_BADGE[linkedProject.execution_status] : null;
-            const isHist = HISTORY_STATUSES.includes(lead.status);
-            return (
-              <TableRow
-                key={lead.id}
-                className={`cursor-pointer ${isHist ? "opacity-60" : ""}`}
-                onClick={() => setDetailLead(lead)}
-              >
-                {isVisible("codigo") && <TableCell className="text-xs font-mono font-bold text-primary">{lead.codigo || "—"}</TableCell>}
-                {isVisible("empresa") && <TableCell className="text-xs font-medium max-w-[200px] truncate">{getDisplayName(lead, clients)}</TableCell>}
-                {isVisible("origem") && <TableCell>{originBadge(lead.origin)}</TableCell>}
-                {isVisible("servico") && <TableCell className="text-xs max-w-[150px] truncate text-muted-foreground">{lead.servico || "—"}</TableCell>}
-                {isVisible("valor") && <TableCell className="text-xs font-semibold">{formatValue(lead.valor)}</TableCell>}
-                {isVisible("responsavel") && <TableCell className="text-xs text-muted-foreground">{getEmployeeName(lead.responsible_id)}</TableCell>}
-                {isVisible("status") && (
-                  <TableCell>
-                    <Badge className={`text-[10px] ${STATUS_COLORS[lead.status]}`}>{STATUS_LABELS[lead.status]}</Badge>
-                  </TableCell>
-                )}
-                <TableCell>
-                  {linkedProject && (
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); navigate(`/projetos/${linkedProject.id}`); }}
-                        className="text-[10px] text-primary font-mono font-bold hover:underline"
-                      >
-                        {linkedProject.codigo || "—"}
-                      </button>
-                      {execBadge && <Badge className={`${execBadge.color} text-[8px] h-3.5`}>{execBadge.label}</Badge>}
-                    </div>
-                  )}
-                </TableCell>
-                {isVisible("data") && (
-                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                    {lead.created_at ? format(new Date(lead.created_at), "dd/MM/yy") : "—"}
-                  </TableCell>
-                )}
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-7 w-7">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {!isHist && (
-                        <>
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingLead(lead); setFormOpen(true); }}>
-                            <Pencil className="w-3 h-3 mr-2" /> Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuSub>
-                            <DropdownMenuSubTrigger><ArrowRightLeft className="w-3 h-3 mr-2" /> Mover para</DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent>
-                              {LEAD_STATUSES.filter((s) => s !== lead.status).map((s) => (
-                                <DropdownMenuItem key={s} onClick={(e) => { e.stopPropagation(); handleStatusChange(lead, s); }}>
-                                  {STATUS_LABELS[s]}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuSubContent>
-                          </DropdownMenuSub>
-                          <DropdownMenuSeparator />
-                        </>
-                      )}
-                      <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteId(lead.id); }}>
-                        <Trash2 className="w-3 h-3 mr-2" /> Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
-  );
-
   // ─── PROJECT CARD (for active projects section) ───
 
   const renderProjectCard = (p: any) => {
@@ -596,23 +490,14 @@ export default function Leads() {
         >
           {showHistory ? "Esconder" : "Mostrar"} histórico
         </Button>
-        <div className="flex border rounded-md">
-          <Button variant={viewMode === "kanban" ? "default" : "ghost"} size="sm" onClick={() => setViewMode("kanban")} className="rounded-r-none">
-            <LayoutGrid className="w-4 h-4" />
-          </Button>
-          <Button variant={viewMode === "list" ? "default" : "ghost"} size="sm" onClick={() => setViewMode("list")} className="rounded-l-none">
-            <List className="w-4 h-4" />
-          </Button>
-        </div>
-        {viewMode === "list" && (
-          <ColumnToggle columns={LEAD_COLUMNS} visibleColumns={visibleColumns} onToggle={toggleColumn} />
-        )}
       </div>
 
       {/* Lead Pipeline */}
       {isLoading ? (
         <p className="text-center text-muted-foreground py-10">Carregando...</p>
-      ) : viewMode === "kanban" ? renderKanban() : renderTable()}
+      ) : (
+        renderKanban()
+      )}
 
       {/* Projetos Ativos — rastreabilidade pós-conversão */}
       {projectsFromLeads.length > 0 && (
@@ -714,12 +599,38 @@ export default function Leads() {
         open={!!detailLead}
         onOpenChange={(o) => !o && setDetailLead(null)}
         lead={detailLead}
-        onConvert={(lead) => { setDetailLead(null); setConversionLead(lead); }}
+        onConvert={(lead) => {
+          setDetailLead(null);
+          if (isSkippingFunnel(lead.status, "convertido")) {
+            toast.info(
+              "Cliente recorrente sem proposta formal? Tudo bem — registrando como conversão direta.",
+              { duration: 4000 }
+            );
+          }
+          setConvertingLead(lead);
+          setShowSimpleConvert(true);
+        }}
       />
-      <LeadConversionDialog
-        open={!!conversionLead}
-        onOpenChange={(o) => { if (!o) setConversionLead(null); }}
-        lead={conversionLead}
+      <LeadConvertSimpleDialog
+        open={showSimpleConvert}
+        onOpenChange={(o) => {
+          setShowSimpleConvert(o);
+          if (!o) setConvertingLead(null);
+        }}
+        lead={convertingLead}
+        onConverted={() => navigate("/projetos/kanban")}
+        onSwitchToFullMode={() => {
+          setShowSimpleConvert(false);
+          setShowFullConvert(true);
+        }}
+      />
+      <LeadConvertFullDialog
+        open={showFullConvert}
+        onOpenChange={(o) => {
+          setShowFullConvert(o);
+          if (!o) setConvertingLead(null);
+        }}
+        lead={convertingLead}
         onConverted={() => navigate("/projetos/kanban")}
       />
 
