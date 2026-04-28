@@ -28,7 +28,7 @@ export function useProjectContacts(projectId: string | null | undefined) {
     queryKey: ["project-contacts", projectId],
     queryFn: async () => {
       if (!projectId) return [];
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("project_contacts")
         .select("*")
         .eq("project_id", projectId)
@@ -51,7 +51,7 @@ export function useUpsertProjectContacts() {
       contacts: Omit<ProjectContactInsert, "project_id">[];
     }) => {
       // Delete existing contacts for this project
-      await (supabase as any)
+      await supabase
         .from("project_contacts")
         .delete()
         .eq("project_id", projectId);
@@ -70,7 +70,7 @@ export function useUpsertProjectContacts() {
 
       if (toInsert.length === 0) return [];
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("project_contacts")
         .insert(toInsert)
         .select();
@@ -88,7 +88,7 @@ export function useCreateProjectContacts() {
   return useMutation({
     mutationFn: async (contacts: ProjectContactInsert[]) => {
       if (contacts.length === 0) return [];
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("project_contacts")
         .insert(contacts)
         .select();

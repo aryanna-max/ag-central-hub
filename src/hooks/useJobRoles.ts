@@ -1,22 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
 export type JobRoleDepartment = "campo" | "sala_tecnica" | "administrativo" | "diretoria";
 
-export type JobRole = {
-  id: string;
-  title: string;
-  department: JobRoleDepartment;
-  cbo_code: string | null;
-  is_active: boolean;
-  created_at: string;
-};
+export type JobRole = Database["public"]["Tables"]["job_roles"]["Row"];
+export type JobRoleInsert = Database["public"]["Tables"]["job_roles"]["Insert"];
+export type JobRoleUpdate = Database["public"]["Tables"]["job_roles"]["Update"];
 
 export function useJobRoles() {
   return useQuery({
     queryKey: ["job-roles"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("job_roles")
         .select("*")
         .eq("is_active", true)
@@ -36,7 +32,7 @@ export function useCreateJobRole() {
       department: JobRoleDepartment;
       cbo_code?: string | null;
     }) => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("job_roles")
         .insert({
           title: values.title.trim(),

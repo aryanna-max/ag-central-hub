@@ -71,7 +71,7 @@ export function useMonthlyDiscountReports(year: number, month: number) {
   return useQuery({
     queryKey: ["monthly-discount-reports", year, month],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("monthly_discount_reports")
         .select("*, employees(name, matricula, transporte_tipo, empresa_contratante, salario_base, cpf)")
         .eq("year", year)
@@ -99,7 +99,7 @@ export function useGenerateMonthlyReports() {
       const diasUteis = countBusinessDays(year, month);
 
       // 1. Periodo payroll (opcional, para vincular)
-      const { data: periodData } = await (supabase as any)
+      const { data: periodData } = await supabase
         .from("payroll_periods")
         .select("id")
         .eq("year", year)
@@ -108,7 +108,7 @@ export function useGenerateMonthlyReports() {
       const payroll_period_id = periodData?.id ?? null;
 
       // 2. Funcionarios ativos
-      const { data: employees, error: empErr } = await (supabase as any)
+      const { data: employees, error: empErr } = await supabase
         .from("employees")
         .select("id, name, status, transporte_tipo, salario_base, vt_isento_desconto, has_vt, data_demissao, admission_date")
         .neq("status", "desligado");
@@ -116,10 +116,10 @@ export function useGenerateMonthlyReports() {
 
       if (!employees?.length) return { count: 0 };
 
-      const employeeIds = employees.map((e: any) => e.id);
+      const employeeIds = employees.map((e) => e.id);
 
       // 3. Presencas do mes
-      const { data: records } = await (supabase as any)
+      const { data: records } = await supabase
         .from("employee_daily_records")
         .select("employee_id, schedule_date, attendance, vt_provided")
         .gte("schedule_date", monthStart)
@@ -127,31 +127,22 @@ export function useGenerateMonthlyReports() {
         .in("employee_id", employeeIds);
 
       // 4. Ferias do mes
-      const { data: vacations } = await (supabase as any)
+      const { data: vacations } = await supabase
         .from("employee_vacations")
         .select("employee_id, start_date, end_date")
         .lte("start_date", monthEnd)
         .gte("end_date", monthStart)
         .in("employee_id", employeeIds);
 
-      // 5. Ausencias (tabela pode nao existir em types)
-      let absences: any[] = [];
-      try {
-        const { data: absData } = await (supabase as any)
-          .from("employee_absences")
-          .select("employee_id, start_date, end_date, absence_type")
-          .lte("start_date", monthEnd)
-          .gte("end_date", monthStart);
-        if (absData) absences = absData;
-      } catch {
-        // tabela pode nao existir
-      }
+      // employee_absences foi DROP em 20260422_ferias_cleanup_dados_teste.sql.
+      // Mantido bloco morto pra retomar caso tabela volte (improvável). TODO PR2: deletar.
+      const absences: { employee_id: string; start_date: string; end_date: string }[] = [];
 
       // Indexa presencas e campo-distante por funcionario
       type Stat = { presenteCount: number; vtCount: number; campoDistanteCount: number };
       const stats = new Map<string, Stat>();
 
-      for (const r of (records ?? []) as any[]) {
+      for (const r of records ?? []) {
         const existing = stats.get(r.employee_id) ?? { presenteCount: 0, vtCount: 0, campoDistanteCount: 0 };
         const presente = !r.attendance || r.attendance === "presente" || r.attendance === "atrasado";
         if (presente) existing.presenteCount += 1;
@@ -176,7 +167,7 @@ export function useGenerateMonthlyReports() {
       }
 
       const ausencias = new Map<string, number>();
-      for (const v of (vacations ?? []) as any[]) {
+      for (const v of vacations ?? []) {
         const d = daysInPeriodIntersect(v.start_date, v.end_date);
         ausencias.set(v.employee_id, (ausencias.get(v.employee_id) ?? 0) + d);
       }
@@ -186,7 +177,7 @@ export function useGenerateMonthlyReports() {
       }
 
       // Monta linhas
-      const rows = employees.map((e: any) => {
+      const rows = employees.map((e) => {
         const stat = stats.get(e.id) ?? { presenteCount: 0, vtCount: 0, campoDistanteCount: 0 };
         const aus = ausencias.get(e.id) ?? 0;
 
@@ -242,22 +233,22 @@ export function useGenerateMonthlyReports() {
       });
 
       // Nao regerar para relatorios ja enviados/aplicados
-      const { data: existing } = await (supabase as any)
+      const { data: existing } = await supabase
         .from("monthly_discount_reports")
         .select("employee_id, status")
         .eq("year", year)
         .eq("month", month);
 
       const lockedIds = new Set(
-        ((existing ?? []) as any[])
+        (existing ?? [])
           .filter((r) => r.status === "enviado" || r.status === "aplicado")
           .map((r) => r.employee_id)
       );
-      const rowsToUpsert = rows.filter((r: any) => !lockedIds.has(r.employee_id));
+      const rowsToUpsert = rows.filter((r) => !lockedIds.has(r.employee_id));
 
       if (rowsToUpsert.length === 0) return { count: 0 };
 
-      const { error: upErr } = await (supabase as any)
+      const { error: upErr } = await supabase
         .from("monthly_discount_reports")
         .upsert(rowsToUpsert, { onConflict: "employee_id,year,month" });
       if (upErr) throw upErr;
@@ -274,8 +265,8 @@ export function useUpdateMonthlyDiscountReport() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (values: Partial<MonthlyDiscountReport> & { id: string }) => {
-      const { id, employees: _emp, ...patch } = values as any;
-      const { error } = await (supabase as any)
+      const { id, employees: _emp, ...patch } = values;
+      const { error } = await supabase
         .from("monthly_discount_reports")
         .update(patch)
         .eq("id", id);
@@ -289,7 +280,7 @@ export function useSetMonthlyDiscountReportsStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (values: { year: number; month: number; status: MDRStatus }) => {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("monthly_discount_reports")
         .update({ status: values.status })
         .eq("year", values.year)

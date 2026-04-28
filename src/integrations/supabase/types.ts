@@ -1136,59 +1136,211 @@ export type Database = {
       employees: {
         Row: {
           admission_date: string | null
+          agencia: string | null
+          alelo_valor_dia: number | null
+          aviso_previo_type:
+            | Database["public"]["Enums"]["aviso_previo_type"]
+            | null
+          bairro: string | null
+          banco: string | null
+          cep: string | null
+          cidade: string | null
+          cnh: string | null
+          cnh_categoria: string | null
+          cnh_validade: string | null
+          complemento: string | null
+          conta: string | null
+          contato_emergencia_nome: string | null
+          contato_emergencia_parentesco: string | null
+          contato_emergencia_telefone: string | null
           cpf: string | null
           created_at: string
+          ctps_numero: string | null
+          ctps_serie: string | null
+          data_demissao: string | null
+          data_nascimento: string | null
           email: string | null
+          empresa_contratante: string | null
+          escolaridade: string | null
+          estado: string | null
+          estado_civil: string | null
+          genero: string | null
           has_vt: boolean | null
           id: string
+          job_role_id: string | null
+          jornada: string | null
           matricula: string | null
+          motivo_demissao: string | null
+          nacionalidade: string | null
           name: string
+          nome_mae: string | null
+          numero: string | null
           phone: string | null
           photo_url: string | null
+          pis: string | null
+          pix_chave: string | null
+          recebe_alelo: boolean | null
+          rg: string | null
           role: string
+          rua: string | null
+          salario_base: number | null
           status: Database["public"]["Enums"]["employee_status"]
+          terminated_at: string | null
+          terminated_by: string | null
+          termination_notes: string | null
+          termination_type:
+            | Database["public"]["Enums"]["termination_type"]
+            | null
+          termination_value: number | null
+          tipo_conta: string | null
+          tipo_contrato: string | null
           transporte_tipo: string | null
           updated_at: string
           vt_cash: boolean | null
+          vt_isento_desconto: boolean | null
           vt_value: number | null
         }
         Insert: {
           admission_date?: string | null
+          agencia?: string | null
+          alelo_valor_dia?: number | null
+          aviso_previo_type?:
+            | Database["public"]["Enums"]["aviso_previo_type"]
+            | null
+          bairro?: string | null
+          banco?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnh?: string | null
+          cnh_categoria?: string | null
+          cnh_validade?: string | null
+          complemento?: string | null
+          conta?: string | null
+          contato_emergencia_nome?: string | null
+          contato_emergencia_parentesco?: string | null
+          contato_emergencia_telefone?: string | null
           cpf?: string | null
           created_at?: string
+          ctps_numero?: string | null
+          ctps_serie?: string | null
+          data_demissao?: string | null
+          data_nascimento?: string | null
           email?: string | null
+          empresa_contratante?: string | null
+          escolaridade?: string | null
+          estado?: string | null
+          estado_civil?: string | null
+          genero?: string | null
           has_vt?: boolean | null
           id?: string
+          job_role_id?: string | null
+          jornada?: string | null
           matricula?: string | null
+          motivo_demissao?: string | null
+          nacionalidade?: string | null
           name: string
+          nome_mae?: string | null
+          numero?: string | null
           phone?: string | null
           photo_url?: string | null
+          pis?: string | null
+          pix_chave?: string | null
+          recebe_alelo?: boolean | null
+          rg?: string | null
           role?: string
+          rua?: string | null
+          salario_base?: number | null
           status?: Database["public"]["Enums"]["employee_status"]
+          terminated_at?: string | null
+          terminated_by?: string | null
+          termination_notes?: string | null
+          termination_type?:
+            | Database["public"]["Enums"]["termination_type"]
+            | null
+          termination_value?: number | null
+          tipo_conta?: string | null
+          tipo_contrato?: string | null
           transporte_tipo?: string | null
           updated_at?: string
           vt_cash?: boolean | null
+          vt_isento_desconto?: boolean | null
           vt_value?: number | null
         }
         Update: {
           admission_date?: string | null
+          agencia?: string | null
+          alelo_valor_dia?: number | null
+          aviso_previo_type?:
+            | Database["public"]["Enums"]["aviso_previo_type"]
+            | null
+          bairro?: string | null
+          banco?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnh?: string | null
+          cnh_categoria?: string | null
+          cnh_validade?: string | null
+          complemento?: string | null
+          conta?: string | null
+          contato_emergencia_nome?: string | null
+          contato_emergencia_parentesco?: string | null
+          contato_emergencia_telefone?: string | null
           cpf?: string | null
           created_at?: string
+          ctps_numero?: string | null
+          ctps_serie?: string | null
+          data_demissao?: string | null
+          data_nascimento?: string | null
           email?: string | null
+          empresa_contratante?: string | null
+          escolaridade?: string | null
+          estado?: string | null
+          estado_civil?: string | null
+          genero?: string | null
           has_vt?: boolean | null
           id?: string
+          job_role_id?: string | null
+          jornada?: string | null
           matricula?: string | null
+          motivo_demissao?: string | null
+          nacionalidade?: string | null
           name?: string
+          nome_mae?: string | null
+          numero?: string | null
           phone?: string | null
           photo_url?: string | null
+          pis?: string | null
+          pix_chave?: string | null
+          recebe_alelo?: boolean | null
+          rg?: string | null
           role?: string
+          rua?: string | null
+          salario_base?: number | null
           status?: Database["public"]["Enums"]["employee_status"]
+          terminated_at?: string | null
+          terminated_by?: string | null
+          termination_notes?: string | null
+          termination_type?:
+            | Database["public"]["Enums"]["termination_type"]
+            | null
+          termination_value?: number | null
+          tipo_conta?: string | null
+          tipo_contrato?: string | null
           transporte_tipo?: string | null
           updated_at?: string
           vt_cash?: boolean | null
+          vt_isento_desconto?: boolean | null
           vt_value?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "employees_job_role_id_fkey"
+            columns: ["job_role_id"]
+            isOneToOne: false
+            referencedRelation: "job_roles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       field_expense_discounts: {
         Row: {
@@ -1534,6 +1686,33 @@ export type Database = {
           },
         ]
       }
+      job_roles: {
+        Row: {
+          cbo_code: string | null
+          created_at: string
+          department: string
+          id: string
+          is_active: boolean | null
+          title: string
+        }
+        Insert: {
+          cbo_code?: string | null
+          created_at?: string
+          department?: string
+          id?: string
+          is_active?: boolean | null
+          title: string
+        }
+        Update: {
+          cbo_code?: string | null
+          created_at?: string
+          department?: string
+          id?: string
+          is_active?: boolean | null
+          title?: string
+        }
+        Relationships: []
+      }
       lead_interactions: {
         Row: {
           content: string
@@ -1562,6 +1741,51 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "lead_interactions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_status_history: {
+        Row: {
+          changed_by_id: string | null
+          created_at: string
+          from_status: Database["public"]["Enums"]["lead_status"] | null
+          id: string
+          lead_id: string
+          notes: string | null
+          to_status: Database["public"]["Enums"]["lead_status"]
+        }
+        Insert: {
+          changed_by_id?: string | null
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["lead_status"] | null
+          id?: string
+          lead_id: string
+          notes?: string | null
+          to_status: Database["public"]["Enums"]["lead_status"]
+        }
+        Update: {
+          changed_by_id?: string | null
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["lead_status"] | null
+          id?: string
+          lead_id?: string
+          notes?: string | null
+          to_status?: Database["public"]["Enums"]["lead_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_status_history_changed_by_id_fkey"
+            columns: ["changed_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_status_history_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
@@ -2012,6 +2236,178 @@ export type Database = {
           },
         ]
       }
+      monthly_discount_report_batches: {
+        Row: {
+          applied_at: string | null
+          applied_by: string | null
+          created_at: string
+          employee_count: number
+          id: string
+          notes: string | null
+          reference_month: string
+          sent_at: string | null
+          sent_by: string | null
+          status: Database["public"]["Enums"]["monthly_report_status"]
+          title: string
+          total_alelo: number
+          total_descontos: number
+          total_liquido: number
+          total_vt: number
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_by?: string | null
+          created_at?: string
+          employee_count?: number
+          id?: string
+          notes?: string | null
+          reference_month: string
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: Database["public"]["Enums"]["monthly_report_status"]
+          title: string
+          total_alelo?: number
+          total_descontos?: number
+          total_liquido?: number
+          total_vt?: number
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          applied_by?: string | null
+          created_at?: string
+          employee_count?: number
+          id?: string
+          notes?: string | null
+          reference_month?: string
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: Database["public"]["Enums"]["monthly_report_status"]
+          title?: string
+          total_alelo?: number
+          total_descontos?: number
+          total_liquido?: number
+          total_vt?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      monthly_discount_reports: {
+        Row: {
+          alelo_desconto: number | null
+          alelo_dias_ausente: number | null
+          alelo_dias_feriado: number | null
+          alelo_dias_uteis: number | null
+          alelo_valor_cheio: number | null
+          alelo_valor_final: number | null
+          batch_id: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          month: number
+          notes: string | null
+          outros_descontos: number | null
+          outros_descricao: string | null
+          payroll_period_id: string | null
+          status: string
+          total_descontos: number | null
+          updated_at: string
+          vt_desconto_ausencias: number | null
+          vt_desconto_salario: number | null
+          vt_dias_ausente: number | null
+          vt_dias_campo_distante: number | null
+          vt_dias_dinheiro_integral: number | null
+          vt_dias_uteis: number | null
+          vt_isento: boolean | null
+          vt_valor_cheio: number | null
+          vt_valor_final: number | null
+          year: number
+        }
+        Insert: {
+          alelo_desconto?: number | null
+          alelo_dias_ausente?: number | null
+          alelo_dias_feriado?: number | null
+          alelo_dias_uteis?: number | null
+          alelo_valor_cheio?: number | null
+          alelo_valor_final?: number | null
+          batch_id?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          month: number
+          notes?: string | null
+          outros_descontos?: number | null
+          outros_descricao?: string | null
+          payroll_period_id?: string | null
+          status?: string
+          total_descontos?: number | null
+          updated_at?: string
+          vt_desconto_ausencias?: number | null
+          vt_desconto_salario?: number | null
+          vt_dias_ausente?: number | null
+          vt_dias_campo_distante?: number | null
+          vt_dias_dinheiro_integral?: number | null
+          vt_dias_uteis?: number | null
+          vt_isento?: boolean | null
+          vt_valor_cheio?: number | null
+          vt_valor_final?: number | null
+          year: number
+        }
+        Update: {
+          alelo_desconto?: number | null
+          alelo_dias_ausente?: number | null
+          alelo_dias_feriado?: number | null
+          alelo_dias_uteis?: number | null
+          alelo_valor_cheio?: number | null
+          alelo_valor_final?: number | null
+          batch_id?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          month?: number
+          notes?: string | null
+          outros_descontos?: number | null
+          outros_descricao?: string | null
+          payroll_period_id?: string | null
+          status?: string
+          total_descontos?: number | null
+          updated_at?: string
+          vt_desconto_ausencias?: number | null
+          vt_desconto_salario?: number | null
+          vt_dias_ausente?: number | null
+          vt_dias_campo_distante?: number | null
+          vt_dias_dinheiro_integral?: number | null
+          vt_dias_uteis?: number | null
+          vt_isento?: boolean | null
+          vt_valor_cheio?: number | null
+          vt_valor_final?: number | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_discount_reports_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_discount_report_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_discount_reports_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_discount_reports_payroll_period_id_fkey"
+            columns: ["payroll_period_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monthly_schedules: {
         Row: {
           created_at: string
@@ -2075,6 +2471,81 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_periods: {
+        Row: {
+          apresentacao_thyalcont: string
+          competencia_fim: string
+          competencia_inicio: string
+          created_at: string
+          data_pagamento: string | null
+          fechado_dp_em: string | null
+          fechado_dp_por: string | null
+          fechado_escala_em: string | null
+          fechado_escala_por: string | null
+          fechamento_dp: string
+          fechamento_escala: string
+          id: string
+          month: number
+          notes: string | null
+          status: string | null
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          apresentacao_thyalcont: string
+          competencia_fim: string
+          competencia_inicio: string
+          created_at?: string
+          data_pagamento?: string | null
+          fechado_dp_em?: string | null
+          fechado_dp_por?: string | null
+          fechado_escala_em?: string | null
+          fechado_escala_por?: string | null
+          fechamento_dp: string
+          fechamento_escala: string
+          id?: string
+          month: number
+          notes?: string | null
+          status?: string | null
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          apresentacao_thyalcont?: string
+          competencia_fim?: string
+          competencia_inicio?: string
+          created_at?: string
+          data_pagamento?: string | null
+          fechado_dp_em?: string | null
+          fechado_dp_por?: string | null
+          fechado_escala_em?: string | null
+          fechado_escala_por?: string | null
+          fechamento_dp?: string
+          fechamento_escala?: string
+          id?: string
+          month?: number
+          notes?: string | null
+          status?: string | null
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_periods_fechado_dp_por_fkey"
+            columns: ["fechado_dp_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_periods_fechado_escala_por_fkey"
+            columns: ["fechado_escala_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2202,6 +2673,57 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "project_contacts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_participations: {
+        Row: {
+          created_at: string
+          employee_id: string
+          end_date: string | null
+          id: string
+          notes: string | null
+          project_id: string
+          role: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          project_id: string
+          role: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          project_id?: string
+          role?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_participations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_participations_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -3238,6 +3760,11 @@ export type Database = {
         | "comercial"
         | "financeiro"
       attendance_status: "presente" | "falta" | "justificado" | "atrasado"
+      aviso_previo_type:
+        | "trabalhado"
+        | "indenizado"
+        | "dispensado"
+        | "nao_aplica"
       billing_mode: "fixo_mensal" | "diarias" | "esporadico"
       contact_type: "cliente" | "financeiro" | "engenheiro" | "outro"
       doc_status:
@@ -3337,6 +3864,7 @@ export type Database = {
         | "nf_emitida"
         | "paga"
         | "cancelada"
+      monthly_report_status: "rascunho" | "revisao" | "enviado" | "aplicado"
       project_status:
         | "planejamento"
         | "execucao"
@@ -3364,6 +3892,13 @@ export type Database = {
         | "faturamento"
         | "concluido"
         | "cancelado"
+      termination_type:
+        | "sem_justa_causa"
+        | "com_justa_causa"
+        | "pedido_demissao"
+        | "fim_contrato"
+        | "acordo_mutuo"
+        | "outro"
       tipo_documento: "nf" | "recibo"
       vehicle_status: "disponivel" | "em_uso" | "manutencao" | "indisponivel"
     }
@@ -3521,6 +4056,12 @@ export const Constants = {
         "financeiro",
       ],
       attendance_status: ["presente", "falta", "justificado", "atrasado"],
+      aviso_previo_type: [
+        "trabalhado",
+        "indenizado",
+        "dispensado",
+        "nao_aplica",
+      ],
       billing_mode: ["fixo_mensal", "diarias", "esporadico"],
       contact_type: ["cliente", "financeiro", "engenheiro", "outro"],
       doc_status: [
@@ -3629,6 +4170,7 @@ export const Constants = {
         "paga",
         "cancelada",
       ],
+      monthly_report_status: ["rascunho", "revisao", "enviado", "aplicado"],
       project_status: [
         "planejamento",
         "execucao",
@@ -3659,6 +4201,14 @@ export const Constants = {
         "faturamento",
         "concluido",
         "cancelado",
+      ],
+      termination_type: [
+        "sem_justa_causa",
+        "com_justa_causa",
+        "pedido_demissao",
+        "fim_contrato",
+        "acordo_mutuo",
+        "outro",
       ],
       tipo_documento: ["nf", "recibo"],
       vehicle_status: ["disponivel", "em_uso", "manutencao", "indisponivel"],

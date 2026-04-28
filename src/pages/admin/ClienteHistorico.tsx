@@ -95,7 +95,7 @@ export default function ClienteHistorico() {
     queryKey: ["client-project-contacts", clientId],
     enabled: projectIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("project_contacts")
         .select("*")
         .in("project_id", projectIds);
