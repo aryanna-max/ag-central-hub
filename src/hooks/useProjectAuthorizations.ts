@@ -1,19 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
-export interface ProjectAuthorization {
-  id: string;
-  employee_id: string;
-  project_id: string;
-  integration_date: string | null;
-  expiry_date: string | null;
-  status: string;
-  docs: any;
-  registered_by: string | null;
-  created_at: string | null;
+type ProjectAuthRow = Database["public"]["Tables"]["employee_project_authorizations"]["Row"];
+type ProjectAuthInsert = Database["public"]["Tables"]["employee_project_authorizations"]["Insert"];
+type ProjectAuthUpdate = Database["public"]["Tables"]["employee_project_authorizations"]["Update"];
+
+export type ProjectAuthorization = ProjectAuthRow & {
   employees?: { name: string } | null;
   projects?: { name: string } | null;
-}
+};
 
 export function useProjectAuthorizations(employeeId?: string) {
   return useQuery({
@@ -72,9 +68,13 @@ export function useCreateProjectAuthorization() {
       status?: string;
       registered_by?: string;
     }) => {
+      const insertPayload: ProjectAuthInsert = {
+        ...payload,
+        status: payload.status || "ativo",
+      };
       const { data, error } = await supabase
         .from("employee_project_authorizations")
-        .insert({ ...payload, status: payload.status || "ativo" } as any)
+        .insert(insertPayload)
         .select()
         .single();
       if (error) throw error;
@@ -91,10 +91,10 @@ export function useCreateProjectAuthorization() {
 export function useUpdateProjectAuthorization() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; status?: string; expiry_date?: string; integration_date?: string }) => {
+    mutationFn: async ({ id, ...updates }: ProjectAuthUpdate & { id: string }) => {
       const { error } = await supabase
         .from("employee_project_authorizations")
-        .update(updates as any)
+        .update(updates)
         .eq("id", id);
       if (error) throw error;
     },

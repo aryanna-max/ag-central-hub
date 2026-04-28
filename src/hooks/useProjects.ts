@@ -158,6 +158,7 @@ export function useCreateProject() {
       }
       const { client_codigo, ...rest } = project;
       const payload = { ...rest, ...(codigo ? { codigo } : {}) };
+      // TODO PR4: ProjectInsert manual carrega client/client_cnpj/responsible que não existem no schema regenerado.
       const { data, error } = await supabase.from("projects").insert(payload as any).select().single();
       if (error) throw error;
       return data as unknown as Project;
@@ -189,6 +190,7 @@ export function useUpdateProject() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Project> & { id: string }) => {
+      // TODO PR4: Project manual carrega nf_data/has_multiple_services/etc não existentes no schema regenerado.
       const { data, error } = await supabase.from("projects").update(updates as any).eq("id", id).select().single();
       if (error) throw error;
       return data as unknown as Project;

@@ -1,22 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
-export interface ProjectService {
-  id: string;
-  project_id: string;
-  service_type: string;
+type ProjectServiceRow = Database["public"]["Tables"]["project_services"]["Row"];
+type ProjectServiceInsert = Database["public"]["Tables"]["project_services"]["Insert"];
+
+export type ProjectService = Omit<ProjectServiceRow, "billing_mode" | "status"> & {
   billing_mode: string;
-  contract_value: number | null;
-  cnpj_tomador: string | null;
-  nf_number: string | null;
-  nf_date: string | null;
   status: string;
-  start_date: string | null;
-  end_date: string | null;
-  notes: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
+};
 
 export function useProjectServices(projectId: string | undefined) {
   return useQuery({
@@ -37,10 +29,10 @@ export function useProjectServices(projectId: string | undefined) {
 export function useCreateProjectService() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (service: Omit<ProjectService, "id" | "created_at" | "updated_at">) => {
+    mutationFn: async (service: ProjectServiceInsert) => {
       const { data, error } = await supabase
         .from("project_services")
-        .insert(service as any)
+        .insert(service)
         .select()
         .single();
       if (error) throw error;
@@ -57,6 +49,7 @@ export function useUpdateProjectService() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<ProjectService> & { id: string }) => {
+      // TODO PR4: form-state passa billing_mode/status como string; enums no schema só validam após PR3.
       const { data, error } = await supabase
         .from("project_services")
         .update(updates as any)
@@ -98,6 +91,7 @@ export async function syncProjectFromServices(projectId: string) {
   const total = (services || []).reduce((s, sv: any) => s + (sv.contract_value || 0), 0);
   const hasMultiple = (services || []).length > 1;
 
+  // TODO PR4: has_multiple_services não existe no schema regenerado; débito reconhecido.
   await supabase
     .from("projects")
     .update({ contract_value: total, has_multiple_services: hasMultiple } as any)

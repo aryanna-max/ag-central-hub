@@ -1,17 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
-export interface ScopeItem {
-  id: string;
-  project_id: string;
-  description: string;
-  order_index: number;
-  is_completed: boolean | null;
-  completed_at: string | null;
-  completed_by_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
+export type ScopeItem = Database["public"]["Tables"]["project_scope_items"]["Row"];
+type ScopeItemInsert = Database["public"]["Tables"]["project_scope_items"]["Insert"];
+type ScopeItemUpdate = Database["public"]["Tables"]["project_scope_items"]["Update"];
 
 export function useScopeItems(projectId: string | null) {
   return useQuery({
@@ -33,7 +26,8 @@ export function useCreateScopeItem() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (item: { project_id: string; description: string; order_index: number }) => {
-      const { error } = await supabase.from("project_scope_items").insert(item as any);
+      const payload: ScopeItemInsert = item;
+      const { error } = await supabase.from("project_scope_items").insert(payload);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["scope_items"] }),
@@ -43,8 +37,8 @@ export function useCreateScopeItem() {
 export function useUpdateScopeItem() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<ScopeItem> & { id: string }) => {
-      const { error } = await supabase.from("project_scope_items").update(updates as any).eq("id", id);
+    mutationFn: async ({ id, ...updates }: ScopeItemUpdate & { id: string }) => {
+      const { error } = await supabase.from("project_scope_items").update(updates).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["scope_items"] }),

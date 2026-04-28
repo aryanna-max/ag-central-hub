@@ -1,5 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type MeasurementInsert = Database["public"]["Tables"]["measurements"]["Insert"];
+type MeasurementUpdate = Database["public"]["Tables"]["measurements"]["Update"];
+type MeasurementItemInsert = Database["public"]["Tables"]["measurement_items"]["Insert"];
+type MeasurementItemUpdate = Database["public"]["Tables"]["measurement_items"]["Update"];
 
 export interface Measurement {
   id: string;
@@ -163,10 +169,10 @@ export function useMeasurementWithItems(measurementId: string | null) {
 export function useCreateMeasurement() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (values: Record<string, any>) => {
+    mutationFn: async (values: MeasurementInsert) => {
       const { data, error } = await supabase
         .from("measurements")
-        .insert(values as any)
+        .insert(values)
         .select()
         .single();
       if (error) throw error;
@@ -179,10 +185,10 @@ export function useCreateMeasurement() {
 export function useUpdateMeasurement() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...values }: { id: string; [key: string]: any }) => {
+    mutationFn: async ({ id, ...values }: MeasurementUpdate & { id: string }) => {
       const { data, error } = await supabase
         .from("measurements")
-        .update(values as any)
+        .update(values)
         .eq("id", id)
         .select()
         .single();
@@ -250,20 +256,21 @@ export function useCreateMeasurementFromProject() {
       const seq = (count ?? 0) + 1;
       const codigoBm = `BM-${codigoSemAno}-${String(seq).padStart(2, "0")}`;
 
+      const measurementPayload: MeasurementInsert = {
+        codigo_bm: codigoBm,
+        measurement_number: seq,
+        measurement_type: measurementType,
+        project_id: projectId,
+        client_id: project.client_id,
+        proposal_id: proposalId,
+        period_start: periodStart,
+        period_end: periodEnd,
+        empresa_faturadora: project.empresa_faturadora || "ag_topografia",
+        status: "rascunho",
+      };
       const { data: measurement, error: mErr } = await supabase
         .from("measurements")
-        .insert({
-          codigo_bm: codigoBm,
-          measurement_number: seq,
-          measurement_type: measurementType,
-          project_id: projectId,
-          client_id: project.client_id,
-          proposal_id: proposalId,
-          period_start: periodStart,
-          period_end: periodEnd,
-          empresa_faturadora: project.empresa_faturadora || "ag_topografia",
-          status: "rascunho",
-        } as any)
+        .insert(measurementPayload)
         .select()
         .single();
       if (mErr) throw mErr;
@@ -326,7 +333,8 @@ export function useCreateMeasurementFromProject() {
           };
         });
 
-        await supabase.from("measurement_items").insert(items as any);
+        const itemsPayload: MeasurementItemInsert[] = items;
+        await supabase.from("measurement_items").insert(itemsPayload);
       }
 
       return measurement;
@@ -362,27 +370,29 @@ export function useCalculateMeasurementTotals() {
       const avancoAcumulado = totalContracted > 0 ? (totalAccumulated / totalContracted) * 100 : 0;
       const saldo = totalContracted - totalAccumulated;
 
+      const measurementUpdate: MeasurementUpdate = {
+        valor_bruto: totalMeasured,
+        avanco_periodo_pct: Math.round(avancoPeriodo * 100) / 100,
+        avanco_acumulado_pct: Math.round(avancoAcumulado * 100) / 100,
+        saldo_a_medir: Math.max(0, saldo),
+      };
       await supabase
         .from("measurements")
-        .update({
-          valor_bruto: totalMeasured,
-          avanco_periodo_pct: Math.round(avancoPeriodo * 100) / 100,
-          avanco_acumulado_pct: Math.round(avancoAcumulado * 100) / 100,
-          saldo_a_medir: Math.max(0, saldo),
-        } as any)
+        .update(measurementUpdate)
         .eq("id", measurementId);
 
       for (const item of items || []) {
         const newAccQty = (item as any).accumulated_quantity + (item as any).measured_quantity;
         const newAccVal = (item as any).accumulated_value + (item as any).measured_value;
+        const itemUpdate: MeasurementItemUpdate = {
+          accumulated_quantity: newAccQty,
+          accumulated_value: newAccVal,
+          remaining_quantity: Math.max(0, (item as any).contracted_quantity - newAccQty),
+          remaining_value: Math.max(0, (item as any).total_contracted - newAccVal),
+        };
         await supabase
           .from("measurement_items")
-          .update({
-            accumulated_quantity: newAccQty,
-            accumulated_value: newAccVal,
-            remaining_quantity: Math.max(0, (item as any).contracted_quantity - newAccQty),
-            remaining_value: Math.max(0, (item as any).total_contracted - newAccVal),
-          } as any)
+          .update(itemUpdate)
           .eq("id", (item as any).id);
       }
     },

@@ -104,7 +104,7 @@ export default function NewProposalDrawer({ open, onOpenChange, clients, initial
         sent_at: status === "enviada" ? new Date().toISOString() : null,
       };
 
-      const { error } = await supabase.from("proposals").insert(payload as any);
+      const { error } = await supabase.from("proposals").insert(payload);
       if (error) throw error;
     },
     onSuccess: () => {

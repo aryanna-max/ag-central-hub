@@ -160,7 +160,7 @@ export default function FaturamentoMedicoes() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("measurements").update({ status } as any).eq("id", id);
+      const { error } = await supabase.from("measurements").update({ status }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -182,7 +182,7 @@ export default function FaturamentoMedicoes() {
         valor_nf: nfValor ? parseFloat(nfValor) : measurement.valor_nf,
         empresa_faturadora: nfEmpresa,
         status: "nf_emitida",
-      } as any).eq("id", nfDialogId);
+      }).eq("id", nfDialogId);
       if (error) throw error;
 
       if (measurement.project_id) {
@@ -199,7 +199,7 @@ export default function FaturamentoMedicoes() {
           empresa_faturadora: empresaFat,
           status: "emitida",
           notes: `Medição ${measurement.codigo_bm}`,
-        } as any);
+        });
       }
     },
     onSuccess: () => {
@@ -213,7 +213,7 @@ export default function FaturamentoMedicoes() {
   const confirmPaymentMutation = useMutation({
     mutationFn: async () => {
       if (!payModalId) return;
-      const { error } = await supabase.from("measurements").update({ status: "paga" } as any).eq("id", payModalId);
+      const { error } = await supabase.from("measurements").update({ status: "paga" }).eq("id", payModalId);
       if (error) throw error;
     },
     onSuccess: () => {

@@ -1,9 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
 export type LeadOrigin = "indicacao" | "whatsapp" | "site_instagram" | "licitacao" | "cliente_recorrente" | "contrato_ativo" | "outro";
 export type LeadStatus = "novo" | "em_negociacao" | "proposta_enviada" | "convertido" | "perdido";
 export type LeadInteractionType = "nota" | "ligacao" | "email" | "whatsapp" | "reuniao" | "visita";
+
+type LeadRow = Database["public"]["Tables"]["leads"]["Row"];
+type LeadInteractionRow = Database["public"]["Tables"]["lead_interactions"]["Row"];
 
 /** Normaliza status legados do banco para os 5 status simplificados */
 export function normalizeLeadStatus(raw: string): LeadStatus {
@@ -82,58 +86,18 @@ export const ORIGIN_COLORS: Record<LeadOrigin, string> = {
 
 export const LEAD_STATUSES: LeadStatus[] = ["novo", "em_negociacao", "proposta_enviada", "convertido", "perdido"];
 
-export interface Lead {
-  id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-  company: string | null;
-  source: string;
-  origin: LeadOrigin | null;
+export type Lead = Omit<LeadRow, "status" | "origin" | "tags"> & {
   status: LeadStatus;
-  responsible_id: string | null;
-  notes: string | null;
+  origin: LeadOrigin | null;
   tags: string[];
-  cnpj: string | null;
-  servico: string | null;
-  endereco: string | null;
-  location: string | null;
-  valor: number | null;
-  client_id: string | null;
-  client_type: string | null;
-  converted_project_id: string | null;
-  codigo: string | null;
-  created_at: string;
-  updated_at: string;
-}
+};
 
-export interface LeadInteraction {
-  id: string;
-  lead_id: string;
+export type LeadInteraction = Omit<LeadInteractionRow, "interaction_type"> & {
   interaction_type: LeadInteractionType;
-  content: string;
-  created_by: string | null;
-  created_at: string;
-}
+};
 
-export interface LeadInsert {
-  name: string;
-  email?: string | null;
-  phone?: string | null;
-  company?: string | null;
-  origin?: LeadOrigin;
-  status?: LeadStatus;
-  responsible_id?: string | null;
-  notes?: string | null;
-  tags?: string[];
-  cnpj?: string | null;
-  servico?: string | null;
-  endereco?: string | null;
-  location?: string | null;
-  valor?: number | null;
-  client_id?: string | null;
-  client_type?: string | null;
-}
+export type LeadInsert = Database["public"]["Tables"]["leads"]["Insert"];
+export type LeadUpdate = Database["public"]["Tables"]["leads"]["Update"];
 
 export function useLeads() {
   return useQuery({
@@ -221,8 +185,8 @@ export function useCreateLead() {
 
       const attemptInsert = async (retryCount: number): Promise<any> => {
         const codigo = await generateLeadCode();
-        const payload = { ...rest, origin, source: source as any, codigo };
-        const { data, error } = await supabase.from("leads").insert(payload as any).select().single();
+        const payload: LeadInsert = { ...rest, origin, source: source as LeadInsert["source"], codigo };
+        const { data, error } = await supabase.from("leads").insert(payload).select().single();
         if (error) {
           if (retryCount > 0 && (error.message.includes("unique") || error.message.includes("duplicate") || error.code === "23505")) {
             console.warn("Código duplicado detectado, tentando novamente:", codigo);
@@ -242,8 +206,8 @@ export function useCreateLead() {
 export function useUpdateLead() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Lead> & { id: string }) => {
-      const { data, error } = await supabase.from("leads").update(updates as any).eq("id", id).select().single();
+    mutationFn: async ({ id, ...updates }: LeadUpdate & { id: string }) => {
+      const { data, error } = await supabase.from("leads").update(updates).eq("id", id).select().single();
       if (error) throw error;
       return data;
     },
@@ -269,7 +233,7 @@ export function useAddLeadInteraction() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (interaction: Omit<LeadInteraction, "id" | "created_at">) => {
-      const { data, error } = await supabase.from("lead_interactions").insert(interaction as any).select().single();
+      const { data, error } = await supabase.from("lead_interactions").insert(interaction).select().single();
       if (error) throw error;
       return data;
     },

@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import type { MeasurementDailyEntry } from "./useMeasurements";
+
+type MeasurementDailyEntryInsert = Database["public"]["Tables"]["measurement_daily_entries"]["Insert"];
 
 export function useMeasurementDailyEntries(measurementId: string | null) {
   return useQuery({
@@ -151,9 +154,10 @@ export function usePopulateMeasurementDays() {
         });
 
       if (entries.length > 0) {
+        const upsertPayload: MeasurementDailyEntryInsert[] = entries;
         const { error } = await supabase
           .from("measurement_daily_entries")
-          .upsert(entries as any, { onConflict: "measurement_id,date,employee_id" });
+          .upsert(upsertPayload, { onConflict: "measurement_id,date,employee_id" });
         if (error) throw error;
       }
       return entries;

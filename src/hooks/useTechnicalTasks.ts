@@ -1,21 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
-export interface TechnicalTask {
-  id: string;
-  project_id: string;
-  title: string;
-  description: string | null;
-  status: string;
-  priority: string | null;
-  assigned_to_id: string | null;
-  created_by_id: string | null;
-  due_date: string | null;
-  completed_at: string | null;
-  scope_item_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
+export type TechnicalTask = Database["public"]["Tables"]["technical_tasks"]["Row"];
+type TechnicalTaskInsert = Database["public"]["Tables"]["technical_tasks"]["Insert"];
+type TechnicalTaskUpdate = Database["public"]["Tables"]["technical_tasks"]["Update"];
 
 export function useTechnicalTasksByProject(projectId: string | null) {
   return useQuery({
@@ -60,9 +49,10 @@ export function useCreateTechnicalTask() {
       due_date?: string;
       created_by_id?: string;
     }) => {
+      const payload: TechnicalTaskInsert = { ...task, status: "pendente" };
       const { data, error } = await supabase
         .from("technical_tasks")
-        .insert({ ...task, status: "pendente" } as any)
+        .insert(payload)
         .select()
         .single();
       if (error) throw error;
@@ -75,10 +65,10 @@ export function useCreateTechnicalTask() {
 export function useUpdateTechnicalTask() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<TechnicalTask> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: TechnicalTaskUpdate & { id: string }) => {
       const { error } = await supabase
         .from("technical_tasks")
-        .update(updates as any)
+        .update(updates)
         .eq("id", id);
       if (error) throw error;
     },

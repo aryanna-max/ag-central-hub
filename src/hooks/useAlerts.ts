@@ -1,43 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
-export type AlertPriority = "urgente" | "importante" | "informacao";
-export type AlertRecipient = "operacional" | "comercial" | "financeiro" | "rh" | "sala_tecnica" | "diretoria" | "todos";
+export type AlertPriority = Database["public"]["Enums"]["alert_priority"];
+export type AlertRecipient = Database["public"]["Enums"]["alert_recipient"];
 export type AlertActionType = "aprovar" | "visualizar" | "marcar_pago" | "emitir_nf" | "conferir_recibo" | "confirmar_presenca" | "outro";
 
-export interface Alert {
-  id: string;
-  alert_type: string;
-  priority: AlertPriority;
-  recipient: AlertRecipient;
-  title: string;
-  message: string | null;
-  reference_type: string | null;
-  reference_id: string | null;
-  read: boolean;
-  created_at: string;
-  assigned_to: string | null;
-  action_url: string | null;
-  action_label: string | null;
-  action_type: string | null;
-  resolved: boolean;
-  resolved_at: string | null;
-  resolved_by: string | null;
-}
-
-export interface AlertInsert {
-  alert_type: string;
-  priority?: AlertPriority;
-  recipient: AlertRecipient;
-  title: string;
-  message?: string | null;
-  reference_type?: string | null;
-  reference_id?: string | null;
-  assigned_to?: string | null;
-  action_url?: string | null;
-  action_label?: string | null;
-  action_type?: string | null;
-}
+export type Alert = Database["public"]["Tables"]["alerts"]["Row"];
+export type AlertInsert = Database["public"]["Tables"]["alerts"]["Insert"];
+export type AlertUpdate = Database["public"]["Tables"]["alerts"]["Update"];
 
 export function useAlerts() {
   return useQuery({
@@ -106,7 +77,7 @@ export function useCreateAlerts() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (alerts: AlertInsert[]) => {
-      const { error } = await supabase.from("alerts").insert(alerts as any);
+      const { error } = await supabase.from("alerts").insert(alerts);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -119,7 +90,7 @@ export function useMarkAlertRead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("alerts").update({ read: true } as any).eq("id", id);
+      const { error } = await supabase.from("alerts").update({ read: true }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -132,7 +103,7 @@ export function useMarkAllAlertsRead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("alerts").update({ read: true } as any).eq("read", false);
+      const { error } = await supabase.from("alerts").update({ read: true }).eq("read", false);
       if (error) throw error;
     },
     onSuccess: () => {
