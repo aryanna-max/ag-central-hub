@@ -171,7 +171,7 @@ export const DASHBOARD_ALL_COLUMNS = DASHBOARD_GROUPS.flatMap((g) => g.columns);
 export const RECURRING_BILLING_TYPES = ["medicao_mensal", "fixo_mensal"] as const;
 
 export function isRecurringBilling(billingType: string | null | undefined): boolean {
-  return RECURRING_BILLING_TYPES.includes(billingType as any);
+  return (RECURRING_BILLING_TYPES as readonly string[]).includes(billingType ?? "");
 }
 
 /**
@@ -189,7 +189,7 @@ export function isProjectFinalized(
   if (isRecurringBilling(billingType)) {
     return isActive === false;
   }
-  return FINALIZED_STATUSES.includes(executionStatus as any);
+  return (FINALIZED_STATUSES as readonly string[]).includes(executionStatus ?? "");
 }
 
 // ─── Measurement Status ───

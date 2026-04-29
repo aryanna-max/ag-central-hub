@@ -89,7 +89,7 @@ export default function MobileHome() {
   });
 
   const activeProjects = useMemo(() => projects.filter(p => p.execution_status !== "pago"), [projects]);
-  const urgentAlerts = useMemo(() => alerts.filter((a: any) => a.priority === "urgente"), [alerts]);
+  const urgentAlerts = useMemo(() => alerts.filter((a) => a.priority === "urgente"), [alerts]);
 
   const aReceberValue = useMemo(() => {
     return projects
@@ -187,11 +187,11 @@ export default function MobileHome() {
             <AlertCircle className="h-5 w-5 text-amber-600 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm text-foreground">
-                <strong>{(urgentAlerts[0] as any).title}</strong>
-                {(urgentAlerts[0] as any).message && ` — ${(urgentAlerts[0] as any).message}`}
+                <strong>{urgentAlerts[0].title}</strong>
+                {urgentAlerts[0].message && ` — ${urgentAlerts[0].message}`}
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                {formatDistanceToNow(new Date((urgentAlerts[0] as any).created_at), { addSuffix: true, locale: ptBR })}
+                {formatDistanceToNow(new Date(urgentAlerts[0].created_at), { addSuffix: true, locale: ptBR })}
               </p>
             </div>
           </div>

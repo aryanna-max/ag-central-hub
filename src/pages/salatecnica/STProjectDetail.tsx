@@ -59,7 +59,7 @@ export default function STProjectDetail() {
         .eq("id", id!)
         .single();
       if (error) throw error;
-      const p = data as any;
+      const p = data as typeof data & { clients: { id: string; name: string; cnpj: string | null } | { id: string; name: string; cnpj: string | null }[] | null };
       return { ...p, clients: Array.isArray(p.clients) ? p.clients[0] : p.clients };
     },
   });
@@ -155,7 +155,7 @@ export default function STProjectDetail() {
   };
 
   const handleStartTask = (taskId: string) => {
-    updateTask.mutate({ id: taskId, status: "em_andamento" } as any);
+    updateTask.mutate({ id: taskId, status: "em_andamento" });
   };
 
   const handleConcludeTask = () => {
@@ -165,7 +165,7 @@ export default function STProjectDetail() {
       status: "concluida",
       completed_at: new Date().toISOString(),
       description: concludeNote || undefined,
-    } as any);
+    });
     setConcludeTaskId(null);
     setConcludeNote("");
   };
@@ -418,7 +418,7 @@ export default function STProjectDetail() {
               <div key={t.id} className="flex items-center justify-between p-2 rounded border gap-2">
                 <div className="flex-1 space-y-0.5">
                   <p className="text-sm font-medium">{t.title}</p>
-                  {emp && <p className="text-[10px] text-muted-foreground">{(emp as any).name}</p>}
+                  {emp && <p className="text-[10px] text-muted-foreground">{emp.name}</p>}
                   {t.due_date && (
                     <DeadlineBadge
                       deadline={new Date(t.due_date)}
@@ -555,7 +555,7 @@ export default function STProjectDetail() {
                     message: `Projeto ${project.name} precisa retornar a campo: ${returnReason.trim()}`,
                     reference_type: "project",
                     reference_id: project.id,
-                  } as any);
+                  });
                   toast.success("Projeto retornado a campo — Operacional notificado");
                   setReturnToFieldOpen(false);
                   setReturnReason("");

@@ -277,7 +277,7 @@ export default function FaturamentoAlertas() {
           resolved_at: new Date().toISOString(),
           read: true,
           alert_status: "resolvido",
-        } as any)
+        })
         .eq("id", nfAlert.id);
       if (alertErr) throw alertErr;
 
@@ -291,7 +291,7 @@ export default function FaturamentoAlertas() {
         if (proj && proj.execution_status === "entregue") {
           await supabase
             .from("projects")
-            .update({ execution_status: "faturamento" } as any)
+            .update({ execution_status: "faturamento" })
             .eq("id", nfAlert.reference_id);
         }
       }

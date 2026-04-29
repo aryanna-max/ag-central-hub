@@ -126,9 +126,9 @@ export default function STKanban() {
 
       const [clientsRes, scopeRes, tasksRes, alertsRes, profilesRes] = await Promise.all([
         supabase.from("clients").select("id, name"),
-        supabase.from("project_scope_items").select("project_id, is_completed").in("project_id", ids as any),
-        supabase.from("technical_tasks").select("project_id, status, assigned_to_id").in("project_id", ids as any),
-        (supabase.from("alerts").select("reference_id").in("reference_id", ids as any) as any).eq("resolved", false),
+        supabase.from("project_scope_items").select("project_id, is_completed").in("project_id", ids),
+        supabase.from("technical_tasks").select("project_id, status, assigned_to_id").in("project_id", ids),
+        supabase.from("alerts").select("reference_id").in("reference_id", ids).eq("resolved", false),
         supabase.from("profiles").select("id, full_name"),
       ]);
 
@@ -206,7 +206,7 @@ export default function STKanban() {
       if (!ids.length) return [];
 
       const [tasksRes, vacRes, scheduleRes] = await Promise.all([
-        (supabase.from("technical_tasks").select("assigned_to_id") as any).in("assigned_to_id", ids).in("status", ["pendente", "em_andamento"]),
+        supabase.from("technical_tasks").select("assigned_to_id").in("assigned_to_id", ids).in("status", ["pendente", "em_andamento"]),
         supabase.from("employee_vacations").select("employee_id").in("employee_id", ids).lte("start_date", today).gte("end_date", today),
         supabase.from("daily_schedule_entries").select("employee_id, daily_schedule_id")
           .in("employee_id", ids),
@@ -313,7 +313,7 @@ export default function STKanban() {
 
       // Auto-transition to em_processamento if first task and status allows
       if (taskProject.task_total === 0 && taskProject.execution_status === "aguardando_processamento") {
-        await updateProject.mutateAsync({ id: taskProject.id, execution_status: "em_processamento" } as any);
+        await updateProject.mutateAsync({ id: taskProject.id, execution_status: "em_processamento" });
         await supabase.from("project_status_history").insert({
           project_id: taskProject.id,
           from_status: "aguardando_processamento",
@@ -337,7 +337,7 @@ export default function STKanban() {
 
   const handleApproveReview = async (p: ProjectRow) => {
     try {
-      await updateProject.mutateAsync({ id: p.id, execution_status: "aprovado" } as any);
+      await updateProject.mutateAsync({ id: p.id, execution_status: "aprovado" });
       await supabase.from("project_status_history").insert({
         project_id: p.id,
         from_status: p.execution_status,
@@ -366,7 +366,7 @@ export default function STKanban() {
         id: p.id,
         execution_status: "entregue",
         delivered_at: new Date().toISOString().split("T")[0],
-      } as any);
+      });
       await supabase.from("project_status_history").insert({
         project_id: p.id,
         from_status: p.execution_status,
@@ -383,7 +383,7 @@ export default function STKanban() {
         message: `Projeto ${p.name} do cliente ${p.client_name || "—"} foi entregue. Billing: ${p.billing_type || "não definido"}.`,
         reference_type: "project",
         reference_id: p.id,
-      } as any);
+      });
       toast.success(`Projeto ${p.codigo} entregue — Financeiro notificado`);
       setDeliverProject(null);
       setConfirmDeliverPending(null);

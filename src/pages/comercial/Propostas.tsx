@@ -261,7 +261,7 @@ export default function Propostas() {
                   <TableRow key={p.id} className="cursor-pointer" onClick={() => setSelectedId(p.id)}>
                     <TableCell className="font-mono font-medium">{p.code}</TableCell>
                     <TableCell>
-                      {(p.clients as any)?.name || "—"}
+                      {(p.clients as { name?: string } | null)?.name || "—"}
                       {!p.lead_id && <Badge variant="outline" className="ml-2 text-[9px] text-amber-600 border-amber-400">Sem lead</Badge>}
                     </TableCell>
                     <TableCell className="max-w-48 truncate">{p.title}</TableCell>

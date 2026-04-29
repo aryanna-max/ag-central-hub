@@ -447,7 +447,8 @@ export default function FichaFuncionario() {
                         className={
                           doc.doc_status === "valido"
                             ? "bg-green-50 text-green-700 border-green-300"
-                            : doc.doc_status === "proximo_vencer"
+                            // doc_status enum em types.ts ("vencendo") difere do valor real DB ("proximo_vencer"); regen pendente
+                            : (doc.doc_status as string) === "proximo_vencer"
                               ? "bg-amber-50 text-amber-700 border-amber-300"
                               : doc.doc_status === "vencido"
                                 ? "bg-red-50 text-red-700 border-red-300"

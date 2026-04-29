@@ -614,7 +614,7 @@ export default function Projetos() {
                             contract_value: selectedProject.contract_value,
                           });
                           if (alerts.length > 0) {
-                            await supabase.from("alerts").insert(alerts as any);
+                            await supabase.from("alerts").insert(alerts);
                           }
                         }
                       }}

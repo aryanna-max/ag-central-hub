@@ -102,7 +102,7 @@ export function useCreateProject() {
         const { data: existing } = await supabase
           .from("projects")
           .select("codigo")
-          .like("codigo" as any, `${prefix}%`);
+          .like("codigo", `${prefix}%`);
         const seq = (existing?.length || 0) + 1;
         codigo = `${prefix}${String(seq).padStart(3, "0")}`;
       }

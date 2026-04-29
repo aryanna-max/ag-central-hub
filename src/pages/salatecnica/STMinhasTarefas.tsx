@@ -72,10 +72,10 @@ export default function STMinhasTarefas() {
     [tasks]
   );
 
-  const handleStart = (id: string) => updateTask.mutate({ id, status: "em_andamento" } as any);
+  const handleStart = (id: string) => updateTask.mutate({ id, status: "em_andamento" });
   const handleConclude = () => {
     if (!concludeId) return;
-    updateTask.mutate({ id: concludeId, status: "concluida", completed_at: new Date().toISOString() } as any);
+    updateTask.mutate({ id: concludeId, status: "concluida", completed_at: new Date().toISOString() });
     setConcludeId(null);
     setConcludeNote("");
   };

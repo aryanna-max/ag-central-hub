@@ -43,7 +43,7 @@ function ExpenseReportsTab() {
     const map: Record<string, { name: string; total: number }> = {};
     items.forEach((i: any) => {
       const eid = i.employee_id;
-      if (!map[eid]) map[eid] = { name: (i.employees as any)?.name || "—", total: 0 };
+      if (!map[eid]) map[eid] = { name: (i.employees as { name?: string } | null)?.name || "—", total: 0 };
       map[eid].total += Number(i.value) || 0;
     });
     return Object.entries(map).sort((a, b) => b[1].total - a[1].total);
@@ -53,7 +53,7 @@ function ExpenseReportsTab() {
     const map: Record<string, { name: string; total: number }> = {};
     items.forEach((i: any) => {
       const pid = i.project_id || "sem_projeto";
-      if (!map[pid]) map[pid] = { name: (i.projects as any)?.name || "Sem projeto", total: 0 };
+      if (!map[pid]) map[pid] = { name: (i.projects as { name?: string } | null)?.name || "Sem projeto", total: 0 };
       map[pid].total += Number(i.value) || 0;
     });
     return Object.entries(map).sort((a, b) => b[1].total - a[1].total);

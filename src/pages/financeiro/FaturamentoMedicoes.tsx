@@ -46,7 +46,7 @@ const measurementTypeLabels: Record<string, { label: string; color: string }> = 
 };
 
 function StatusProgressBar({ current }: { current: string }) {
-  const idx = STATUSES_ORDERED.indexOf(current as any);
+  const idx = (STATUSES_ORDERED as readonly string[]).indexOf(current);
   if (idx < 0) return null;
   return (
     <div className="flex items-center gap-0.5 w-full max-w-[200px]">

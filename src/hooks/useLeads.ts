@@ -154,7 +154,7 @@ export async function generateLeadCode(): Promise<string> {
   const { data } = await supabase
     .from("leads")
     .select("codigo")
-    .like("codigo" as any, `${prefix}%`)
+    .like("codigo", `${prefix}%`)
     .order("codigo", { ascending: false })
     .limit(1);
   const last = data?.[0]?.codigo;

@@ -23,7 +23,7 @@ async function generateProjectCode(clientCodigo: string): Promise<string> {
   const { data: existing } = await supabase
     .from("projects")
     .select("codigo")
-    .like("codigo" as any, `${prefix}%`);
+    .like("codigo", `${prefix}%`);
   const seq = (existing?.length || 0) + 1;
   return `${prefix}${String(seq).padStart(3, "0")}`;
 }
@@ -159,10 +159,10 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
       if (!isSPE && selectedClient) {
         const contactsToCreate: { project_id: string; tipo: "cliente" | "financeiro"; nome: string }[] = [];
         if (selectedClient.contato_cliente) {
-          contactsToCreate.push({ project_id: (project as any).id, tipo: "cliente", nome: selectedClient.contato_cliente });
+          contactsToCreate.push({ project_id: project.id, tipo: "cliente", nome: selectedClient.contato_cliente });
         }
         if (selectedClient.contato_financeiro) {
-          contactsToCreate.push({ project_id: (project as any).id, tipo: "financeiro", nome: selectedClient.contato_financeiro });
+          contactsToCreate.push({ project_id: project.id, tipo: "financeiro", nome: selectedClient.contato_financeiro });
         }
         if (contactsToCreate.length > 0) {
           await createContacts.mutateAsync(contactsToCreate);

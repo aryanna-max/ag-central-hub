@@ -53,7 +53,7 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
         phone: lead.phone || "",
         company: lead.company || "",
         origin: (lead.origin as LeadOrigin) || "outro",
-        status: lead.status as any,
+        status: lead.status,
         responsible_id: lead.responsible_id || null,
         notes: lead.notes || "",
         servico: lead.servico || "",
@@ -104,7 +104,7 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
     try {
       const payload = { ...form, endereco: form.location };
       if (isEditing) {
-        await updateLead.mutateAsync({ id: lead!.id, ...payload } as any);
+        await updateLead.mutateAsync({ id: lead!.id, ...payload });
         toast.success("Lead atualizado");
       } else {
         await createLead.mutateAsync(payload);
