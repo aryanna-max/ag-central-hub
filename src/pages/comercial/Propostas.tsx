@@ -15,6 +15,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PropostaDetailDialog from "@/pages/propostas/PropostaDetailDialog";
+import type { Proposal } from "@/hooks/useProposals";
 
 const statusCfg: Record<string, { label: string; cls: string }> = {
   rascunho: { label: "Rascunho", cls: "bg-gray-500 text-white" },
@@ -340,7 +341,7 @@ export default function Propostas() {
 
       {selectedId && (
         <PropostaDetailDialog
-          proposal={filtered.find((p: any) => p.id === selectedId) as any || null}
+          proposal={(filtered as Proposal[]).find((p) => p.id === selectedId) ?? null}
           open={!!selectedId}
           onOpenChange={(open) => { if (!open) setSelectedId(null); }}
           onEdit={() => {}}

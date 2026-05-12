@@ -152,7 +152,7 @@ export default function ProjectFormDialog({ open, onOpenChange }: Props) {
         numero: numero || null,
         cidade: cidade || null,
         estado: estado || null,
-      } as any);
+      });
 
       // Inherit contacts from client if NOT an SPE (cnpj_tomador empty or matches client CNPJ)
       const isSPE = cnpjTomador && selectedClient?.cnpj && cnpjTomador !== selectedClient.cnpj;

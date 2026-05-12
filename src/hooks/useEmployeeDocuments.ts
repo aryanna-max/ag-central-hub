@@ -1,6 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays, parseISO } from "date-fns";
+import type { Database } from "@/integrations/supabase/types";
+
+// FIXME(types-regen): doc_status enum em types.ts ("vencendo") diverge dos valores reais usados pela app ("proximo_vencer").
+// Os casts abaixo declaram conformidade com o enum gerado; regenerar types.ts ou alinhar enum no banco para remover.
+type DocStatus = Database["public"]["Enums"]["doc_status"];
+type DocType = Database["public"]["Enums"]["doc_type"];
 
 export const DOC_TYPE_LABELS: Record<string, string> = {
   aso: "ASO",
@@ -81,8 +87,7 @@ export function useEmployeeComplianceCheck(employeeId: string | undefined, clien
 
       const [{ data: requirements }, { data: docs }] = await Promise.all([
         supabase.from("client_doc_requirements").select("doc_type, is_mandatory").eq("client_id", clientId).eq("is_mandatory", true),
-        // doc_status enum em types.ts ("vencendo") difere do valor real usado pela app ("proximo_vencer"); types.ts pendente de regen
-        supabase.from("employee_documents").select("doc_type, doc_status").eq("employee_id", employeeId).in("doc_status", ["valido", "proximo_vencer"] as any),
+        supabase.from("employee_documents").select("doc_type, doc_status").eq("employee_id", employeeId).in("doc_status", ["valido", "proximo_vencer"] as DocStatus[]),
       ]);
 
       const employeeDocTypes = new Set((docs ?? []).map((d) => d.doc_type));
@@ -106,14 +111,17 @@ export function useUpsertEmployeeDocument() {
       notes?: string | null;
     }) => {
       const doc_status = calcDocStatus(values.doc_type, values.expiry_date ?? null);
-      const payload = { ...values, doc_status };
+      const payload = {
+        ...values,
+        doc_status: doc_status as DocStatus,
+        doc_type: values.doc_type as DocType,
+      };
 
       if (values.id) {
-        // doc_type/doc_status enums divergentes entre types.ts e DB real (regen pendente)
-        const { error } = await supabase.from("employee_documents").update(payload as any).eq("id", values.id);
+        const { error } = await supabase.from("employee_documents").update(payload).eq("id", values.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("employee_documents").insert(payload as any);
+        const { error } = await supabase.from("employee_documents").insert(payload);
         if (error) throw error;
       }
     },

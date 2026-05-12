@@ -137,6 +137,8 @@ export default function EncontroDeContas() {
   const handleCloseWeek = async () => {
     try {
       const result = await closeMutation.mutateAsync(semanaInicio);
+      // FIXME(rpc-typing): retorno de mutationFn em closeMutation não vem tipado. Criar wrapper tipado ou gerar tipos via Supabase Functions.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { count, sheetFound } = result as any;
       if (sheetFound) {
         toast({

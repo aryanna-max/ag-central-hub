@@ -151,10 +151,11 @@ export function useBulkCreateExpenseItems() {
       intermediary_reason?: string | null;
       fiscal_alert?: boolean;
     }>) => {
-      // TODO PR4: project_name não existe em field_expense_items no schema; ExpenseItem manual carrega esse extra.
+      // project_name é carregado em ExpenseItem manual mas não existe na tabela field_expense_items — strip antes do insert.
+      const dbPayload: ExpenseItemInsert[] = items.map(({ project_name: _projectName, ...rest }) => rest);
       const { data, error } = await supabase
         .from("field_expense_items")
-        .insert(items as any)
+        .insert(dbPayload)
         .select();
       if (error) throw error;
       return data;

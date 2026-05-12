@@ -16,7 +16,8 @@ export function useMeasurementDailyEntries(measurementId: string | null) {
         .eq("measurement_id", measurementId)
         .order("date");
       if (error) throw error;
-      return (data as any[]).map((e) => ({
+      type EntryWithEmployee = MeasurementDailyEntry & { employees?: { name: string | null } | null };
+      return ((data ?? []) as unknown as EntryWithEmployee[]).map((e) => ({
         ...e,
         employee_name: e.employees?.name ?? null,
       })) as MeasurementDailyEntry[];
@@ -52,7 +53,12 @@ export function useFieldControlGrid(projectId: string | null, month: number, yea
           .order("created_at");
         if (seErr) throw seErr;
 
-        const filtered = (scheduleEntries as any[]).filter((e) => {
+        type ScheduleEntryRow = {
+          employee_id: string;
+          employees: { name: string | null; matricula: string | null } | null;
+          daily_schedules: { schedule_date: string } | null;
+        };
+        const filtered = ((scheduleEntries ?? []) as unknown as ScheduleEntryRow[]).filter((e) => {
           const d = e.daily_schedules?.schedule_date;
           return d && d >= startDate && d <= endDate;
         });

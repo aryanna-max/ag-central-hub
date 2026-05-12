@@ -191,6 +191,8 @@ export default function LeadConvertFullDialog({ open, onOpenChange, lead, onConv
 
         // Save lead contact info as primary contact for the new client
         if (lead.name?.trim()) {
+          // FIXME(arquitetural-debt): payload usa colunas inexistentes em client_contacts (contact_name/contact_phone/contact_email/is_primary) — schema real tem nome/telefone/email/tipo. Reescrever para colunas corretas.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await supabase.from("client_contacts" as any).insert({
             client_id: newClient.id,
             contact_name: lead.name.trim(),
@@ -221,7 +223,7 @@ export default function LeadConvertFullDialog({ open, onOpenChange, lead, onConv
         start_date: new Date().toISOString().split("T")[0],
         client_codigo: isExistingClient ? existingClient!.codigo! : clientCodigo.toUpperCase(),
         responsible_comercial_id: directorId,
-      } as any);
+      });
 
       if (!project?.id) {
         throw new Error("Projeto não foi criado — resposta vazia do banco");

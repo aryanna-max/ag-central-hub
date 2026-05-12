@@ -108,8 +108,8 @@ export function useCreateProject() {
       }
       const { client_codigo, ...rest } = project;
       const payload = { ...rest, ...(codigo ? { codigo } : {}) };
-      // TODO PR4: ProjectInsert manual carrega client/client_cnpj/responsible que não existem no schema regenerado.
-      const { data, error } = await supabase.from("projects").insert(payload as any).select().single();
+      // FIXME(arquitetural-debt): ProjectInsert manual estende com client/client_cnpj/responsible — campos legacy ausentes do schema regenerado. Migrar consumidores para client_id/responsible_comercial_id.
+      const { data, error } = await supabase.from("projects").insert(payload).select().single();
       if (error) throw error;
       return data as unknown as Project;
     },

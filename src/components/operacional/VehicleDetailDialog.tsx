@@ -11,6 +11,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, subMonths, subQuarters, eachMonthOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+type VehicleHistoryRow = {
+  id: string;
+  daily_schedule_id: string | null;
+  project_id: string | null;
+  vehicle_id: string | null;
+  notes: string | null;
+  daily_schedules: { schedule_date: string } | null;
+  projects: { name: string | null; location: string | null } | null;
+  teams: { name: string | null } | null;
+};
+
+type VehicleMonthlyRow = {
+  id: string;
+  project_id: string | null;
+  daily_schedules: { schedule_date: string } | null;
+  projects: { name: string | null } | null;
+};
+
 const statusColors: Record<string, string> = {
   disponivel: "bg-green-600 text-white",
   em_uso: "bg-blue-600 text-white",
@@ -65,7 +83,7 @@ function useVehicleHistory(vehicleId: string | undefined, start: Date, end: Date
         .lte("daily_schedules.schedule_date", format(end, "yyyy-MM-dd"))
         .order("daily_schedules(schedule_date)", { ascending: false });
       if (error) throw error;
-      return (assignments || []) as any[];
+      return (assignments || []) as unknown as VehicleHistoryRow[];
     },
   });
 }
@@ -84,7 +102,7 @@ function useVehicleMonthlySummary(vehicleId: string | undefined, open: boolean) 
         .gte("daily_schedules.schedule_date", sixMonthsAgo)
         .lte("daily_schedules.schedule_date", today);
       if (error) throw error;
-      return (data || []) as any[];
+      return (data || []) as unknown as VehicleMonthlyRow[];
     },
   });
 }

@@ -54,8 +54,8 @@ export default function MeasurementFormDialog({ open, onOpenChange, defaultProje
     responsavel_cobranca: "",
   });
 
-  const selectedProject = (projects || []).find((p: any) => p.id === form.project_id);
-  const needsInstrucao = !!(selectedProject as any)?.instrucao_faturamento_variavel;
+  const selectedProject = (projects || []).find((p) => p.id === form.project_id);
+  const needsInstrucao = !!selectedProject?.instrucao_faturamento_variavel;
 
   useEffect(() => {
     if (open && defaultProjectId) {

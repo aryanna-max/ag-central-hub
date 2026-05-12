@@ -166,7 +166,8 @@ export default function ProjetoHistorico() {
 
   const handleSave = async () => {
     try {
-      // payload mistura form com campos legacy (responsible_id, etc) que não estão no schema regenerado
+      // FIXME(arquitetural-debt): payload mistura form com responsible_id legacy (ausente do schema regenerado de projects). Migrar form para responsible_comercial_id/_tecnico_id/_campo_id.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await updateProject.mutateAsync({
         id: project.id,
         name: form.name,

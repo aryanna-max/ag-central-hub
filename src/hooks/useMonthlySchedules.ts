@@ -85,7 +85,7 @@ export function useUpdateMonthlySchedule() {
             const updatePayload: Record<string, string> = {};
             if (updates.team_id) updatePayload.team_id = updates.team_id;
             if (updates.project_id) {
-              (updatePayload as any).project_id = updates.project_id;
+              updatePayload.project_id = updates.project_id;
             }
             if (updates.vehicle_id) updatePayload.vehicle_id = updates.vehicle_id;
 
