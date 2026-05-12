@@ -7,6 +7,17 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
+import type { Database } from "@/integrations/supabase/types";
+
+type DayType = Database["public"]["Enums"]["day_type"];
+
+interface DayStatusEntry {
+  id: string;
+  employee_id: string;
+  day_type: DayType | null;
+  project_id: string | null;
+  validated_at: string | null;
+}
 
 interface Props {
   open: boolean;
@@ -15,7 +26,7 @@ interface Props {
   assignments: any[];
   entries: any[];
   absentEmployees: any[];
-  attendanceRecords: any[];
+  dayEntries: DayStatusEntry[];
   kanbanFilled: boolean;
   allEmployees: any[];
   createdBy?: string;
@@ -33,7 +44,7 @@ export default function DailyReportDialog({
   assignments,
   entries,
   absentEmployees,
-  attendanceRecords,
+  dayEntries,
   kanbanFilled,
   allEmployees,
   createdBy,
@@ -66,16 +77,16 @@ export default function DailyReportDialog({
     });
 
     // Reserva AG
-    const reservaEmps = attendanceRecords.filter((r: any) => r.status === "reserva_ag");
-    reservaEmps.forEach((r: any) => {
+    const reservaEmps = dayEntries.filter((r) => r.day_type === "reserva_ag");
+    reservaEmps.forEach((r) => {
       const emp = allEmployees.find((e: any) => e.id === r.employee_id);
       rows.push(["Reserva AG", "—", emp?.name || "—", "—"]);
     });
 
     // Ausências
-    const absTypes = ["falta", "folga", "atestado"];
+    const absTypes: DayType[] = ["falta", "folga", "atestado"];
     absTypes.forEach((t) => {
-      attendanceRecords.filter((r: any) => r.status === t).forEach((r: any) => {
+      dayEntries.filter((r) => r.day_type === t).forEach((r) => {
         const emp = allEmployees.find((e: any) => e.id === r.employee_id);
         rows.push([t.charAt(0).toUpperCase() + t.slice(1), "—", emp?.name || "—", "—"]);
       });
@@ -112,10 +123,10 @@ export default function DailyReportDialog({
   // Reserva AG/Férias) mesmo que vazias — Marcelo marca depois conforme o dia se
   // desenvolve. Férias vem auto-populated de employee_vacations.
   const PlanningReport = () => {
-    const reservaEmps = attendanceRecords.filter((r: any) => r.status === "reserva_ag");
-    const faltaEmps = attendanceRecords.filter((r: any) => r.status === "falta");
-    const folgaEmps = attendanceRecords.filter((r: any) => r.status === "folga");
-    const atestadoEmps = attendanceRecords.filter((r: any) => r.status === "atestado");
+    const reservaEmps = dayEntries.filter((r) => r.day_type === "reserva_ag");
+    const faltaEmps = dayEntries.filter((r) => r.day_type === "falta");
+    const folgaEmps = dayEntries.filter((r) => r.day_type === "folga");
+    const atestadoEmps = dayEntries.filter((r) => r.day_type === "atestado");
     const feriasEmps = absentEmployees.filter((e: any) => e.availability === "ferias");
 
     const getName = (empId: string) => allEmployees.find((e: any) => e.id === empId)?.name || "—";
@@ -133,28 +144,28 @@ export default function DailyReportDialog({
         key: "falta",
         label: "Falta",
         color: "#dc2626",
-        emps: faltaEmps.map((r: any) => ({ id: r.employee_id, name: getName(r.employee_id) })),
+        emps: faltaEmps.map((r) => ({ id: r.employee_id, name: getName(r.employee_id) })),
         source: "drag",
       },
       {
         key: "folga",
         label: "Folga",
         color: "#16a34a",
-        emps: folgaEmps.map((r: any) => ({ id: r.employee_id, name: getName(r.employee_id) })),
+        emps: folgaEmps.map((r) => ({ id: r.employee_id, name: getName(r.employee_id) })),
         source: "drag",
       },
       {
         key: "atestado",
         label: "Atestado",
         color: "#d97706",
-        emps: atestadoEmps.map((r: any) => ({ id: r.employee_id, name: getName(r.employee_id) })),
+        emps: atestadoEmps.map((r) => ({ id: r.employee_id, name: getName(r.employee_id) })),
         source: "drag",
       },
       {
         key: "reserva_ag",
         label: "Reserva AG",
         color: "#2563eb",
-        emps: reservaEmps.map((r: any) => ({ id: r.employee_id, name: getName(r.employee_id) })),
+        emps: reservaEmps.map((r) => ({ id: r.employee_id, name: getName(r.employee_id) })),
         source: "drag",
       },
       {
@@ -300,10 +311,10 @@ export default function DailyReportDialog({
 
   // Confirmed Report Content
   const ConfirmedReport = () => {
-    const reservaEmps = attendanceRecords.filter((r: any) => r.status === "reserva_ag");
-    const faltaEmps = attendanceRecords.filter((r: any) => r.status === "falta");
-    const folgaEmps = attendanceRecords.filter((r: any) => r.status === "folga");
-    const atestadoEmps = attendanceRecords.filter((r: any) => r.status === "atestado");
+    const reservaEmps = dayEntries.filter((r) => r.day_type === "reserva_ag");
+    const faltaEmps = dayEntries.filter((r) => r.day_type === "falta");
+    const folgaEmps = dayEntries.filter((r) => r.day_type === "folga");
+    const atestadoEmps = dayEntries.filter((r) => r.day_type === "atestado");
     const feriasEmps = absentEmployees.filter((e: any) => e.availability === "ferias");
     const licencaEmps = absentEmployees.filter((e: any) => e.availability === "licenca" || e.availability === "afastado");
 
@@ -375,7 +386,7 @@ export default function DailyReportDialog({
             </h2>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
               <tbody>
-                {reservaEmps.map((r: any, i: number) => (
+                {reservaEmps.map((r, i) => (
                   <tr key={r.id} style={{ background: i % 2 === 0 ? "#eef6ff" : "#fff" }}>
                     <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0" }}>
                       <span style={{ display: "inline-block", padding: "1px 5px", borderRadius: 4, fontSize: 10, fontWeight: "bold", color: "#fff", background: "#2563eb", marginRight: 6 }}>RESERVA</span>
@@ -402,7 +413,7 @@ export default function DailyReportDialog({
                 </tr>
               </thead>
               <tbody>
-                {faltaEmps.map((r: any) => (
+                {faltaEmps.map((r) => (
                   <tr key={r.id} style={{ background: "#fef2f2" }}>
                     <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0" }}>
                       <span style={{ padding: "1px 5px", borderRadius: 4, fontSize: 10, fontWeight: "bold", color: "#fff", background: "#dc2626" }}>FALTA</span>
@@ -410,7 +421,7 @@ export default function DailyReportDialog({
                     <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0" }}>{getName(r.employee_id)}</td>
                   </tr>
                 ))}
-                {folgaEmps.map((r: any) => (
+                {folgaEmps.map((r) => (
                   <tr key={r.id} style={{ background: "#f0fdf4" }}>
                     <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0" }}>
                       <span style={{ padding: "1px 5px", borderRadius: 4, fontSize: 10, fontWeight: "bold", color: "#fff", background: "#16a34a" }}>FOLGA</span>
@@ -418,7 +429,7 @@ export default function DailyReportDialog({
                     <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0" }}>{getName(r.employee_id)}</td>
                   </tr>
                 ))}
-                {atestadoEmps.map((r: any) => (
+                {atestadoEmps.map((r) => (
                   <tr key={r.id} style={{ background: "#fffbeb" }}>
                     <td style={{ padding: "6px 10px", border: "1px solid #e0e0e0" }}>
                       <span style={{ padding: "1px 5px", borderRadius: 4, fontSize: 10, fontWeight: "bold", color: "#fff", background: "#d97706" }}>ATESTADO</span>

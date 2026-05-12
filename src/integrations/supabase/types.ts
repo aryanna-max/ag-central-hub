@@ -523,6 +523,7 @@ export type Database = {
           created_at: string
           daily_schedule_id: string
           daily_team_assignment_id: string | null
+          day_type: Database["public"]["Enums"]["day_type"] | null
           employee_id: string
           id: string
           is_vacation_override: boolean | null
@@ -531,6 +532,8 @@ export type Database = {
           removal_reason: Database["public"]["Enums"]["removal_reason"] | null
           removed_at: string | null
           team_id: string | null
+          validated_at: string | null
+          validated_by_id: string | null
           vehicle_id: string | null
         }
         Insert: {
@@ -541,6 +544,7 @@ export type Database = {
           created_at?: string
           daily_schedule_id: string
           daily_team_assignment_id?: string | null
+          day_type?: Database["public"]["Enums"]["day_type"] | null
           employee_id: string
           id?: string
           is_vacation_override?: boolean | null
@@ -549,6 +553,8 @@ export type Database = {
           removal_reason?: Database["public"]["Enums"]["removal_reason"] | null
           removed_at?: string | null
           team_id?: string | null
+          validated_at?: string | null
+          validated_by_id?: string | null
           vehicle_id?: string | null
         }
         Update: {
@@ -559,6 +565,7 @@ export type Database = {
           created_at?: string
           daily_schedule_id?: string
           daily_team_assignment_id?: string | null
+          day_type?: Database["public"]["Enums"]["day_type"] | null
           employee_id?: string
           id?: string
           is_vacation_override?: boolean | null
@@ -567,6 +574,8 @@ export type Database = {
           removal_reason?: Database["public"]["Enums"]["removal_reason"] | null
           removed_at?: string | null
           team_id?: string | null
+          validated_at?: string | null
+          validated_by_id?: string | null
           vehicle_id?: string | null
         }
         Relationships: [
@@ -623,6 +632,7 @@ export type Database = {
           is_closed: boolean
           is_legacy: boolean | null
           kanban_filled: boolean
+          last_synced_at: string | null
           monthly_schedule_id: string | null
           notes: string | null
           project_id: string | null
@@ -637,6 +647,7 @@ export type Database = {
           is_closed?: boolean
           is_legacy?: boolean | null
           kanban_filled?: boolean
+          last_synced_at?: string | null
           monthly_schedule_id?: string | null
           notes?: string | null
           project_id?: string | null
@@ -651,6 +662,7 @@ export type Database = {
           is_closed?: boolean
           is_legacy?: boolean | null
           kanban_filled?: boolean
+          last_synced_at?: string | null
           monthly_schedule_id?: string | null
           notes?: string | null
           project_id?: string | null
@@ -3705,6 +3717,47 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      fn_employee_day_status: {
+        Args: { p_employee_id: string; p_date: string }
+        Returns: {
+          day_type: Database["public"]["Enums"]["day_type"] | null
+          attendance: Database["public"]["Enums"]["attendance_status"] | null
+          project_id: string | null
+          project_name: string | null
+          project_codigo: string | null
+          absence_reason: string | null
+          validated_at: string | null
+          validated_by_id: string | null
+          conta_como_dia_util: boolean
+          conta_como_vt: boolean
+        }[]
+      }
+      fn_is_within_validation_window: {
+        Args: { p_schedule_date: string }
+        Returns: boolean
+      }
+      fn_preencher_escala_dia: {
+        Args: { p_schedule_date: string }
+        Returns: {
+          daily_schedule_id: string
+          created_count: number
+          updated_count: number
+          skipped_validated_count: number
+          conflicts: Json
+        }[]
+      }
+      fn_resolver_conflito_preencher: {
+        Args: {
+          p_entry_id: string
+          p_acao: string
+          p_new_project_id?: string | null
+        }
+        Returns: undefined
+      }
+      fn_unvalidate_day_entry: {
+        Args: { p_entry_id: string; p_motivo: string }
+        Returns: undefined
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -3760,6 +3813,12 @@ export type Database = {
         | "comercial"
         | "financeiro"
       attendance_status: "presente" | "falta" | "justificado" | "atrasado"
+      day_type:
+        | "projeto"
+        | "reserva_ag"
+        | "folga"
+        | "atestado"
+        | "falta"
       aviso_previo_type:
         | "trabalhado"
         | "indenizado"
@@ -4056,6 +4115,7 @@ export const Constants = {
         "financeiro",
       ],
       attendance_status: ["presente", "falta", "justificado", "atrasado"],
+      day_type: ["projeto", "reserva_ag", "folga", "atestado", "falta"],
       aviso_previo_type: [
         "trabalhado",
         "indenizado",

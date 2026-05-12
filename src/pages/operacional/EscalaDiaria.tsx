@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CalendarDays, Plus, Lock, Printer, Trash2, Pencil, CheckCircle, AlertTriangle, X, Users, Save, Coffee } from "lucide-react";
+import { CalendarDays, Plus, Lock, Printer, Trash2, Pencil, CheckCircle, AlertTriangle, X, Users, Save, Coffee, Check, RotateCcw, Wand2 } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -36,12 +36,28 @@ import EmployeeAvailabilityKanban from "@/components/operacional/EmployeeAvailab
 import DailyReportDialog from "@/components/operacional/DailyReportDialog";
 import { useUpdateMonthlySchedule } from "@/hooks/useMonthlySchedules";
 import { useAuth } from "@/contexts/AuthContext";
+import { useValidateDayEntry, useUnvalidateDayEntry } from "@/hooks/useValidateDayEntry";
+import {
+  usePreencherEscala,
+  useResolverConflitoPreencher,
+  usePreencherDisponivel,
+  type PreencherConflict,
+} from "@/hooks/usePreencherEscala";
 import { DocStatusBadge } from "@/components/rh/ComplianceBadge";
 import EmployeeBadge from "@/components/rh/EmployeeBadge";
 import { useEmployeesBadgesForProject, summarizeBadges } from "@/hooks/useEmployeeBadge";
 import type { ExecutionStatus } from "@/lib/statusConstants";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
+type DayType = Database["public"]["Enums"]["day_type"];
+
+interface DayStatusEntry {
+  id: string;
+  employee_id: string;
+  day_type: DayType | null;
+  project_id: string | null;
+  validated_at: string | null;
+}
 
 function useProjectsList(showAll = false) {
   return useQuery({
@@ -92,15 +108,32 @@ export default function EscalaDiaria() {
   const { data: employees } = useEmployeesWithAbsences(selectedDate);
   const { data: allEmployees } = useEmployees();
 
-  const { data: attendanceRecords } = useQuery({
-    queryKey: ["attendance", selectedDate],
+  const { data: dayEntries = [] } = useQuery<DayStatusEntry[]>({
+    queryKey: ["day-entries", selectedDate],
     queryFn: async () => {
-      const { data, error } = await (supabase.from as any)("attendance")
-        .select("*")
-        .eq("date", selectedDate);
+      const { data: ds } = await supabase
+        .from("daily_schedules")
+        .select("id")
+        .eq("schedule_date", selectedDate)
+        .maybeSingle();
+      if (!ds) return [];
+      const { data, error } = await supabase
+        .from("daily_schedule_entries")
+        .select("id, employee_id, day_type, project_id, validated_at")
+        .eq("daily_schedule_id", ds.id);
       if (error) throw error;
       return data || [];
     },
+  });
+
+  const validateEntry = useValidateDayEntry();
+  const unvalidateEntry = useUnvalidateDayEntry();
+  const preencherEscala = usePreencherEscala();
+  const resolverConflito = useResolverConflitoPreencher();
+  const { data: preencherDisponivel } = usePreencherDisponivel(selectedDate);
+  const [conflictModal, setConflictModal] = useState<{ open: boolean; conflicts: PreencherConflict[] }>({
+    open: false,
+    conflicts: [],
   });
 
   // Fetch project benefits for badge display
@@ -399,6 +432,103 @@ export default function EscalaDiaria() {
     }));
   };
 
+  // ===== Validação / Reabertura / Preencher =====
+  const isWithinValidationWindow = (date: string): boolean => {
+    const target = new Date(date + "T12:00:00");
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    const diffDays = Math.floor((today.getTime() - target.getTime()) / 86400000);
+    if (diffDays < 0) return false;
+    const dow = today.getDay();
+    const maxBack = dow === 0 || dow === 1 || dow === 2 ? 4 : 2;
+    return diffDays <= maxBack;
+  };
+
+  const canValidate = isWithinValidationWindow(selectedDate);
+  const unvalidatedCount = dayEntries.filter((e) => !e.validated_at && e.day_type).length;
+  const validatedCount = dayEntries.filter((e) => !!e.validated_at).length;
+
+  const handleValidateDay = async () => {
+    if (!canValidate) {
+      toast.error("Dia fora da janela de validação.");
+      return;
+    }
+    const pending = dayEntries.filter((e) => !e.validated_at && e.day_type);
+    if (pending.length === 0) {
+      toast.info("Nada pra validar — entradas já validadas ou sem day_type.");
+      return;
+    }
+    try {
+      for (const entry of pending) {
+        await validateEntry.mutateAsync(entry.id);
+      }
+      qc.invalidateQueries({ queryKey: ["day-entries", selectedDate] });
+      toast.success(`${pending.length} entrada(s) validada(s) como FATO.`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro ao validar dia";
+      toast.error(msg);
+    }
+  };
+
+  const handleReopenDay = async () => {
+    if (validatedCount === 0) {
+      toast.info("Nenhuma entrada validada para reabrir.");
+      return;
+    }
+    const motivo = window.prompt("Motivo da reabertura (obrigatório):");
+    if (!motivo || !motivo.trim()) {
+      toast.error("Motivo é obrigatório.");
+      return;
+    }
+    try {
+      const validated = dayEntries.filter((e) => !!e.validated_at);
+      for (const entry of validated) {
+        await unvalidateEntry.mutateAsync({ entryId: entry.id, motivo: motivo.trim() });
+      }
+      qc.invalidateQueries({ queryKey: ["day-entries", selectedDate] });
+      toast.success(`${validated.length} entrada(s) reabertas.`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro ao reabrir dia";
+      toast.error(msg);
+    }
+  };
+
+  const handlePreencherEscala = async () => {
+    try {
+      const result = await preencherEscala.mutateAsync(selectedDate);
+      toast.success(
+        `Preencher: ${result.created_count} criadas, ${result.updated_count} atualizadas, ${result.skipped_validated_count} ignoradas (validadas).`,
+      );
+      if (result.conflicts.length > 0) {
+        setConflictModal({ open: true, conflicts: result.conflicts });
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro ao preencher escala";
+      toast.error(msg);
+    }
+  };
+
+  const handleResolverConflito = async (
+    conflict: PreencherConflict,
+    acao: "manter" | "trocar",
+  ) => {
+    try {
+      await resolverConflito.mutateAsync({
+        entryId: conflict.entry_id,
+        acao,
+        newProjectId: conflict.new_project_id,
+      });
+      setConflictModal((prev) => ({
+        ...prev,
+        conflicts: prev.conflicts.filter((c) => c.entry_id !== conflict.entry_id),
+      }));
+      toast.success(acao === "trocar" ? "Projeto trocado." : "Mantido projeto antigo.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro ao resolver conflito";
+      toast.error(msg);
+    }
+  };
+
   const handleAttendance = async (entryId: string, attendance: AttendanceStatus) => {
     try {
       const now = new Date().toISOString();
@@ -551,14 +681,18 @@ export default function EscalaDiaria() {
   const dateFormatted = format(new Date(selectedDate + "T12:00:00"), "dd/MM/yyyy (EEEE)", { locale: ptBR });
   const d = new Date(selectedDate + "T12:00:00");
 
-  // Kanban data
-  const assignedIds = new Set((schedule?.entries || []).map((e: any) => e.employee_id));
-  const attendanceMap: Record<string, string> = {};
-  (attendanceRecords || []).forEach((rec: any) => {
-    if (["folga", "falta", "atestado", "reserva_ag"].includes(rec.status)) {
-      attendanceMap[rec.employee_id] = rec.status;
+  // Kanban data — funcionários alocados a projeto (entries com project_id) saem do kanban
+  const assignedIds = new Set(
+    (schedule?.entries || [])
+      .filter((e: { project_id: string | null }) => !!e.project_id)
+      .map((e: { employee_id: string }) => e.employee_id),
+  );
+  const dayTypeMap: Record<string, DayType> = {};
+  for (const e of dayEntries) {
+    if (e.day_type && e.day_type !== "projeto") {
+      dayTypeMap[e.employee_id] = e.day_type;
     }
-  });
+  }
 
   const fieldEmployees = (allEmployees || []).filter(
     (e) => e.status !== "desligado" && !assignedIds.has(e.id) && isFieldRole(e.role)
@@ -635,15 +769,30 @@ export default function EscalaDiaria() {
                 <AlertTriangle className="w-3 h-3" /> Aberta — pendente de fechamento
               </Badge>
             )}
-            <div className="flex gap-2 ml-auto">
+            <div className="flex gap-2 ml-auto flex-wrap">
               <Button variant="outline" className="gap-2" onClick={() => setShowReport(true)}>
                 <Printer className="w-4 h-4" /> Relatório
               </Button>
+              {!isReadOnly && preencherDisponivel && (
+                <Button onClick={handlePreencherEscala} variant="outline" className="gap-2">
+                  <Wand2 className="w-4 h-4" /> Preencher Escala do plano
+                </Button>
+              )}
               {!isReadOnly && (
                 <>
                   <Button onClick={() => setShowAddModal(true)} variant="outline" className="gap-2">
                     <Plus className="w-4 h-4" /> Adicionar à Escala
                   </Button>
+                  {canValidate && unvalidatedCount > 0 && (
+                    <Button onClick={handleValidateDay} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
+                      <Check className="w-4 h-4" /> Validar dia ({unvalidatedCount})
+                    </Button>
+                  )}
+                  {role === "master" && validatedCount > 0 && (
+                    <Button onClick={handleReopenDay} variant="outline" className="gap-2">
+                      <RotateCcw className="w-4 h-4" /> Reabrir
+                    </Button>
+                  )}
                   {(isToday || isPast) && assignments.length > 0 && (
                     <Button onClick={handleClose} variant="destructive" className="gap-2">
                       <Lock className="w-4 h-4" /> Fechar Escala
@@ -657,7 +806,7 @@ export default function EscalaDiaria() {
           {/* KANBAN */}
           <EmployeeAvailabilityKanban
             unassignedEmployees={kanbanEmployees}
-            attendanceMap={attendanceMap}
+            dayTypeMap={dayTypeMap}
             scheduleDate={selectedDate}
             dailyScheduleId={schedule.id}
             rhAbsentEmployees={rhAbsentFieldEmployees}
@@ -969,7 +1118,7 @@ export default function EscalaDiaria() {
         assignments={assignments}
         entries={schedule?.entries || []}
         absentEmployees={absentEmployees}
-        attendanceRecords={attendanceRecords || []}
+        dayEntries={dayEntries}
         kanbanFilled={schedule?.kanban_filled || false}
         allEmployees={allEmployees || []}
       />
@@ -1010,6 +1159,58 @@ export default function EscalaDiaria() {
               setVacationDialog({ show: false, empIds: [], pending: [] });
             }}>
               Confirmar como avulso
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Preencher — Conflict Resolution Dialog */}
+      <Dialog
+        open={conflictModal.open}
+        onOpenChange={(o) => setConflictModal((prev) => ({ ...prev, open: o }))}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" /> Conflitos ao preencher escala
+            </DialogTitle>
+          </DialogHeader>
+          {conflictModal.conflicts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Todos os conflitos foram resolvidos.</p>
+          ) : (
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+              {conflictModal.conflicts.map((c) => {
+                const emp = (allEmployees || []).find((e) => e.id === c.employee_id);
+                const oldProj = (obrasData || []).find((p: { id: string }) => p.id === c.old_project_id) as
+                  | { name: string; codigo: string | null }
+                  | undefined;
+                const newProj = (obrasData || []).find((p: { id: string }) => p.id === c.new_project_id) as
+                  | { name: string; codigo: string | null }
+                  | undefined;
+                return (
+                  <div key={c.entry_id} className="border rounded-lg p-3 flex flex-wrap items-center gap-3">
+                    <div className="flex-1 min-w-[200px]">
+                      <p className="font-medium text-sm">{emp?.name || c.employee_id}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {oldProj?.codigo || oldProj?.name || "—"} → {newProj?.codigo || newProj?.name || "—"}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => handleResolverConflito(c, "manter")}>
+                        Manter
+                      </Button>
+                      <Button size="sm" onClick={() => handleResolverConflito(c, "trocar")}>
+                        Trocar
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConflictModal({ open: false, conflicts: [] })}>
+              Fechar
             </Button>
           </DialogFooter>
         </DialogContent>
