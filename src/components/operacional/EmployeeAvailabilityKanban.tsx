@@ -6,8 +6,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { isTopografo } from "@/lib/fieldRoles";
+import type { Database } from "@/integrations/supabase/types";
 
-type KanbanColumn = "nao_alocado" | "folga" | "falta" | "atestado" | "reserva_ag";
+type DayType = Database["public"]["Enums"]["day_type"];
+type KanbanAbsenceType = Extract<DayType, "folga" | "falta" | "atestado" | "reserva_ag">;
+type KanbanColumn = KanbanAbsenceType | "nao_alocado";
 
 interface Employee {
   id: string;
@@ -24,7 +27,8 @@ interface Employee {
 
 interface Props {
   unassignedEmployees: Employee[];
-  attendanceMap: Record<string, string>;
+  /** Maps employee_id → day_type para o dia (apenas folga/falta/atestado/reserva_ag). */
+  dayTypeMap: Record<string, DayType>;
   scheduleDate: string;
   dailyScheduleId: string | null;
   /** Employees with RH status (férias/licença/afastado) — shown as read-only badges */
@@ -41,9 +45,11 @@ const PRESENCE_COLUMNS: { key: KanbanColumn; label: string; dotColor: string; bg
   { key: "reserva_ag", label: "Reserva AG", dotColor: "bg-blue-600", bgCard: "bg-blue-50 dark:bg-blue-950/30" },
 ];
 
+const KANBAN_DAY_TYPES: KanbanAbsenceType[] = ["folga", "falta", "atestado", "reserva_ag"];
+
 export default function EmployeeAvailabilityKanban({
   unassignedEmployees,
-  attendanceMap,
+  dayTypeMap,
   scheduleDate,
   dailyScheduleId,
   rhAbsentEmployees = [],
@@ -51,16 +57,18 @@ export default function EmployeeAvailabilityKanban({
   const qc = useQueryClient();
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [hoverColumn, setHoverColumn] = useState<KanbanColumn | null>(null);
-  const [localMap, setLocalMap] = useState<Record<string, string>>({});
+  const [localMap, setLocalMap] = useState<Record<string, KanbanAbsenceType | undefined>>({});
 
-  const effectiveMap = { ...attendanceMap, ...localMap };
+  const isKanbanAbsence = (dt: DayType | undefined): dt is KanbanAbsenceType =>
+    !!dt && KANBAN_DAY_TYPES.includes(dt);
 
   const getColumn = (emp: Employee): KanbanColumn => {
-    const status = effectiveMap[emp.id];
-    if (status === "folga") return "folga";
-    if (status === "falta") return "falta";
-    if (status === "atestado") return "atestado";
-    if (status === "reserva_ag") return "reserva_ag";
+    if (emp.id in localMap) {
+      const override = localMap[emp.id];
+      return override ?? "nao_alocado";
+    }
+    const dt = dayTypeMap[emp.id];
+    if (isKanbanAbsence(dt)) return dt;
     return "nao_alocado";
   };
 
@@ -97,63 +105,86 @@ export default function EmployeeAvailabilityKanban({
     if (!empId) return;
     setDraggedId(null);
 
-    const currentCol = getColumn(unassignedEmployees.find((emp) => emp.id === empId)!);
-    if (currentCol === targetCol) return;
-
-    if (targetCol === "nao_alocado") {
-      const newMap = { ...localMap };
-      delete newMap[empId];
-      setLocalMap(newMap);
-    } else {
-      setLocalMap({ ...localMap, [empId]: targetCol });
+    if (!dailyScheduleId) {
+      toast.error("Crie a escala do dia antes de marcar status.");
+      return;
     }
 
-    try {
-      if (targetCol === "nao_alocado") {
-        await (supabase.from as any)("attendance").delete().eq("employee_id", empId).eq("date", scheduleDate);
-      } else {
-        const { data: existing } = await (supabase.from as any)("attendance")
-          .select("id")
-          .eq("employee_id", empId)
-          .eq("date", scheduleDate)
-          .maybeSingle();
+    const emp = unassignedEmployees.find((x) => x.id === empId);
+    if (!emp) return;
+    const currentCol = getColumn(emp);
+    if (currentCol === targetCol) return;
 
-        if (existing) {
-          await (supabase.from as any)("attendance").update({ status: targetCol }).eq("id", existing.id);
-        } else {
-          await (supabase.from as any)("attendance").insert({
-            employee_id: empId,
-            date: scheduleDate,
-            status: targetCol,
-          });
-        }
+    // optimistic
+    setLocalMap((prev) => ({
+      ...prev,
+      [empId]: targetCol === "nao_alocado" ? undefined : targetCol,
+    }));
+
+    try {
+      // Procura entry existente do funcionário no dia SEM projeto (status interno).
+      const { data: existing } = await supabase
+        .from("daily_schedule_entries")
+        .select("id, validated_at")
+        .eq("daily_schedule_id", dailyScheduleId)
+        .eq("employee_id", empId)
+        .is("project_id", null)
+        .maybeSingle();
+
+      if (existing?.validated_at) {
+        throw new Error("Dia já validado. Solicite reabertura à diretoria.");
       }
 
-      // Mark kanban as filled if at least 1 employee moved
-      if (dailyScheduleId && targetCol !== "nao_alocado") {
-        await supabase.from("daily_schedules").update({ kanban_filled: true }).eq("id", dailyScheduleId);
+      if (targetCol === "nao_alocado") {
+        if (existing) {
+          const { error } = await supabase
+            .from("daily_schedule_entries")
+            .delete()
+            .eq("id", existing.id);
+          if (error) throw error;
+        }
+      } else if (existing) {
+        const { error } = await supabase
+          .from("daily_schedule_entries")
+          .update({ day_type: targetCol })
+          .eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("daily_schedule_entries").insert({
+          daily_schedule_id: dailyScheduleId,
+          employee_id: empId,
+          project_id: null,
+          day_type: targetCol,
+        });
+        if (error) throw error;
+      }
+
+      if (targetCol !== "nao_alocado") {
+        await supabase
+          .from("daily_schedules")
+          .update({ kanban_filled: true })
+          .eq("id", dailyScheduleId);
       }
 
       qc.invalidateQueries({ queryKey: ["daily-schedule"] });
-      qc.invalidateQueries({ queryKey: ["attendance", scheduleDate] });
-    } catch {
-      toast.error("Erro ao atualizar status do funcionário");
-      const revertMap = { ...localMap };
-      delete revertMap[empId];
-      setLocalMap(revertMap);
+      qc.invalidateQueries({ queryKey: ["day-entries", scheduleDate] });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro ao atualizar status do funcionário";
+      toast.error(msg);
+      setLocalMap((prev) => {
+        const next = { ...prev };
+        delete next[empId];
+        return next;
+      });
     }
   };
 
   const isTopografoRole = (role: string) => isTopografo(role);
 
-  const isAuxiliar = (role: string) =>
-    role?.toLowerCase().includes("ajudante");
-
   const totalCount = unassignedEmployees.length;
   const rhCount = rhAbsentEmployees.length;
   if (totalCount === 0 && rhCount === 0) return null;
 
-  /** "João P." format */
   const formatEmployeeName = (emp: Employee) => {
     const parts = emp.name.trim().split(/\s+/);
     if (parts.length <= 1) return emp.name;
@@ -177,9 +208,7 @@ export default function EmployeeAvailabilityKanban({
       >
         {isTopografoRole(emp.role) ? "TOP" : "AUX"}
       </Badge>
-      <span className="truncate leading-tight">
-        {formatEmployeeName(emp)}
-      </span>
+      <span className="truncate leading-tight">{formatEmployeeName(emp)}</span>
     </div>
   );
 
@@ -239,7 +268,6 @@ export default function EmployeeAvailabilityKanban({
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 p-2">
-            {/* Topógrafos */}
             <div>
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Topógrafos ({topografosNaoAlocados.length})</p>
               <div className="flex flex-wrap gap-1.5 min-h-[40px]">
@@ -249,7 +277,6 @@ export default function EmployeeAvailabilityKanban({
                 {topografosNaoAlocados.map((emp) => <EmployeeChip key={emp.id} emp={emp} />)}
               </div>
             </div>
-            {/* Auxiliares */}
             <div>
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Auxiliares ({auxiliaresNaoAlocados.length})</p>
               <div className="flex flex-wrap gap-1.5 min-h-[40px]">
@@ -262,7 +289,6 @@ export default function EmployeeAvailabilityKanban({
           </div>
         </div>
 
-        {/* Colunas horizontais: Ausências + Presença */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {ABSENCE_COLUMNS.map((col) => (
             <DropColumn key={col.key} col={col} items={grouped[col.key]} />
@@ -272,7 +298,6 @@ export default function EmployeeAvailabilityKanban({
           ))}
         </div>
 
-        {/* Ausências RH (férias/licença/afastado — read-only, fonte única) */}
         {rhAbsentEmployees.length > 0 && (
           <div className="rounded-lg border border-border bg-muted/20 p-3">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
