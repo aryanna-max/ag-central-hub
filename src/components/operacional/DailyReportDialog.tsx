@@ -15,7 +15,8 @@ interface Props {
   assignments: any[];
   entries: any[];
   absentEmployees: any[];
-  attendanceRecords: any[];
+  /** Entries de daily_schedule_entries com day_type != 'projeto' (folga/falta/atestado/reserva_ag). */
+  dayStatusEntries: any[];
   kanbanFilled: boolean;
   allEmployees: any[];
   createdBy?: string;
@@ -33,7 +34,7 @@ export default function DailyReportDialog({
   assignments,
   entries,
   absentEmployees,
-  attendanceRecords,
+  dayStatusEntries,
   kanbanFilled,
   allEmployees,
   createdBy,
@@ -66,7 +67,7 @@ export default function DailyReportDialog({
     });
 
     // Reserva AG
-    const reservaEmps = attendanceRecords.filter((r: any) => r.status === "reserva_ag");
+    const reservaEmps = dayStatusEntries.filter((r: any) => r.day_type === "reserva_ag");
     reservaEmps.forEach((r: any) => {
       const emp = allEmployees.find((e: any) => e.id === r.employee_id);
       rows.push(["Reserva AG", "—", emp?.name || "—", "—"]);
@@ -75,7 +76,7 @@ export default function DailyReportDialog({
     // Ausências
     const absTypes = ["falta", "folga", "atestado"];
     absTypes.forEach((t) => {
-      attendanceRecords.filter((r: any) => r.status === t).forEach((r: any) => {
+      dayStatusEntries.filter((r: any) => r.day_type === t).forEach((r: any) => {
         const emp = allEmployees.find((e: any) => e.id === r.employee_id);
         rows.push([t.charAt(0).toUpperCase() + t.slice(1), "—", emp?.name || "—", "—"]);
       });
@@ -112,10 +113,10 @@ export default function DailyReportDialog({
   // Reserva AG/Férias) mesmo que vazias — Marcelo marca depois conforme o dia se
   // desenvolve. Férias vem auto-populated de employee_vacations.
   const PlanningReport = () => {
-    const reservaEmps = attendanceRecords.filter((r: any) => r.status === "reserva_ag");
-    const faltaEmps = attendanceRecords.filter((r: any) => r.status === "falta");
-    const folgaEmps = attendanceRecords.filter((r: any) => r.status === "folga");
-    const atestadoEmps = attendanceRecords.filter((r: any) => r.status === "atestado");
+    const reservaEmps = dayStatusEntries.filter((r: any) => r.day_type === "reserva_ag");
+    const faltaEmps = dayStatusEntries.filter((r: any) => r.day_type === "falta");
+    const folgaEmps = dayStatusEntries.filter((r: any) => r.day_type === "folga");
+    const atestadoEmps = dayStatusEntries.filter((r: any) => r.day_type === "atestado");
     const feriasEmps = absentEmployees.filter((e: any) => e.availability === "ferias");
 
     const getName = (empId: string) => allEmployees.find((e: any) => e.id === empId)?.name || "—";
@@ -300,10 +301,10 @@ export default function DailyReportDialog({
 
   // Confirmed Report Content
   const ConfirmedReport = () => {
-    const reservaEmps = attendanceRecords.filter((r: any) => r.status === "reserva_ag");
-    const faltaEmps = attendanceRecords.filter((r: any) => r.status === "falta");
-    const folgaEmps = attendanceRecords.filter((r: any) => r.status === "folga");
-    const atestadoEmps = attendanceRecords.filter((r: any) => r.status === "atestado");
+    const reservaEmps = dayStatusEntries.filter((r: any) => r.day_type === "reserva_ag");
+    const faltaEmps = dayStatusEntries.filter((r: any) => r.day_type === "falta");
+    const folgaEmps = dayStatusEntries.filter((r: any) => r.day_type === "folga");
+    const atestadoEmps = dayStatusEntries.filter((r: any) => r.day_type === "atestado");
     const feriasEmps = absentEmployees.filter((e: any) => e.availability === "ferias");
     const licencaEmps = absentEmployees.filter((e: any) => e.availability === "licenca" || e.availability === "afastado");
 

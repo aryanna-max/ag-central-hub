@@ -6,8 +6,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { isTopografo } from "@/lib/fieldRoles";
+import type { DayType } from "@/hooks/useEmployeeDayStatus";
 
-type KanbanColumn = "nao_alocado" | "folga" | "falta" | "atestado" | "reserva_ag";
+// Estado derivado: "nao_alocado" = sem entry no dia. Os demais são day_type
+// reais de daily_schedule_entries (exceto 'projeto', que é alocação em equipe).
+type KanbanColumn = "nao_alocado" | Exclude<DayType, "projeto">;
 
 interface Employee {
   id: string;
@@ -24,7 +27,7 @@ interface Employee {
 
 interface Props {
   unassignedEmployees: Employee[];
-  attendanceMap: Record<string, string>;
+  dayStatusMap: Record<string, string>;
   scheduleDate: string;
   dailyScheduleId: string | null;
   /** Employees with RH status (férias/licença/afastado) — shown as read-only badges */
@@ -43,7 +46,7 @@ const PRESENCE_COLUMNS: { key: KanbanColumn; label: string; dotColor: string; bg
 
 export default function EmployeeAvailabilityKanban({
   unassignedEmployees,
-  attendanceMap,
+  dayStatusMap,
   scheduleDate,
   dailyScheduleId,
   rhAbsentEmployees = [],
@@ -53,7 +56,7 @@ export default function EmployeeAvailabilityKanban({
   const [hoverColumn, setHoverColumn] = useState<KanbanColumn | null>(null);
   const [localMap, setLocalMap] = useState<Record<string, string>>({});
 
-  const effectiveMap = { ...attendanceMap, ...localMap };
+  const effectiveMap = { ...dayStatusMap, ...localMap };
 
   const getColumn = (emp: Employee): KanbanColumn => {
     const status = effectiveMap[emp.id];
@@ -109,33 +112,41 @@ export default function EmployeeAvailabilityKanban({
     }
 
     try {
-      if (targetCol === "nao_alocado") {
-        await (supabase.from as any)("attendance").delete().eq("employee_id", empId).eq("date", scheduleDate);
-      } else {
-        const { data: existing } = await (supabase.from as any)("attendance")
-          .select("id")
-          .eq("employee_id", empId)
-          .eq("date", scheduleDate)
-          .maybeSingle();
-
-        if (existing) {
-          await (supabase.from as any)("attendance").update({ status: targetCol }).eq("id", existing.id);
-        } else {
-          await (supabase.from as any)("attendance").insert({
-            employee_id: empId,
-            date: scheduleDate,
-            status: targetCol,
-          });
-        }
+      if (!dailyScheduleId) {
+        throw new Error("Escala do dia ainda não foi criada.");
       }
 
-      // Mark kanban as filled if at least 1 employee moved
-      if (dailyScheduleId && targetCol !== "nao_alocado") {
+      // Busca entry existente sem projeto (status do dia) para este funcionário.
+      const { data: existing } = await supabase
+        .from("daily_schedule_entries")
+        .select("id, day_type")
+        .eq("employee_id", empId)
+        .eq("daily_schedule_id", dailyScheduleId)
+        .is("project_id", null)
+        .maybeSingle();
+
+      if (targetCol === "nao_alocado") {
+        if (existing) {
+          await supabase.from("daily_schedule_entries").delete().eq("id", existing.id);
+        }
+      } else {
+        const update = { day_type: targetCol } as never;
+        if (existing) {
+          await supabase.from("daily_schedule_entries").update(update).eq("id", existing.id);
+        } else {
+          const insertPayload = {
+            daily_schedule_id: dailyScheduleId,
+            employee_id: empId,
+            day_type: targetCol,
+            attendance: targetCol === "reserva_ag" ? "presente" : "justificado",
+          } as never;
+          await supabase.from("daily_schedule_entries").insert(insertPayload);
+        }
+
         await supabase.from("daily_schedules").update({ kanban_filled: true }).eq("id", dailyScheduleId);
       }
 
       qc.invalidateQueries({ queryKey: ["daily-schedule"] });
-      qc.invalidateQueries({ queryKey: ["attendance", scheduleDate] });
     } catch {
       toast.error("Erro ao atualizar status do funcionário");
       const revertMap = { ...localMap };

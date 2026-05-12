@@ -1,22 +1,30 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FileText, Download } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
+import type { DayType } from "@/hooks/useEmployeeDayStatus";
 
-const STATUS_LABELS: Record<string, { label: string; className: string }> = {
+const DAY_TYPE_LABELS: Record<string, { label: string; className: string }> = {
   falta: { label: "Falta", className: "bg-red-600 text-white" },
   folga: { label: "Folga", className: "bg-green-600 text-white" },
   atestado: { label: "Atestado", className: "bg-amber-500 text-white" },
-  reserva_ag: { label: "Reserva AG", className: "bg-blue-600 text-white" },
+};
+
+type AbsenceRecord = {
+  id: string;
+  day_type: DayType;
+  absence_reason: string | null;
+  employee_id: string;
+  employees: { name: string; matricula: string | null } | null;
+  daily_schedules: { schedule_date: string } | null;
 };
 
 export default function RelatorioAusencias() {
@@ -29,52 +37,52 @@ export default function RelatorioAusencias() {
   const { data: records = [], isLoading } = useQuery({
     queryKey: ["absence-report", startDate, endDate],
     queryFn: async () => {
-      const { data, error } = await (supabase.from as any)("attendance")
-        .select("*, employees:employee_id(name, matricula), profiles:created_by_id(full_name)")
-        .gte("date", startDate)
-        .lte("date", endDate)
-        .in("status", ["falta", "folga", "atestado", "reserva_ag"])
-        .order("date", { ascending: false });
+      const { data, error } = await supabase
+        .from("daily_schedule_entries")
+        .select(
+          "id, day_type, absence_reason, employee_id, employees:employee_id(name, matricula), daily_schedules!inner(schedule_date)",
+        )
+        .in("day_type", ["falta", "folga", "atestado"])
+        .gte("daily_schedules.schedule_date", startDate)
+        .lte("daily_schedules.schedule_date", endDate);
       if (error) throw error;
-      return data || [];
+      const rows = (data ?? []) as unknown as AbsenceRecord[];
+      return [...rows].sort((a, b) =>
+        (b.daily_schedules?.schedule_date ?? "").localeCompare(a.daily_schedules?.schedule_date ?? ""),
+      );
     },
   });
 
   const absenceRecords = useMemo(() => {
-    return records.filter((r: any) => {
-      if (typeFilter !== "todos" && r.status !== typeFilter) return false;
+    return records.filter((r) => {
+      if (typeFilter !== "todos" && r.day_type !== typeFilter) return false;
       if (empFilter) {
-        const name = (r.employees as any)?.name?.toLowerCase() || "";
+        const name = r.employees?.name?.toLowerCase() || "";
         if (!name.includes(empFilter.toLowerCase())) return false;
       }
       return true;
     });
   }, [records, typeFilter, empFilter]);
 
-  const ausencias = absenceRecords.filter((r: any) => r.status !== "reserva_ag");
-  const reservas = absenceRecords.filter((r: any) => r.status === "reserva_ag");
+  const totals = useMemo(() => ({
+    falta: records.filter((r) => r.day_type === "falta").length,
+    folga: records.filter((r) => r.day_type === "folga").length,
+    atestado: records.filter((r) => r.day_type === "atestado").length,
+  }), [records]);
 
-  const totals = useMemo(() => {
-    const all = records.filter((r: any) => r.status !== "reserva_ag");
-    return {
-      falta: all.filter((r: any) => r.status === "falta").length,
-      folga: all.filter((r: any) => r.status === "folga").length,
-      atestado: all.filter((r: any) => r.status === "atestado").length,
-      reserva_ag: records.filter((r: any) => r.status === "reserva_ag").length,
-    };
-  }, [records]);
-
-  const exportCSV = (data: any[], filename: string) => {
-    const header = "Funcionário,Matrícula,Data,Tipo,Observação,Registrado por\n";
-    const rows = data.map((r: any) => {
-      const emp = r.employees as any;
-      const prof = r.profiles as any;
-      return `"${emp?.name || ""}","${emp?.matricula || ""}","${r.date}","${STATUS_LABELS[r.status]?.label || r.status}","${r.notes || ""}","${prof?.full_name || ""}"`;
+  const exportCSV = () => {
+    const header = "Funcionário,Matrícula,Data,Tipo,Observação\n";
+    const rows = absenceRecords.map((r) => {
+      const emp = r.employees;
+      const date = r.daily_schedules?.schedule_date || "";
+      return `"${emp?.name || ""}","${emp?.matricula || ""}","${date}","${DAY_TYPE_LABELS[r.day_type]?.label || r.day_type}","${r.absence_reason || ""}"`;
     }).join("\n");
     const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = filename; a.click();
+    a.href = url;
+    a.download = `ausencias_${startDate}_${endDate}.csv`;
+    a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -85,22 +93,19 @@ export default function RelatorioAusencias() {
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <FileText className="w-6 h-6" /> Relatório de Ausências
           </h1>
-          <p className="text-muted-foreground text-sm">Controle de faltas, folgas, atestados e presenças internas</p>
+          <p className="text-muted-foreground text-sm">Controle de faltas, folgas e atestados</p>
         </div>
-        <Button variant="outline" className="gap-2" onClick={() => exportCSV(absenceRecords, `ausencias_${startDate}_${endDate}.csv`)}>
+        <Button variant="outline" className="gap-2" onClick={exportCSV}>
           <Download className="w-4 h-4" /> Exportar CSV
         </Button>
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card><CardContent className="pt-4 pb-4"><p className="text-xs text-muted-foreground">Faltas</p><p className="text-2xl font-bold text-red-600">{totals.falta}</p></CardContent></Card>
         <Card><CardContent className="pt-4 pb-4"><p className="text-xs text-muted-foreground">Folgas</p><p className="text-2xl font-bold text-green-600">{totals.folga}</p></CardContent></Card>
         <Card><CardContent className="pt-4 pb-4"><p className="text-xs text-muted-foreground">Atestados</p><p className="text-2xl font-bold text-amber-600">{totals.atestado}</p></CardContent></Card>
-        <Card><CardContent className="pt-4 pb-4"><p className="text-xs text-muted-foreground">Reserva AG</p><p className="text-2xl font-bold text-blue-600">{totals.reserva_ag}</p></CardContent></Card>
       </div>
 
-      {/* Filters */}
       <Card>
         <CardContent className="pt-4 pb-4 flex flex-wrap gap-3 items-end">
           <div>
@@ -130,84 +135,40 @@ export default function RelatorioAusencias() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="ausencias">
-        <TabsList>
-          <TabsTrigger value="ausencias">Ausências ({ausencias.length})</TabsTrigger>
-          <TabsTrigger value="reserva">Reserva AG ({reservas.length})</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="ausencias">
-          <Card>
-            <CardContent className="p-0">
-              {isLoading ? (
-                <p className="py-8 text-center text-muted-foreground">Carregando...</p>
-              ) : ausencias.length === 0 ? (
-                <p className="py-8 text-center text-muted-foreground">Nenhuma ausência encontrada no período.</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Funcionário</TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Observação</TableHead>
-                      <TableHead>Registrado por</TableHead>
+      <Card>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <p className="py-8 text-center text-muted-foreground">Carregando...</p>
+          ) : absenceRecords.length === 0 ? (
+            <p className="py-8 text-center text-muted-foreground">Nenhuma ausência encontrada no período.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Funcionário</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Observação</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {absenceRecords.map((r) => {
+                  const st = DAY_TYPE_LABELS[r.day_type] || { label: r.day_type, className: "" };
+                  const date = r.daily_schedules?.schedule_date;
+                  return (
+                    <TableRow key={r.id}>
+                      <TableCell className="font-medium">{r.employees?.name || "—"}</TableCell>
+                      <TableCell>{date ? format(new Date(date + "T12:00:00"), "dd/MM/yyyy") : "—"}</TableCell>
+                      <TableCell><Badge className={st.className}>{st.label}</Badge></TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{r.absence_reason || "—"}</TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {ausencias.map((r: any) => {
-                      const st = STATUS_LABELS[r.status] || { label: r.status, className: "" };
-                      return (
-                        <TableRow key={r.id}>
-                          <TableCell className="font-medium">{(r.employees as any)?.name || "—"}</TableCell>
-                          <TableCell>{format(new Date(r.date + "T12:00:00"), "dd/MM/yyyy")}</TableCell>
-                          <TableCell><Badge className={st.className}>{st.label}</Badge></TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{r.notes || "—"}</TableCell>
-                          <TableCell className="text-sm">{(r.profiles as any)?.full_name || "—"}</TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="reserva">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Dias em Reserva AG — presença interna na sede (não é ausência)</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {reservas.length === 0 ? (
-                <p className="py-8 text-center text-muted-foreground">Nenhum registro de Reserva AG no período.</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Funcionário</TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Observação</TableHead>
-                      <TableHead>Registrado por</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reservas.map((r: any) => (
-                      <TableRow key={r.id}>
-                        <TableCell className="font-medium">{(r.employees as any)?.name || "—"}</TableCell>
-                        <TableCell>{format(new Date(r.date + "T12:00:00"), "dd/MM/yyyy")}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{r.notes || "—"}</TableCell>
-                        <TableCell className="text-sm">{(r.profiles as any)?.full_name || "—"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

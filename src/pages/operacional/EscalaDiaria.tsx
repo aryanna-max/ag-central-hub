@@ -43,6 +43,18 @@ import type { ExecutionStatus } from "@/lib/statusConstants";
 
 type AttendanceStatus = Database["public"]["Enums"]["attendance_status"];
 
+// Tipo local porque `day_type` é coluna nova (types.ts é regenerado pelo Lovable
+// só após merge da migration). Remover este shim assim que types.ts incluir o campo.
+type ScheduleEntryWithDayType = {
+  id: string;
+  employee_id: string;
+  project_id: string | null;
+  day_type?: string | null;
+  attendance?: string | null;
+  daily_team_assignment_id?: string | null;
+  employees?: { name?: string | null; role?: string | null } | null;
+};
+
 function useProjectsList(showAll = false) {
   return useQuery({
     queryKey: ["projects-operational", showAll],
@@ -92,16 +104,12 @@ export default function EscalaDiaria() {
   const { data: employees } = useEmployeesWithAbsences(selectedDate);
   const { data: allEmployees } = useEmployees();
 
-  const { data: attendanceRecords } = useQuery({
-    queryKey: ["attendance", selectedDate],
-    queryFn: async () => {
-      const { data, error } = await (supabase.from as any)("attendance")
-        .select("*")
-        .eq("date", selectedDate);
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  // Status do dia (folga/falta/atestado/reserva_ag) vem de daily_schedule_entries
+  // — entries com day_type != 'projeto' representam o status do funcionário no dia.
+  const dayStatusEntries = useMemo<ScheduleEntryWithDayType[]>(() => {
+    const entries = (schedule?.entries || []) as unknown as ScheduleEntryWithDayType[];
+    return entries.filter((e) => e.day_type && e.day_type !== "projeto");
+  }, [schedule?.entries]);
 
   // Fetch project benefits for badge display
   const assignmentProjectIds = useMemo(() => {
@@ -552,12 +560,16 @@ export default function EscalaDiaria() {
   const d = new Date(selectedDate + "T12:00:00");
 
   // Kanban data
-  const assignedIds = new Set((schedule?.entries || []).map((e: any) => e.employee_id));
-  const attendanceMap: Record<string, string> = {};
-  (attendanceRecords || []).forEach((rec: any) => {
-    if (["folga", "falta", "atestado", "reserva_ag"].includes(rec.status)) {
-      attendanceMap[rec.employee_id] = rec.status;
-    }
+  // Entries com day_type='projeto' (ou sem day_type — legado) bloqueiam o funcionário do Kanban.
+  const allEntriesTyped = (schedule?.entries || []) as unknown as ScheduleEntryWithDayType[];
+  const assignedIds = new Set(
+    allEntriesTyped
+      .filter((e) => !e.day_type || e.day_type === "projeto")
+      .map((e) => e.employee_id),
+  );
+  const dayStatusMap: Record<string, string> = {};
+  dayStatusEntries.forEach((rec) => {
+    if (rec.day_type) dayStatusMap[rec.employee_id] = rec.day_type;
   });
 
   const fieldEmployees = (allEmployees || []).filter(
@@ -657,7 +669,7 @@ export default function EscalaDiaria() {
           {/* KANBAN */}
           <EmployeeAvailabilityKanban
             unassignedEmployees={kanbanEmployees}
-            attendanceMap={attendanceMap}
+            dayStatusMap={dayStatusMap}
             scheduleDate={selectedDate}
             dailyScheduleId={schedule.id}
             rhAbsentEmployees={rhAbsentFieldEmployees}
@@ -969,7 +981,7 @@ export default function EscalaDiaria() {
         assignments={assignments}
         entries={schedule?.entries || []}
         absentEmployees={absentEmployees}
-        attendanceRecords={attendanceRecords || []}
+        dayStatusEntries={dayStatusEntries}
         kanbanFilled={schedule?.kanban_filled || false}
         allEmployees={allEmployees || []}
       />
