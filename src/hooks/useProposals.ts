@@ -88,6 +88,30 @@ export function useProposalItems(proposalId: string | null) {
   });
 }
 
+export interface ApprovedProposalForLead {
+  proposal_id: string;
+  code: string;
+  title: string;
+  approved_at: string | null;
+  items_count: number;
+}
+
+export function useApprovedProposalsForLead(leadId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["approved-proposals-for-lead", leadId],
+    enabled: !!leadId,
+    queryFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- FIXME(types-regen): RPC fn_find_approved_proposal_for_lead adicionada em 20260513; types.ts regenera após merge em main.
+      const { data, error } = await (supabase as any).rpc(
+        "fn_find_approved_proposal_for_lead",
+        { p_lead_id: leadId },
+      );
+      if (error) throw error;
+      return (data ?? []) as ApprovedProposalForLead[];
+    },
+  });
+}
+
 export function useCreateProposal() {
   const qc = useQueryClient();
   return useMutation({

@@ -82,20 +82,82 @@ export function useDeleteProjectService() {
   });
 }
 
-/** Recalculates the parent project's contract_value and has_multiple_services */
+/**
+ * Recalcula o `contract_value` do projeto somando `contract_value` dos serviços.
+ * Resolve T9: consumidores que precisam saber "tem múltiplos serviços?" devem
+ * derivar via COUNT em `project_services` em vez de uma coluna inexistente.
+ */
 export async function syncProjectFromServices(projectId: string) {
   const { data: services } = await supabase
     .from("project_services")
     .select("contract_value")
     .eq("project_id", projectId);
 
-  const total = (services || []).reduce((s, sv: any) => s + (sv.contract_value || 0), 0);
-  const hasMultiple = (services || []).length > 1;
+  const total = (services ?? []).reduce(
+    (s, sv) => s + (sv.contract_value ?? 0),
+    0,
+  );
 
-  // FIXME(arquitetural-debt): has_multiple_services não existe na tabela projects no schema regenerado. Migrar consumidores para verificar via project_services ou adicionar coluna.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await supabase
     .from("projects")
-    .update({ contract_value: total, has_multiple_services: hasMultiple } as any)
+    .update({ contract_value: total })
     .eq("id", projectId);
+}
+
+/** Lista project_services cross-projeto, com filtros opcionais. */
+export interface ProjectServiceCrossRow {
+  id: string;
+  project_id: string;
+  proposal_id: string | null;
+  service_type: string;
+  service_type_id: string | null;
+  billing_mode: string;
+  contract_value: number | null;
+  status: string;
+  start_date: string | null;
+  nf_number: string | null;
+  nf_date: string | null;
+  notes: string | null;
+  created_at: string | null;
+  projects: { id: string; name: string; codigo: string | null } | null;
+}
+
+export interface CrossServicesFilter {
+  status?: string[];
+  billingMode?: string[];
+  projectId?: string;
+}
+
+export function useProjectServicesByStatus(filter: CrossServicesFilter = {}) {
+  return useQuery({
+    queryKey: ["project-services-cross", filter],
+    queryFn: async () => {
+      let q = supabase
+        .from("project_services")
+        .select(
+          "id, project_id, proposal_id, service_type, service_type_id, billing_mode, contract_value, status, start_date, nf_number, nf_date, notes, created_at, projects:project_id(id, name, codigo)",
+        )
+        .order("created_at", { ascending: false });
+
+      if (filter.status?.length) {
+        q = q.in(
+          "status",
+          filter.status as Database["public"]["Enums"]["service_status"][],
+        );
+      }
+      if (filter.billingMode?.length) {
+        q = q.in(
+          "billing_mode",
+          filter.billingMode as Database["public"]["Enums"]["billing_mode"][],
+        );
+      }
+      if (filter.projectId) {
+        q = q.eq("project_id", filter.projectId);
+      }
+
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as unknown as ProjectServiceCrossRow[];
+    },
+  });
 }
