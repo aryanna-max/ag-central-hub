@@ -523,6 +523,7 @@ export type Database = {
           created_at: string
           daily_schedule_id: string
           daily_team_assignment_id: string | null
+          day_type: Database["public"]["Enums"]["day_type"] | null
           employee_id: string
           id: string
           is_vacation_override: boolean | null
@@ -531,6 +532,8 @@ export type Database = {
           removal_reason: Database["public"]["Enums"]["removal_reason"] | null
           removed_at: string | null
           team_id: string | null
+          validated_at: string | null
+          validated_by_id: string | null
           vehicle_id: string | null
         }
         Insert: {
@@ -541,6 +544,7 @@ export type Database = {
           created_at?: string
           daily_schedule_id: string
           daily_team_assignment_id?: string | null
+          day_type?: Database["public"]["Enums"]["day_type"] | null
           employee_id: string
           id?: string
           is_vacation_override?: boolean | null
@@ -549,6 +553,8 @@ export type Database = {
           removal_reason?: Database["public"]["Enums"]["removal_reason"] | null
           removed_at?: string | null
           team_id?: string | null
+          validated_at?: string | null
+          validated_by_id?: string | null
           vehicle_id?: string | null
         }
         Update: {
@@ -559,6 +565,7 @@ export type Database = {
           created_at?: string
           daily_schedule_id?: string
           daily_team_assignment_id?: string | null
+          day_type?: Database["public"]["Enums"]["day_type"] | null
           employee_id?: string
           id?: string
           is_vacation_override?: boolean | null
@@ -567,6 +574,8 @@ export type Database = {
           removal_reason?: Database["public"]["Enums"]["removal_reason"] | null
           removed_at?: string | null
           team_id?: string | null
+          validated_at?: string | null
+          validated_by_id?: string | null
           vehicle_id?: string | null
         }
         Relationships: [
@@ -971,6 +980,51 @@ export type Database = {
           },
         ]
       }
+      employee_dependents: {
+        Row: {
+          cpf: string | null
+          created_at: string
+          data_nascimento: string | null
+          employee_id: string
+          id: string
+          is_dependente_irrf: boolean
+          is_dependente_salario_familia: boolean
+          is_dependente_saude: boolean
+          name: string
+          notes: string | null
+          parentesco: string
+          updated_at: string
+        }
+        Insert: {
+          cpf?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          employee_id: string
+          id?: string
+          is_dependente_irrf?: boolean
+          is_dependente_salario_familia?: boolean
+          is_dependente_saude?: boolean
+          name: string
+          notes?: string | null
+          parentesco?: string
+          updated_at?: string
+        }
+        Update: {
+          cpf?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          employee_id?: string
+          id?: string
+          is_dependente_irrf?: boolean
+          is_dependente_salario_familia?: boolean
+          is_dependente_saude?: boolean
+          name?: string
+          notes?: string | null
+          parentesco?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       employee_documents: {
         Row: {
           created_at: string
@@ -1299,6 +1353,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      event_log: {
+        Row: {
+          actor_id: string | null
+          actor_type: string
+          context: Json | null
+          created_at: string
+          entity_id: string
+          entity_table: string
+          event_type: string
+          id: string
+          occurred_at: string
+          payload: Json
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type?: string
+          context?: Json | null
+          created_at?: string
+          entity_id: string
+          entity_table: string
+          event_type: string
+          id?: string
+          occurred_at?: string
+          payload?: Json
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string
+          context?: Json | null
+          created_at?: string
+          entity_id?: string
+          entity_table?: string
+          event_type?: string
+          id?: string
+          occurred_at?: string
+          payload?: Json
+        }
+        Relationships: []
       }
       field_expense_discounts: {
         Row: {
@@ -2738,6 +2831,7 @@ export type Database = {
           longitude: number | null
           name: string
           needs_tech_prep: boolean | null
+          nf_data: string | null
           notes: string | null
           numero: string | null
           referencia_contrato: string | null
@@ -2790,6 +2884,7 @@ export type Database = {
           longitude?: number | null
           name: string
           needs_tech_prep?: boolean | null
+          nf_data?: string | null
           notes?: string | null
           numero?: string | null
           referencia_contrato?: string | null
@@ -2842,6 +2937,7 @@ export type Database = {
           longitude?: number | null
           name?: string
           needs_tech_prep?: boolean | null
+          nf_data?: string | null
           notes?: string | null
           numero?: string | null
           referencia_contrato?: string | null
@@ -3510,6 +3606,21 @@ export type Database = {
         Args: { p_employee_id: string; p_project_id: string }
         Returns: Json
       }
+      fn_employee_day_status: {
+        Args: { p_date: string; p_employee_id: string }
+        Returns: {
+          absence_reason: string
+          attendance: Database["public"]["Enums"]["attendance_status"]
+          conta_como_dia_util: boolean
+          conta_como_vt: boolean
+          day_type: Database["public"]["Enums"]["day_type"]
+          project_codigo: string
+          project_id: string
+          project_name: string
+          validated_at: string
+          validated_by_id: string
+        }[]
+      }
       fn_employees_badges_for_project: {
         Args: { p_employee_ids: string[]; p_project_id: string }
         Returns: {
@@ -3527,6 +3638,16 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      log_event: {
+        Args: {
+          p_context?: Json
+          p_entity_id: string
+          p_entity_table: string
+          p_event_type: string
+          p_payload?: Json
+        }
+        Returns: string
       }
       move_to_dlq: {
         Args: {
@@ -3574,6 +3695,7 @@ export type Database = {
       attendance_status: "presente" | "falta" | "justificado" | "atrasado"
       billing_mode: "fixo_mensal" | "diarias" | "esporadico"
       contact_type: "cliente" | "financeiro" | "engenheiro" | "outro"
+      day_type: "normal" | "folga" | "falta" | "atestado" | "reserva_ag"
       doc_status:
         | "valido"
         | "vencendo"
@@ -3857,6 +3979,7 @@ export const Constants = {
       attendance_status: ["presente", "falta", "justificado", "atrasado"],
       billing_mode: ["fixo_mensal", "diarias", "esporadico"],
       contact_type: ["cliente", "financeiro", "engenheiro", "outro"],
+      day_type: ["normal", "folga", "falta", "atestado", "reserva_ag"],
       doc_status: [
         "valido",
         "vencendo",
