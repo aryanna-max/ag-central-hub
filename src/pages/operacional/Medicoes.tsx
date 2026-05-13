@@ -3,6 +3,7 @@ import { BarChart3 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ControleCampoTab from "@/components/operacional/medicoes/ControleCampoTab";
 import BoletinsMedicaoTab from "@/components/operacional/medicoes/BoletinsMedicaoTab";
+import ServicosCrossProjectTab from "@/components/operacional/medicoes/ServicosCrossProjectTab";
 
 export default function Medicoes() {
   const [activeTab, setActiveTab] = useState("controle-campo");
@@ -25,6 +26,7 @@ export default function Medicoes() {
         <TabsList>
           <TabsTrigger value="controle-campo">Controle de Campo</TabsTrigger>
           <TabsTrigger value="boletins">Boletins de Medição</TabsTrigger>
+          <TabsTrigger value="servicos">Serviços</TabsTrigger>
         </TabsList>
 
         <TabsContent value="controle-campo" className="mt-4">
@@ -35,6 +37,10 @@ export default function Medicoes() {
 
         <TabsContent value="boletins" className="mt-4">
           <BoletinsMedicaoTab />
+        </TabsContent>
+
+        <TabsContent value="servicos" className="mt-4">
+          <ServicosCrossProjectTab />
         </TabsContent>
       </Tabs>
     </div>

@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { useClients, useCreateClient, type Client } from "@/hooks/useClients";
 import { useCreateProject, useProjects } from "@/hooks/useProjects";
 import { useUpdateLead, type Lead } from "@/hooks/useLeads";
@@ -14,6 +14,7 @@ import { useCreateAlerts, type AlertInsert } from "@/hooks/useAlerts";
 import { useEmployees } from "@/hooks/useEmployees";
 import { isDirector } from "@/lib/fieldRoles";
 import { useCreateProjectContacts } from "@/hooks/useProjectContacts";
+import { useApprovedProposalsForLead } from "@/hooks/useProposals";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -78,6 +79,19 @@ export default function LeadConvertFullDialog({ open, onOpenChange, lead, onConv
   // Blocking state
   const [missingClientCode, setMissingClientCode] = useState(false);
   const [isPending, setIsPending] = useState(false);
+
+  // Propostas aprovadas do lead (informativo — materialização acontece em trigger).
+  const { data: approvedProposals = [] } = useApprovedProposalsForLead(
+    lead?.id ?? null,
+  );
+  const [selectedProposalId, setSelectedProposalId] = useState<string>("");
+  useEffect(() => {
+    if (approvedProposals.length === 1) {
+      setSelectedProposalId(approvedProposals[0].proposal_id);
+    } else if (approvedProposals.length === 0) {
+      setSelectedProposalId("");
+    }
+  }, [approvedProposals]);
 
   const existingClient = useMemo(() => {
     if (!lead?.client_id) return null;
@@ -189,16 +203,15 @@ export default function LeadConvertFullDialog({ open, onOpenChange, lead, onConv
         });
         clientId = newClient.id;
 
-        // Save lead contact info as primary contact for the new client
+        // Salva contato do lead como contato primário do novo cliente.
+        // T8 resolvido: usa colunas reais do schema (nome/telefone/email/tipo).
         if (lead.name?.trim()) {
-          // FIXME(arquitetural-debt): payload usa colunas inexistentes em client_contacts (contact_name/contact_phone/contact_email/is_primary) — schema real tem nome/telefone/email/tipo. Reescrever para colunas corretas.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await supabase.from("client_contacts" as any).insert({
+          await supabase.from("client_contacts").insert({
             client_id: newClient.id,
-            contact_name: lead.name.trim(),
-            contact_phone: lead.phone || null,
-            contact_email: lead.email || null,
-            is_primary: true,
+            nome: lead.name.trim(),
+            telefone: lead.phone || null,
+            email: lead.email || null,
+            tipo: "cliente",
           });
         }
       }
@@ -227,6 +240,22 @@ export default function LeadConvertFullDialog({ open, onOpenChange, lead, onConv
 
       if (!project?.id) {
         throw new Error("Projeto não foi criado — resposta vazia do banco");
+      }
+
+      // Step 3a: se múltiplas propostas aprovadas e Aryanna escolheu uma,
+      // remover os project_services materializados das demais. O trigger DB
+      // materializa todas; aqui aplicamos o filtro escolhido pela UI.
+      if (approvedProposals.length > 1 && selectedProposalId) {
+        const otherIds = approvedProposals
+          .map((p) => p.proposal_id)
+          .filter((id) => id !== selectedProposalId);
+        if (otherIds.length > 0) {
+          await supabase
+            .from("project_services")
+            .delete()
+            .eq("project_id", project.id)
+            .in("proposal_id", otherIds);
+        }
       }
 
       // Step 3b: Inherit contacts from client (only if not SPE)
@@ -356,6 +385,55 @@ export default function LeadConvertFullDialog({ open, onOpenChange, lead, onConv
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* ─── PROPOSTA APROVADA: materialização automática ─── */}
+          {approvedProposals.length === 1 && (
+            <div className="rounded-md border border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/30 p-3 flex items-start gap-2 text-sm">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-emerald-900 dark:text-emerald-100">
+                  Esta conversão vai materializar <strong>{approvedProposals[0].items_count} serviço(s)</strong> da Proposta{" "}
+                  <strong>{approvedProposals[0].code}</strong> ({approvedProposals[0].title}).
+                </p>
+              </div>
+            </div>
+          )}
+          {approvedProposals.length === 0 && (
+            <div className="rounded-md border border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 p-3 flex items-start gap-2 text-sm">
+              <Info className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+              <div className="text-amber-900 dark:text-amber-100">
+                Nenhuma proposta aprovada para este lead — projeto criado vazio,
+                serviços serão lançados manualmente.
+              </div>
+            </div>
+          )}
+          {approvedProposals.length > 1 && (
+            <div className="rounded-md border border-blue-500/40 bg-blue-50 dark:bg-blue-950/30 p-3 space-y-2 text-sm">
+              <div className="flex items-start gap-2">
+                <Info className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                <p className="text-blue-900 dark:text-blue-100">
+                  Múltiplas propostas aprovadas — escolha qual será materializada
+                  como serviços no projeto.
+                </p>
+              </div>
+              <Select
+                value={selectedProposalId}
+                onValueChange={setSelectedProposalId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar proposta..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {approvedProposals.map((p) => (
+                    <SelectItem key={p.proposal_id} value={p.proposal_id}>
+                      {p.code} — {p.title} ({p.items_count} item
+                      {p.items_count === 1 ? "" : "s"})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* ─── NEW CLIENT FIELDS ─── */}
           {!isExistingClient && (
             <>

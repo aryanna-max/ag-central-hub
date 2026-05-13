@@ -17,19 +17,8 @@ import {
   syncProjectFromServices,
   type ProjectService,
 } from "@/hooks/useProjectServices";
+import { useServiceTypes } from "@/hooks/useServiceTypes";
 import { toast } from "sonner";
-
-const SERVICE_SUGGESTIONS = [
-  "Topografia de Obras",
-  "Topografia de Projeto",
-  "Levantamento Planialtimétrico",
-  "Georreferenciamento",
-  "Locação de Obra",
-  "Cartografia",
-  "Topografia Industrial",
-  "Acompanhamento de Obras",
-  "Levantamento Cadastral Urbano",
-];
 
 const BILLING_MODES = [
   { value: "fixo_mensal", label: "Fixo mensal" },
@@ -67,6 +56,7 @@ interface Props {
 
 const emptyForm = {
   service_type: "",
+  service_type_id: "",
   billing_mode: "esporadico",
   contract_value: null as number | null,
   cnpj_tomador: "",
@@ -94,6 +84,7 @@ function applyCnpjMask(value: string) {
 
 export default function ProjectServicesSection({ projectId }: Props) {
   const { data: services = [], isLoading } = useProjectServices(projectId);
+  const { data: serviceTypes = [] } = useServiceTypes();
   const createService = useCreateProjectService();
   const updateService = useUpdateProjectService();
   const deleteService = useDeleteProjectService();
@@ -111,8 +102,12 @@ export default function ProjectServicesSection({ projectId }: Props) {
 
   const openEdit = (s: ProjectService) => {
     setEditingId(s.id);
+    const matchedType = serviceTypes.find(
+      (t) => t.label === s.service_type || t.id === (s as ProjectService & { service_type_id?: string | null }).service_type_id,
+    );
     setForm({
       service_type: s.service_type,
+      service_type_id: matchedType?.id ?? "",
       billing_mode: s.billing_mode,
       contract_value: s.contract_value,
       cnpj_tomador: s.cnpj_tomador || "",
@@ -136,6 +131,7 @@ export default function ProjectServicesSection({ projectId }: Props) {
       const payload = {
         project_id: projectId,
         service_type: form.service_type,
+        service_type_id: form.service_type_id || null,
         billing_mode: form.billing_mode,
         contract_value: form.contract_value,
         cnpj_tomador: form.cnpj_tomador || null,
@@ -248,17 +244,28 @@ export default function ProjectServicesSection({ projectId }: Props) {
           <div className="space-y-4">
             <div className="space-y-1">
               <Label>Tipo de serviço *</Label>
-              <Input
-                value={form.service_type}
-                onChange={(e) => setForm({ ...form, service_type: e.target.value })}
-                placeholder="Ex: Topografia de Obras"
-                list="service-suggestions"
-              />
-              <datalist id="service-suggestions">
-                {SERVICE_SUGGESTIONS.map((s) => (
-                  <option key={s} value={s} />
-                ))}
-              </datalist>
+              <Select
+                value={form.service_type_id}
+                onValueChange={(v) => {
+                  const t = serviceTypes.find((x) => x.id === v);
+                  setForm({
+                    ...form,
+                    service_type_id: v,
+                    service_type: t?.label ?? form.service_type,
+                  });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar tipo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {serviceTypes.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
