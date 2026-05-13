@@ -60,7 +60,7 @@ export default function EmployeeAvailabilityKanban({
   const [localMap, setLocalMap] = useState<Record<string, KanbanAbsenceType | undefined>>({});
 
   const isKanbanAbsence = (dt: DayType | undefined): dt is KanbanAbsenceType =>
-    !!dt && KANBAN_DAY_TYPES.includes(dt);
+    !!dt && (KANBAN_DAY_TYPES as readonly DayType[]).includes(dt);
 
   const getColumn = (emp: Employee): KanbanColumn => {
     if (emp.id in localMap) {
