@@ -1,0 +1,9 @@
+# Sistema AG
+
+> Plataforma interna de gestão da AG Topografia para clientes, projetos, escalas de campo, faturamento e equipes técnicas.
+
+Sistema AG é uma aplicação privada (login obrigatório) usada pela AG Topografia e Cartografia para operação interna. As páginas internas não são indexáveis publicamente.
+
+## Pages
+
+- [Início / Login](/login): Acesso ao sistema de gestão.
