@@ -632,6 +632,7 @@ export type Database = {
           is_closed: boolean
           is_legacy: boolean | null
           kanban_filled: boolean
+          last_synced_at: string | null
           monthly_schedule_id: string | null
           notes: string | null
           project_id: string | null
@@ -646,6 +647,7 @@ export type Database = {
           is_closed?: boolean
           is_legacy?: boolean | null
           kanban_filled?: boolean
+          last_synced_at?: string | null
           monthly_schedule_id?: string | null
           notes?: string | null
           project_id?: string | null
@@ -660,6 +662,7 @@ export type Database = {
           is_closed?: boolean
           is_legacy?: boolean | null
           kanban_filled?: boolean
+          last_synced_at?: string | null
           monthly_schedule_id?: string | null
           notes?: string | null
           project_id?: string | null
@@ -1191,6 +1194,7 @@ export type Database = {
         Row: {
           admission_date: string | null
           agencia: string | null
+          alelo_valor_dia: number
           bairro: string | null
           banco: string | null
           cep: string | null
@@ -1227,6 +1231,7 @@ export type Database = {
           photo_url: string | null
           pis: string | null
           pix_chave: string | null
+          recebe_alelo: boolean
           rg: string | null
           role: string
           rua: string | null
@@ -1243,6 +1248,7 @@ export type Database = {
         Insert: {
           admission_date?: string | null
           agencia?: string | null
+          alelo_valor_dia?: number
           bairro?: string | null
           banco?: string | null
           cep?: string | null
@@ -1279,6 +1285,7 @@ export type Database = {
           photo_url?: string | null
           pis?: string | null
           pix_chave?: string | null
+          recebe_alelo?: boolean
           rg?: string | null
           role?: string
           rua?: string | null
@@ -1295,6 +1302,7 @@ export type Database = {
         Update: {
           admission_date?: string | null
           agencia?: string | null
+          alelo_valor_dia?: number
           bairro?: string | null
           banco?: string | null
           cep?: string | null
@@ -1331,6 +1339,7 @@ export type Database = {
           photo_url?: string | null
           pis?: string | null
           pix_chave?: string | null
+          recebe_alelo?: boolean
           rg?: string | null
           role?: string
           rua?: string | null
@@ -1799,6 +1808,36 @@ export type Database = {
           },
         ]
       }
+      lead_status_history: {
+        Row: {
+          changed_by_id: string | null
+          created_at: string
+          from_status: string | null
+          id: string
+          lead_id: string
+          notes: string | null
+          to_status: string
+        }
+        Insert: {
+          changed_by_id?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          lead_id: string
+          notes?: string | null
+          to_status: string
+        }
+        Update: {
+          changed_by_id?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          lead_id?: string
+          notes?: string | null
+          to_status?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           client_id: string | null
@@ -2242,6 +2281,63 @@ export type Database = {
           },
         ]
       }
+      monthly_discount_report_batches: {
+        Row: {
+          applied_at: string | null
+          applied_by: string | null
+          created_at: string
+          employee_count: number
+          id: string
+          notes: string | null
+          reference_month: string
+          sent_at: string | null
+          sent_by: string | null
+          status: string
+          title: string
+          total_alelo: number
+          total_descontos: number
+          total_liquido: number
+          total_vt: number
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_by?: string | null
+          created_at?: string
+          employee_count?: number
+          id?: string
+          notes?: string | null
+          reference_month: string
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+          title?: string
+          total_alelo?: number
+          total_descontos?: number
+          total_liquido?: number
+          total_vt?: number
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          applied_by?: string | null
+          created_at?: string
+          employee_count?: number
+          id?: string
+          notes?: string | null
+          reference_month?: string
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+          title?: string
+          total_alelo?: number
+          total_descontos?: number
+          total_liquido?: number
+          total_vt?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       monthly_discount_reports: {
         Row: {
           alelo_desconto: number | null
@@ -2250,6 +2346,7 @@ export type Database = {
           alelo_dias_uteis: number | null
           alelo_valor_cheio: number | null
           alelo_valor_final: number | null
+          batch_id: string | null
           created_at: string
           employee_id: string
           id: string
@@ -2279,6 +2376,7 @@ export type Database = {
           alelo_dias_uteis?: number | null
           alelo_valor_cheio?: number | null
           alelo_valor_final?: number | null
+          batch_id?: string | null
           created_at?: string
           employee_id: string
           id?: string
@@ -2308,6 +2406,7 @@ export type Database = {
           alelo_dias_uteis?: number | null
           alelo_valor_cheio?: number | null
           alelo_valor_final?: number | null
+          batch_id?: string | null
           created_at?: string
           employee_id?: string
           id?: string
@@ -2618,6 +2717,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      project_participations: {
+        Row: {
+          created_at: string
+          employee_id: string
+          end_date: string | null
+          id: string
+          notes: string | null
+          project_id: string
+          role: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          project_id: string
+          role: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          project_id?: string
+          role?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       project_scope_items: {
         Row: {
@@ -3627,6 +3762,24 @@ export type Database = {
           badge: Json
           employee_id: string
         }[]
+      }
+      fn_generate_monthly_discount_batch: {
+        Args: { p_reference_month: string; p_title?: string }
+        Returns: string
+      }
+      fn_preencher_escala_dia: {
+        Args: { p_schedule_date: string }
+        Returns: {
+          conflicts: Json
+          created_count: number
+          daily_schedule_id: string
+          skipped_validated_count: number
+          updated_count: number
+        }[]
+      }
+      fn_resolver_conflito_preencher: {
+        Args: { p_acao: string; p_entry_id: string; p_new_project_id?: string }
+        Returns: undefined
       }
       get_user_role: {
         Args: { _user_id: string }
