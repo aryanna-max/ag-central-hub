@@ -2822,6 +2822,7 @@ export type Database = {
           proposal_id: string | null
           scope_description: string | null
           service_type: string
+          service_type_id: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["service_status"]
           updated_at: string | null
@@ -2842,6 +2843,7 @@ export type Database = {
           proposal_id?: string | null
           scope_description?: string | null
           service_type: string
+          service_type_id?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["service_status"]
           updated_at?: string | null
@@ -2862,6 +2864,7 @@ export type Database = {
           proposal_id?: string | null
           scope_description?: string | null
           service_type?: string
+          service_type_id?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["service_status"]
           updated_at?: string | null
@@ -2879,6 +2882,13 @@ export type Database = {
             columns: ["proposal_id"]
             isOneToOne: false
             referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_services_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_types"
             referencedColumns: ["id"]
           },
         ]
@@ -3146,6 +3156,7 @@ export type Database = {
           sort_order: number | null
           total_price: number | null
           unit: string | null
+          unit_enum: Database["public"]["Enums"]["proposal_unit"] | null
           unit_price: number | null
         }
         Insert: {
@@ -3157,6 +3168,7 @@ export type Database = {
           sort_order?: number | null
           total_price?: number | null
           unit?: string | null
+          unit_enum?: Database["public"]["Enums"]["proposal_unit"] | null
           unit_price?: number | null
         }
         Update: {
@@ -3168,6 +3180,7 @@ export type Database = {
           sort_order?: number | null
           total_price?: number | null
           unit?: string | null
+          unit_enum?: Database["public"]["Enums"]["proposal_unit"] | null
           unit_price?: number | null
         }
         Relationships: [
@@ -3282,6 +3295,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      service_types: {
+        Row: {
+          category: string | null
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          category?: string | null
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          category?: string | null
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       suppressed_emails: {
         Row: {
@@ -3763,6 +3806,16 @@ export type Database = {
           employee_id: string
         }[]
       }
+      fn_find_approved_proposal_for_lead: {
+        Args: { p_lead_id: string }
+        Returns: {
+          approved_at: string
+          code: string
+          items_count: number
+          proposal_id: string
+          title: string
+        }[]
+      }
       fn_generate_monthly_discount_batch: {
         Args: { p_reference_month: string; p_title?: string }
         Returns: string
@@ -3963,6 +4016,16 @@ export type Database = {
         | "aprovada"
         | "rejeitada"
         | "expirada"
+      proposal_unit:
+        | "verba"
+        | "mes"
+        | "diaria"
+        | "hora"
+        | "hectare"
+        | "metro_linear"
+        | "metro_quadrado"
+        | "unidade"
+        | "lote"
       removal_reason:
         | "campo_concluido"
         | "pausa_temporaria"
@@ -4257,6 +4320,17 @@ export const Constants = {
         "aprovada",
         "rejeitada",
         "expirada",
+      ],
+      proposal_unit: [
+        "verba",
+        "mes",
+        "diaria",
+        "hora",
+        "hectare",
+        "metro_linear",
+        "metro_quadrado",
+        "unidade",
+        "lote",
       ],
       removal_reason: [
         "campo_concluido",
