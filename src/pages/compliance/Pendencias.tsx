@@ -301,14 +301,19 @@ export default function Pendencias() {
                     </TableCell>
                     <TableCell className="text-right">
                       {p.acao.type === "navigate" ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => navigate(p.acao.target)}
-                        >
-                          <ExternalLink className="w-3.5 h-3.5 mr-1" />
-                          {p.acao.label}
-                        </Button>
+                        (() => {
+                          const acao = p.acao;
+                          return (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => navigate(acao.target)}
+                            >
+                              <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                              {acao.label}
+                            </Button>
+                          );
+                        })()
                       ) : (
                         <Button
                           size="sm"

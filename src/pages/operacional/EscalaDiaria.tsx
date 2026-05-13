@@ -689,7 +689,7 @@ export default function EscalaDiaria() {
   );
   const dayTypeMap: Record<string, DayType> = {};
   for (const e of dayEntries) {
-    if (e.day_type && e.day_type !== "projeto") {
+    if (e.day_type && e.day_type !== "normal") {
       dayTypeMap[e.employee_id] = e.day_type;
     }
   }
