@@ -94,8 +94,8 @@ export async function logEvent(
     p_event_type: eventType,
     p_entity_table: entityTable,
     p_entity_id: entityId,
-    p_payload: payload,
-    p_context: context,
+    p_payload: payload as never,
+    p_context: context as never,
   });
 
   if (error) {
