@@ -126,12 +126,13 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
   const [cnhValidade, setCnhValidade] = useState("");
 
   // CEP autofill
-  useCepAutofill(cep, ({ logradouro, bairro: b, cidade: c, estado: e }) => {
-    if (logradouro) setRua(logradouro);
-    if (b) setBairro(b);
-    if (c) setCidade(c);
-    if (e) setEstado(e);
-  });
+  const cepResult = useCepAutofill(cep);
+  useEffect(() => {
+    if (cepResult.rua) setRua(cepResult.rua);
+    if (cepResult.bairro) setBairro(cepResult.bairro);
+    if (cepResult.cidade) setCidade(cepResult.cidade);
+    if (cepResult.estado) setEstado(cepResult.estado);
+  }, [cepResult.rua, cepResult.bairro, cepResult.cidade, cepResult.estado]);
 
   const jobRolesByDept = useMemo(() => {
     const map = new Map<string, typeof jobRoles>();
