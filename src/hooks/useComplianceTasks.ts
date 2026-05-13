@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+// FIXME(types-mismatch): reference_month em types.ts é number, mas o código (e o DB real) usa string YYYY-MM.
+// O cast abaixo declara conformidade com o tipo gerado; regenerar types.ts ou alinhar coluna no DB para remover.
+type ReferenceMonthDb = number;
+
 export function useComplianceTemplates() {
   return useQuery({
     queryKey: ["compliance-templates"],
@@ -23,8 +27,7 @@ export function useComplianceExecutions(referenceMonth: string) {
       const { data, error } = await supabase
         .from("compliance_task_executions")
         .select("*, monthly_compliance_tasks(title, due_day, description, clients(name))")
-        // schema diz reference_month: number, código usa string YYYY-MM (types.ts/DB divergente)
-        .eq("reference_month", referenceMonth as any)
+        .eq("reference_month", referenceMonth as unknown as ReferenceMonthDb)
         .order("monthly_compliance_tasks(due_day)");
       if (error) throw error;
       return data ?? [];
@@ -48,9 +51,10 @@ export function useGenerateMonthExecutions() {
         reference_month: referenceMonth,
       }));
 
+      // FIXME(types-mismatch): mesma divergência do reference_month + tipos exigem due_date/reference_year que o DB real preenche via default/trigger.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await supabase
         .from("compliance_task_executions")
-        // payload usa reference_month string YYYY-MM mas types.ts diz number; DB aceita formato real
         .upsert(toInsert as any, { onConflict: "task_id,reference_month", ignoreDuplicates: true });
 
       if (error) throw error;

@@ -95,6 +95,7 @@ export default function TeamLocationMap({ assignments, date }: TeamLocationMapPr
       await import("leaflet/dist/leaflet.css");
 
       // Fix default icons
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Workaround conhecido do Leaflet para ícones em bundlers (Webpack/Vite). Sem alternativa tipada.
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",

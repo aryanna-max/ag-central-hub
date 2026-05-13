@@ -24,7 +24,7 @@ function useFieldProjects() {
         .in("execution_status", ["aguardando_campo", "em_campo", "campo_concluido"])
         .order("name");
       if (error) throw error;
-      return data as any[];
+      return data ?? [];
     },
   });
 }
@@ -40,7 +40,7 @@ function useProjectServicesForGrid(projectId: string | null) {
         .eq("project_id", projectId)
         .order("created_at");
       if (error) throw error;
-      return data as any[];
+      return data ?? [];
     },
     enabled: !!projectId,
   });

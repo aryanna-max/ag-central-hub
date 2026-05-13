@@ -7,17 +7,17 @@ export function useLeadConversion() {
   const createAlerts = useCreateAlerts();
 
   const convertLead = async (lead: Lead) => {
-    // Create project from lead
+    // FIXME(arquitetural-debt): payload usa campos legacy (client, client_cnpj, responsible) ausentes em projects no schema regenerado. Migrar para client_id/responsible_comercial_id antes de remover o tipo de extensão em ProjectInsert.
     const project = await createProject.mutateAsync({
       name: lead.company || lead.name,
       client: lead.company || lead.name,
       client_cnpj: lead.cnpj,
       service: lead.servico,
       contract_value: lead.valor,
-      responsible: lead.responsible_id as any,
+      responsible: lead.responsible_id,
       lead_id: lead.id,
       status: "planejamento",
-    } as any);
+    });
 
     // Create 3 alerts
     const valorFormatted = lead.valor

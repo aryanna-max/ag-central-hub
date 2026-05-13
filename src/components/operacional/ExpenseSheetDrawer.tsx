@@ -403,7 +403,7 @@ export default function ExpenseSheetDrawer({ open, onOpenChange, editSheetId }: 
           total_value: total,
           status: submit ? "submetido" : "rascunho",
           ...(seqLabel ? { week_label: seqLabel } : {}),
-        } as any);
+        });
         sheetId = sheet.id;
       }
 

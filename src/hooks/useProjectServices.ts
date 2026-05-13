@@ -49,7 +49,8 @@ export function useUpdateProjectService() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<ProjectService> & { id: string }) => {
-      // TODO PR4: form-state passa billing_mode/status como string; enums no schema só validam após PR3.
+      // FIXME(types-mismatch): form-state passa billing_mode/status como string genérica; enums em types.ts requerem união literal. Alinhar tipos do form ou criar wrapper tipado.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await supabase
         .from("project_services")
         .update(updates as any)
@@ -91,7 +92,8 @@ export async function syncProjectFromServices(projectId: string) {
   const total = (services || []).reduce((s, sv: any) => s + (sv.contract_value || 0), 0);
   const hasMultiple = (services || []).length > 1;
 
-  // TODO PR4: has_multiple_services não existe no schema regenerado; débito reconhecido.
+  // FIXME(arquitetural-debt): has_multiple_services não existe na tabela projects no schema regenerado. Migrar consumidores para verificar via project_services ou adicionar coluna.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await supabase
     .from("projects")
     .update({ contract_value: total, has_multiple_services: hasMultiple } as any)

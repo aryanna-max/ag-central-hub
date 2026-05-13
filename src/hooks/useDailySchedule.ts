@@ -86,7 +86,7 @@ export function useAddTeamAssignment() {
           .single();
         if (proj?.execution_status === "aguardando_campo") {
           await supabase.from("projects").update({
-            execution_status: "em_campo" as any,
+            execution_status: "em_campo",
             field_started_at: date,
           }).eq("id", assignment.project_id);
           await supabase.from("project_status_history").insert({
@@ -287,7 +287,7 @@ export function useCloseDailySchedule() {
                 status: "aberto",
                 period_start: schedule.schedule_date,
                 period_end: schedule.schedule_date,
-              } as any);
+              });
           }
         }
       }
@@ -425,7 +425,8 @@ export function usePreFillFromMonthly() {
           console.warn("Entrada duplicada ignorada (assignment):", ms.team_id);
         }
 
-        const members = (ms as any).teams?.team_members || [];
+        // FIXME(types-mismatch): join nested teams(*, team_members(*, employees(*))) não vem tipado da query do Supabase; tipar derivando do select.
+        const members = (ms as { teams?: { team_members?: Array<{ employee_id: string }> } }).teams?.team_members || [];
         for (const member of members) {
           const { error: entErr } = await supabase
             .from("daily_schedule_entries")

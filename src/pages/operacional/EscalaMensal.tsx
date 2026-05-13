@@ -225,7 +225,7 @@ export default function EscalaMensal() {
   return (
     <div className="p-6 space-y-6">
       {/* Tabs */}
-      <Tabs value={planTab} onValueChange={(v) => setPlanTab(v as any)}>
+      <Tabs value={planTab} onValueChange={(v) => setPlanTab(v as "mensal" | "relatorios")}>
         <TabsList>
           <TabsTrigger value="mensal">Planejamento Mensal</TabsTrigger>
           <TabsTrigger value="relatorios" className="gap-1">
@@ -280,7 +280,7 @@ export default function EscalaMensal() {
             <MonthlyCalendarGrid
               month={month}
               year={year}
-              schedules={(schedules || []) as any}
+              schedules={(schedules || []) as unknown as Parameters<typeof MonthlyCalendarGrid>[0]["schedules"]}
               onDayClick={handleDayClick}
             />
           )}
@@ -423,7 +423,7 @@ export default function EscalaMensal() {
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Tipo de Escala</label>
-              <Select value={form.schedule_type} onValueChange={(v) => setForm({ ...form, schedule_type: v as any })}>
+              <Select value={form.schedule_type} onValueChange={(v) => setForm({ ...form, schedule_type: v as "mensal" | "diaria" })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="mensal">Mensal (exclui sáb/dom)</SelectItem>
@@ -517,7 +517,7 @@ export default function EscalaMensal() {
           <MonthlyScheduleReport
             month={month}
             year={year}
-            schedules={(schedules || []) as any}
+            schedules={schedules || []}
           />
         </DialogContent>
       </Dialog>
