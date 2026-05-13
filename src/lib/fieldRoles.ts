@@ -86,7 +86,13 @@ export function isDirector(role?: string | null): boolean {
 /** Canonical list of commercial directors (name fragments, lowercase) */
 export const COMMERCIAL_DIRECTORS = ["sérgio", "sergio", "ciro"] as const;
 
-/** Returns true if the given name matches a known commercial director */
+/**
+ * Returns true if the given name matches a known commercial director.
+ *
+ * @deprecated Do not use to populate the "Responsável" combobox of Lead/Proposta.
+ * Use `useUsers()` filtered by `role IN ('master', 'diretor', 'comercial')` instead
+ * (directors are not in `employees` since PR #27 / Decisão #46).
+ */
 export function isCommercialDirector(name: string | null | undefined): boolean {
   if (!name) return false;
   const lower = name.toLowerCase();

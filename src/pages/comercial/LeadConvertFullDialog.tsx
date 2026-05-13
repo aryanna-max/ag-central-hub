@@ -11,8 +11,7 @@ import { useClients, useCreateClient, type Client } from "@/hooks/useClients";
 import { useCreateProject, useProjects } from "@/hooks/useProjects";
 import { useUpdateLead, type Lead } from "@/hooks/useLeads";
 import { useCreateAlerts, type AlertInsert } from "@/hooks/useAlerts";
-import { useEmployees } from "@/hooks/useEmployees";
-import { isDirector } from "@/lib/fieldRoles";
+import { useUsers } from "@/hooks/useUsers";
 import { useCreateProjectContacts } from "@/hooks/useProjectContacts";
 import { useApprovedProposalsForLead } from "@/hooks/useProposals";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,13 +49,13 @@ interface Props {
 
 export default function LeadConvertFullDialog({ open, onOpenChange, lead, onConverted }: Props) {
   const { data: clients = [] } = useClients();
-  const { data: employees = [] } = useEmployees();
+  const { data: users = [] } = useUsers();
   const createClient = useCreateClient();
   const createProject = useCreateProject();
   const updateLead = useUpdateLead();
   const createAlerts = useCreateAlerts();
   const createContacts = useCreateProjectContacts();
-  const directorId = employees.find((e) => e.status !== "desligado" && isDirector(e.role))?.id || null;
+  const directorId = users.find((u) => u.role === "master" || u.role === "diretor" || u.role === "comercial")?.id || null;
 
   const isExistingClient = lead?.origin === "cliente_recorrente" || lead?.origin === "contrato_ativo";
 

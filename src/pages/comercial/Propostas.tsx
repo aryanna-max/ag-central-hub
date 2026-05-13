@@ -297,7 +297,7 @@ export default function Propostas() {
 
       {/* New Proposal Dialog */}
       <Dialog open={showNew} onOpenChange={setShowNew}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Nova Proposta</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
