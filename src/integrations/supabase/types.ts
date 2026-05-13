@@ -3781,6 +3781,10 @@ export type Database = {
         Args: { p_acao: string; p_entry_id: string; p_new_project_id?: string }
         Returns: undefined
       }
+      fn_unvalidate_day_entry: {
+        Args: { p_entry_id: string; p_motivo: string }
+        Returns: undefined
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
