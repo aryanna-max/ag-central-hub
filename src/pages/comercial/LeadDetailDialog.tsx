@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { SERVICE_TYPES } from "@/lib/serviceTypes";
-import { isCommercialDirector } from "@/lib/fieldRoles";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +21,7 @@ import {
   generateNextCode,
   type Proposal,
 } from "@/hooks/useProposals";
-import { useEmployees } from "@/hooks/useEmployees";
+import { useUsers } from "@/hooks/useUsers";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -62,7 +61,10 @@ interface Props {
 export default function LeadDetailDialog({ open, onOpenChange, lead, onConvert }: Props) {
   const { data: interactions = [] } = useLeadInteractions(lead?.id);
   const { data: allProposals = [] } = useProposals();
-  const { data: employees = [] } = useEmployees();
+  const { data: users = [] } = useUsers();
+  const responsaveis = users.filter((u) =>
+    u.role === "master" || u.role === "diretor" || u.role === "comercial"
+  );
   const addInteraction = useAddLeadInteraction();
   const updateLead = useUpdateLead();
   const createProposal = useCreateProposal();
@@ -83,9 +85,10 @@ export default function LeadDetailDialog({ open, onOpenChange, lead, onConvert }
 
   const leadProposals = allProposals.filter((p) => p.lead_id === lead?.id);
 
-  const getEmployeeName = (id: string | null | undefined) => {
+  const getUserName = (id: string | null | undefined) => {
     if (!id) return "—";
-    return employees.find((e) => e.id === id)?.name || "—";
+    const u = users.find((x) => x.id === id);
+    return u?.full_name || u?.email || "—";
   };
 
   if (!lead) return null;
@@ -243,7 +246,7 @@ export default function LeadDetailDialog({ open, onOpenChange, lead, onConvert }
               )}
               {lead.responsible_id && (
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <User className="w-4 h-4" /> {getEmployeeName(lead.responsible_id)}
+                  <User className="w-4 h-4" /> {getUserName(lead.responsible_id)}
                 </div>
               )}
               {lead.cnpj && (
@@ -428,10 +431,8 @@ export default function LeadDetailDialog({ open, onOpenChange, lead, onConvert }
                           <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">Nenhum</SelectItem>
-                            {employees.filter((e) =>
-                              e.status !== "desligado" && isCommercialDirector(e.name)
-                            ).map((e) => (
-                              <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                            {responsaveis.map((u) => (
+                              <SelectItem key={u.id} value={u.id}>{u.full_name || u.email || u.id}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>

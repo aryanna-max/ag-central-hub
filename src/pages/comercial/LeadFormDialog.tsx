@@ -1,5 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
-import { SERVICE_TYPES } from "@/lib/serviceTypes";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,13 +11,9 @@ import {
   type Lead, type LeadInsert, type LeadOrigin,
 } from "@/hooks/useLeads";
 import { useClients } from "@/hooks/useClients";
-import { useEmployees } from "@/hooks/useEmployees";
-import { isCommercialDirector } from "@/lib/fieldRoles";
+import { useUsers } from "@/hooks/useUsers";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
 import { formatCpf, formatCnpj, formatPhone } from "@/lib/masks";
-
-// All non-desligado employees can be responsible
 
 interface Props {
   open: boolean;
@@ -30,11 +25,11 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
   const createLead = useCreateLead();
   const updateLead = useUpdateLead();
   const { data: clients = [] } = useClients();
-  const { data: employees = [] } = useEmployees();
+  const { data: users = [] } = useUsers();
   const isEditing = !!lead;
 
-  const responsaveis = employees.filter((e) =>
-    e.status !== "desligado" && isCommercialDirector(e.name)
+  const responsaveis = users.filter((u) =>
+    u.role === "master" || u.role === "diretor" || u.role === "comercial"
   );
 
   const [form, setForm] = useState<LeadInsert>({
@@ -56,9 +51,6 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
         status: lead.status,
         responsible_id: lead.responsible_id || null,
         notes: lead.notes || "",
-        servico: lead.servico || "",
-        location: lead.location || lead.endereco || "",
-        valor: lead.valor,
         cnpj: lead.cnpj || "",
         client_id: lead.client_id || null,
         client_type: lead.client_type || "pj",
@@ -102,7 +94,7 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
       return;
     }
     try {
-      const payload = { ...form, endereco: form.location };
+      const payload = { ...form };
       if (isEditing) {
         await updateLead.mutateAsync({ id: lead!.id, ...payload });
         toast.success("Lead atualizado");
@@ -274,45 +266,6 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
             </div>
           )}
 
-          {/* Common fields */}
-          <div className="space-y-2">
-            <Label>Serviço / Descrição</Label>
-            <Select
-              value={form.servico || "none"}
-              onValueChange={(v) => setForm((prev) => ({ ...prev, servico: v === "none" ? "" : v }))}
-            >
-              <SelectTrigger><SelectValue placeholder="Selecione o serviço" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Selecione...</SelectItem>
-                {SERVICE_TYPES.map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Localização</Label>
-              <Input
-                value={form.location || ""}
-                onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))}
-                placeholder="Cidade / Local"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Valor estimado (R$)</Label>
-              <Input
-                type="number"
-                min={0}
-                step="0.01"
-                value={form.valor ?? ""}
-                onChange={(e) => setForm((prev) => ({ ...prev, valor: e.target.value ? Number(e.target.value) : null }))}
-                placeholder="0,00"
-              />
-            </div>
-          </div>
-
           <div className="space-y-2">
             <Label>Responsável</Label>
             <Select
@@ -322,8 +275,8 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Nenhum</SelectItem>
-                {responsaveis.map((e) => (
-                  <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                {responsaveis.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>{u.full_name || u.email || u.id}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -334,7 +287,7 @@ export default function LeadFormDialog({ open, onOpenChange, lead }: Props) {
             <Textarea
               value={form.notes || ""}
               onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
-              rows={3}
+              rows={4}
               placeholder="Anotações sobre o lead..."
             />
           </div>
