@@ -1,0 +1,1 @@
+ALTER TABLE public.project_participations ENABLE ROW LEVEL SECURITY;
