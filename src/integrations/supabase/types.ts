@@ -1916,7 +1916,7 @@ export type Database = {
             foreignKeyName: "leads_responsible_id_fkey"
             columns: ["responsible_id"]
             isOneToOne: false
-            referencedRelation: "employees"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3120,21 +3120,21 @@ export type Database = {
             foreignKeyName: "projects_responsible_campo_id_fkey"
             columns: ["responsible_campo_id"]
             isOneToOne: false
-            referencedRelation: "employees"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "projects_responsible_comercial_id_fkey"
             columns: ["responsible_comercial_id"]
             isOneToOne: false
-            referencedRelation: "employees"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "projects_responsible_tecnico_id_fkey"
             columns: ["responsible_tecnico_id"]
             isOneToOne: false
-            referencedRelation: "employees"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -3291,7 +3291,7 @@ export type Database = {
             foreignKeyName: "proposals_responsible_id_fkey"
             columns: ["responsible_id"]
             isOneToOne: false
-            referencedRelation: "employees"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
