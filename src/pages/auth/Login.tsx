@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,9 @@ import logoAg from "@/assets/logo-ag.webp";
 export default function Login() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const rawNext = params.get("next");
+  const next = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -24,7 +27,7 @@ export default function Login() {
     setError("");
     setGoogleLoading(true);
     const { error: err } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}${next}`,
     });
     setGoogleLoading(false);
     if (err) {
@@ -41,7 +44,7 @@ export default function Login() {
     if (err) {
       setError(err.includes("Invalid login credentials") ? "Email ou senha inválidos." : err);
     } else {
-      navigate("/");
+      navigate(next);
     }
   };
 
