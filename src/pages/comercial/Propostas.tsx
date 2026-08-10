@@ -113,10 +113,11 @@ export default function Propostas() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      if (!form.client_id) throw new Error("Selecione o cliente da proposta.");
       const code = await generateCode();
       const { error } = await supabase.from("proposals").insert({
         code,
-        client_id: form.client_id || null,
+        client_id: form.client_id,
         title: form.title,
         scope: form.scope || null,
         estimated_value: Number(form.estimated_value) || 0,
@@ -124,7 +125,10 @@ export default function Propostas() {
         validity_days: Number(form.validity_days) || 30,
         status: "rascunho",
       });
-      if (error) throw error;
+      if (error) {
+        if (error.code === "23505") throw new Error(`O código ${code} já existe. Recarregue a página e tente novamente.`);
+        throw error;
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["proposals"] });
@@ -132,11 +136,12 @@ export default function Propostas() {
       setForm({ client_id: "", title: "", scope: "", estimated_value: "", validity_days: "30" });
       toast.success("Proposta criada!");
     },
-    onError: () => toast.error("Erro ao criar proposta"),
+    onError: (e: Error) => toast.error(e.message || "Erro ao criar proposta"),
   });
 
   const duplicateMutation = useMutation({
     mutationFn: async (proposal: any) => {
+      if (!proposal.client_id) throw new Error("Esta proposta não tem cliente. Vincule um cliente antes de duplicar.");
       const code = await generateCode();
       const { error } = await supabase.from("proposals").insert({
         code,
@@ -152,14 +157,18 @@ export default function Propostas() {
         location: proposal.location,
         empresa_faturadora: proposal.empresa_faturadora,
       });
-      if (error) throw error;
+      if (error) {
+        if (error.code === "23505") throw new Error(`O código ${code} já existe. Recarregue a página e tente novamente.`);
+        throw error;
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["proposals"] });
       toast.success("Proposta duplicada!");
     },
-    onError: () => toast.error("Erro ao duplicar"),
+    onError: (e: Error) => toast.error(e.message || "Erro ao duplicar"),
   });
+
 
   const sendMutation = useMutation({
     mutationFn: async (id: string) => {
