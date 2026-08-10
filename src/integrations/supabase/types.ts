@@ -349,6 +349,7 @@ export type Database = {
           name: string
           notes: string | null
           numero: string | null
+          parent_client_id: string | null
           phone: string | null
           requires_nf: boolean | null
           rua: string | null
@@ -378,6 +379,7 @@ export type Database = {
           name: string
           notes?: string | null
           numero?: string | null
+          parent_client_id?: string | null
           phone?: string | null
           requires_nf?: boolean | null
           rua?: string | null
@@ -407,6 +409,7 @@ export type Database = {
           name?: string
           notes?: string | null
           numero?: string | null
+          parent_client_id?: string | null
           phone?: string | null
           requires_nf?: boolean | null
           rua?: string | null
@@ -421,6 +424,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_parent_client_id_fkey"
+            columns: ["parent_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
