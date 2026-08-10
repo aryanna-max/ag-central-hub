@@ -27,6 +27,7 @@ import ProjetoHistorico from "./pages/projetos/ProjetoHistorico";
 import AprovacaoExterna from "./pages/AprovacaoExterna";
 import Compliance from "./pages/compliance/Compliance";
 import BaseGovernanca from "./pages/base/Governanca";
+import OAuthConsent from "./pages/OAuthConsent";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, profile } = useAuth();
+  const nextParam = new URLSearchParams(window.location.search).get("next");
+  const safeNext = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/";
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -53,7 +56,7 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  if (user && !profile?.must_change_password) return <Navigate to="/" replace />;
+  if (user && !profile?.must_change_password) return <Navigate to={safeNext} replace />;
   return <>{children}</>;
 }
 
@@ -79,6 +82,7 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/aprovacao/:token" element={<AprovacaoExterna />} />
+      <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
       <Route path="/change-password" element={<ChangePasswordRoute><ChangePassword /></ChangePasswordRoute>} />
 
       {/* Protected routes */}

@@ -1,0 +1,231 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://bphgtvwgsgaqaxmkrtqj.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "ag-central-flow",
+      "version": "0.1.0",
+      "title": "AG Central Flow"
+    },
+    "tools": [
+      {
+        "name": "list_projects",
+        "title": "Listar projetos",
+        "description": "Lista projetos do sistema AG, com filtro opcional por texto (nome/código) e por status de execução.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Texto para buscar em nome ou código do projeto."
+            },
+            "execution_status": {
+              "type": "string",
+              "description": "Filtra por execution_status exato (ex: em_campo, entregue, faturamento)."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "description": "Máximo de projetos retornados."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_project",
+        "title": "Detalhe do projeto",
+        "description": "Retorna os dados completos de um projeto pelo código (ex: 2026-AGT-001) ou pelo id.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "codigo": {
+              "type": "string",
+              "description": "Código do projeto."
+            },
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID do projeto."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_clients",
+        "title": "Listar clientes",
+        "description": "Lista clientes cadastrados, com busca opcional por nome, código de 3 letras ou CNPJ.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Texto para buscar em nome, código ou CNPJ."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_leads",
+        "title": "Listar leads",
+        "description": "Lista leads do CRM, com filtro opcional por status e busca por nome/empresa.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Texto para buscar em nome ou empresa."
+            },
+            "status": {
+              "type": "string",
+              "description": "Filtra por status exato do lead."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_lead",
+        "title": "Registrar lead",
+        "description": "Registra uma nova demanda comercial como lead no CRM (regra: toda demanda de entrada vira lead).",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Nome do contato ou da demanda."
+            },
+            "company": {
+              "type": "string",
+              "description": "Empresa do contato."
+            },
+            "email": {
+              "type": "string",
+              "format": "email"
+            },
+            "phone": {
+              "type": "string"
+            },
+            "servico": {
+              "type": "string",
+              "description": "Serviço solicitado."
+            },
+            "location": {
+              "type": "string",
+              "description": "Local do serviço."
+            },
+            "origin": {
+              "type": "string",
+              "description": "Origem da demanda."
+            },
+            "notes": {
+              "type": "string",
+              "description": "Observações livres."
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_alerts",
+        "title": "Listar alertas",
+        "description": "Lista alertas do sistema (pendentes por padrão), com filtro por prioridade.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "only_unresolved": {
+              "type": "boolean",
+              "default": true,
+              "description": "Se true, retorna apenas alertas não resolvidos."
+            },
+            "priority": {
+              "type": "string",
+              "enum": [
+                "urgente",
+                "importante",
+                "informacao"
+              ]
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
