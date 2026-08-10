@@ -125,7 +125,7 @@ export default function NewProposalDrawer({ open, onOpenChange, clients, initial
       setNotes("");
       setServices([defaultService()]);
     },
-    onError: () => toast.error("Erro ao salvar proposta"),
+    onError: (e: Error) => toast.error(e.message || "Erro ao salvar proposta"),
   });
 
   return (
