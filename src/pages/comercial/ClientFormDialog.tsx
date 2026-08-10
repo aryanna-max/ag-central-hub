@@ -44,6 +44,15 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
   const [contactEmail, setContactEmail] = useState("");
   const [fetchingCnpj, setFetchingCnpj] = useState(false);
   const [codigoSuggested, setCodigoSuggested] = useState(false);
+  const [parentSearch, setParentSearch] = useState("");
+
+  const parentOptions = useMemo(() => {
+    const q = parentSearch.trim().toLowerCase();
+    return allClients
+      .filter((c) => c.id !== client?.id && c.parent_client_id !== client?.id)
+      .filter((c) => !q || c.name.toLowerCase().includes(q) || (c.codigo || "").toLowerCase().includes(q))
+      .slice(0, 50);
+  }, [allClients, client?.id, parentSearch]);
 
   const tipo = form.tipo || "pj";
   const isPF = tipo === "pf";
@@ -85,6 +94,7 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
         numero: client.numero || "",
         cidade: client.cidade || "",
         estado: client.estado || "",
+        parent_client_id: client.parent_client_id || null,
       });
       const isPfEdit = client.tipo === "pf";
       setDocDisplay(client.cnpj ? (isPfEdit ? formatCpf(client.cnpj) : formatCnpj(client.cnpj)) : "");
@@ -244,6 +254,34 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
             <Label>Nome / Razão Social *</Label>
             <Input value={form.name} onChange={(e) => handleNameChange(e.target.value)} />
           </div>
+
+          <div className="space-y-2">
+            <Label>Empresa-mãe (grupo)</Label>
+            <Input
+              value={parentSearch}
+              onChange={(e) => setParentSearch(e.target.value)}
+              placeholder="Buscar empresa-mãe..."
+              className="h-9"
+            />
+            <Select
+              value={form.parent_client_id || "__none__"}
+              onValueChange={(v) => setForm(prev => ({ ...prev, parent_client_id: v === "__none__" ? null : v }))}
+            >
+              <SelectTrigger><SelectValue placeholder="Sem empresa-mãe" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Sem empresa-mãe</SelectItem>
+                {parentOptions.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.codigo ? `${c.codigo} — ${c.name}` : c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground">
+              Use para agrupar SPEs e filiais sob o grupo econômico.
+            </p>
+          </div>
+
 
           <Separator />
           <p className="text-sm font-medium text-muted-foreground">Contato Principal</p>

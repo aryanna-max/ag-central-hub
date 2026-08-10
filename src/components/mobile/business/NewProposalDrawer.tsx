@@ -74,6 +74,7 @@ export default function NewProposalDrawer({ open, onOpenChange, clients, initial
 
   const createProposal = useMutation({
     mutationFn: async (status: "rascunho" | "enviada") => {
+      if (!clientId) throw new Error("Selecione o cliente da proposta.");
       const today = new Date();
       const validity = new Date(`${validityDate}T12:00:00`);
       const validityDays = Math.max(1, Math.ceil((validity.getTime() - today.getTime()) / 86400000));
@@ -92,7 +93,7 @@ export default function NewProposalDrawer({ open, onOpenChange, clients, initial
 
       const payload = {
         code,
-        client_id: clientId || null,
+        client_id: clientId,
         title: title || `Proposta ${selectedClient?.name || ""}`.trim(),
         scope: scope || null,
         estimated_value: total,
@@ -105,8 +106,12 @@ export default function NewProposalDrawer({ open, onOpenChange, clients, initial
       };
 
       const { error } = await supabase.from("proposals").insert(payload);
-      if (error) throw error;
+      if (error) {
+        if (error.code === "23505") throw new Error(`O código ${code} já existe. Feche e abra novamente para gerar um novo código.`);
+        throw error;
+      }
     },
+
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["proposals-mobile"] });
       qc.invalidateQueries({ queryKey: ["proposals"] });
@@ -120,7 +125,7 @@ export default function NewProposalDrawer({ open, onOpenChange, clients, initial
       setNotes("");
       setServices([defaultService()]);
     },
-    onError: () => toast.error("Erro ao salvar proposta"),
+    onError: (e: Error) => toast.error(e.message || "Erro ao salvar proposta"),
   });
 
   return (
@@ -138,7 +143,7 @@ export default function NewProposalDrawer({ open, onOpenChange, clients, initial
           </div>
 
           <div>
-            <Label>Cliente</Label>
+            <Label>Cliente *</Label>
             <Select value={clientId} onValueChange={setClientId}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecionar cliente" />
@@ -149,7 +154,9 @@ export default function NewProposalDrawer({ open, onOpenChange, clients, initial
                 ))}
               </SelectContent>
             </Select>
+            {!clientId && <p className="text-xs text-destructive mt-1">Toda proposta precisa estar vinculada a um cliente.</p>}
           </div>
+
 
           <div>
             <Label>Título</Label>
@@ -226,12 +233,13 @@ export default function NewProposalDrawer({ open, onOpenChange, clients, initial
         </div>
 
         <DrawerFooter>
-          <Button variant="outline" onClick={() => createProposal.mutate("rascunho")} disabled={!code || !title || createProposal.isPending}>
+          <Button variant="outline" onClick={() => createProposal.mutate("rascunho")} disabled={!code || !title || !clientId || createProposal.isPending}>
             Salvar Rascunho
           </Button>
-          <Button onClick={() => createProposal.mutate("enviada")} disabled={!code || !title || createProposal.isPending}>
+          <Button onClick={() => createProposal.mutate("enviada")} disabled={!code || !title || !clientId || createProposal.isPending}>
             Salvar e Enviar
           </Button>
+
         </DrawerFooter>
       </DrawerContent>
     </Drawer>

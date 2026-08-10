@@ -4,7 +4,7 @@ import {
   Radar, Briefcase, Map, PenTool, Receipt, Users, Database,
   ChevronLeft, ChevronRight, Target, Building2, CalendarDays,
   Car, FolderKanban, LayoutDashboard, UserPlus, Shield,
-  FileText, BarChart3, FileCheck, Calendar, ShieldCheck,
+  FileText, BarChart3, FileCheck, Calendar, ShieldCheck, Search,
 } from "lucide-react";
 import { useModuleAlertCounts } from "@/hooks/useModuleAlertCounts";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +22,11 @@ const navigation: SidebarItem[] = [
     label: "Radar", path: "/", icon: Radar,
     allowedRoles: ["master", "diretor", "operacional"],
   },
+  {
+    label: "Consulta", path: "/consulta", icon: Search,
+    allowedRoles: ["master", "diretor", "operacional", "sala_tecnica", "comercial", "financeiro"],
+  },
+
   {
     label: "Negócios", path: "/comercial", icon: Briefcase,
     allowedRoles: ["master", "diretor", "comercial", "operacional"],
