@@ -44,6 +44,15 @@ export default function ClientFormDialog({ open, onOpenChange, client }: Props) 
   const [contactEmail, setContactEmail] = useState("");
   const [fetchingCnpj, setFetchingCnpj] = useState(false);
   const [codigoSuggested, setCodigoSuggested] = useState(false);
+  const [parentSearch, setParentSearch] = useState("");
+
+  const parentOptions = useMemo(() => {
+    const q = parentSearch.trim().toLowerCase();
+    return allClients
+      .filter((c) => c.id !== client?.id && c.parent_client_id !== client?.id)
+      .filter((c) => !q || c.name.toLowerCase().includes(q) || (c.codigo || "").toLowerCase().includes(q))
+      .slice(0, 50);
+  }, [allClients, client?.id, parentSearch]);
 
   const tipo = form.tipo || "pj";
   const isPF = tipo === "pf";
