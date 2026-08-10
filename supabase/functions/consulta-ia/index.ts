@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
   const messages: any[] = [{ role: "system", content: SYSTEM_PROMPT }, ...history];
   const sources: { table: string; row_count: number }[] = [];
 
-  for (let step = 0; step < 6; step++) {
+  for (let step = 0; step < 14; step++) {
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "fetch" },
