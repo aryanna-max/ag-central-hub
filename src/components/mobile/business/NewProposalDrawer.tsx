@@ -74,6 +74,7 @@ export default function NewProposalDrawer({ open, onOpenChange, clients, initial
 
   const createProposal = useMutation({
     mutationFn: async (status: "rascunho" | "enviada") => {
+      if (!clientId) throw new Error("Selecione o cliente da proposta.");
       const today = new Date();
       const validity = new Date(`${validityDate}T12:00:00`);
       const validityDays = Math.max(1, Math.ceil((validity.getTime() - today.getTime()) / 86400000));
@@ -92,7 +93,7 @@ export default function NewProposalDrawer({ open, onOpenChange, clients, initial
 
       const payload = {
         code,
-        client_id: clientId || null,
+        client_id: clientId,
         title: title || `Proposta ${selectedClient?.name || ""}`.trim(),
         scope: scope || null,
         estimated_value: total,
@@ -105,8 +106,12 @@ export default function NewProposalDrawer({ open, onOpenChange, clients, initial
       };
 
       const { error } = await supabase.from("proposals").insert(payload);
-      if (error) throw error;
+      if (error) {
+        if (error.code === "23505") throw new Error(`O código ${code} já existe. Feche e abra novamente para gerar um novo código.`);
+        throw error;
+      }
     },
+
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["proposals-mobile"] });
       qc.invalidateQueries({ queryKey: ["proposals"] });
