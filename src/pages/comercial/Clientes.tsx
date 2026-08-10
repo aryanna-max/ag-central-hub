@@ -429,7 +429,46 @@ function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | n
             </div>
 
             {client.notes && <p className="text-sm bg-muted/50 rounded-md p-3">{client.notes}</p>}
+
+            {childClients.length > 0 && (
+              <div className="space-y-2">
+                <Separator />
+                <p className="text-sm font-medium flex items-center gap-2">
+                  <Building2 className="w-4 h-4" /> Empresas do grupo ({childClients.length})
+                </p>
+                <div className="space-y-2">
+                  {childClients.map((child) => {
+                    const childProjects = allProjects.filter((p) => p.client_id === child.id);
+                    return (
+                      <div key={child.id} className="rounded-md bg-muted/50 p-3 text-sm">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{child.name}</span>
+                            {child.codigo && <Badge variant="outline" className="font-mono text-[10px]">{child.codigo}</Badge>}
+                          </div>
+                          <Badge variant="secondary" className="text-[10px]">{childProjects.length} projeto(s)</Badge>
+                        </div>
+                        {childProjects.length > 0 ? (
+                          <ul className="mt-2 space-y-1">
+                            {childProjects.map((p) => (
+                              <li key={p.id} className="text-xs text-muted-foreground flex items-center gap-2">
+                                <span className="font-mono">{p.codigo || "—"}</span>
+                                <span className="truncate">{p.name}</span>
+                                <Badge variant="outline" className="text-[10px]">{PROJECT_STATUS_LABELS[p.status] || p.status}</Badge>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="mt-1 text-xs text-muted-foreground">Sem projetos vinculados.</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </TabsContent>
+
 
           <TabsContent value="contatos" className="space-y-3 mt-4 flex-1 flex flex-col min-h-0">
             <div className="flex items-center justify-between">
