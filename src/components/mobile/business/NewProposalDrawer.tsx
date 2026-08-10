@@ -143,7 +143,7 @@ export default function NewProposalDrawer({ open, onOpenChange, clients, initial
           </div>
 
           <div>
-            <Label>Cliente</Label>
+            <Label>Cliente *</Label>
             <Select value={clientId} onValueChange={setClientId}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecionar cliente" />
@@ -154,7 +154,9 @@ export default function NewProposalDrawer({ open, onOpenChange, clients, initial
                 ))}
               </SelectContent>
             </Select>
+            {!clientId && <p className="text-xs text-destructive mt-1">Toda proposta precisa estar vinculada a um cliente.</p>}
           </div>
+
 
           <div>
             <Label>Título</Label>
