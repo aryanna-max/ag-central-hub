@@ -27,6 +27,7 @@ import ProjetoHistorico from "./pages/projetos/ProjetoHistorico";
 import AprovacaoExterna from "./pages/AprovacaoExterna";
 import Compliance from "./pages/compliance/Compliance";
 import BaseGovernanca from "./pages/base/Governanca";
+import OAuthConsent from "./pages/OAuthConsent";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,7 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/aprovacao/:token" element={<AprovacaoExterna />} />
+      <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
       <Route path="/change-password" element={<ChangePasswordRoute><ChangePassword /></ChangePasswordRoute>} />
 
       {/* Protected routes */}
