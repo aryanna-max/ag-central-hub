@@ -233,12 +233,13 @@ export default function NewProposalDrawer({ open, onOpenChange, clients, initial
         </div>
 
         <DrawerFooter>
-          <Button variant="outline" onClick={() => createProposal.mutate("rascunho")} disabled={!code || !title || createProposal.isPending}>
+          <Button variant="outline" onClick={() => createProposal.mutate("rascunho")} disabled={!code || !title || !clientId || createProposal.isPending}>
             Salvar Rascunho
           </Button>
-          <Button onClick={() => createProposal.mutate("enviada")} disabled={!code || !title || createProposal.isPending}>
+          <Button onClick={() => createProposal.mutate("enviada")} disabled={!code || !title || !clientId || createProposal.isPending}>
             Salvar e Enviar
           </Button>
+
         </DrawerFooter>
       </DrawerContent>
     </Drawer>
