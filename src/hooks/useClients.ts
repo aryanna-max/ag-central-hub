@@ -28,6 +28,7 @@ export interface Client {
   notes: string | null;
   is_active: boolean;
   lead_id: string | null;
+  parent_client_id: string | null;
   cep: string | null;
   rua: string | null;
   bairro: string | null;
@@ -54,6 +55,7 @@ export interface ClientInsert {
   notes?: string | null;
   is_active?: boolean;
   lead_id?: string | null;
+  parent_client_id?: string | null;
   cep?: string | null;
   rua?: string | null;
   bairro?: string | null;
