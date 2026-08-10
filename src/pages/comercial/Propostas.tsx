@@ -345,9 +345,10 @@ export default function Propostas() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNew(false)}>Cancelar</Button>
-            <Button onClick={() => createMutation.mutate()} disabled={!form.title.trim() || createMutation.isPending}>
+            <Button onClick={() => createMutation.mutate()} disabled={!form.title.trim() || !form.client_id || createMutation.isPending}>
               Criar Proposta
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>
