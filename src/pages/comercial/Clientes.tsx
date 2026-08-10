@@ -351,13 +351,21 @@ function ClientProjectsDialog({ client, open, onOpenChange, projects }: { client
 /* ---------- Client Detail Dialog ---------- */
 function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | null; open: boolean; onOpenChange: (o: boolean) => void }) {
   const { data: contacts = [] } = useClientContacts(client?.id);
+  const { data: allClients = [] } = useClients();
+  const { data: allProjects = [] } = useProjects();
   const createContact = useCreateClientContact();
   const deleteContact = useDeleteClientContact();
 
   const [showAddContact, setShowAddContact] = useState(false);
   const [contactForm, setContactForm] = useState<Omit<ClientContactInsert, "client_id">>({ nome: "" });
 
+  const parentClient = client?.parent_client_id
+    ? allClients.find((c) => c.id === client.parent_client_id) || null
+    : null;
+  const childClients = client ? allClients.filter((c) => c.parent_client_id === client.id) : [];
+
   if (!client) return null;
+
 
   const handleAddContact = async () => {
     if (!contactForm.nome.trim()) return;
