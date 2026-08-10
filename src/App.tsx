@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppLayout from "./components/AppLayout";
 import Dashboard from "./pages/Dashboard";
+import Consulta from "./pages/Consulta";
+
 import Comercial from "./pages/Comercial";
 import Projetos from "./pages/Projetos";
 import ProjetosDashboard from "./pages/projetos/ProjetosDashboard";
