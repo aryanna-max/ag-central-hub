@@ -23,6 +23,11 @@ const navigation: SidebarItem[] = [
     allowedRoles: ["master", "diretor", "operacional"],
   },
   {
+    label: "Consulta", path: "/consulta", icon: Search,
+    allowedRoles: ["master", "diretor", "operacional", "sala_tecnica", "comercial", "financeiro"],
+  },
+
+  {
     label: "Negócios", path: "/comercial", icon: Briefcase,
     allowedRoles: ["master", "diretor", "comercial", "operacional"],
     children: [
