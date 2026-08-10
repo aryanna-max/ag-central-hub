@@ -310,7 +310,7 @@ export default function Propostas() {
           <DialogHeader><DialogTitle>Nova Proposta</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Cliente</Label>
+              <Label>Cliente *</Label>
               <Select value={form.client_id} onValueChange={(v) => setForm({ ...form, client_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Selecionar cliente..." /></SelectTrigger>
                 <SelectContent>
@@ -319,7 +319,11 @@ export default function Propostas() {
                   ))}
                 </SelectContent>
               </Select>
+              {!form.client_id && (
+                <p className="text-xs text-destructive mt-1">Toda proposta precisa estar vinculada a um cliente.</p>
+              )}
             </div>
+
             <div>
               <Label>Título</Label>
               <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ex: Levantamento topográfico Lote 5" />
