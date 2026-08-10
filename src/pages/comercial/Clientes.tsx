@@ -399,7 +399,13 @@ function ClientDetailDialog({ client, open, onOpenChange }: { client: Client | n
             <Badge variant={client.is_active ? "default" : "secondary"} className="text-xs ml-2">
               {client.is_active ? "Ativo" : "Inativo"}
             </Badge>
+            {parentClient && (
+              <Badge variant="outline" className="text-xs ml-1 gap-1">
+                <Building2 className="w-3 h-3" /> Grupo: {parentClient.name}
+              </Badge>
+            )}
           </DialogTitle>
+
         </DialogHeader>
 
         <Tabs defaultValue="dados" className="flex-1 flex flex-col min-h-0">
