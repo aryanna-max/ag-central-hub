@@ -5,6 +5,12 @@ import listClientsTool from "./tools/list-clients";
 import listLeadsTool from "./tools/list-leads";
 import createLeadTool from "./tools/create-lead";
 import listAlertsTool from "./tools/list-alerts";
+import resolveAlertTool from "./tools/resolve-alert";
+import updateLeadStatusTool from "./tools/update-lead-status";
+import createTituloTool from "./tools/create-titulo";
+import registerRecebimentoTool from "./tools/register-recebimento";
+import allocateRecebimentoTool from "./tools/allocate-recebimento";
+import updateExecutionStatusTool from "./tools/update-execution-status";
 
 const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID ?? "project-ref-unset";
 
@@ -25,5 +31,11 @@ export default defineMcp({
     listLeadsTool,
     createLeadTool,
     listAlertsTool,
+    resolveAlertTool,
+    updateLeadStatusTool,
+    createTituloTool,
+    registerRecebimentoTool,
+    allocateRecebimentoTool,
+    updateExecutionStatusTool,
   ],
 });
