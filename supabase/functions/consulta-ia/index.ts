@@ -216,7 +216,7 @@ async function prepararProposta(
 
   const { data: client, error: clientError } = await supabase
     .from("clients")
-    .select("id,name,code")
+    .select("id,name")
     .eq("id", clientId)
     .maybeSingle();
   if (clientError) return { error: clientError.message };
