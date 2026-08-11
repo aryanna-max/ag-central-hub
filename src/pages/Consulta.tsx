@@ -86,7 +86,8 @@ export default function Consulta() {
     if (!loading) inputRef.current?.focus();
   }, [loading]);
 
-  const lastSources = messages.filter((m) => m.role === "assistant").at(-1)?.sources ?? [];
+  const assistantMessages = messages.filter((m) => m.role === "assistant");
+  const lastSources = assistantMessages[assistantMessages.length - 1]?.sources ?? [];
   const canPaginate = lastSources.some((s) => s.has_more);
 
   const ask = async (question: string) => {
