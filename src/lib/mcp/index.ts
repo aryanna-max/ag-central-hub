@@ -11,6 +11,10 @@ import createTituloTool from "./tools/create-titulo";
 import registerRecebimentoTool from "./tools/register-recebimento";
 import allocateRecebimentoTool from "./tools/allocate-recebimento";
 import updateExecutionStatusTool from "./tools/update-execution-status";
+import updateProjectTool from "./tools/update-project";
+import updateClientTool from "./tools/update-client";
+import createClientTool from "./tools/create-client";
+import createProjectTool from "./tools/create-project";
 
 const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID ?? "project-ref-unset";
 
@@ -37,5 +41,9 @@ export default defineMcp({
     registerRecebimentoTool,
     allocateRecebimentoTool,
     updateExecutionStatusTool,
+    updateProjectTool,
+    updateClientTool,
+    createClientTool,
+    createProjectTool,
   ],
 });
