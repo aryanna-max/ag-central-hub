@@ -225,6 +225,365 @@
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
+      },
+      {
+        "name": "resolve_alert",
+        "title": "Resolver alerta",
+        "description": "Dá baixa em um alerta do Radar depois que a ação foi executada. Exige descrever o que foi feito. Só pode ser usada pelo setor destinatário do alerta (ou diretoria). Alerta que pede emissão de nota/recibo não pode ser baixado aqui: registre o título com create_titulo, que o alerta fecha sozinho.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "alerta_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID do alerta, obtido em list_alerts."
+            },
+            "resolucao": {
+              "type": "string",
+              "minLength": 5,
+              "description": "O que foi feito para resolver. Vai para o registro de auditoria."
+            },
+            "origem_ref": {
+              "type": "string",
+              "description": "Documento que justificou a baixa (Message-ID do e-mail, caminho no Drive)."
+            }
+          },
+          "required": [
+            "alerta_id",
+            "resolucao"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_lead_status",
+        "title": "Mover lead no funil",
+        "description": "Move um lead para outro status do funil comercial. Use ao confirmar contato, envio de proposta, negociação, perda ou descarte. Perda e descarte exigem motivo. Para transformar lead em projeto use o fluxo de conversão — o status convertido não se digita.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lead_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID do lead, obtido em list_leads."
+            },
+            "novo_status": {
+              "type": "string",
+              "enum": [
+                "novo",
+                "em_contato",
+                "qualificado",
+                "proposta_enviada",
+                "em_negociacao",
+                "aprovado",
+                "perdido",
+                "descartado"
+              ],
+              "description": "Novo status do funil. 'convertido' não entra aqui — é resultado da conversão em projeto."
+            },
+            "observacao": {
+              "type": "string",
+              "description": "Motivo/observação. Obrigatório em 'perdido' e 'descartado'."
+            },
+            "origem_ref": {
+              "type": "string",
+              "description": "Documento que justificou a mudança (Message-ID do e-mail, caminho no Drive)."
+            }
+          },
+          "required": [
+            "lead_id",
+            "novo_status"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_titulo",
+        "title": "Registrar título (NF ou recibo)",
+        "description": "Registra no Financeiro uma nota fiscal ou recibo de um projeto — o título a receber. Empresa emissora e CNPJ do tomador vêm do contrato do projeto e do cadastro do cliente; não se escolhe na mão. Sem número de nota, o título nasce pendente (a emitir); com número, nasce emitida e o projeto avança para faturamento. Se havia alerta pedindo a emissão, ele é resolvido automaticamente. origem_ref é obrigatório: identifica o e-mail ou arquivo que originou o lançamento e impede que a mesma nota vire dois títulos.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "projeto_codigo": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Código do projeto, ex.: 2026-VIM-002."
+            },
+            "valor_bruto": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Valor bruto do título."
+            },
+            "origem_ref": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Documento de origem (Message-ID do e-mail, caminho no Drive). Chave de idempotência."
+            },
+            "tipo": {
+              "type": "string",
+              "enum": [
+                "nf",
+                "recibo"
+              ],
+              "description": "Tipo do documento. Se omitido, usa o tipo do projeto."
+            },
+            "nf_numero": {
+              "type": "string",
+              "description": "Número da nota. Ausente ⇒ título a emitir (pendente)."
+            },
+            "nf_data": {
+              "type": "string",
+              "description": "Data de emissão (ISO, ex.: 2026-05-31). Obrigatória se houver nf_numero."
+            },
+            "vencimento": {
+              "type": "string",
+              "description": "Data de vencimento (ISO). Deixar vazio se não souber — não estimar."
+            },
+            "retencao": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Valor da retenção. Default 0."
+            },
+            "cnpj_tomador": {
+              "type": "string",
+              "description": "Apenas para conferência; divergir do cadastro do cliente é erro."
+            },
+            "observacoes": {
+              "type": "string"
+            },
+            "recarga": {
+              "type": "boolean",
+              "description": "Default false. true suprime alertas/e-mails automáticos (Fase 0 de recarga)."
+            }
+          },
+          "required": [
+            "projeto_codigo",
+            "valor_bruto",
+            "origem_ref"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "register_recebimento",
+        "title": "Registrar dinheiro que entrou",
+        "description": "Registra um recebimento: dinheiro que entrou na conta, do cliente X, no dia D. O recebimento pertence ao cliente, não a uma nota — por isso funciona mesmo quando o cliente adianta antes de a nota existir, ou paga um valor que não corresponde a título nenhum. Se você sabe a que título(s) o dinheiro se refere, informe em alocacoes; o que sobrar fica como crédito do cliente e pode ser abatido depois com allocate_recebimento. Se não sabe, não invente: registre sem alocação. referencia_pagamento é a linha do extrato ou o identificador do comprovante — é ela que impede que o mesmo crédito entre duas vezes. Título não se marca como pago: ele fica quitado sozinho quando a soma das alocações cobre o valor.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cliente_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID do cliente (de list_clients). Dinheiro sem dono não entra."
+            },
+            "valor": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "O que caiu na conta."
+            },
+            "data_recebimento": {
+              "type": "string",
+              "description": "Data real do crédito (ISO). Futuro é recusado."
+            },
+            "referencia_pagamento": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Linha do extrato / identificador do comprovante. Única no sistema — trava de dupla baixa."
+            },
+            "empresa_recebedora": {
+              "type": "string",
+              "enum": [
+                "ag_topografia",
+                "ag_cartografia"
+              ],
+              "description": "Em qual PJ o dinheiro caiu. ag_topografia = GONZAGA E BERLIM (16.841.054/0001-10); ag_cartografia = AG CARTOGRAFIA (48.282.440/0001-05)."
+            },
+            "alocacoes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "titulo_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "valor": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "titulo_id",
+                  "valor"
+                ],
+                "additionalProperties": false
+              },
+              "description": "Vínculos {titulo_id, valor}. Vazio ⇒ crédito puro (adiantamento)."
+            },
+            "conta": {
+              "type": "string",
+              "description": "Bradesco, BB Gonzaga, BB Cartografia."
+            },
+            "origem_ref": {
+              "type": "string",
+              "description": "Extrato/comprovante de origem."
+            },
+            "observacoes": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "cliente_id",
+            "valor",
+            "data_recebimento",
+            "referencia_pagamento",
+            "empresa_recebedora"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "allocate_recebimento",
+        "title": "Dizer a que nota o dinheiro se refere",
+        "description": "Vincula dinheiro já recebido a um ou mais títulos. Use quando o cliente tinha adiantado e a nota saiu depois, ou quando você descobriu a que se referia um crédito antigo. Não altera o recebimento nem o título: cria o vínculo, e o saldo se recalcula sozinho. Um recebimento só aloca uma vez para cada título — chamar de novo devolve ja_alocado sem duplicar.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "recebimento_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID do recebimento (de register_recebimento ou da consulta de crédito)."
+            },
+            "alocacoes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "titulo_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "valor": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "titulo_id",
+                  "valor"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1,
+              "description": "Vínculos {titulo_id, valor}. Pelo menos um item."
+            },
+            "origem_ref": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "recebimento_id",
+            "alocacoes"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_execution_status",
+        "title": "Atualizar status de execução do projeto",
+        "description": "Move o status de execução de um projeto — campo, processamento, revisão, aprovação, entrega. Informe data_efetiva com a data real do fato, não a de hoje: é isso que mantém o histórico correto ao registrar acontecimentos passados. Voltar para um status anterior é correção e exige motivo. faturamento e pago não entram aqui — vêm de create_titulo e do recebimento alocado.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "projeto_codigo": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Código do projeto."
+            },
+            "novo_status": {
+              "type": "string",
+              "enum": [
+                "aguardando_campo",
+                "em_campo",
+                "campo_concluido",
+                "aguardando_processamento",
+                "em_processamento",
+                "revisao",
+                "aprovado",
+                "entregue"
+              ],
+              "description": "Novo status de execução. 'faturamento' e 'pago' não entram aqui."
+            },
+            "data_efetiva": {
+              "type": "string",
+              "description": "Data real do fato (ISO). Default hoje; futuro é recusado."
+            },
+            "motivo": {
+              "type": "string",
+              "description": "Obrigatório em retrocesso (voltar a status anterior)."
+            },
+            "origem_ref": {
+              "type": "string"
+            },
+            "recarga": {
+              "type": "boolean",
+              "description": "Default false. true suprime alertas/e-mails automáticos (Fase 0 de recarga)."
+            }
+          },
+          "required": [
+            "projeto_codigo",
+            "novo_status"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
       }
     ]
   }
