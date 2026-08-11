@@ -4018,6 +4018,37 @@ export type Database = {
           doc_type: Database["public"]["Enums"]["doc_type"]
         }[]
       }
+      fn_cnpj_digits: { Args: { p_cnpj: string }; Returns: string }
+      fn_create_client: {
+        Args: {
+          p_cnpj?: string
+          p_codigo?: string
+          p_name: string
+          p_parent_client_id?: string
+          p_recarga?: boolean
+          p_segmento?: string
+          p_tipo?: string
+        }
+        Returns: Json
+      }
+      fn_create_project: {
+        Args: {
+          p_ano?: number
+          p_billing_type?: string
+          p_client_id: string
+          p_cnpj_tomador?: string
+          p_contract_value?: number
+          p_empresa_faturadora: string
+          p_execution_status?: Database["public"]["Enums"]["execution_status"]
+          p_name: string
+          p_permitir_valor_baixo?: boolean
+          p_recarga?: boolean
+          p_service?: string
+          p_status?: Database["public"]["Enums"]["project_status"]
+          p_tipo_documento?: string
+        }
+        Returns: Json
+      }
       fn_create_titulo: {
         Args: {
           p_cnpj_tomador?: string
@@ -4074,6 +4105,7 @@ export type Database = {
         Args: { p_reference_month: string; p_title?: string }
         Returns: string
       }
+      fn_normalize_name: { Args: { p_txt: string }; Returns: string }
       fn_preencher_escala_dia: {
         Args: { p_schedule_date: string }
         Returns: {
@@ -4114,6 +4146,17 @@ export type Database = {
         Args: { p_entry_id: string; p_motivo: string }
         Returns: undefined
       }
+      fn_update_client: {
+        Args: {
+          p_client_id: string
+          p_cnpj?: string
+          p_name?: string
+          p_recarga?: boolean
+          p_segmento?: string
+          p_tipo?: string
+        }
+        Returns: Json
+      }
       fn_update_execution_status: {
         Args: {
           p_data_efetiva?: string
@@ -4131,6 +4174,20 @@ export type Database = {
           p_novo_status: Database["public"]["Enums"]["lead_status"]
           p_observacao?: string
           p_origem_ref?: string
+        }
+        Returns: Json
+      }
+      fn_update_project: {
+        Args: {
+          p_billing_type?: string
+          p_cnpj_tomador?: string
+          p_contract_value?: number
+          p_empresa_faturadora?: string
+          p_motivo?: string
+          p_permitir_valor_baixo?: boolean
+          p_project_id: string
+          p_recarga?: boolean
+          p_tipo_documento?: string
         }
         Returns: Json
       }
