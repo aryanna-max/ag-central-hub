@@ -34,6 +34,7 @@ export type Database = {
           resolved: boolean
           resolved_at: string | null
           resolved_by: string | null
+          resolved_by_profile_id: string | null
           scheduled_at: string | null
           tipo: string | null
           title: string
@@ -57,6 +58,7 @@ export type Database = {
           resolved?: boolean
           resolved_at?: string | null
           resolved_by?: string | null
+          resolved_by_profile_id?: string | null
           scheduled_at?: string | null
           tipo?: string | null
           title: string
@@ -80,6 +82,7 @@ export type Database = {
           resolved?: boolean
           resolved_at?: string | null
           resolved_by?: string | null
+          resolved_by_profile_id?: string | null
           scheduled_at?: string | null
           tipo?: string | null
           title?: string
@@ -97,6 +100,13 @@ export type Database = {
             columns: ["resolved_by"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_resolved_by_profile_id_fkey"
+            columns: ["resolved_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1670,6 +1680,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_titulos_receber"
+            referencedColumns: ["titulo_id"]
+          },
+          {
             foreignKeyName: "invoice_items_project_service_id_fkey"
             columns: ["project_service_id"]
             isOneToOne: false
@@ -1684,6 +1701,7 @@ export type Database = {
           codigo: string | null
           created_at: string | null
           created_by_id: string | null
+          due_date: string | null
           empresa_faturadora:
             | Database["public"]["Enums"]["empresa_faturadora_enum"]
             | null
@@ -1693,7 +1711,8 @@ export type Database = {
           notes: string | null
           project_id: string
           retencao: number | null
-          status: string | null
+          source_ref: string | null
+          status: Database["public"]["Enums"]["invoice_status"]
           tipo: Database["public"]["Enums"]["tipo_documento"]
           updated_at: string | null
           valor_bruto: number | null
@@ -1704,6 +1723,7 @@ export type Database = {
           codigo?: string | null
           created_at?: string | null
           created_by_id?: string | null
+          due_date?: string | null
           empresa_faturadora?:
             | Database["public"]["Enums"]["empresa_faturadora_enum"]
             | null
@@ -1713,7 +1733,8 @@ export type Database = {
           notes?: string | null
           project_id: string
           retencao?: number | null
-          status?: string | null
+          source_ref?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
           tipo?: Database["public"]["Enums"]["tipo_documento"]
           updated_at?: string | null
           valor_bruto?: number | null
@@ -1724,6 +1745,7 @@ export type Database = {
           codigo?: string | null
           created_at?: string | null
           created_by_id?: string | null
+          due_date?: string | null
           empresa_faturadora?:
             | Database["public"]["Enums"]["empresa_faturadora_enum"]
             | null
@@ -1733,7 +1755,8 @@ export type Database = {
           notes?: string | null
           project_id?: string
           retencao?: number | null
-          status?: string | null
+          source_ref?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
           tipo?: Database["public"]["Enums"]["tipo_documento"]
           updated_at?: string | null
           valor_bruto?: number | null
@@ -2206,6 +2229,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "measurements_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_titulos_receber"
+            referencedColumns: ["titulo_id"]
           },
           {
             foreignKeyName: "measurements_project_id_fkey"
@@ -3306,6 +3336,132 @@ export type Database = {
           },
         ]
       }
+      receipt_allocations: {
+        Row: {
+          allocated_at: string
+          allocated_by_id: string | null
+          id: string
+          invoice_id: string
+          origem_ref: string | null
+          receipt_id: string
+          valor: number
+        }
+        Insert: {
+          allocated_at?: string
+          allocated_by_id?: string | null
+          id?: string
+          invoice_id: string
+          origem_ref?: string | null
+          receipt_id: string
+          valor: number
+        }
+        Update: {
+          allocated_at?: string
+          allocated_by_id?: string | null
+          id?: string
+          invoice_id?: string
+          origem_ref?: string | null
+          receipt_id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_allocations_allocated_by_id_fkey"
+            columns: ["allocated_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipt_allocations_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipt_allocations_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_titulos_receber"
+            referencedColumns: ["titulo_id"]
+          },
+          {
+            foreignKeyName: "receipt_allocations_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      receipts: {
+        Row: {
+          client_id: string
+          conta: string | null
+          created_at: string
+          created_by_id: string | null
+          data_recebimento: string
+          empresa_recebedora: Database["public"]["Enums"]["empresa_faturadora_enum"]
+          estorna_id: string | null
+          id: string
+          observacoes: string | null
+          origem_ref: string | null
+          referencia_pagamento: string
+          valor: number
+        }
+        Insert: {
+          client_id: string
+          conta?: string | null
+          created_at?: string
+          created_by_id?: string | null
+          data_recebimento: string
+          empresa_recebedora: Database["public"]["Enums"]["empresa_faturadora_enum"]
+          estorna_id?: string | null
+          id?: string
+          observacoes?: string | null
+          origem_ref?: string | null
+          referencia_pagamento: string
+          valor: number
+        }
+        Update: {
+          client_id?: string
+          conta?: string | null
+          created_at?: string
+          created_by_id?: string | null
+          data_recebimento?: string
+          empresa_recebedora?: Database["public"]["Enums"]["empresa_faturadora_enum"]
+          estorna_id?: string | null
+          id?: string
+          observacoes?: string | null
+          origem_ref?: string | null
+          referencia_pagamento?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipts_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipts_estorna_id_fkey"
+            columns: ["estorna_id"]
+            isOneToOne: false
+            referencedRelation: "receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_types: {
         Row: {
           category: string | null
@@ -3722,6 +3878,69 @@ export type Database = {
       }
     }
     Views: {
+      v_credito_cliente: {
+        Row: {
+          client_id: string | null
+          cliente: string | null
+          credito_disponivel: number | null
+          empresa_recebedora:
+            | Database["public"]["Enums"]["empresa_faturadora_enum"]
+            | null
+          total_alocado: number | null
+          total_recebido: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_titulos_receber: {
+        Row: {
+          client_id: string | null
+          cliente: string | null
+          due_date: string | null
+          empresa_faturadora:
+            | Database["public"]["Enums"]["empresa_faturadora_enum"]
+            | null
+          nf_data: string | null
+          nf_numero: string | null
+          project_id: string | null
+          projeto_codigo: string | null
+          projeto_nome: string | null
+          retencao: number | null
+          saldo: number | null
+          situacao: string | null
+          source_ref: string | null
+          status_documento: Database["public"]["Enums"]["invoice_status"] | null
+          tipo: Database["public"]["Enums"]["tipo_documento"] | null
+          titulo_id: string | null
+          ultimo_recebimento_em: string | null
+          valor_bruto: number | null
+          valor_recebido: number | null
+          valor_titulo: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vw_prazos_criticos: {
         Row: {
           client_name: string | null
@@ -3785,11 +4004,35 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      fn_allocate_recebimento: {
+        Args: {
+          p_alocacoes: Json
+          p_origem_ref?: string
+          p_recebimento_id: string
+        }
+        Returns: Json
+      }
       fn_client_required_doc_types: {
         Args: { p_client_id: string }
         Returns: {
           doc_type: Database["public"]["Enums"]["doc_type"]
         }[]
+      }
+      fn_create_titulo: {
+        Args: {
+          p_cnpj_tomador?: string
+          p_nf_data?: string
+          p_nf_numero?: string
+          p_observacoes?: string
+          p_origem_ref: string
+          p_projeto_codigo: string
+          p_recarga?: boolean
+          p_retencao?: number
+          p_tipo?: Database["public"]["Enums"]["tipo_documento"]
+          p_valor_bruto: number
+          p_vencimento?: string
+        }
+        Returns: Json
       }
       fn_employee_badge_for_project: {
         Args: { p_employee_id: string; p_project_id: string }
@@ -3841,6 +4084,28 @@ export type Database = {
           updated_count: number
         }[]
       }
+      fn_recalc_project_paid: {
+        Args: { p_project_id: string }
+        Returns: boolean
+      }
+      fn_register_recebimento: {
+        Args: {
+          p_alocacoes?: Json
+          p_cliente_id: string
+          p_conta?: string
+          p_data_recebimento: string
+          p_empresa_recebedora: Database["public"]["Enums"]["empresa_faturadora_enum"]
+          p_observacoes?: string
+          p_origem_ref?: string
+          p_referencia_pagamento: string
+          p_valor: number
+        }
+        Returns: Json
+      }
+      fn_resolve_alert: {
+        Args: { p_alert_id: string; p_origem_ref?: string; p_resolucao: string }
+        Returns: Json
+      }
       fn_resolver_conflito_preencher: {
         Args: { p_acao: string; p_entry_id: string; p_new_project_id?: string }
         Returns: undefined
@@ -3848,6 +4113,26 @@ export type Database = {
       fn_unvalidate_day_entry: {
         Args: { p_entry_id: string; p_motivo: string }
         Returns: undefined
+      }
+      fn_update_execution_status: {
+        Args: {
+          p_data_efetiva?: string
+          p_motivo?: string
+          p_novo_status: Database["public"]["Enums"]["execution_status"]
+          p_origem_ref?: string
+          p_projeto_codigo: string
+          p_recarga?: boolean
+        }
+        Returns: Json
+      }
+      fn_update_lead_status: {
+        Args: {
+          p_lead_id: string
+          p_novo_status: Database["public"]["Enums"]["lead_status"]
+          p_observacao?: string
+          p_origem_ref?: string
+        }
+        Returns: Json
       }
       get_user_role: {
         Args: { _user_id: string }
@@ -3984,6 +4269,7 @@ export type Database = {
         | "cancelada"
         | "submetido"
         | "devolvido"
+      invoice_status: "pendente" | "emitida" | "paga" | "cancelada"
       lead_interaction_type:
         | "nota"
         | "ligacao"
@@ -4283,6 +4569,7 @@ export const Constants = {
         "submetido",
         "devolvido",
       ],
+      invoice_status: ["pendente", "emitida", "paga", "cancelada"],
       lead_interaction_type: [
         "nota",
         "ligacao",
