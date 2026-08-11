@@ -302,7 +302,7 @@ export function useClientCockpit() {
           // Sinal #1 — NF vencida (>30d sem pagar)
           const nfVencidas = cInvoices.filter((inv) => {
             if (!inv.nf_data) return false;
-            if (inv.status === "pago") return false;
+            if (inv.status === "paga") return false;
             const days = differenceInCalendarDays(parseISO(inv.nf_data), today);
             return days < -NF_VENCIDA_DIAS;
           });
@@ -318,7 +318,7 @@ export function useClientCockpit() {
           // Sinal #2 — NF vencendo (15-30d sem pagar)
           const nfVencendo = cInvoices.filter((inv) => {
             if (!inv.nf_data) return false;
-            if (inv.status === "pago") return false;
+            if (inv.status === "paga") return false;
             const days = differenceInCalendarDays(parseISO(inv.nf_data), today);
             return days >= -NF_VENCIDA_DIAS && days < -NF_VENCENDO_DIAS;
           });

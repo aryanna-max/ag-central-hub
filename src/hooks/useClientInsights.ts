@@ -211,7 +211,7 @@ export function useClientInsights(clientId: string | undefined) {
 
       // ── Tempo médio pagamento (NFs pagas com nf_data + updated_at) ───────
       const nfsPagas = invoices.filter(
-        (inv) => inv.status === "pago" && inv.nf_data && inv.updated_at,
+        (inv) => inv.status === "paga" && inv.nf_data && inv.updated_at,
       );
       let tempoMedioPagamento: TempoMedioPagamento | null = null;
       if (nfsPagas.length === 0) {
