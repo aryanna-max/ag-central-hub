@@ -584,6 +584,268 @@
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
+      },
+      {
+        "name": "update_project",
+        "title": "Corrigir cadastro de projeto",
+        "description": "Corrige o cadastro de um projeto existente: empresa faturadora, valor de contrato, tipo de documento, tipo de faturamento ou CNPJ do tomador. Campo fiscal (empresa_faturadora, cnpj_tomador) só pode ser mexido por master, diretor ou financeiro. Trocar a empresa faturadora exige motivo e é bloqueado se o projeto já tem título emitido — ajuste/cancele os títulos antes. Valor entre 0 e 100 é recusado como provável erro de escala (o caso VIM 15,75 que era 15.750); se for real mesmo, repita com permitir_valor_baixo=true.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "project_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID do projeto (de list_projects/get_project)."
+            },
+            "empresa_faturadora": {
+              "type": "string",
+              "enum": [
+                "ag_topografia",
+                "ag_cartografia"
+              ],
+              "description": "PJ emissora. ag_topografia = GONZAGA E BERLIM (16.841.054/0001-10); ag_cartografia = AG CARTOGRAFIA (48.282.440/0001-05). Campo fiscal."
+            },
+            "contract_value": {
+              "type": "number",
+              "description": "Valor do contrato. Negativo é recusado."
+            },
+            "tipo_documento": {
+              "type": "string",
+              "enum": [
+                "nota_fiscal",
+                "recibo"
+              ],
+              "description": "Tipo de documento do projeto."
+            },
+            "billing_type": {
+              "type": "string",
+              "enum": [
+                "entrega_nf",
+                "medicao_mensal",
+                "entrega_recibo"
+              ],
+              "description": "Modelo de faturamento."
+            },
+            "cnpj_tomador": {
+              "type": "string",
+              "description": "CNPJ do tomador. Validado pelos dígitos verificadores. Campo fiscal."
+            },
+            "motivo": {
+              "type": "string",
+              "description": "Obrigatório ao trocar empresa_faturadora."
+            },
+            "permitir_valor_baixo": {
+              "type": "boolean",
+              "description": "Default false. true libera valor entre 0 e 100 (confirma que não é erro de escala)."
+            },
+            "recarga": {
+              "type": "boolean",
+              "description": "Default false. true marca sessão de recarga (Fase 0)."
+            }
+          },
+          "required": [
+            "project_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_client",
+        "title": "Corrigir cadastro de cliente",
+        "description": "Corrige o cadastro de um cliente existente: razão social (name), CNPJ, tipo (pj/pf) ou segmento. O CNPJ é validado pelos dígitos verificadores. Se o CNPJ ou o nome normalizado já pertencer a OUTRO cliente, a correção é recusada e a orientação é usar merge_clients (ADR-046) — não duplicar. Para razão social: o name é a identidade fiscal do tomador, não o nome do contato.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "client_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID do cliente (de list_clients)."
+            },
+            "name": {
+              "type": "string",
+              "description": "Razão social / nome do cliente."
+            },
+            "cnpj": {
+              "type": "string",
+              "description": "CNPJ. Validado pelos dígitos verificadores."
+            },
+            "tipo": {
+              "type": "string",
+              "enum": [
+                "pj",
+                "pf"
+              ],
+              "description": "Pessoa jurídica ou física."
+            },
+            "segmento": {
+              "type": "string",
+              "description": "Segmento do cliente."
+            },
+            "recarga": {
+              "type": "boolean",
+              "description": "Default false. true marca sessão de recarga (Fase 0)."
+            }
+          },
+          "required": [
+            "client_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_client",
+        "title": "Cadastrar cliente",
+        "description": "Cadastra um novo cliente. É o freio anti-duplicidade (caso POLIMIX): recusa se o CNPJ já existe OU se o nome normalizado (sem acento/pontuação/maiúsculas) equivale a outro cliente. Se for filial/SPE de um grupo já cadastrado, informe parent_client_id e um nome distinto (ex.: com a razão social da filial) em vez de repetir a matriz. A sigla (codigo) tem 3 letras; se não informar, o sistema deriva uma sigla livre do nome. O CNPJ é validado pelos dígitos verificadores.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Razão social / nome do cliente."
+            },
+            "cnpj": {
+              "type": "string",
+              "description": "CNPJ. Validado pelos dígitos verificadores. Recusa se já cadastrado."
+            },
+            "tipo": {
+              "type": "string",
+              "enum": [
+                "pj",
+                "pf"
+              ],
+              "description": "Pessoa jurídica ou física."
+            },
+            "segmento": {
+              "type": "string",
+              "description": "Segmento do cliente."
+            },
+            "codigo": {
+              "type": "string",
+              "description": "Sigla de 3 letras (A-Z). Se omitida, o sistema deriva uma livre do nome."
+            },
+            "parent_client_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID da matriz, para filial/SPE de um grupo já cadastrado."
+            },
+            "recarga": {
+              "type": "boolean",
+              "description": "Default false. true marca sessão de recarga (Fase 0)."
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_project",
+        "title": "Cadastrar projeto",
+        "description": "Cadastra um projeto diretamente — caminho de exceção/backfill para demanda já contratada fora do sistema (o fluxo normal é converter um lead). client_id é obrigatório: cliente é o centro, projeto não nasce solto. O código é gerado como ANO-SIGLA-SEQ (ex.: 2026-VIM-002), a partir da sigla do cliente; se o cliente não tem sigla, cadastre-a antes. Valor entre 0 e 100 é recusado como provável erro de escala; se for real, use permitir_valor_baixo=true.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "client_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID do cliente dono do projeto (de list_clients). Obrigatório."
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Nome do projeto."
+            },
+            "empresa_faturadora": {
+              "type": "string",
+              "enum": [
+                "ag_topografia",
+                "ag_cartografia"
+              ],
+              "description": "PJ emissora. ag_topografia = GONZAGA E BERLIM (16.841.054/0001-10); ag_cartografia = AG CARTOGRAFIA (48.282.440/0001-05)."
+            },
+            "ano": {
+              "type": "integer",
+              "description": "Ano do código. Default: ano corrente."
+            },
+            "contract_value": {
+              "type": "number",
+              "description": "Valor do contrato. Negativo é recusado."
+            },
+            "billing_type": {
+              "type": "string",
+              "enum": [
+                "entrega_nf",
+                "medicao_mensal",
+                "entrega_recibo"
+              ],
+              "description": "Modelo de faturamento."
+            },
+            "tipo_documento": {
+              "type": "string",
+              "enum": [
+                "nota_fiscal",
+                "recibo"
+              ],
+              "description": "Tipo de documento. Default nota_fiscal."
+            },
+            "cnpj_tomador": {
+              "type": "string",
+              "description": "CNPJ do tomador. Validado pelos dígitos verificadores."
+            },
+            "service": {
+              "type": "string",
+              "description": "Serviço/escopo resumido."
+            },
+            "permitir_valor_baixo": {
+              "type": "boolean",
+              "description": "Default false. true libera valor entre 0 e 100."
+            },
+            "recarga": {
+              "type": "boolean",
+              "description": "Default false. true marca sessão de recarga (Fase 0)."
+            }
+          },
+          "required": [
+            "client_id",
+            "name",
+            "empresa_faturadora"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
       }
     ]
   }

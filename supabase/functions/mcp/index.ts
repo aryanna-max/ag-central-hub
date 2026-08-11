@@ -478,6 +478,172 @@ var update_execution_status_default = defineTool12({
   }
 });
 
+// src/lib/mcp/tools/update-project.ts
+import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z13 } from "npm:zod@^3.25.76";
+var update_project_default = defineTool13({
+  name: "update_project",
+  title: "Corrigir cadastro de projeto",
+  description: "Corrige o cadastro de um projeto existente: empresa faturadora, valor de contrato, tipo de documento, tipo de faturamento ou CNPJ do tomador. Campo fiscal (empresa_faturadora, cnpj_tomador) s\xF3 pode ser mexido por master, diretor ou financeiro. Trocar a empresa faturadora exige motivo e \xE9 bloqueado se o projeto j\xE1 tem t\xEDtulo emitido \u2014 ajuste/cancele os t\xEDtulos antes. Valor entre 0 e 100 \xE9 recusado como prov\xE1vel erro de escala (o caso VIM 15,75 que era 15.750); se for real mesmo, repita com permitir_valor_baixo=true.",
+  inputSchema: {
+    project_id: z13.string().uuid().describe("UUID do projeto (de list_projects/get_project)."),
+    empresa_faturadora: z13.enum(["ag_topografia", "ag_cartografia"]).optional().describe("PJ emissora. ag_topografia = GONZAGA E BERLIM (16.841.054/0001-10); ag_cartografia = AG CARTOGRAFIA (48.282.440/0001-05). Campo fiscal."),
+    contract_value: z13.number().optional().describe("Valor do contrato. Negativo \xE9 recusado."),
+    tipo_documento: z13.enum(["nota_fiscal", "recibo"]).optional().describe("Tipo de documento do projeto."),
+    billing_type: z13.enum(["entrega_nf", "medicao_mensal", "entrega_recibo"]).optional().describe("Modelo de faturamento."),
+    cnpj_tomador: z13.string().trim().optional().describe("CNPJ do tomador. Validado pelos d\xEDgitos verificadores. Campo fiscal."),
+    motivo: z13.string().trim().optional().describe("Obrigat\xF3rio ao trocar empresa_faturadora."),
+    permitir_valor_baixo: z13.boolean().optional().describe("Default false. true libera valor entre 0 e 100 (confirma que n\xE3o \xE9 erro de escala)."),
+    recarga: z13.boolean().optional().describe("Default false. true marca sess\xE3o de recarga (Fase 0).")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ project_id, empresa_faturadora, contract_value, tipo_documento, billing_type, cnpj_tomador, motivo, permitir_valor_baixo, recarga }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado" }], isError: true };
+    }
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.rpc("fn_update_project", {
+      p_project_id: project_id,
+      p_empresa_faturadora: empresa_faturadora ?? null,
+      p_contract_value: contract_value ?? null,
+      p_tipo_documento: tipo_documento ?? null,
+      p_billing_type: billing_type ?? null,
+      p_cnpj_tomador: cnpj_tomador ?? null,
+      p_motivo: motivo ?? null,
+      p_permitir_valor_baixo: permitir_valor_baixo ?? false,
+      p_recarga: recarga ?? false
+    });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { resultado: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/update-client.ts
+import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z14 } from "npm:zod@^3.25.76";
+var update_client_default = defineTool14({
+  name: "update_client",
+  title: "Corrigir cadastro de cliente",
+  description: "Corrige o cadastro de um cliente existente: raz\xE3o social (name), CNPJ, tipo (pj/pf) ou segmento. O CNPJ \xE9 validado pelos d\xEDgitos verificadores. Se o CNPJ ou o nome normalizado j\xE1 pertencer a OUTRO cliente, a corre\xE7\xE3o \xE9 recusada e a orienta\xE7\xE3o \xE9 usar merge_clients (ADR-046) \u2014 n\xE3o duplicar. Para raz\xE3o social: o name \xE9 a identidade fiscal do tomador, n\xE3o o nome do contato.",
+  inputSchema: {
+    client_id: z14.string().uuid().describe("UUID do cliente (de list_clients)."),
+    name: z14.string().trim().optional().describe("Raz\xE3o social / nome do cliente."),
+    cnpj: z14.string().trim().optional().describe("CNPJ. Validado pelos d\xEDgitos verificadores."),
+    tipo: z14.enum(["pj", "pf"]).optional().describe("Pessoa jur\xEDdica ou f\xEDsica."),
+    segmento: z14.string().trim().optional().describe("Segmento do cliente."),
+    recarga: z14.boolean().optional().describe("Default false. true marca sess\xE3o de recarga (Fase 0).")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ client_id, name, cnpj, tipo, segmento, recarga }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado" }], isError: true };
+    }
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.rpc("fn_update_client", {
+      p_client_id: client_id,
+      p_name: name ?? null,
+      p_cnpj: cnpj ?? null,
+      p_tipo: tipo ?? null,
+      p_segmento: segmento ?? null,
+      p_recarga: recarga ?? false
+    });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { resultado: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/create-client.ts
+import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z15 } from "npm:zod@^3.25.76";
+var create_client_default = defineTool15({
+  name: "create_client",
+  title: "Cadastrar cliente",
+  description: "Cadastra um novo cliente. \xC9 o freio anti-duplicidade (caso POLIMIX): recusa se o CNPJ j\xE1 existe OU se o nome normalizado (sem acento/pontua\xE7\xE3o/mai\xFAsculas) equivale a outro cliente. Se for filial/SPE de um grupo j\xE1 cadastrado, informe parent_client_id e um nome distinto (ex.: com a raz\xE3o social da filial) em vez de repetir a matriz. A sigla (codigo) tem 3 letras; se n\xE3o informar, o sistema deriva uma sigla livre do nome. O CNPJ \xE9 validado pelos d\xEDgitos verificadores.",
+  inputSchema: {
+    name: z15.string().trim().min(1).describe("Raz\xE3o social / nome do cliente."),
+    cnpj: z15.string().trim().optional().describe("CNPJ. Validado pelos d\xEDgitos verificadores. Recusa se j\xE1 cadastrado."),
+    tipo: z15.enum(["pj", "pf"]).optional().describe("Pessoa jur\xEDdica ou f\xEDsica."),
+    segmento: z15.string().trim().optional().describe("Segmento do cliente."),
+    codigo: z15.string().trim().optional().describe("Sigla de 3 letras (A-Z). Se omitida, o sistema deriva uma livre do nome."),
+    parent_client_id: z15.string().uuid().optional().describe("UUID da matriz, para filial/SPE de um grupo j\xE1 cadastrado."),
+    recarga: z15.boolean().optional().describe("Default false. true marca sess\xE3o de recarga (Fase 0).")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ name, cnpj, tipo, segmento, codigo, parent_client_id, recarga }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado" }], isError: true };
+    }
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.rpc("fn_create_client", {
+      p_name: name,
+      p_cnpj: cnpj ?? null,
+      p_tipo: tipo ?? null,
+      p_segmento: segmento ?? null,
+      p_codigo: codigo ?? null,
+      p_parent_client_id: parent_client_id ?? null,
+      p_recarga: recarga ?? false
+    });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { resultado: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/create-project.ts
+import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z16 } from "npm:zod@^3.25.76";
+var create_project_default = defineTool16({
+  name: "create_project",
+  title: "Cadastrar projeto",
+  description: "Cadastra um projeto diretamente \u2014 caminho de exce\xE7\xE3o/backfill para demanda j\xE1 contratada fora do sistema (o fluxo normal \xE9 converter um lead). client_id \xE9 obrigat\xF3rio: cliente \xE9 o centro, projeto n\xE3o nasce solto. O c\xF3digo \xE9 gerado como ANO-SIGLA-SEQ (ex.: 2026-VIM-002), a partir da sigla do cliente; se o cliente n\xE3o tem sigla, cadastre-a antes. Valor entre 0 e 100 \xE9 recusado como prov\xE1vel erro de escala; se for real, use permitir_valor_baixo=true.",
+  inputSchema: {
+    client_id: z16.string().uuid().describe("UUID do cliente dono do projeto (de list_clients). Obrigat\xF3rio."),
+    name: z16.string().trim().min(1).describe("Nome do projeto."),
+    empresa_faturadora: z16.enum(["ag_topografia", "ag_cartografia"]).describe("PJ emissora. ag_topografia = GONZAGA E BERLIM (16.841.054/0001-10); ag_cartografia = AG CARTOGRAFIA (48.282.440/0001-05)."),
+    ano: z16.number().int().optional().describe("Ano do c\xF3digo. Default: ano corrente."),
+    contract_value: z16.number().optional().describe("Valor do contrato. Negativo \xE9 recusado."),
+    billing_type: z16.enum(["entrega_nf", "medicao_mensal", "entrega_recibo"]).optional().describe("Modelo de faturamento."),
+    tipo_documento: z16.enum(["nota_fiscal", "recibo"]).optional().describe("Tipo de documento. Default nota_fiscal."),
+    cnpj_tomador: z16.string().trim().optional().describe("CNPJ do tomador. Validado pelos d\xEDgitos verificadores."),
+    service: z16.string().trim().optional().describe("Servi\xE7o/escopo resumido."),
+    permitir_valor_baixo: z16.boolean().optional().describe("Default false. true libera valor entre 0 e 100."),
+    recarga: z16.boolean().optional().describe("Default false. true marca sess\xE3o de recarga (Fase 0).")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ client_id, name, empresa_faturadora, ano, contract_value, billing_type, tipo_documento, cnpj_tomador, service, permitir_valor_baixo, recarga }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado" }], isError: true };
+    }
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.rpc("fn_create_project", {
+      p_client_id: client_id,
+      p_name: name,
+      p_empresa_faturadora: empresa_faturadora,
+      p_ano: ano ?? null,
+      p_contract_value: contract_value ?? null,
+      p_billing_type: billing_type ?? null,
+      p_tipo_documento: tipo_documento ?? null,
+      p_cnpj_tomador: cnpj_tomador ?? null,
+      p_service: service ?? null,
+      p_permitir_valor_baixo: permitir_valor_baixo ?? false,
+      p_recarga: recarga ?? false
+    });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { resultado: data }
+    };
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "bphgtvwgsgaqaxmkrtqj";
 var mcp_default = defineMcp({
@@ -501,7 +667,11 @@ var mcp_default = defineMcp({
     create_titulo_default,
     register_recebimento_default,
     allocate_recebimento_default,
-    update_execution_status_default
+    update_execution_status_default,
+    update_project_default,
+    update_client_default,
+    create_client_default,
+    create_project_default
   ]
 });
 
