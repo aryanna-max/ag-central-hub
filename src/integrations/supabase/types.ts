@@ -4205,6 +4205,7 @@ export type Database = {
         | "sala_tecnica"
         | "comercial"
         | "financeiro"
+        | "rh"
       attendance_status: "presente" | "falta" | "justificado" | "atrasado"
       billing_mode: "fixo_mensal" | "diarias" | "esporadico"
       contact_type: "cliente" | "financeiro" | "engenheiro" | "outro"
@@ -4499,6 +4500,7 @@ export const Constants = {
         "sala_tecnica",
         "comercial",
         "financeiro",
+        "rh",
       ],
       attendance_status: ["presente", "falta", "justificado", "atrasado"],
       billing_mode: ["fixo_mensal", "diarias", "esporadico"],
