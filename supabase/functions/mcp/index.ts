@@ -238,6 +238,246 @@ var list_alerts_default = defineTool6({
   }
 });
 
+// src/lib/mcp/tools/resolve-alert.ts
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z7 } from "npm:zod@^3.25.76";
+var resolve_alert_default = defineTool7({
+  name: "resolve_alert",
+  title: "Resolver alerta",
+  description: "D\xE1 baixa em um alerta do Radar depois que a a\xE7\xE3o foi executada. Exige descrever o que foi feito. S\xF3 pode ser usada pelo setor destinat\xE1rio do alerta (ou diretoria). Alerta que pede emiss\xE3o de nota/recibo n\xE3o pode ser baixado aqui: registre o t\xEDtulo com create_titulo, que o alerta fecha sozinho.",
+  inputSchema: {
+    alerta_id: z7.string().uuid().describe("UUID do alerta, obtido em list_alerts."),
+    resolucao: z7.string().trim().min(5).describe("O que foi feito para resolver. Vai para o registro de auditoria."),
+    origem_ref: z7.string().trim().optional().describe("Documento que justificou a baixa (Message-ID do e-mail, caminho no Drive).")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ alerta_id, resolucao, origem_ref }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado" }], isError: true };
+    }
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.rpc("fn_resolve_alert", {
+      p_alert_id: alerta_id,
+      p_resolucao: resolucao,
+      p_origem_ref: origem_ref ?? null
+    });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { resultado: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/update-lead-status.ts
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z8 } from "npm:zod@^3.25.76";
+var update_lead_status_default = defineTool8({
+  name: "update_lead_status",
+  title: "Mover lead no funil",
+  description: "Move um lead para outro status do funil comercial. Use ao confirmar contato, envio de proposta, negocia\xE7\xE3o, perda ou descarte. Perda e descarte exigem motivo. Para transformar lead em projeto use o fluxo de convers\xE3o \u2014 o status convertido n\xE3o se digita.",
+  inputSchema: {
+    lead_id: z8.string().uuid().describe("UUID do lead, obtido em list_leads."),
+    novo_status: z8.enum([
+      "novo",
+      "em_contato",
+      "qualificado",
+      "proposta_enviada",
+      "em_negociacao",
+      "aprovado",
+      "perdido",
+      "descartado"
+    ]).describe("Novo status do funil. 'convertido' n\xE3o entra aqui \u2014 \xE9 resultado da convers\xE3o em projeto."),
+    observacao: z8.string().trim().optional().describe("Motivo/observa\xE7\xE3o. Obrigat\xF3rio em 'perdido' e 'descartado'."),
+    origem_ref: z8.string().trim().optional().describe("Documento que justificou a mudan\xE7a (Message-ID do e-mail, caminho no Drive).")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ lead_id, novo_status, observacao, origem_ref }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado" }], isError: true };
+    }
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.rpc("fn_update_lead_status", {
+      p_lead_id: lead_id,
+      p_novo_status: novo_status,
+      p_observacao: observacao ?? null,
+      p_origem_ref: origem_ref ?? null
+    });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { resultado: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/create-titulo.ts
+import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z9 } from "npm:zod@^3.25.76";
+var create_titulo_default = defineTool9({
+  name: "create_titulo",
+  title: "Registrar t\xEDtulo (NF ou recibo)",
+  description: "Registra no Financeiro uma nota fiscal ou recibo de um projeto \u2014 o t\xEDtulo a receber. Empresa emissora e CNPJ do tomador v\xEAm do contrato do projeto e do cadastro do cliente; n\xE3o se escolhe na m\xE3o. Sem n\xFAmero de nota, o t\xEDtulo nasce pendente (a emitir); com n\xFAmero, nasce emitida e o projeto avan\xE7a para faturamento. Se havia alerta pedindo a emiss\xE3o, ele \xE9 resolvido automaticamente. origem_ref \xE9 obrigat\xF3rio: identifica o e-mail ou arquivo que originou o lan\xE7amento e impede que a mesma nota vire dois t\xEDtulos.",
+  inputSchema: {
+    projeto_codigo: z9.string().trim().min(1).describe("C\xF3digo do projeto, ex.: 2026-VIM-002."),
+    valor_bruto: z9.number().positive().describe("Valor bruto do t\xEDtulo."),
+    origem_ref: z9.string().trim().min(1).describe("Documento de origem (Message-ID do e-mail, caminho no Drive). Chave de idempot\xEAncia."),
+    tipo: z9.enum(["nf", "recibo"]).optional().describe("Tipo do documento. Se omitido, usa o tipo do projeto."),
+    nf_numero: z9.string().trim().optional().describe("N\xFAmero da nota. Ausente \u21D2 t\xEDtulo a emitir (pendente)."),
+    nf_data: z9.string().trim().optional().describe("Data de emiss\xE3o (ISO, ex.: 2026-05-31). Obrigat\xF3ria se houver nf_numero."),
+    vencimento: z9.string().trim().optional().describe("Data de vencimento (ISO). Deixar vazio se n\xE3o souber \u2014 n\xE3o estimar."),
+    retencao: z9.number().min(0).optional().describe("Valor da reten\xE7\xE3o. Default 0."),
+    cnpj_tomador: z9.string().trim().optional().describe("Apenas para confer\xEAncia; divergir do cadastro do cliente \xE9 erro."),
+    observacoes: z9.string().trim().optional(),
+    recarga: z9.boolean().optional().describe("Default false. true suprime alertas/e-mails autom\xE1ticos (Fase 0 de recarga).")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ projeto_codigo, valor_bruto, origem_ref, tipo, nf_numero, nf_data, vencimento, retencao, cnpj_tomador, observacoes, recarga }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado" }], isError: true };
+    }
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.rpc("fn_create_titulo", {
+      p_projeto_codigo: projeto_codigo,
+      p_valor_bruto: valor_bruto,
+      p_origem_ref: origem_ref,
+      p_tipo: tipo ?? null,
+      p_nf_numero: nf_numero ?? null,
+      p_nf_data: nf_data ?? null,
+      p_vencimento: vencimento ?? null,
+      p_retencao: retencao ?? null,
+      p_cnpj_tomador: cnpj_tomador ?? null,
+      p_observacoes: observacoes ?? null,
+      p_recarga: recarga ?? false
+    });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { resultado: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/register-recebimento.ts
+import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z10 } from "npm:zod@^3.25.76";
+var register_recebimento_default = defineTool10({
+  name: "register_recebimento",
+  title: "Registrar dinheiro que entrou",
+  description: "Registra um recebimento: dinheiro que entrou na conta, do cliente X, no dia D. O recebimento pertence ao cliente, n\xE3o a uma nota \u2014 por isso funciona mesmo quando o cliente adianta antes de a nota existir, ou paga um valor que n\xE3o corresponde a t\xEDtulo nenhum. Se voc\xEA sabe a que t\xEDtulo(s) o dinheiro se refere, informe em alocacoes; o que sobrar fica como cr\xE9dito do cliente e pode ser abatido depois com allocate_recebimento. Se n\xE3o sabe, n\xE3o invente: registre sem aloca\xE7\xE3o. referencia_pagamento \xE9 a linha do extrato ou o identificador do comprovante \u2014 \xE9 ela que impede que o mesmo cr\xE9dito entre duas vezes. T\xEDtulo n\xE3o se marca como pago: ele fica quitado sozinho quando a soma das aloca\xE7\xF5es cobre o valor.",
+  inputSchema: {
+    cliente_id: z10.string().uuid().describe("UUID do cliente (de list_clients). Dinheiro sem dono n\xE3o entra."),
+    valor: z10.number().positive().describe("O que caiu na conta."),
+    data_recebimento: z10.string().trim().describe("Data real do cr\xE9dito (ISO). Futuro \xE9 recusado."),
+    referencia_pagamento: z10.string().trim().min(1).describe("Linha do extrato / identificador do comprovante. \xDAnica no sistema \u2014 trava de dupla baixa."),
+    empresa_recebedora: z10.enum(["ag_topografia", "ag_cartografia"]).describe("Em qual PJ o dinheiro caiu. ag_topografia = GONZAGA E BERLIM (16.841.054/0001-10); ag_cartografia = AG CARTOGRAFIA (48.282.440/0001-05)."),
+    alocacoes: z10.array(z10.object({ titulo_id: z10.string().uuid(), valor: z10.number().positive() })).optional().describe("V\xEDnculos {titulo_id, valor}. Vazio \u21D2 cr\xE9dito puro (adiantamento)."),
+    conta: z10.string().trim().optional().describe("Bradesco, BB Gonzaga, BB Cartografia."),
+    origem_ref: z10.string().trim().optional().describe("Extrato/comprovante de origem."),
+    observacoes: z10.string().trim().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ cliente_id, valor, data_recebimento, referencia_pagamento, empresa_recebedora, alocacoes, conta, origem_ref, observacoes }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado" }], isError: true };
+    }
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.rpc("fn_register_recebimento", {
+      p_cliente_id: cliente_id,
+      p_valor: valor,
+      p_data_recebimento: data_recebimento,
+      p_referencia_pagamento: referencia_pagamento,
+      p_empresa_recebedora: empresa_recebedora,
+      p_alocacoes: alocacoes ?? [],
+      p_conta: conta ?? null,
+      p_origem_ref: origem_ref ?? null,
+      p_observacoes: observacoes ?? null
+    });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { resultado: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/allocate-recebimento.ts
+import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z11 } from "npm:zod@^3.25.76";
+var allocate_recebimento_default = defineTool11({
+  name: "allocate_recebimento",
+  title: "Dizer a que nota o dinheiro se refere",
+  description: "Vincula dinheiro j\xE1 recebido a um ou mais t\xEDtulos. Use quando o cliente tinha adiantado e a nota saiu depois, ou quando voc\xEA descobriu a que se referia um cr\xE9dito antigo. N\xE3o altera o recebimento nem o t\xEDtulo: cria o v\xEDnculo, e o saldo se recalcula sozinho. Um recebimento s\xF3 aloca uma vez para cada t\xEDtulo \u2014 chamar de novo devolve ja_alocado sem duplicar.",
+  inputSchema: {
+    recebimento_id: z11.string().uuid().describe("UUID do recebimento (de register_recebimento ou da consulta de cr\xE9dito)."),
+    alocacoes: z11.array(z11.object({ titulo_id: z11.string().uuid(), valor: z11.number().positive() })).min(1).describe("V\xEDnculos {titulo_id, valor}. Pelo menos um item."),
+    origem_ref: z11.string().trim().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ recebimento_id, alocacoes, origem_ref }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado" }], isError: true };
+    }
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.rpc("fn_allocate_recebimento", {
+      p_recebimento_id: recebimento_id,
+      p_alocacoes: alocacoes,
+      p_origem_ref: origem_ref ?? null
+    });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { resultado: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/update-execution-status.ts
+import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z12 } from "npm:zod@^3.25.76";
+var update_execution_status_default = defineTool12({
+  name: "update_execution_status",
+  title: "Atualizar status de execu\xE7\xE3o do projeto",
+  description: "Move o status de execu\xE7\xE3o de um projeto \u2014 campo, processamento, revis\xE3o, aprova\xE7\xE3o, entrega. Informe data_efetiva com a data real do fato, n\xE3o a de hoje: \xE9 isso que mant\xE9m o hist\xF3rico correto ao registrar acontecimentos passados. Voltar para um status anterior \xE9 corre\xE7\xE3o e exige motivo. faturamento e pago n\xE3o entram aqui \u2014 v\xEAm de create_titulo e do recebimento alocado.",
+  inputSchema: {
+    projeto_codigo: z12.string().trim().min(1).describe("C\xF3digo do projeto."),
+    novo_status: z12.enum([
+      "aguardando_campo",
+      "em_campo",
+      "campo_concluido",
+      "aguardando_processamento",
+      "em_processamento",
+      "revisao",
+      "aprovado",
+      "entregue"
+    ]).describe("Novo status de execu\xE7\xE3o. 'faturamento' e 'pago' n\xE3o entram aqui."),
+    data_efetiva: z12.string().trim().optional().describe("Data real do fato (ISO). Default hoje; futuro \xE9 recusado."),
+    motivo: z12.string().trim().optional().describe("Obrigat\xF3rio em retrocesso (voltar a status anterior)."),
+    origem_ref: z12.string().trim().optional(),
+    recarga: z12.boolean().optional().describe("Default false. true suprime alertas/e-mails autom\xE1ticos (Fase 0 de recarga).")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ projeto_codigo, novo_status, data_efetiva, motivo, origem_ref, recarga }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado" }], isError: true };
+    }
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.rpc("fn_update_execution_status", {
+      p_projeto_codigo: projeto_codigo,
+      p_novo_status: novo_status,
+      p_data_efetiva: data_efetiva ?? null,
+      p_motivo: motivo ?? null,
+      p_origem_ref: origem_ref ?? null,
+      p_recarga: recarga ?? false
+    });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { resultado: data }
+    };
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "bphgtvwgsgaqaxmkrtqj";
 var mcp_default = defineMcp({
@@ -255,7 +495,13 @@ var mcp_default = defineMcp({
     list_clients_default,
     list_leads_default,
     create_lead_default,
-    list_alerts_default
+    list_alerts_default,
+    resolve_alert_default,
+    update_lead_status_default,
+    create_titulo_default,
+    register_recebimento_default,
+    allocate_recebimento_default,
+    update_execution_status_default
   ]
 });
 
