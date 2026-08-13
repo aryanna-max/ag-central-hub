@@ -25,19 +25,23 @@ fi
 
 SUPA="npx --yes supabase@latest"
 
-if [ -n "${SUPABASE_DB_URL:-}" ]; then
+has_docker() { command -v docker >/dev/null 2>&1 || command -v podman >/dev/null 2>&1; }
+
+if [ -n "${SUPABASE_ACCESS_TOKEN:-}" ] && [ -n "${VITE_SUPABASE_PROJECT_ID:-}" ]; then
+  echo "→ Gerando tipos via API (project ${VITE_SUPABASE_PROJECT_ID})..."
+  $SUPA gen types typescript --project-id "$VITE_SUPABASE_PROJECT_ID" --schema public > "$TMP"
+elif has_docker && [ -n "${SUPABASE_DB_URL:-}" ]; then
   echo "→ Gerando tipos via SUPABASE_DB_URL..."
   $SUPA gen types typescript --db-url "$SUPABASE_DB_URL" --schema public > "$TMP"
-elif [ -n "${PGHOST:-}" ] && [ -n "${PGUSER:-}" ]; then
+elif has_docker && [ -n "${PGHOST:-}" ] && [ -n "${PGUSER:-}" ]; then
   echo "→ Gerando tipos via variáveis PG*..."
   DB_URL="postgresql://${PGUSER}:${PGPASSWORD:-}@${PGHOST}:${PGPORT:-5432}/${PGDATABASE:-postgres}"
   $SUPA gen types typescript --db-url "$DB_URL" --schema public > "$TMP"
-elif [ -n "${SUPABASE_ACCESS_TOKEN:-}" ] && [ -n "${VITE_SUPABASE_PROJECT_ID:-}" ]; then
-  echo "→ Gerando tipos via API (project ${VITE_SUPABASE_PROJECT_ID})..."
-  $SUPA gen types typescript --project-id "$VITE_SUPABASE_PROJECT_ID" --schema public > "$TMP"
 else
-  echo "ERRO: nenhuma credencial encontrada." >&2
-  echo "Defina SUPABASE_DB_URL (ou PGHOST/PGUSER/PGPASSWORD), ou SUPABASE_ACCESS_TOKEN + VITE_SUPABASE_PROJECT_ID." >&2
+  echo "ERRO: nao foi possivel gerar os tipos." >&2
+  echo "Opcao A (recomendada, sem Docker): export SUPABASE_ACCESS_TOKEN=<token da sua conta Supabase>" >&2
+  echo "  (VITE_SUPABASE_PROJECT_ID ja vem do .env)" >&2
+  echo "Opcao B: instalar Docker/Podman e definir SUPABASE_DB_URL (ou PGHOST/PGUSER/PGPASSWORD)." >&2
   exit 1
 fi
 
