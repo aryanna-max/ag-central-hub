@@ -1,0 +1,62 @@
+# Aplica as migrations de supabase/migrations/ no projeto Supabase da AG
+# ao mergear na main. Substitui o "2º ato manual via Lovable AI" (ver PR #43 /
+# CLAUDE.md). Escrito por Code — ADR de fluxo pendente de registro.
+#
+# ⚠️ RISCO CONHECIDO (drift com o Lovable):
+#   O Supabase da AG é gerenciado pelo Lovable, que aplica migrations que ELE
+#   autora (via chat) e grava o histórico em supabase_migrations.schema_migrations
+#   com timestamps próprios (espelho). Este workflow usa `supabase db push`, que
+#   aplica tudo de supabase/migrations/ que NÃO estiver nesse histórico. Na
+#   PRIMEIRA execução ele pode enxergar muitas migrations como "não aplicadas"
+#   (porque foram aplicadas sob timestamp-espelho) e tentar reaplicá-las.
+#   A maioria é idempotente (IF NOT EXISTS / guards), mas NÃO todas.
+#
+#   >>> ANTES de habilitar em produção, rodar 1x via "Run workflow" (workflow_dispatch)
+#       e conferir o log. Se ele tentar reaplicar migrations antigas, reconciliar o
+#       histórico com `supabase migration repair --status applied <version>` para
+#       cada uma já aplicada pelo Lovable, OU arquivar as antigas.
+#   >>> Resolver antes a colisão de timestamp entre os dois arquivos 20260811150000_*
+#       (db push pode pular um deles).
+#
+# SEGREDOS necessários (Settings → Secrets and variables → Actions):
+#   SUPABASE_ACCESS_TOKEN  — token de acesso da conta (supabase.com/dashboard/account/tokens)
+#   SUPABASE_DB_PASSWORD   — senha do banco do projeto
+# O project-ref não é segredo (já está em supabase/config.toml).
+
+name: Apply Supabase migrations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+  workflow_dispatch: {} # permite rodar manualmente (use para o 1º teste)
+
+concurrency:
+  group: supabase-migrations # nunca duas aplicações em paralelo
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: bphgtvwgsgaqaxmkrtqj
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link ao projeto
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Mostrar migrations pendentes (dry-run informativo)
+        run: supabase migration list --linked || true
+
+      - name: Aplicar migrations
+        run: supabase db push --linked
