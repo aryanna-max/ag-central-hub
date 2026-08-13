@@ -445,8 +445,51 @@ export type Database = {
           },
         ]
       }
+      companies: {
+        Row: {
+          cnpj: string
+          created_at: string
+          faturadora_enum:
+            | Database["public"]["Enums"]["empresa_faturadora_enum"]
+            | null
+          id: string
+          is_active: boolean
+          nome_curto: string
+          papel: Database["public"]["Enums"]["company_role"]
+          razao_social: string
+          updated_at: string
+        }
+        Insert: {
+          cnpj: string
+          created_at?: string
+          faturadora_enum?:
+            | Database["public"]["Enums"]["empresa_faturadora_enum"]
+            | null
+          id?: string
+          is_active?: boolean
+          nome_curto: string
+          papel: Database["public"]["Enums"]["company_role"]
+          razao_social: string
+          updated_at?: string
+        }
+        Update: {
+          cnpj?: string
+          created_at?: string
+          faturadora_enum?:
+            | Database["public"]["Enums"]["empresa_faturadora_enum"]
+            | null
+          id?: string
+          is_active?: boolean
+          nome_curto?: string
+          papel?: Database["public"]["Enums"]["company_role"]
+          razao_social?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       company_documents: {
         Row: {
+          company_id: string | null
           created_at: string
           doc_status: Database["public"]["Enums"]["doc_status"]
           doc_type: Database["public"]["Enums"]["doc_type"]
@@ -459,6 +502,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           doc_status?: Database["public"]["Enums"]["doc_status"]
           doc_type: Database["public"]["Enums"]["doc_type"]
@@ -471,6 +515,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           doc_status?: Database["public"]["Enums"]["doc_status"]
           doc_type?: Database["public"]["Enums"]["doc_type"]
@@ -482,7 +527,15 @@ export type Database = {
           notes?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "company_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       compliance_task_executions: {
         Row: {
@@ -837,6 +890,79 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      employee_absences: {
+        Row: {
+          absence_type: Database["public"]["Enums"]["absence_type"]
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by_id: string | null
+          daily_rate: number | null
+          employee_id: string
+          end_date: string
+          id: string
+          notes: string | null
+          payment_method: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["absence_status"]
+          updated_at: string
+        }
+        Insert: {
+          absence_type: Database["public"]["Enums"]["absence_type"]
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by_id?: string | null
+          daily_rate?: number | null
+          employee_id: string
+          end_date: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["absence_status"]
+          updated_at?: string
+        }
+        Update: {
+          absence_type?: Database["public"]["Enums"]["absence_type"]
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by_id?: string | null
+          daily_rate?: number | null
+          employee_id?: string
+          end_date?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["absence_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_absences_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_absences_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_absences_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       employee_client_integrations: {
         Row: {
@@ -1234,6 +1360,7 @@ export type Database = {
           data_demissao: string | null
           data_nascimento: string | null
           email: string | null
+          employer_company_id: string
           empresa_contratante: string | null
           estado: string | null
           estado_civil: string | null
@@ -1288,6 +1415,7 @@ export type Database = {
           data_demissao?: string | null
           data_nascimento?: string | null
           email?: string | null
+          employer_company_id: string
           empresa_contratante?: string | null
           estado?: string | null
           estado_civil?: string | null
@@ -1342,6 +1470,7 @@ export type Database = {
           data_demissao?: string | null
           data_nascimento?: string | null
           email?: string | null
+          employer_company_id?: string
           empresa_contratante?: string | null
           estado?: string | null
           estado_civil?: string | null
@@ -1374,6 +1503,13 @@ export type Database = {
           vt_value?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "employees_employer_company_id_fkey"
+            columns: ["employer_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "employees_job_role_id_fkey"
             columns: ["job_role_id"]
@@ -2271,6 +2407,7 @@ export type Database = {
         Row: {
           category: string | null
           client_id: string | null
+          company_id: string | null
           created_at: string
           day_of_month: number
           description: string | null
@@ -2283,6 +2420,7 @@ export type Database = {
         Insert: {
           category?: string | null
           client_id?: string | null
+          company_id?: string | null
           created_at?: string
           day_of_month: number
           description?: string | null
@@ -2295,6 +2433,7 @@ export type Database = {
         Update: {
           category?: string | null
           client_id?: string | null
+          company_id?: string | null
           created_at?: string
           day_of_month?: number
           description?: string | null
@@ -2310,6 +2449,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_compliance_tasks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
           {
@@ -4238,6 +4384,12 @@ export type Database = {
       }
     }
     Enums: {
+      absence_status:
+        | "planejada"
+        | "aprovada"
+        | "em_curso"
+        | "concluida"
+        | "cancelada"
       absence_type:
         | "ferias"
         | "licenca_medica"
@@ -4265,6 +4417,7 @@ export type Database = {
         | "rh"
       attendance_status: "presente" | "falta" | "justificado" | "atrasado"
       billing_mode: "fixo_mensal" | "diarias" | "esporadico"
+      company_role: "topografia" | "cartografia"
       contact_type: "cliente" | "financeiro" | "engenheiro" | "outro"
       day_type: "normal" | "folga" | "falta" | "atestado" | "reserva_ag"
       doc_status:
@@ -4531,6 +4684,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      absence_status: [
+        "planejada",
+        "aprovada",
+        "em_curso",
+        "concluida",
+        "cancelada",
+      ],
       absence_type: [
         "ferias",
         "licenca_medica",
@@ -4561,6 +4721,7 @@ export const Constants = {
       ],
       attendance_status: ["presente", "falta", "justificado", "atrasado"],
       billing_mode: ["fixo_mensal", "diarias", "esporadico"],
+      company_role: ["topografia", "cartografia"],
       contact_type: ["cliente", "financeiro", "engenheiro", "outro"],
       day_type: ["normal", "folga", "falta", "atestado", "reserva_ag"],
       doc_status: [
