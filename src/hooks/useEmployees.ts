@@ -29,17 +29,33 @@ export type EmployeeAvailability =
   | "afastado"
   | "em_projeto";
 
+export type AbsenceType =
+  | "ferias"
+  | "licenca_medica"
+  | "licenca_maternidade"
+  | "licenca_paternidade"
+  | "afastamento"
+  | "falta"
+  | "outros";
+
 export type ActiveAbsence = {
   start_date: string;
   end_date: string;
   notes: string | null;
-  absence_type: "ferias";
+  absence_type: AbsenceType;
 };
 
 export type EmployeeWithAvailability = Employee & {
   availability: EmployeeAvailability;
   activeAbsence: ActiveAbsence | null;
 };
+
+function availabilityFromAbsenceType(type: AbsenceType): EmployeeAvailability {
+  if (type === "ferias") return "ferias";
+  if (type === "afastamento") return "afastado";
+  return "licenca";
+}
+
 
 export function useEmployeesWithAbsences(date?: string) {
   const targetDate = date || new Date().toISOString().split("T")[0];
