@@ -26,11 +26,16 @@
 name: Apply Supabase migrations
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "supabase/migrations/**"
-  workflow_dispatch: {} # permite rodar manualmente (use para o 1º teste)
+  # ⚠️ GATILHO AUTOMÁTICO DESARMADO EM 12/08/2026.
+  # Reabilitar SOMENTE após cumprir as duas pré-condições do cabeçalho deste arquivo:
+  #   1. rodar 1x via workflow_dispatch e conferir o log (nunca foi feito);
+  #   2. resolver a colisão de timestamp entre os dois 20260811150000_*.sql
+  #      (PR #45 e PR #47) — db push ordena por versão e o empate deixa a ordem indefinida.
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - "supabase/migrations/**"
+  workflow_dispatch: {}
 
 concurrency:
   group: supabase-migrations # nunca duas aplicações em paralelo
