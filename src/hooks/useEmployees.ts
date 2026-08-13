@@ -29,17 +29,33 @@ export type EmployeeAvailability =
   | "afastado"
   | "em_projeto";
 
+export type AbsenceType =
+  | "ferias"
+  | "licenca_medica"
+  | "licenca_maternidade"
+  | "licenca_paternidade"
+  | "afastamento"
+  | "falta"
+  | "outros";
+
 export type ActiveAbsence = {
   start_date: string;
   end_date: string;
   notes: string | null;
-  absence_type: "ferias";
+  absence_type: AbsenceType;
 };
 
 export type EmployeeWithAvailability = Employee & {
   availability: EmployeeAvailability;
   activeAbsence: ActiveAbsence | null;
 };
+
+function availabilityFromAbsenceType(type: AbsenceType): EmployeeAvailability {
+  if (type === "ferias") return "ferias";
+  if (type === "afastamento") return "afastado";
+  return "licenca";
+}
+
 
 export function useEmployeesWithAbsences(date?: string) {
   const targetDate = date || new Date().toISOString().split("T")[0];
@@ -55,15 +71,26 @@ export function useEmployeesWithAbsences(date?: string) {
       // Filter field roles client-side for case-insensitive partial matching
       const employees = (allEmployees || []).filter((e) => isFieldRole(e.role));
 
-      // Fonte única: employee_vacations (tabela employee_absences foi DROP
-      // na migration 20260422_ferias_cleanup_dados_teste.sql — Onda de fix).
-      const { data: vacationsData } = await supabase
-        .from("employee_vacations")
-        .select("employee_id, start_date, end_date, notes")
+      // Fonte única: employee_absences (migration #79 — unifica férias,
+      // licenças e afastamentos). employee_vacations é fallback legado.
+      const { data: absencesData } = await supabase
+        .from("employee_absences")
+        .select("employee_id, start_date, end_date, notes, absence_type, status")
         .lte("start_date", targetDate)
-        .gte("end_date", targetDate);
+        .gte("end_date", targetDate)
+        .neq("status", "cancelada");
 
-      const vacations = vacationsData ?? [];
+      const absences = absencesData ?? [];
+
+      let legacyVacations: { employee_id: string; start_date: string; end_date: string; notes: string | null }[] = [];
+      if (absences.length === 0) {
+        const { data: vacationsData } = await supabase
+          .from("employee_vacations")
+          .select("employee_id, start_date, end_date, notes")
+          .lte("start_date", targetDate)
+          .gte("end_date", targetDate);
+        legacyVacations = vacationsData ?? [];
+      }
 
       // Get daily schedule entries for the date to see who's assigned
       const { data: entries } = await supabase
@@ -82,29 +109,36 @@ export function useEmployeesWithAbsences(date?: string) {
       }
 
       return employees.map((emp) => {
-        const vac = vacations.find((v) => v.employee_id === emp.id);
-        const activeAbsence: ActiveAbsence | null = vac
+        const abs = absences.find((a) => a.employee_id === emp.id);
+        const vac = legacyVacations.find((v) => v.employee_id === emp.id);
+        const activeAbsence: ActiveAbsence | null = abs
           ? {
-              start_date: vac.start_date,
-              end_date: vac.end_date,
-              notes: vac.notes,
-              absence_type: "ferias",
+              start_date: abs.start_date,
+              end_date: abs.end_date,
+              notes: abs.notes,
+              absence_type: abs.absence_type as AbsenceType,
             }
-          : null;
+          : vac
+            ? {
+                start_date: vac.start_date,
+                end_date: vac.end_date,
+                notes: vac.notes,
+                absence_type: "ferias",
+              }
+            : null;
 
         const isAssigned = assignedEmployeeIds.includes(emp.id);
 
         let availability: EmployeeAvailability = "disponivel";
-        // Trigger fn_sync_employee_vacation_status mantém employees.status
-        // em sincronia com employee_vacations — então basta ler status.
-        if (emp.status === "ferias") availability = "ferias";
+        if (activeAbsence) availability = availabilityFromAbsenceType(activeAbsence.absence_type);
+        else if (emp.status === "ferias") availability = "ferias";
         else if (emp.status === "licenca") availability = "licenca";
         else if (emp.status === "afastado") availability = "afastado";
-        else if (activeAbsence) availability = "ferias";
         else if (isAssigned) availability = "em_projeto";
 
         return { ...emp, availability, activeAbsence };
       });
+
     },
   });
 }
