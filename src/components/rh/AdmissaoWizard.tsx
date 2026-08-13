@@ -13,7 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { formatCpf, formatCep, formatPhone } from "@/lib/masks";
 import { useCepAutofill } from "@/hooks/useCepAutofill";
 import { useJobRoles } from "@/hooks/useJobRoles";
-import { useCreateEmployee, useEmployees } from "@/hooks/useEmployees";
+import { useCompanies, type Company } from "@/hooks/useCompanies";
+import { useCreateEmployee, useEmployees, type EmployeeInsert } from "@/hooks/useEmployees";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 
@@ -53,6 +54,14 @@ const ESCOLARIDADE_LABELS: Record<Escolaridade, string> = {
 
 const ALELO_VALOR_PADRAO = 15.0;
 
+// Mapeamento canônico papel da company -> espelho depreciado empresa_contratante.
+// Mesmo backfill que a migration usou (ADR-044, dívida E5). Enquanto a coluna
+// espelho não é dropada, os dois campos são preenchidos de forma coerente.
+const PAPEL_TO_EMPRESA_CONTRATANTE: Record<Company["papel"], EmpresaContratante> = {
+  topografia: "gonzaga_berlim",
+  cartografia: "ag_cartografia",
+};
+
 function validateMatricula(value: string): string | null {
   if (!value) return null;
   const trimmed = value.trim().toUpperCase();
@@ -72,6 +81,7 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
   const createEmp = useCreateEmployee();
   const { data: employees = [] } = useEmployees();
   const { data: jobRoles = [] } = useJobRoles();
+  const { data: companies = [], isLoading: companiesLoading } = useCompanies();
 
   const [step, setStep] = useState<Step>(0);
 
@@ -101,7 +111,7 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
   // Etapa 3 — Contrato
   const [admissionDate, setAdmissionDate] = useState(new Date().toISOString().slice(0, 10));
   const [tipoContrato, setTipoContrato] = useState<TipoContrato>("clt");
-  const [empresaContratante, setEmpresaContratante] = useState<EmpresaContratante>("gonzaga_berlim");
+  const [employerCompanyId, setEmployerCompanyId] = useState("");
   const [jobRoleId, setJobRoleId] = useState("");
   const [jornada, setJornada] = useState<Jornada>("44h");
   const [salarioBase, setSalarioBase] = useState("");
@@ -134,6 +144,16 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
     if (cepResult.estado) setEstado(cepResult.estado);
   }, [cepResult.rua, cepResult.bairro, cepResult.cidade, cepResult.estado]);
 
+  // Default da empresa contratante: Gonzaga e Berlim (papel 'topografia'), o caso
+  // majoritário — resolvido por consulta, nunca por id hardcoded. Só aplica se a
+  // pessoa ainda não escolheu uma empresa.
+  useEffect(() => {
+    if (!employerCompanyId && companies.length > 0) {
+      const topografia = companies.find((c) => c.papel === "topografia");
+      if (topografia) setEmployerCompanyId(topografia.id);
+    }
+  }, [companies, employerCompanyId]);
+
   const jobRolesByDept = useMemo(() => {
     const map = new Map<string, typeof jobRoles>();
     for (const jr of jobRoles) {
@@ -146,7 +166,7 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
   const canProceedFromStep: Record<Step, boolean> = {
     0: !!name.trim() && !validateMatricula(matricula) && !validateCpf(cpf),
     1: true, // endereço opcional
-    2: !!admissionDate && !!tipoContrato,
+    2: !!admissionDate && !!tipoContrato && !!employerCompanyId,
     3: true, // bancário + emergência opcionais
   };
 
@@ -157,7 +177,7 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
     setPhone(""); setEmail("");
     setCep(""); setRua(""); setNumero(""); setComplemento(""); setBairro(""); setCidade(""); setEstado("");
     setAdmissionDate(new Date().toISOString().slice(0, 10));
-    setTipoContrato("clt"); setEmpresaContratante("gonzaga_berlim");
+    setTipoContrato("clt"); setEmployerCompanyId("");
     setJobRoleId(""); setJornada("44h"); setSalarioBase("");
     setBanco(""); setAgencia(""); setConta(""); setTipoConta("corrente"); setPixChave("");
     setTransporteTipo("vt_cartao"); setVtIsento(false);
@@ -179,7 +199,22 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
 
     const selectedJobRole = jobRoles.find(jr => jr.id === jobRoleId);
 
-    const payload: Record<string, unknown> = {
+    const selectedCompany = companies.find(c => c.id === employerCompanyId);
+    if (!selectedCompany) {
+      toast.error("Selecione a empresa contratante");
+      return;
+    }
+
+    // `nome_mae` e `escolaridade` são colunas reais de `employees` (migration
+    // 20260422_onda3_pessoas_completo.sql), mas ainda não estão no `types.ts`
+    // gerado. A interseção abaixo as declara sem cast/`any` e sem desligar a
+    // checagem do restante do payload — em especial `employer_company_id`, que
+    // passa a ser exigido pelo tipo. TODO: remover a interseção quando o
+    // `types.ts` for regenerado pelo Lovable com essas duas colunas.
+    const payload: EmployeeInsert & {
+      nome_mae?: string | null;
+      escolaridade?: string | null;
+    } = {
       name: name.trim(),
       cpf: cpf.trim() || null,
       rg: rg.trim() || null,
@@ -203,7 +238,8 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
       // Contrato
       admission_date: admissionDate || null,
       tipo_contrato: tipoContrato,
-      empresa_contratante: empresaContratante,
+      employer_company_id: selectedCompany.id,
+      empresa_contratante: PAPEL_TO_EMPRESA_CONTRATANTE[selectedCompany.papel],
       job_role_id: jobRoleId || null,
       role: selectedJobRole?.title || "Ajudante de Topografia", // legacy compat
       jornada,
@@ -235,7 +271,7 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
     };
 
     try {
-      await createEmp.mutateAsync(payload as Parameters<typeof createEmp.mutateAsync>[0]);
+      await createEmp.mutateAsync(payload);
       toast.success(`${name.trim()} admitido com sucesso!`);
       resetForm();
       onOpenChange(false);
@@ -417,11 +453,20 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
             </div>
             <div>
               <Label>Empresa contratante *</Label>
-              <Select value={empresaContratante} onValueChange={(v) => setEmpresaContratante(v as EmpresaContratante)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={employerCompanyId}
+                onValueChange={setEmployerCompanyId}
+                disabled={companiesLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={companiesLoading ? "Carregando..." : "Selecione..."} />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="gonzaga_berlim">Gonzaga e Berlim (22,5%)</SelectItem>
-                  <SelectItem value="ag_cartografia">AG Cartografia (16,5%)</SelectItem>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.nome_curto}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -629,7 +674,10 @@ export default function AdmissaoWizard({ open, onOpenChange }: Props) {
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={createEmp.isPending}>
+            <Button
+              onClick={handleSubmit}
+              disabled={createEmp.isPending || companiesLoading || !employerCompanyId}
+            >
               {createEmp.isPending ? "Admitindo..." : "Concluir admissão"}
               <Check className="w-4 h-4 ml-1" />
             </Button>
