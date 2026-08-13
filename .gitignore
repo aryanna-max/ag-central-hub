@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Cruft de desenvolvimento — nunca versionar (limpeza 11/08/2026)
+.claude/
+supabase/.temp/
+backup_orfaos_21abr/
+*.bat
+VERIFICAR_OUTPUT.txt
