@@ -1,0 +1,79 @@
+# Gera o retrato do schema REAL do banco da AG (pg_dump via Supabase CLI) e abre
+# um PR com o arquivo. É o Entregável 1 da ADR-050 B2.
+#
+# ⚠️ NUNCA colocar gatilho `push` aqui. Só `workflow_dispatch` (rodar na mão).
+#   Este workflow LÊ o banco (dump = somente leitura); não aplica nada.
+#
+# O arquivo gerado (`supabase/schema_baseline_<data>.sql`) NÃO é migration:
+#   - fica em `supabase/`, não em `supabase/migrations/`;
+#   - o nome não começa com timestamp de 14 dígitos, então `supabase db push`
+#     não o reconhece como migration e nunca tenta aplicá-lo.
+#
+# SEGREDOS necessários (Settings → Secrets and variables → Actions):
+#   SUPABASE_ACCESS_TOKEN  — token de acesso da conta
+#   SUPABASE_DB_PASSWORD   — senha do banco do projeto
+# ⚠️ Confirmar que esses secrets EXISTEM antes de rodar. O cabeçalho do PR #48
+#    os declara como necessários, não como configurados. Se não existirem, o
+#    passo de link/dump falha — nesse caso, gerar o baseline localmente (ver
+#    docs/arquitetura/INVENTARIO_DERIVA_SCHEMA.md, seção "Como gerar o baseline").
+
+name: Schema baseline (dump manual)
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: schema-baseline
+  cancel-in-progress: false
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: bphgtvwgsgaqaxmkrtqj
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link ao projeto
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Gerar dump do schema public
+        run: |
+          STAMP=$(date -u +%Y%m%d)
+          OUT="supabase/schema_baseline_${STAMP}.sql"
+          {
+            echo "-- RETRATO DO SCHEMA REAL — NÃO É MIGRATION."
+            echo "-- Gerado por .github/workflows/schema-baseline.yml (ADR-050 B2)."
+            echo "-- Não editar à mão; não aplicar. Regenerar rodando o workflow."
+            echo "--"
+          } > "$OUT"
+          supabase db dump --linked --schema public >> "$OUT"
+          echo "OUT=$OUT" >> "$GITHUB_ENV"
+          echo "STAMP=$STAMP" >> "$GITHUB_ENV"
+
+      - name: Abrir PR com o baseline
+        run: |
+          BRANCH="chore/schema-baseline-${STAMP}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add "$OUT"
+          git commit -m "chore(db): schema baseline ${STAMP} (retrato do banco real — ADR-050 B2)"
+          git push -u origin "$BRANCH"
+          gh pr create \
+            --title "chore(db): schema baseline ${STAMP} (retrato do banco real — ADR-050 B2)" \
+            --body "Dump automático do schema \`public\` via Supabase CLI. **Não é migration** (fica em \`supabase/\`, fora de \`migrations/\`). Insumo da ADR-050 B2; o entregável que importa é o inventário em \`docs/arquitetura/INVENTARIO_DERIVA_SCHEMA.md\`." \
+            --draft
