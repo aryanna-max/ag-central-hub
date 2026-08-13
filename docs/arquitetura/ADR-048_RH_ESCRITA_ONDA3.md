@@ -1,4 +1,8 @@
-# ADR-045 — Ferramentas MCP de escrita de RH (Onda 3)
+# ADR-048 — Ferramentas MCP de escrita de RH (Onda 3)
+
+> **Renumerado em 11/08/2026: era ADR-045.** O número 045 estava em dois documentos do mesmo dia
+> e ficou com `ADR-045_MCP_CADASTRO.md`, que já virou schema (commit `fa9d9d9`, PR #47).
+> Conteúdo inalterado. A **Decisão #65** continua sendo deste ADR.
 
 **Data:** 11/08/2026
 **Autor:** Arquiteto (Cowork) — **RASCUNHO**

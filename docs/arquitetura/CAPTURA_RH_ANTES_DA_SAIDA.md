@@ -1,7 +1,7 @@
 # CAPTURA — o que a pessoa de RH faz hoje (antes de sair)
 
 **Data:** 11/08/2026
-**Por quê:** a pessoa que hoje acumula duas funções em RH está de saída. O conhecimento operacional dela é tácito — mora na cabeça e em planilhas, não no Átina. Se sair sem captura, as ferramentas de RH da Onda 3 nascem incompletas e a operação trava. **Este documento é a entrevista/inventário a rodar COM ela enquanto ainda está — o output vira requisito do ADR-045 (RH Onda 3).**
+**Por quê:** a pessoa que hoje acumula duas funções em RH está de saída. O conhecimento operacional dela é tácito — mora na cabeça e em planilhas, não no Átina. Se sair sem captura, as ferramentas de RH da Onda 3 nascem incompletas e a operação trava. **Este documento é a entrevista/inventário a rodar COM ela enquanto ainda está — o output vira requisito do ADR-048 (RH Onda 3).**
 **Como usar:** sentar com ela (1–2 sessões), passar seção por seção, preencher as respostas em texto simples. Não precisa ser bonito; precisa ser completo. Onde ela disser "depende", **capturar do que depende** — é aí que está o conhecimento que se perde.
 **Regra de ouro da captura:** toda vez que ela abrir uma planilha, um site ou um WhatsApp para fazer algo, isso é um passo a registrar (fonte, quem recebe, prazo).
 
@@ -84,4 +84,4 @@ Estas são as que se perdem com a saída. Para cada uma: **qual a regra que ela 
 
 ---
 
-> **Saída deste documento →** vira a §"operação real" do **ADR-045 (RH Onda 3)**: cada passo com fonte/prazo/destinatário é candidato a ferramenta (passa pelo gate Engine vs. CRUD). Sem esta captura, o ADR não tem lastro.
+> **Saída deste documento →** vira a §"operação real" do **ADR-048 (RH Onda 3)**: cada passo com fonte/prazo/destinatário é candidato a ferramenta (passa pelo gate Engine vs. CRUD). Sem esta captura, o ADR não tem lastro.
