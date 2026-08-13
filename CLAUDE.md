@@ -61,14 +61,14 @@ Toda decisão passa por:
 | **Cowork (Claude desktop)** | Pensa arquitetura, escreve docs em `Sistema AG/`, gera prompt pro Code | Conversar, decidir |
 | **Claude Code nuvem** | Escreve `.sql`/`.tsx`/`.ts`, branch nova, push, abre PR draft | Colar prompt do Cowork |
 | **GitHub** | Repo + PRs + branch protection (main protegida) | Mergear PR (1 clique) |
-| **Lovable** | App rodando + **aplica migration auto** quando arquivo novo entra em `supabase/migrations/` no main + regenera `types.ts` | Conferir preview |
+| **Lovable** | App rodando + regenera `types.ts`. ⚠️ **NÃO aplica migration sozinho no merge** — ver regra abaixo | Conferir preview + aplicar migration |
 | **Lovable SQL Editor** | Aplicação manual de SQL (emergência ou hotfix) | Colar e rodar |
 
 ### Regras invioláveis do fluxo
 
 - ❌ Code **NÃO** pusha direto em `main` (branch protegida — corretamente)
 - ❌ Cowork (Claude desktop) **NÃO** mexe em código do repo — só docs em `Sistema AG/` (pasta local)
-- ❌ Aryanna **NÃO** precisa abrir SQL Editor manualmente — Lovable aplica auto
+- ⚠️ **Migration NÃO aplica sozinha no merge (verificado no PR #43, 11/08/2026).** Aplicar é 2º ato manual: pedir ao Lovable AI no chat para "aplicar as migrations pendentes em `supabase/migrations/`" e **conferir no banco** (query de smoke). Merge de PR ≠ funcionalidade no banco.
 - ✅ Code **sempre** abre PR draft, nunca push em main
 - ✅ Migration sensível (DROP, DELETE, RENAME COLUMN): Code escreve, Aryanna lê o `.sql` antes de mergear
 - ✅ Bug fix simples: Aryanna mergeia sem ler
@@ -80,6 +80,7 @@ Toda decisão passa por:
 3. Se tem `.sql` em `supabase/migrations/`: abrir e procurar `DROP`, `DELETE FROM`, `TRUNCATE`. Se tiver, perguntar pra Aryanna antes de mergear.
 4. Se tem `INSERT INTO` em migration tocando tabela operacional (`company_documents`, `clients`, `employees`, `projects` etc.): **VIOLAÇÃO P14** — recusar e abrir issue pedindo documento de captura.
 5. Se nada disso → mergear.
+6. **Se tem `.sql`: depois de mergear, APLICAR a migration via Lovable AI e conferir no banco** — o merge não aplica sozinho (ver regra do fluxo acima).
 
 ---
 
@@ -102,7 +103,7 @@ ADRs completos vivem em `Sistema AG/ARQUITETURA/` (local da Aryanna).
 | Negócios | 95% | Leads kanban+lista+CRUD, Propostas completo, Clientes diretório. ⚠️ Leads — versão antiga mais funcional (revisar) |
 | Campo | 90% | Dashboard, Escala, RDF Digital, Despesas 3 abas, Encontro de Contas, Férias auto-sync. Escala mobile **CONGELADA** |
 | Prancheta | 90% | Kanban, Equipe+carga, Tarefas, Alertas. NUNCA vê financeiro |
-| Faturamento | 85% | Dashboard 5 abas, billing_type. ⚠️ Bug 5 crítico: Alcione nunca recebeu email de aprovação externa |
+| Faturamento | 85% | Dashboard 5 abas, billing_type. ✅ Bug 5 resolvido (PR #21, 27/04) — email de aprovação via Edge Function `approve-expense-sheet` |
 | Projetos | 95% | Kanban drag-drop, Dashboard, Histórico |
 | Pessoas | 60% | CRUD+CSV, Férias, Ausências, Compliance, Cargos (33), 32 campos Fase 3B. ⏳ UI Folha Mensal pendente |
 | Radar | 90% | KPIs, alertas, visibilidade por role. ⚠️ Cliente como centro NÃO implementado |
@@ -118,7 +119,11 @@ ADRs completos vivem em `Sistema AG/ARQUITETURA/` (local da Aryanna).
 |---|---|---|---|
 | Limpar seed `company_documents` | Migration corretiva (errata PCMSO) | 🟡 ALTA | Prompt pronto |
 | ADR-041 Bloco 1 | Estrutura `/compliance/*` + `/base/governanca` (rotas vazias + sidebar) | 🟡 ALTA | Prompt pronto |
-| Bug 5 (enqueue_email) | Corrigir + log em email_send_log | 🔴 CRÍTICO | Aguarda decisão Aryanna |
+| ~~Bug 5 (enqueue_email)~~ | ✅ Resolvido — Edge Function `approve-expense-sheet` + log `email_send_log` | ✅ FEITO (PR #21, 27/04) | — |
+| ~~Aplicar migration #79 (Ausências)~~ | ✅ **APLICADA 12/08** via Lovable MCP: `employee_absences`+enum+trigger; 7 férias migradas; 210 entries na escala; `types.ts` regenerado | ✅ FEITO | Bug férias↔Operacional resolvido |
+| PR rename `ADR-045→048` no repo | `docs/arquitetura/ADR-045_RH_ESCRITA_ONDA3.md` tem numeração velha; canônico é 048. `git mv` + PR draft | 🟢 BAIXA | Higiene de numeração (`_INDICE_ADRS.md` §2.1) |
+| Atualizar `AdmissaoWizard` (employer_company_id) | Wizard deve enviar `employer_company_id` (FK `companies`) no insert — coluna NOT NULL sem default (Decisão #85). **Bloqueia novas admissões** até lá | 🔴 BLOQUEIA ADMISSÃO | consequência ADR-044 |
+| Regenerar `types.ts` (companies) | `companies` + 3 colunas novas ausentes do `types.ts` (migration aplicada por MCP) | 🟡 antes do frontend RH/Compliance | via Lovable |
 | ADR Responsabilidades | Migration `project_participations` + triggers + refactor | 🟡 ALTO | Prompt engatilhado |
 | Folha Mensal UI | Sessão planejamento + implementação | 🟡 ALTO | Simples vs sofisticada em aberto |
 | Medições | Refazer módulo (3 modelos + FK) | 🟡 ALTO | Prompt pronto |
@@ -146,7 +151,7 @@ ADRs completos vivem em `Sistema AG/ARQUITETURA/` (local da Aryanna).
 - ✅ Alertas: `message`, `recipient`, `reference_id`, `action_url`
 - ✅ `priority`: `urgente` | `importante` | `informacao`
 - ✅ **Toda referência = FK, nunca texto livre (Decisão #55)** — enums e tabelas-domínio para tudo enumerável.
-- ✅ `types.ts` é regenerado automaticamente pelo Lovable após cada merge de migration em `main` — nunca editar à mão.
+- ✅ `types.ts` é regenerado pelo Lovable (com latência; às vezes exige um gatilho no Lovable, não é garantido no merge) — nunca editar à mão.
 
 ### Frontend
 
@@ -185,9 +190,8 @@ Não confundir: Sérgio sócio ≠ Sérgio Gonzaga Jr (funcionário CLT, mat 000
 
 ## BUGS CRÍTICOS ABERTOS
 
-1. **Bug 5 — `enqueue_email` em `AprovacaoExterna.tsx:104-111`**
-   RPC com parâmetros errados (`p_to, p_subject, p_body` vs assinatura real `queue_name, payload`). Try/catch engole erro. **Alcione nunca recebeu email de aprovação externa desde sempre.**
-   Correção: padrão de `supabase/functions/send-financial-alert/index.ts` + log em `email_send_log`.
+1. **~~Bug 5 — `enqueue_email`~~ ✅ RESOLVIDO (PR #21, 27/04/2026)**
+   `AprovacaoExterna.tsx` passou a chamar a Edge Function `approve-expense-sheet` (roda como service_role), com falhas logadas em `email_send_log`. Não é mais bug aberto — confirmado no código (`src/pages/AprovacaoExterna.tsx:109-120`) e em `_PENDENCIAS.md` G7.
 
 2. **Cliente como centro** — decisão 07/04/2026 tomada, não implementada.
 
@@ -201,6 +205,7 @@ Não confundir: Sérgio sócio ≠ Sérgio Gonzaga Jr (funcionário CLT, mat 000
 
 ## VERSÃO E HISTÓRICO
 
+- **v14.2** (12/08/2026) — Correção: **auto-apply de migration NÃO existe** (merge não aplica; é 2º ato manual via Lovable AI + smoke check — verificado no PR #43). **Bug 5 marcado RESOLVIDO** (PR #21, 27/04). ADR-044 #64/#78 aceitas.
 - **v14.1** (27/04/2026) — Delta: ADR-041 Compliance Cockpit aceito (#56). Princípios P13 + P14 adicionados após errata PCMSO. Pasta `Sistema AG/ARQUITETURA/` permanece local (não versionada no repo).
 - **v14** (21/04/2026 — noite) — Corrige fluxo de ferramentas. Code não pusha main. Lovable aplica auto. ADR-040 aceito (#54).
 - **v13** (21/04/2026 — tarde) — Enxuto. Detalhes migrados pra `ARQUITETURA/`.
