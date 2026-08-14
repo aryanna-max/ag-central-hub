@@ -23,6 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
+# Segredos — nunca versionar
+.env
+.env.*
+
 # Cruft de desenvolvimento — nunca versionar (limpeza 11/08/2026)
 .claude/
 supabase/.temp/
