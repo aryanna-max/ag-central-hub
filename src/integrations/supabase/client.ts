@@ -2,8 +2,11 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Valores públicos por design (URL + anon key vão no bundle do cliente de qualquer forma).
+// Fallback embutido evita tela branca quando as env vars VITE_ não estão no build
+// (ex.: sem arquivo .env commitado). A env var, quando presente, sobrepõe o fallback.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? "https://bphgtvwgsgaqaxmkrtqj.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwaGd0dndnc2dhcWF4bWtydHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NjM4MDYsImV4cCI6MjA4OTMzOTgwNn0.Jo6nhAk9Z_61ltiU2RqNZ5QbS2IaZq3LRmUnWEpjym0";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
