@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      addresses: {
+        Row: {
+          bairro: string | null
+          cep: string | null
+          complemento: string | null
+          created_at: string
+          id: string
+          logradouro: string | null
+          municipio: string | null
+          numero: string | null
+          pais: string
+          ponto_referencia: string | null
+          uf: string | null
+          updated_at: string
+        }
+        Insert: {
+          bairro?: string | null
+          cep?: string | null
+          complemento?: string | null
+          created_at?: string
+          id?: string
+          logradouro?: string | null
+          municipio?: string | null
+          numero?: string | null
+          pais?: string
+          ponto_referencia?: string | null
+          uf?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bairro?: string | null
+          cep?: string | null
+          complemento?: string | null
+          created_at?: string
+          id?: string
+          logradouro?: string | null
+          municipio?: string | null
+          numero?: string | null
+          pais?: string
+          ponto_referencia?: string | null
+          uf?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       alerts: {
         Row: {
           action_label: string | null
@@ -537,6 +582,44 @@ export type Database = {
           },
         ]
       }
+      company_users: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          papel: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          papel: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          papel?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_users_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compliance_task_executions: {
         Row: {
           completed_at: string | null
@@ -583,6 +666,123 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "monthly_compliance_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_rules: {
+        Row: {
+          contract_id: string
+          created_at: string
+          dominio: Database["public"]["Enums"]["contract_rule_domain"]
+          id: string
+          is_active: boolean
+          justificativa: string | null
+          regra: Json
+          responsavel: string | null
+          updated_at: string
+          vigencia_fim: string | null
+          vigencia_inicio: string | null
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string
+          dominio: Database["public"]["Enums"]["contract_rule_domain"]
+          id?: string
+          is_active?: boolean
+          justificativa?: string | null
+          regra?: Json
+          responsavel?: string | null
+          updated_at?: string
+          vigencia_fim?: string | null
+          vigencia_inicio?: string | null
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string
+          dominio?: Database["public"]["Enums"]["contract_rule_domain"]
+          id?: string
+          is_active?: boolean
+          justificativa?: string | null
+          regra?: Json
+          responsavel?: string | null
+          updated_at?: string
+          vigencia_fim?: string | null
+          vigencia_inicio?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_rules_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contracts: {
+        Row: {
+          codigo: string | null
+          company_id: string
+          created_at: string
+          descricao: string | null
+          id: string
+          is_active: boolean
+          organization_id: string
+          tipo: string | null
+          tomador_organization_id: string | null
+          updated_at: string
+          vigencia_fim: string | null
+          vigencia_inicio: string | null
+        }
+        Insert: {
+          codigo?: string | null
+          company_id: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          is_active?: boolean
+          organization_id: string
+          tipo?: string | null
+          tomador_organization_id?: string | null
+          updated_at?: string
+          vigencia_fim?: string | null
+          vigencia_inicio?: string | null
+        }
+        Update: {
+          codigo?: string | null
+          company_id?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          is_active?: boolean
+          organization_id?: string
+          tipo?: string | null
+          tomador_organization_id?: string | null
+          updated_at?: string
+          vigencia_fim?: string | null
+          vigencia_inicio?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_tomador_organization_id_fkey"
+            columns: ["tomador_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -2699,6 +2899,56 @@ export type Database = {
           },
         ]
       }
+      organizations: {
+        Row: {
+          address_id: string | null
+          cnpj: string | null
+          created_at: string
+          id: string
+          inscricao_estadual: string | null
+          inscricao_municipal: string | null
+          is_active: boolean
+          nome_fantasia: string | null
+          observacoes: string | null
+          razao_social: string
+          updated_at: string
+        }
+        Insert: {
+          address_id?: string | null
+          cnpj?: string | null
+          created_at?: string
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          is_active?: boolean
+          nome_fantasia?: string | null
+          observacoes?: string | null
+          razao_social: string
+          updated_at?: string
+        }
+        Update: {
+          address_id?: string | null
+          cnpj?: string | null
+          created_at?: string
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          is_active?: boolean
+          nome_fantasia?: string | null
+          observacoes?: string | null
+          razao_social?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizations_address_id_fkey"
+            columns: ["address_id"]
+            isOneToOne: false
+            referencedRelation: "addresses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll_periods: {
         Row: {
           apresentacao_thyalcont: string
@@ -2770,6 +3020,53 @@ export type Database = {
             columns: ["fechado_escala_por"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      people: {
+        Row: {
+          address_id: string | null
+          cpf: string | null
+          created_at: string
+          data_nascimento: string | null
+          id: string
+          is_active: boolean
+          matricula: string | null
+          nome_completo: string
+          observacoes: string | null
+          updated_at: string
+        }
+        Insert: {
+          address_id?: string | null
+          cpf?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          id?: string
+          is_active?: boolean
+          matricula?: string | null
+          nome_completo: string
+          observacoes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address_id?: string | null
+          cpf?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          id?: string
+          is_active?: boolean
+          matricula?: string | null
+          nome_completo?: string
+          observacoes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "people_address_id_fkey"
+            columns: ["address_id"]
+            isOneToOne: false
+            referencedRelation: "addresses"
             referencedColumns: ["id"]
           },
         ]
@@ -4419,6 +4716,11 @@ export type Database = {
       billing_mode: "fixo_mensal" | "diarias" | "esporadico"
       company_role: "topografia" | "cartografia"
       contact_type: "cliente" | "financeiro" | "engenheiro" | "outro"
+      contract_rule_domain:
+        | "compliance"
+        | "medicao"
+        | "faturamento"
+        | "retencao"
       day_type: "normal" | "folga" | "falta" | "atestado" | "reserva_ag"
       doc_status:
         | "valido"
@@ -4723,6 +5025,12 @@ export const Constants = {
       billing_mode: ["fixo_mensal", "diarias", "esporadico"],
       company_role: ["topografia", "cartografia"],
       contact_type: ["cliente", "financeiro", "engenheiro", "outro"],
+      contract_rule_domain: [
+        "compliance",
+        "medicao",
+        "faturamento",
+        "retencao",
+      ],
       day_type: ["normal", "folga", "falta", "atestado", "reserva_ag"],
       doc_status: [
         "valido",
