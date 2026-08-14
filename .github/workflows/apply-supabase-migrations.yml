@@ -26,16 +26,28 @@
 name: Apply Supabase migrations
 
 on:
-  # ⚠️ GATILHO AUTOMÁTICO DESARMADO EM 12/08/2026.
-  # Reabilitar SOMENTE após cumprir as duas pré-condições do cabeçalho deste arquivo:
-  #   1. rodar 1x via workflow_dispatch e conferir o log (nunca foi feito);
-  #   2. resolver a colisão de timestamp entre os dois 20260811150000_*.sql
-  #      (PR #45 e PR #47) — db push ordena por versão e o empate deixa a ordem indefinida.
+  # ⚠️ GATILHO AUTOMÁTICO (push) DESARMADO EM 12/08/2026. Só roda via workflow_dispatch.
+  # Estado das pré-condições:
+  #   1. rodar 1x e conferir o log — AGORA SEGURO: workflow_dispatch tem input `mode`,
+  #      default `dry_run` (só migration list + db push --dry-run, NÃO aplica). A 1ª
+  #      execução deve ser em dry_run; aplicar de verdade exige escolher mode=apply.
+  #   2. colisao de timestamp 20260811150000_*.sql — RESOLVIDA no PR #59 (ece43904 -> 150001).
+  # Reabilitar o gatilho `push` automático continua exigindo: rodar em dry_run, conferir
+  # o log, e reconciliar o historico-espelho do Lovable (migration repair) se necessario.
+  # Requer os secrets SUPABASE_ACCESS_TOKEN e SUPABASE_DB_PASSWORD (ainda NAO configurados).
   # push:
   #   branches: [main]
   #   paths:
   #     - "supabase/migrations/**"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "dry_run = só inspeciona (migration list + db push --dry-run), NÃO aplica. apply = aplica de verdade no banco."
+        type: choice
+        options:
+          - dry_run
+          - apply
+        default: dry_run
 
 concurrency:
   group: supabase-migrations # nunca duas aplicações em paralelo
@@ -60,8 +72,12 @@ jobs:
       - name: Link ao projeto
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
 
-      - name: Mostrar migrations pendentes (dry-run informativo)
+      - name: Mostrar migrations pendentes (informativo)
         run: supabase migration list --linked || true
 
-      - name: Aplicar migrations
+      - name: Dry-run (mostra o que db push aplicaria — NÃO aplica)
+        run: supabase db push --linked --dry-run
+
+      - name: Aplicar migrations (SOMENTE quando mode=apply)
+        if: ${{ github.event.inputs.mode == 'apply' }}
         run: supabase db push --linked
