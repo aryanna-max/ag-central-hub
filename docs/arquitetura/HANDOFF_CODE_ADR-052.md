@@ -79,3 +79,60 @@ Estão no §9 do ADR, para decisão posterior da Aryanna:
 2. Comportamento de `fixo_mensal`.
 
 — Cláudio 🤖
+
+---
+
+## PASSO 0 — EXECUTADO ✅ (19/08/2026)
+
+Dump rodado pela Aryanna no SQL Editor do Lovable e conferido pelo Code.
+
+**Resultado: SEM DERIVA.** Os corpos em produção de `fn_on_status_change` e
+`fn_resolve_alert` são **idênticos** ao repo (comparação token a token, normalizando
+espaço em branco):
+
+| Função | Produção vs. repo | Baseline no repo |
+|---|---|---|
+| `fn_on_status_change` | idêntico (3073 chars) | `20260811162220_64b02cf5` |
+| `fn_resolve_alert` | idêntico (2516 chars) | `20260811162330_7601e15d` |
+
+Nota: a migration cita como base `20260811143000` e `20260811150100`. Existem migrations
+**posteriores** que redefinem as mesmas funções (`20260811162220`, `20260811162330`) — os
+corpos são idênticos entre elas, então as bases citadas valem.
+
+Logo o `create or replace` das seções 3 e 4 **não apaga nada**: a única diferença é a
+mudança pretendida pelo ADR-052.
+
+### Achado no dump de `fn_update_project` — corrige o Passo 3
+
+O corpo em produção valida `billing_type` assim:
+
+```sql
+if p_billing_type is not null
+   and p_billing_type not in ('entrega_nf','medicao_mensal','entrega_recibo') then
+  raise exception 'billing_type inválido (%). Use entrega_nf, medicao_mensal ou entrega_recibo.', p_billing_type;
+end if;
+```
+
+**Consequência:** o §7 do ADR manda inserir a guarda de `sem_faturamento` *"logo após a
+validação de `billing_type` existente"*. Se for aplicado assim, a **primeira guarda vira
+código morto** — `sem_faturamento` não está na lista dos 3 aceitos, então a validação
+existente dispara antes, com a mensagem genérica "billing_type inválido", e a mensagem
+que aponta para `isentar_faturamento` nunca aparece.
+
+**Correção:** a primeira guarda (`p_billing_type = 'sem_faturamento'`) tem que entrar
+**ANTES** da validação existente. A segunda guarda (bloquear a *saída* de
+`sem_faturamento`) pode ficar depois — ela testa valores que passam na validação.
+
+Isso não afeta esta migration (o Passo 3 é fora dela). Fica registrado para quando for aplicado.
+
+### `fixo_mensal` — §9.3 continua em aberto
+
+`fn_update_project` **não aceita** `fixo_mensal` (só os 3 valores acima), e
+`BILLING_LABELS` no frontend também não o lista — só `RECURRING_BILLING_TYPES`. Pode ser
+que nenhum projeto tenha esse valor, e aí a mudança de comportamento do §9.3 é inócua.
+Confirmar com:
+
+```sql
+select coalesce(billing_type,'(null)') as billing_type, count(*)
+from public.projects group by 1 order by 2 desc;
+```
