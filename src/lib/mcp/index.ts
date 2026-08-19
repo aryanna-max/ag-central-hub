@@ -15,6 +15,7 @@ import updateProjectTool from "./tools/update-project";
 import updateClientTool from "./tools/update-client";
 import createClientTool from "./tools/create-client";
 import createProjectTool from "./tools/create-project";
+import isentarFaturamentoTool from "./tools/isentar-faturamento";
 
 const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID ?? "project-ref-unset";
 
@@ -45,5 +46,6 @@ export default defineMcp({
     updateClientTool,
     createClientTool,
     createProjectTool,
+    isentarFaturamentoTool,
   ],
 });
